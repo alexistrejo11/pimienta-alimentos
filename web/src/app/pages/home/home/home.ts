@@ -1,45 +1,26 @@
-import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import {
-  AfterViewInit,
-  Component,
-  DestroyRef,
-  PLATFORM_ID,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize, merge, fromEvent } from 'rxjs';
+import { finalize } from 'rxjs';
 
-import { ABOUT_IMAGE_URL, HERO_IMAGE_URL } from '../brand';
+import { ABOUT_IMAGE_URL, BRAND_LOGO_URL, HERO_IMAGE_URL } from '../brand';
 import { CONTACT_ENDPOINT } from '../contact-endpoint';
-import { LandingNavState } from '../landing-nav-state';
-
-const SECTION_IDS = [
-  'inicio',
-  'nosotros',
-  'historia',
-  'filosofia',
-  'contacto',
-] as const;
 
 @Component({
-  selector: 'app-home-landing',
+  selector: 'app-home',
   imports: [ReactiveFormsModule, RouterLink],
-  templateUrl: './home-landing.html',
+  templateUrl: './home.html',
 })
-export class HomeLanding implements AfterViewInit {
+export class Home {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
-  private readonly navState = inject(LandingNavState);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly platformId = inject(PLATFORM_ID);
 
+  readonly logoUrl = BRAND_LOGO_URL;
   readonly heroImageUrl = HERO_IMAGE_URL;
   readonly aboutImageUrl = ABOUT_IMAGE_URL;
 
@@ -53,53 +34,6 @@ export class HomeLanding implements AfterViewInit {
   readonly statusMessage = signal<string | null>(null);
   readonly statusType = signal<'success' | 'error' | null>(null);
   readonly isSubmitting = signal(false);
-
-  ngAfterViewInit(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    const sub = merge(
-      fromEvent(window, 'scroll', { passive: true }),
-      fromEvent(window, 'resize'),
-    ).subscribe(() => this.updateActiveSection());
-    this.destroyRef.onDestroy(() => sub.unsubscribe());
-
-    queueMicrotask(() => this.updateActiveSection());
-  }
-
-  private updateActiveSection(): void {
-    const ids = SECTION_IDS;
-    if (!ids.length) {
-      return;
-    }
-
-    const nav = document.querySelector('nav[aria-label="Principal"]');
-    const navH = nav instanceof HTMLElement ? nav.offsetHeight : 0;
-    const scrollY = window.scrollY;
-    const maxScroll = Math.max(
-      0,
-      document.documentElement.scrollHeight - window.innerHeight,
-    );
-
-    if (scrollY + window.innerHeight >= maxScroll - 2) {
-      this.navState.activeSection.set(ids[ids.length - 1]);
-      return;
-    }
-
-    const marker = scrollY + navH + 2;
-    let active: (typeof SECTION_IDS)[number] = ids[0];
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (!el) {
-        continue;
-      }
-      if (el.offsetTop <= marker) {
-        active = id;
-      }
-    }
-    this.navState.activeSection.set(active);
-  }
 
   onSubmit(): void {
     this.statusMessage.set(null);

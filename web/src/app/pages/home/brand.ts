@@ -1,6 +1,5 @@
 /** Shared brand assets (same URLs as former vanilla landing). */
-export const BRAND_LOGO_URL =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuBS-TMj05LsY1bp3xW6C1a9ydgjBXwgoZyRG0EqQfXrjn52Wqw6m6UAzrxP79eiaMqU2wL6nmZOLlcEVsJ-55xD3KKXPlm4Ks9AmpKzc3JLucPMY6kq0gmiYN5EcFEGGT2wt2mu0w4ZxGxJTyNMaER0jD5tX_8X9K5S4ZrnymJzK2tQgGINseF9qHZV8G93kSI5U2zW-SqY8xnqHGs-hHqblELwmitNjK0frSIBEWEMbhRttRM7Y1M0xhxNxZCXHb5oNMO2Q6f3fiAD';
+export const BRAND_LOGO_URL = '/logo.png';
 
 export const HERO_IMAGE_URL =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAAA9yZqHcdrNkAeoOp45Fv8q6n4lf8MmogBXta96ZepcuaF39N4zVNpcRQxsMF2nxM5ZjjD57BEcTuSc0fKGeAjcUv5RqL_k47ZNX2V2_I1gJLhyKxK3Z8hRKevckGb3CbJkD_J9wL4oM2zY7LlaHX6HrDBe-zdn00cPxSwUGJZFDZ2pw1_5zL3K-K4b9waLp7WOKkHl5_BkDjTPZCTQjvEf0FlkxUb9X4y2czY4wWj1iTpE6STyOt916KVpP4OWTGx-27cJomZJW4';

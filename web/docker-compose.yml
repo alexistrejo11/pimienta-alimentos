@@ -1,17 +1,17 @@
-name: pimienta-frontend
+name: pimienta-web
 
 services:
   web:
-    image: ghcr.io/alexistrejo11/pimienta-alimentos/frontend:latest
+    image: pimienta-web:local
     build:
       context: .
       args:
         API_BASE_URL: ${API_BASE_URL:-http://localhost:8080/api/v1}
         ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
     ports:
-      - "${PORT:-4000}:4000"
+      - '${PORT:-4000}:4000'
     environment:
-      PORT: "4000"
+      PORT: '4000'
     restart: unless-stopped
     networks:
       - pimienta-net

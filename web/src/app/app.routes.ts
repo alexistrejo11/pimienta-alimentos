@@ -2,9 +2,7 @@ import { Routes } from '@angular/router';
 
 import { AvisoPrivacidadPage } from './pages/home/aviso-privacidad-page/aviso-privacidad-page';
 import { CalidadHigienicaPage } from './pages/home/calidad-higienica-page/calidad-higienica-page';
-import { HomeLanding } from './pages/home/home-landing/home-landing';
 import { Home } from './pages/home/home/home';
-import { PortalPage } from './pages/home/portal-page/portal-page';
 import { TerminosServicioPage } from './pages/home/terminos-servicio-page/terminos-servicio-page';
 import { ClientsPageComponent } from './pages/clients/clients-page';
 import { DashboardPageComponent } from './pages/dashboard/dashboard-page';
@@ -93,15 +91,8 @@ export const routes: Routes = [
       { path: 'nomina', component: NominaPageComponent },
     ],
   },
-  {
-    path: '',
-    component: Home,
-    children: [
-      { path: '', component: HomeLanding },
-      { path: 'portal', component: PortalPage },
-      { path: 'aviso-privacidad', component: AvisoPrivacidadPage },
-      { path: 'terminos-servicio', component: TerminosServicioPage },
-      { path: 'calidad-higienica', component: CalidadHigienicaPage },
-    ],
-  },
+  { path: '', component: Home },
+  { path: 'aviso-privacidad', component: AvisoPrivacidadPage },
+  { path: 'terminos-servicio', component: TerminosServicioPage },
+  { path: 'calidad-higienica', component: CalidadHigienicaPage },
 ];
