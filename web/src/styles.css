@@ -19,6 +19,9 @@
   --color-error: #ba1a1a;
   --color-primary-fixed: #ffdad6;
   --color-on-primary-fixed: #410003;
+  --color-accent: #80c030;
+  --color-accent-container: #d4edaa;
+  --color-on-accent: #1a2e0a;
 
   --font-headline: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --font-body: 'Work Sans', ui-sans-serif, system-ui, sans-serif;

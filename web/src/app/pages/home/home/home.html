@@ -1,42 +1,33 @@
-<div
-  class="flex min-h-screen flex-col bg-[var(--color-background)] font-body text-[var(--color-on-background)]"
->
+<div class="landing-page flex min-h-screen flex-col font-body">
   <nav
-    class="fixed left-0 right-0 top-0 z-50 border-b border-stone-200/60 bg-white/80 shadow-[0_1px_2px_rgba(28,25,23,0.05)] backdrop-blur-md dark:border-stone-800/60 dark:bg-stone-950/80 dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+    class="landing-nav fixed left-0 right-0 top-0 z-50 border-b backdrop-blur-md"
+    [class.landing-nav--scrolled]="navScrolled()"
     aria-label="Principal"
   >
-    <div class="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-8 py-4">
-      <a class="flex items-center gap-3 text-inherit no-underline" href="#inicio">
-        <img class="h-10 w-auto" [src]="logoUrl" width="160" height="40" alt="Pimienta Alimentos" />
-        <span
-          class="font-headline text-xl font-extrabold tracking-tight text-red-700 dark:text-red-400"
+    <div class="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-6 py-4 md:px-8">
+      <a
+        class="flex items-center gap-3 text-inherit no-underline"
+        href="#inicio"
+        (click)="scrollToSection('inicio'); $event.preventDefault()"
+      >
+        <img class="h-9 w-auto md:h-10" [src]="logoUrl" width="160" height="40" alt="" />
+        <span class="font-headline text-lg font-extrabold tracking-tight text-primary md:text-xl"
           >Pimienta Alimentos</span
         >
       </a>
-      <div class="hidden items-center gap-8 md:flex">
-        <a
-          href="#inicio"
-          class="font-headline border-b-2 border-transparent pb-1 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:text-primary md:text-base dark:text-stone-400 dark:hover:text-red-400"
-          >Inicio</a
-        >
-        <a
-          href="#nosotros"
-          class="font-headline border-b-2 border-transparent pb-1 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:text-primary md:text-base dark:text-stone-400 dark:hover:text-red-400"
-          >Nosotros</a
-        >
-        <a
-          href="#historia"
-          class="font-headline border-b-2 border-transparent pb-1 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:text-primary md:text-base dark:text-stone-400 dark:hover:text-red-400"
-          >Historia</a
-        >
-        <a
-          href="#filosofia"
-          class="font-headline border-b-2 border-transparent pb-1 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:text-primary md:text-base dark:text-stone-400 dark:hover:text-red-400"
-          >Filosofía</a
-        >
+      <div class="hidden items-center gap-6 lg:flex lg:gap-8">
+        @for (item of navItems; track item.id) {
+          <a
+            [href]="'#' + item.id"
+            [class]="navLinkClass(item.id)"
+            (click)="scrollToSection(item.id); $event.preventDefault()"
+            >{{ item.label }}</a
+          >
+        }
         <a
           href="#contacto"
-          class="font-headline border-b-2 border-transparent pb-1 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:text-primary md:text-base dark:text-stone-400 dark:hover:text-red-400"
+          class="font-headline inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary no-underline transition hover:-translate-y-0.5"
+          (click)="scrollToSection('contacto'); $event.preventDefault()"
           >Contacto</a
         >
       </div>
@@ -45,404 +36,433 @@
 
   <div class="flex-1">
     <main>
-      <!-- Hero -->
-      <section
-        class="relative flex min-h-screen items-center overflow-hidden bg-surface-container-low pt-20"
-        id="inicio"
-        aria-labelledby="hero-title"
-      >
-        <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      @if (showBrandCover) {
+        <section
+          class="landing-cover relative flex min-h-dvh flex-col items-center justify-center overflow-hidden"
+          id="inicio"
+          data-landing-section
+          aria-label="Pimienta Alimentos"
+        >
           <div
-            class="absolute inset-0 z-[1] bg-gradient-to-r from-[var(--color-surface)] via-[color-mix(in_srgb,var(--color-surface)_80%,transparent)] to-transparent"
-          ></div>
-          <img class="h-full w-full object-cover object-center" [src]="heroImageUrl" alt="" />
-        </div>
-        <div class="relative z-[2] container mx-auto w-full max-w-[80rem] px-8">
-          <div class="max-w-[42rem] pb-12">
-            <span
-              class="mb-6 inline-block rounded-full bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary"
-              >Institucional &amp; Clínico</span
-            >
-            <h1
-              id="hero-title"
-              class="mb-8 font-headline text-[clamp(2.75rem,8vw,6rem)] font-extrabold leading-[0.9] tracking-[-0.04em] text-[var(--color-on-background)]"
-            >
-              Excelencia en <br />
-              <span class="text-primary">Nutrición</span> Profesional.
-            </h1>
+            class="relative z-[2] flex max-w-[48rem] flex-col items-center px-6 py-24 text-center"
+          >
+            <img
+              class="landing-cover__logo mb-8 h-auto w-[min(85vw,22rem)]"
+              [src]="logoUrl"
+              width="946"
+              height="556"
+              alt="Pimienta Alimentos"
+            />
             <p
-              class="mb-10 max-w-[32rem] text-xl font-light leading-relaxed text-[var(--color-on-surface-variant)]"
+              class="landing-cover__tagline mb-4 font-headline text-[clamp(1rem,2.5vw,1.25rem)] font-bold uppercase tracking-[0.2em] text-primary"
             >
-              Soluciones integrales de alimentación para hospitales, industrias y centros educativos
-              con los más altos estándares de higiene y sabor.
+              {{ content.tagline }}
             </p>
-            <div class="flex flex-wrap gap-4">
+            <p
+              class="landing-cover__tagline mb-10 max-w-[36rem] text-lg leading-relaxed text-[var(--color-on-surface-variant)]"
+            >
+              {{ content.missionSummary }}
+            </p>
+            <div class="landing-cover__cta flex flex-wrap items-center justify-center gap-4">
               <a
                 href="#contacto"
                 class="font-headline inline-flex items-center justify-center rounded-xl bg-primary px-8 py-4 text-lg font-bold text-on-primary shadow-[0_10px_15px_-3px_rgba(175,16,26,0.2)] no-underline transition hover:-translate-y-0.5"
-                >Solicitar Consultoría</a
+                (click)="scrollToSection('contacto'); $event.preventDefault()"
+                >Solicitar información</a
               >
               <a
-                href="#historia"
-                class="font-headline inline-flex items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--color-outline-variant)_30%,transparent)] bg-surface-container-lowest px-8 py-4 text-lg font-bold text-[var(--color-on-background)] no-underline transition hover:bg-surface-container"
-                >Nuestra Historia</a
+                href="#empresa"
+                class="font-headline inline-flex items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--color-outline-variant)_30%,transparent)] bg-surface-container-lowest px-8 py-4 text-lg font-bold text-[var(--color-on-background)] no-underline transition hover:bg-surface-container-low"
+                (click)="scrollToSection('empresa'); $event.preventDefault()"
+                >Conocer la empresa</a
               >
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- Nosotros -->
+          <button
+            type="button"
+            class="landing-cover__arrow absolute bottom-8 left-1/2 z-[2] -translate-x-1/2 cursor-pointer border-0 bg-transparent p-2 text-[var(--color-on-surface-variant)] transition hover:text-primary"
+            aria-label="Ir al contenido"
+            (click)="scrollToSection('empresa')"
+          >
+            <span class="material-symbols-outlined text-4xl" aria-hidden="true">expand_more</span>
+          </button>
+        </section>
+      }
+
+      <!-- Empresa -->
       <section
-        class="scroll-mt-[5.5rem] bg-surface-container-lowest py-24"
-        id="nosotros"
-        aria-labelledby="about-title"
+        class="landing-section scroll-mt-[5.5rem] py-24"
+        id="empresa"
+        data-landing-section
+        aria-labelledby="empresa-title"
       >
-        <div class="container mx-auto max-w-[80rem] px-8">
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
           <div class="grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
             <div class="relative lg:col-span-7">
               <div
-                class="aspect-[4/3] overflow-hidden rounded-2xl shadow-[0_25px_50px_-12px_rgba(26,28,28,0.15)]"
+                class="landing-reveal aspect-[4/3] overflow-hidden rounded-2xl shadow-[0_25px_50px_-12px_rgba(26,28,28,0.1)]"
               >
                 <img
                   class="h-full w-full object-cover"
-                  [src]="aboutImageUrl"
-                  alt="Chef profesional preparando un plato saludable con vegetales frescos"
+                  [src]="content.empresa.image"
+                  [alt]="content.empresa.imageAlt"
                 />
               </div>
               <div
-                class="absolute -bottom-8 -right-8 hidden h-64 w-64 flex-col justify-end rounded-2xl bg-primary p-8 text-on-primary lg:flex"
+                class="landing-reveal absolute -bottom-8 -right-4 hidden h-56 w-56 flex-col justify-end rounded-2xl bg-accent p-8 text-on-accent lg:flex"
               >
-                <span class="font-headline text-5xl font-extrabold leading-none">25+</span>
+                <span class="font-headline text-5xl font-extrabold leading-none">{{
+                  content.sinceYear
+                }}</span>
                 <span class="mt-2 text-sm font-medium leading-snug"
-                  >Años liderando la industria de alimentación institucional.</span
+                  >Años atendiendo profesionalmente a instituciones en todo México.</span
                 >
               </div>
             </div>
             <div class="lg:col-span-5">
               <h2
-                id="about-title"
-                class="mb-6 font-headline text-4xl font-extrabold tracking-tight text-[var(--color-on-background)]"
+                id="empresa-title"
+                class="landing-reveal mb-6 font-headline text-4xl font-extrabold tracking-tight"
               >
-                Compromiso con la
-                <span class="text-primary">Calidad Total</span>.
+                Nuestra <span class="text-primary">empresa</span>
               </h2>
-              <div
-                class="flex flex-col gap-6 leading-relaxed text-[var(--color-on-surface-variant)]"
+              <blockquote
+                class="landing-reveal mb-6 border-l-4 border-accent pl-4 font-headline text-xl font-semibold landing-text-muted"
               >
-                <p>
-                  En Pimienta Alimentos, entendemos que la nutrición es el pilar fundamental del
-                  rendimiento industrial y la recuperación clínica.
-                </p>
-                <p>
-                  Desde nuestra fundación, nos hemos especializado en diseñar programas alimenticios
-                  que no solo cumplen con las normativas internacionales de higiene, sino que
-                  deleitan el paladar de miles de colaboradores y pacientes diariamente.
-                </p>
-              </div>
-              <div
-                class="mt-10 grid grid-cols-1 gap-6 border-t border-surface-container-high pt-10 sm:grid-cols-2"
-              >
-                <div>
-                  <h4 class="mb-2 font-headline font-bold text-[var(--color-on-background)]">
-                    Hospitales
-                  </h4>
-                  <p class="text-sm text-[var(--color-on-surface-variant)]">
-                    Dietas terapéuticas controladas con precisión quirúrgica.
-                  </p>
-                </div>
-                <div>
-                  <h4 class="mb-2 font-headline font-bold text-[var(--color-on-background)]">
-                    Industrias
-                  </h4>
-                  <p class="text-sm text-[var(--color-on-surface-variant)]">
-                    Menús balanceados para optimizar la productividad laboral.
-                  </p>
-                </div>
+                {{ content.empresa.headline }}
+              </blockquote>
+              <div class="landing-reveal flex flex-col gap-5 leading-relaxed landing-text-muted">
+                @for (paragraph of content.empresa.paragraphs; track paragraph) {
+                  <p>{{ paragraph }}</p>
+                }
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Historia -->
+      <!-- Compromiso -->
       <section
-        class="scroll-mt-[5.5rem] bg-surface-container-low py-24"
-        id="historia"
-        aria-labelledby="historia-title"
+        class="landing-section landing-section--alt scroll-mt-[5.5rem] py-24"
+        id="compromiso"
+        data-landing-section
+        aria-labelledby="compromiso-title"
       >
-        <div class="container mx-auto max-w-[80rem] px-8">
-          <header class="mb-16 text-center">
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
+          <header class="landing-reveal mb-16 max-w-[42rem]">
             <h2
-              id="historia-title"
+              id="compromiso-title"
               class="mb-4 font-headline text-4xl font-extrabold tracking-tight"
             >
-              Nuestra trayectoria
+              Nuestro <span class="text-primary">compromiso</span>
             </h2>
-            <p class="mx-auto max-w-[42rem] text-[var(--color-on-surface-variant)]">
-              Hitos, sedes y proyectos donde contamos nuestra historia y el trabajo diario en campo.
+            <p class="leading-relaxed landing-text-muted">
+              {{ content.compromiso.intro }}
+            </p>
+            <p
+              class="mt-4 inline-flex items-center gap-2 font-headline text-sm font-bold text-accent"
+            >
+              <span class="material-symbols-outlined text-lg" aria-hidden="true">verified</span>
+              {{ content.compromiso.badge }}
             </p>
           </header>
-          <ol
-            class="relative mx-auto max-w-[42rem] list-none pl-7 before:absolute before:left-[0.35rem] before:top-1 before:bottom-1 before:w-0.5 before:rounded-sm before:bg-gradient-to-b before:from-[color-mix(in_srgb,var(--color-primary)_50%,var(--color-outline-variant))] before:to-[var(--color-outline-variant)]"
-            aria-label="Línea de tiempo institucional"
-          >
-            <li class="relative pb-8 last:pb-0">
-              <div
-                class="absolute -left-[1.2rem] top-1.5 z-[1] h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_3px_var(--color-surface-container-lowest)]"
-                aria-hidden="true"
-              ></div>
-              <div
-                class="rounded-xl border border-[color-mix(in_srgb,var(--color-outline-variant)_20%,transparent)] bg-surface-container-lowest px-6 py-5"
-              >
-                <p class="mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-                  <span class="font-headline font-extrabold text-primary">1998</span>
-                  <span class="font-semibold text-[var(--color-on-surface-variant)]"
-                    >Ciudad de México</span
-                  >
-                </p>
-                <h3 class="mb-2 font-headline text-lg font-bold">
-                  Fundación y primera cocina central
-                </h3>
-                <p class="text-[0.9375rem] leading-relaxed text-[var(--color-on-surface-variant)]">
-                  Inicio de operaciones dedicadas a servicios de alimentación institucional con
-                  enfoque en higiene y escala.
-                </p>
+
+          <div class="mb-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            @for (pillar of content.compromiso.pillars; track pillar.title) {
+              <div class="landing-reveal landing-card flex gap-4 rounded-xl p-6">
+                <span class="material-symbols-outlined shrink-0 text-3xl text-accent" aria-hidden="true">{{
+                  pillar.icon
+                }}</span>
+                <p class="font-headline font-bold leading-snug">{{ pillar.title }}</p>
               </div>
-            </li>
-            <li class="relative pb-8 last:pb-0">
-              <div
-                class="absolute -left-[1.2rem] top-1.5 z-[1] h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_3px_var(--color-surface-container-lowest)]"
-                aria-hidden="true"
-              ></div>
-              <div
-                class="rounded-xl border border-[color-mix(in_srgb,var(--color-outline-variant)_20%,transparent)] bg-surface-container-lowest px-6 py-5"
-              >
-                <p class="mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-                  <span class="font-headline font-extrabold text-primary">2008</span>
-                  <span class="font-semibold text-[var(--color-on-surface-variant)]"
-                    >Planta Norte</span
-                  >
-                </p>
-                <h3 class="mb-2 font-headline text-lg font-bold">Expansión y certificación</h3>
-                <p class="text-[0.9375rem] leading-relaxed text-[var(--color-on-surface-variant)]">
-                  Apertura de instalaciones ampliadas y procesos auditables para hospitales y
-                  grandes volúmenes.
-                </p>
+            }
+          </div>
+
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            @for (image of content.compromiso.images; track image.src) {
+              <div class="landing-reveal aspect-[4/3] overflow-hidden rounded-2xl md:aspect-square">
+                <img class="h-full w-full object-cover" [src]="image.src" [alt]="image.alt" />
               </div>
-            </li>
-            <li class="relative pb-8 last:pb-0">
-              <div
-                class="absolute -left-[1.2rem] top-1.5 z-[1] h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_3px_var(--color-surface-container-lowest)]"
-                aria-hidden="true"
-              ></div>
-              <div
-                class="rounded-xl border border-[color-mix(in_srgb,var(--color-outline-variant)_20%,transparent)] bg-surface-container-lowest px-6 py-5"
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Servicios -->
+      <section
+        class="landing-section scroll-mt-[5.5rem] py-24"
+        id="servicios"
+        data-landing-section
+        aria-labelledby="servicios-title"
+      >
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
+          <div class="grid grid-cols-1 gap-16 lg:grid-cols-2">
+            <div>
+              <h2
+                id="servicios-title"
+                class="landing-reveal mb-6 font-headline text-4xl font-extrabold tracking-tight"
               >
-                <p class="mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-                  <span class="font-headline font-extrabold text-primary">2018</span>
-                  <span class="font-semibold text-[var(--color-on-surface-variant)]"
-                    >Centro de innovación</span
-                  >
+                Nuestros <span class="text-primary">servicios</span>
+              </h2>
+              <p class="landing-reveal mb-6 leading-relaxed landing-text-muted">
+                {{ content.servicios.intro }}
+              </p>
+              @for (paragraph of content.servicios.paragraphs; track paragraph) {
+                <p class="landing-reveal mb-4 leading-relaxed landing-text-muted">
+                  {{ paragraph }}
                 </p>
-                <h3 class="mb-2 font-headline text-lg font-bold">Menús terapéuticos y educación</h3>
-                <p class="text-[0.9375rem] leading-relaxed text-[var(--color-on-surface-variant)]">
-                  Programas para centros clínicos y escuelas con seguimiento nutricional y
-                  trazabilidad de insumos.
-                </p>
-              </div>
-            </li>
-            <li class="relative">
-              <div
-                class="absolute -left-[1.2rem] top-1.5 z-[1] h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_0_3px_var(--color-surface-container-lowest)]"
-                aria-hidden="true"
-              ></div>
-              <div
-                class="rounded-xl border border-[color-mix(in_srgb,var(--color-outline-variant)_20%,transparent)] bg-surface-container-lowest px-6 py-5"
+              }
+
+              <h3 class="landing-reveal mb-4 mt-10 font-headline text-xl font-bold">
+                Contamos con atención a:
+              </h3>
+              <ul
+                class="landing-reveal mb-10 grid grid-cols-1 gap-3 sm:grid-cols-2"
+                role="list"
               >
-                <p class="mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-                  <span class="font-headline font-extrabold text-primary">Hoy</span>
-                  <span class="font-semibold text-[var(--color-on-surface-variant)]"
-                    >Presencia nacional</span
-                  >
-                </p>
-                <h3 class="mb-2 font-headline text-lg font-bold">Seguimiento en campo</h3>
-                <p class="text-[0.9375rem] leading-relaxed text-[var(--color-on-surface-variant)]">
-                  Equipos en sitio para auditorías, muestreos y mejora continua junto a cada cliente
-                  institucional.
-                </p>
+                @for (sector of content.servicios.sectors; track sector) {
+                  <li class="flex items-start gap-2 landing-text-muted">
+                    <span class="material-symbols-outlined mt-0.5 text-accent" aria-hidden="true"
+                      >check_circle</span
+                    >
+                    {{ sector }}
+                  </li>
+                }
+              </ul>
+
+              <h3 class="landing-reveal mb-4 font-headline text-xl font-bold">Ofrecemos</h3>
+              <ul class="landing-reveal grid grid-cols-1 gap-2 sm:grid-cols-2" role="list">
+                @for (offer of content.servicios.offers; track offer) {
+                  <li class="flex items-start gap-2 text-sm landing-text-muted">
+                    <span
+                      class="material-symbols-outlined mt-0.5 text-base text-accent"
+                      aria-hidden="true"
+                      >arrow_right</span
+                    >
+                    {{ offer }}
+                  </li>
+                }
+              </ul>
+            </div>
+
+            <div class="flex flex-col gap-6">
+              @for (image of content.servicios.images; track image.src) {
+                <div class="landing-reveal overflow-hidden rounded-2xl">
+                  <img class="w-full object-cover" [src]="image.src" [alt]="image.alt" />
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Higiene -->
+      <section
+        class="landing-section landing-section--alt scroll-mt-[5.5rem] py-24"
+        id="higiene"
+        data-landing-section
+        aria-labelledby="higiene-title"
+      >
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
+          <div class="grid grid-cols-1 gap-16 lg:grid-cols-12">
+            <div class="lg:col-span-5">
+              <h2
+                id="higiene-title"
+                class="landing-reveal mb-6 font-headline text-4xl font-extrabold tracking-tight"
+              >
+                Higiene y <span class="text-primary">seguridad</span>
+              </h2>
+              <p class="landing-reveal mb-6 leading-relaxed landing-text-muted">
+                {{ content.higiene.intro }}
+              </p>
+              <ul class="landing-reveal mb-8 flex flex-col gap-2" role="list">
+                @for (test of content.higiene.clinicalTests; track test) {
+                  <li class="flex items-start gap-2 landing-text-muted">
+                    <span class="material-symbols-outlined text-accent" aria-hidden="true"
+                      >science</span
+                    >
+                    {{ test }}
+                  </li>
+                }
+              </ul>
+              <p class="landing-reveal mb-8 text-sm leading-relaxed landing-text-muted">
+                {{ content.higiene.detail }}
+              </p>
+              <a
+                routerLink="/calidad-higienica"
+                class="landing-reveal font-headline inline-flex items-center gap-2 font-bold text-primary no-underline hover:underline hover:underline-offset-4"
+              >
+                Ver compromiso de calidad e inocuidad
+                <span class="material-symbols-outlined text-lg" aria-hidden="true"
+                  >arrow_forward</span
+                >
+              </a>
+            </div>
+
+            <div class="flex flex-col gap-6 lg:col-span-7">
+              <div class="landing-reveal landing-card flex items-center justify-center rounded-2xl p-8">
+                <img
+                  class="max-h-32 w-auto object-contain"
+                  [src]="content.higiene.distintivoImage"
+                  alt="Distintivo H de higiene"
+                />
               </div>
-            </li>
-          </ol>
-          <p
-            class="mx-auto mt-8 max-w-[40rem] text-center text-[0.8125rem] text-[var(--color-on-surface-variant)]"
-          >
-            Edite los textos en el componente
-            <code class="rounded bg-surface-container-high px-1.5 py-0.5 font-mono text-[0.85em]"
-              >home</code
-            >
-            o conecte esta lista a su CMS cuando esté listo.
-          </p>
+              <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                @for (image of content.higiene.images; track image.src) {
+                  <div class="landing-reveal overflow-hidden rounded-xl">
+                    <img class="aspect-[4/5] w-full object-cover" [src]="image.src" [alt]="image.alt" />
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- Filosofía -->
       <section
-        class="scroll-mt-[5.5rem] bg-surface-container-low py-24"
+        class="landing-section scroll-mt-[5.5rem] py-24"
         id="filosofia"
-        aria-labelledby="philosophy-title"
+        data-landing-section
+        aria-labelledby="filosofia-title"
       >
-        <div class="container mx-auto max-w-[80rem] px-8">
-          <header class="mb-16 text-center">
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
+          <h2
+            id="filosofia-title"
+            class="landing-reveal mb-10 font-headline text-4xl font-extrabold tracking-tight"
+          >
+            Nuestra <span class="text-accent">filosofía</span>
+          </h2>
+          <div
+            class="landing-reveal flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-12 xl:gap-16"
+          >
+            <blockquote class="min-w-0 flex-1 border-l-4 border-accent pl-6 lg:pl-8">
+              <p class="text-xl leading-relaxed italic md:text-2xl">
+                "{{ content.filosofia.quote }}"
+              </p>
+            </blockquote>
+            <div
+              class="flex shrink-0 flex-col items-center gap-4 sm:flex-row sm:items-center lg:w-52 lg:flex-col lg:items-center xl:w-56"
+            >
+              <img
+                class="landing-profile"
+                [src]="content.filosofia.image"
+                [alt]="content.filosofia.imageAlt"
+              />
+              <div class="text-center lg:text-center">
+                <p class="font-headline text-lg font-bold">{{ content.filosofia.author }}</p>
+                <p class="mt-1 text-sm landing-text-muted">{{ content.filosofia.role }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Clientes -->
+      <section
+        class="landing-section landing-section--alt scroll-mt-[5.5rem] py-24"
+        id="clientes"
+        data-landing-section
+        aria-labelledby="clientes-title"
+      >
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
+          <header class="landing-reveal mb-12 text-center">
             <h2
-              id="philosophy-title"
+              id="clientes-title"
               class="mb-4 font-headline text-4xl font-extrabold tracking-tight"
             >
-              Nuestra Filosofía
+              Nuestros <span class="text-primary">clientes</span>
             </h2>
-            <p class="mx-auto max-w-[42rem] text-[var(--color-on-surface-variant)]">
-              Valores que guían cada plato que servimos y cada proceso que implementamos.
+            <p class="mx-auto max-w-[36rem] landing-text-muted">
+              {{ content.clientes.intro }}
             </p>
           </header>
-
           <div
-            class="grid min-h-0 grid-cols-1 gap-6 md:min-h-[600px] md:grid-cols-3 md:grid-rows-2"
+            class="grid grid-cols-2 items-center justify-items-center gap-8 sm:grid-cols-3 md:grid-cols-4"
           >
-            <article
-              class="group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-surface-container-lowest p-10 md:col-span-2 md:row-start-1"
-            >
-              <div>
-                <span
-                  class="material-symbols-outlined mb-6 block text-4xl text-primary"
-                  aria-hidden="true"
-                  >verified_user</span
-                >
-                <h3 class="mb-4 font-headline text-3xl font-bold">Misión Vital</h3>
-                <p class="max-w-[28rem] text-[var(--color-on-surface-variant)]">
-                  Transformar la alimentación institucional en una experiencia de bienestar, salud y
-                  deleite, integrando procesos de vanguardia con calidez humana.
-                </p>
+            @for (client of content.clientes.logos; track client.name) {
+              <div class="landing-reveal flex h-20 w-full items-center justify-center px-4">
+                <img
+                  class="landing-client-logo max-h-16 w-auto max-w-full object-contain"
+                  [src]="client.src"
+                  [alt]="client.name"
+                />
               </div>
-              <div
-                class="pointer-events-none absolute right-0 bottom-0 opacity-10 transition-opacity group-hover:opacity-20"
-                aria-hidden="true"
-              >
-                <span class="material-symbols-outlined text-[200px] leading-none">restaurant</span>
-              </div>
-            </article>
-
-            <article
-              class="flex flex-col justify-between rounded-3xl bg-primary p-10 text-on-primary md:col-start-3 md:row-span-2 md:row-start-1"
-            >
-              <div
-                class="mb-8 flex aspect-square items-center justify-center rounded-2xl bg-white/10"
-              >
-                <span
-                  class="material-symbols-outlined material-symbols-outlined--filled text-6xl"
-                  aria-hidden="true"
-                  >favorite</span
-                >
-              </div>
-              <div>
-                <h3 class="mb-4 font-headline text-2xl font-bold">Salud Ante Todo</h3>
-                <p class="text-[color-mix(in_srgb,var(--color-on-primary)_80%,transparent)]">
-                  Creemos que el alimento es medicina. Cada ingrediente es seleccionado por su valor
-                  nutricional y origen ético.
-                </p>
-              </div>
-            </article>
-
-            <article
-              class="flex flex-col justify-center rounded-3xl bg-surface-container-highest p-10 md:col-start-1 md:row-start-2"
-            >
-              <h3 class="mb-3 font-headline text-2xl font-bold">Higiene Clínica</h3>
-              <p class="text-sm text-[var(--color-on-surface-variant)]">
-                Certificaciones internacionales que avalan la inocuidad total de nuestros procesos.
-              </p>
-            </article>
-
-            <article
-              class="flex flex-col justify-center rounded-3xl bg-[var(--color-on-background)] p-10 text-[var(--color-surface)] dark:bg-stone-100 dark:text-stone-900 md:col-start-2 md:row-start-2"
-            >
-              <h3 class="mb-3 font-headline text-2xl font-bold">Precisión Operativa</h3>
-              <p
-                class="text-sm text-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] dark:text-stone-600"
-              >
-                Logística impecable para garantizar puntualidad en servicios de alto volumen.
-              </p>
-            </article>
+            }
           </div>
         </div>
       </section>
 
       <!-- Contacto -->
       <section
-        class="scroll-mt-[5.5rem] bg-surface-container-lowest py-24"
+        class="landing-section scroll-mt-[5.5rem] py-24"
         id="contacto"
-        aria-labelledby="contact-title"
+        data-landing-section
+        aria-labelledby="contacto-title"
       >
-        <div class="container mx-auto max-w-[80rem] px-8">
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
           <div class="grid grid-cols-1 gap-16 lg:grid-cols-2">
             <div>
               <h2
-                id="contact-title"
-                class="mb-8 font-headline text-4xl font-extrabold leading-tight tracking-tight"
+                id="contacto-title"
+                class="landing-reveal mb-8 font-headline text-4xl font-extrabold leading-tight tracking-tight"
               >
-                Hablemos de su próximo <br />
-                <span class="text-primary">proyecto nutricional</span>.
+                {{ content.contacto.headline }}
               </h2>
-              <p class="mb-12 text-lg text-[var(--color-on-surface-variant)]">
-                Estamos listos para diseñar una solución a la medida de su institución. Contáctenos
-                hoy mismo para una auditoría sin costo.
+              <p class="landing-reveal mb-12 text-lg landing-text-muted">
+                {{ content.contacto.intro }}
               </p>
               <div class="flex flex-col gap-8">
-                <div class="flex gap-4">
+                <div class="landing-reveal flex gap-4">
                   <div
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_5%,transparent)]"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]"
                   >
-                    <span class="material-symbols-outlined text-primary" aria-hidden="true"
+                    <span class="material-symbols-outlined text-accent" aria-hidden="true"
                       >location_on</span
                     >
                   </div>
                   <div>
                     <p class="mb-1 font-bold">Ubicación</p>
-                    <p class="text-sm text-[var(--color-on-surface-variant)]">
-                      Av. Industria Nacional 450, Ciudad de México, CP 11560
+                    <p class="text-sm landing-text-muted">
+                      {{ content.contacto.address }}
                     </p>
                   </div>
                 </div>
-                <div class="flex gap-4">
+                <div class="landing-reveal flex gap-4">
                   <div
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_5%,transparent)]"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]"
                   >
-                    <span class="material-symbols-outlined text-primary" aria-hidden="true"
-                      >mail</span
-                    >
+                    <span class="material-symbols-outlined text-accent" aria-hidden="true">mail</span>
                   </div>
                   <div>
-                    <p class="mb-1 font-bold">Correo Electrónico</p>
-                    <p class="text-sm text-[var(--color-on-surface-variant)]">
-                      contacto@pimientaalimentos.com
-                    </p>
+                    <p class="mb-1 font-bold">Correo electrónico</p>
+                    <a
+                      class="text-sm landing-text-muted no-underline hover:text-primary"
+                      [href]="'mailto:' + content.contacto.email"
+                      >{{ content.contacto.email }}</a
+                    >
                   </div>
                 </div>
-                <div class="flex gap-4">
+                <div class="landing-reveal flex gap-4">
                   <div
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_5%,transparent)]"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]"
                   >
-                    <span class="material-symbols-outlined text-primary" aria-hidden="true"
-                      >call</span
-                    >
+                    <span class="material-symbols-outlined text-accent" aria-hidden="true">call</span>
                   </div>
                   <div>
                     <p class="mb-1 font-bold">Teléfono</p>
-                    <p class="text-sm text-[var(--color-on-surface-variant)]">+52 (55) 4321 0987</p>
+                    <a
+                      class="text-sm landing-text-muted no-underline hover:text-primary"
+                      [href]="contactPhoneHref()"
+                      >{{ content.contacto.phone }}</a
+                    >
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="rounded-3xl bg-[var(--color-surface)] p-8 shadow-sm md:p-12">
+            <div class="landing-reveal landing-card rounded-3xl p-8 md:p-12">
               @if (statusMessage(); as msg) {
                 <p [class]="statusAlertClass()" role="status" aria-live="polite">
                   {{ msg }}
@@ -459,9 +479,9 @@
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div class="flex flex-col gap-2">
                     <label
-                      class="text-xs font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase"
+                      class="text-xs font-bold tracking-widest landing-text-muted uppercase"
                       for="nombre"
-                      >Nombre Completo</label
+                      >Nombre completo</label
                     >
                     <input
                       [class]="controlClass('nombre')"
@@ -477,13 +497,13 @@
                   </div>
                   <div class="flex flex-col gap-2">
                     <label
-                      class="text-xs font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase"
+                      class="text-xs font-bold tracking-widest landing-text-muted uppercase"
                       for="empresa"
                       >Empresa / Institución
                       <span class="text-[0.8em] font-normal">(opcional)</span></label
                     >
                     <input
-                      class="w-full rounded-xl border border-transparent bg-surface-container-high px-6 py-4 font-body text-base outline-none transition focus:border-[color-mix(in_srgb,var(--color-primary)_20%,transparent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary)_15%,transparent)]"
+                      class="landing-input"
                       id="empresa"
                       type="text"
                       formControlName="empresa"
@@ -494,9 +514,9 @@
                 </div>
                 <div class="flex flex-col gap-2">
                   <label
-                    class="text-xs font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase"
+                    class="text-xs font-bold tracking-widest landing-text-muted uppercase"
                     for="correo"
-                    >Correo Corporativo</label
+                    >Correo</label
                   >
                   <input
                     [class]="controlClass('correo')"
@@ -513,7 +533,7 @@
                 </div>
                 <div class="flex flex-col gap-2">
                   <label
-                    class="text-xs font-bold tracking-widest text-[var(--color-on-surface-variant)] uppercase"
+                    class="text-xs font-bold tracking-widest landing-text-muted uppercase"
                     for="mensaje"
                     >Mensaje</label
                   >
@@ -533,7 +553,7 @@
                   type="submit"
                   [disabled]="isSubmitting()"
                 >
-                  {{ isSubmitting() ? 'Enviando…' : 'Enviar Solicitud' }}
+                  {{ isSubmitting() ? 'Enviando…' : 'Enviar solicitud' }}
                 </button>
               </form>
             </div>
@@ -542,68 +562,56 @@
       </section>
     </main>
   </div>
+
   <footer
-    class="w-full border-t border-[color-mix(in_srgb,var(--color-outline-variant)_15%,transparent)] bg-stone-100 dark:border-white/10 dark:bg-stone-900"
+    class="landing-section--alt w-full border-t border-[color-mix(in_srgb,var(--color-outline-variant)_22%,transparent)]"
   >
-    <div class="mx-auto grid max-w-[80rem] grid-cols-1 gap-8 px-8 py-12 md:grid-cols-3">
+    <div class="mx-auto grid max-w-[80rem] grid-cols-1 gap-8 px-6 py-12 md:grid-cols-3 md:px-8">
       <div>
         <a
           href="/#inicio"
-          class="inline-block font-headline text-lg font-bold text-stone-900 no-underline dark:text-stone-100"
+          class="inline-block font-headline text-lg font-bold text-on-background no-underline"
           >Pimienta Alimentos</a
         >
-        <p class="mt-4 text-sm leading-relaxed text-stone-600 dark:text-stone-400">
-          Elevamos el estándar de la alimentación institucional a través de la pasión culinaria y el
-          rigor clínico.
+        <p class="mt-4 text-sm leading-relaxed landing-text-muted">
+          {{ content.footer.tagline }}
         </p>
       </div>
       <div>
-        <h4 class="mb-2 font-headline font-bold text-stone-900 dark:text-stone-100">Legal</h4>
+        <h4 class="mb-2 font-headline font-bold">Legal</h4>
         <div class="flex flex-col gap-3">
           <a
             routerLink="/aviso-privacidad"
-            class="text-sm text-stone-500 underline decoration-red-700/30 underline-offset-4 opacity-85 transition hover:opacity-100 dark:text-stone-400 dark:hover:text-stone-100"
+            class="text-sm landing-text-muted underline decoration-primary/30 underline-offset-4 opacity-85 transition hover:text-on-background hover:opacity-100"
             >Aviso de Privacidad</a
           >
           <a
             routerLink="/terminos-servicio"
-            class="text-sm text-stone-500 underline decoration-red-700/30 underline-offset-4 opacity-85 transition hover:opacity-100 dark:text-stone-400 dark:hover:text-stone-100"
+            class="text-sm landing-text-muted underline decoration-primary/30 underline-offset-4 opacity-85 transition hover:text-on-background hover:opacity-100"
             >Términos de Servicio</a
           >
           <a
             routerLink="/calidad-higienica"
-            class="text-sm text-stone-500 underline decoration-red-700/30 underline-offset-4 opacity-85 transition hover:opacity-100 dark:text-stone-400 dark:hover:text-stone-100"
+            class="text-sm landing-text-muted underline decoration-primary/30 underline-offset-4 opacity-85 transition hover:text-on-background hover:opacity-100"
             >Calidad Higiénica</a
           >
         </div>
       </div>
       <div>
-        <h4 class="mb-2 font-headline font-bold text-stone-900 dark:text-stone-100">
-          Contacto Directo
-        </h4>
-        <div class="flex gap-4">
-          <a
-            href="#"
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-stone-200 transition hover:bg-primary hover:text-on-primary dark:bg-stone-800"
-            aria-label="Compartir"
-          >
-            <span class="material-symbols-outlined text-base">share</span>
-          </a>
-          <a
-            href="/#contacto"
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-stone-200 transition hover:bg-primary hover:text-on-primary dark:bg-stone-800"
-            aria-label="Correo"
-          >
-            <span class="material-symbols-outlined text-base">mail</span>
-          </a>
-        </div>
+        <h4 class="mb-2 font-headline font-bold">Contacto directo</h4>
+        <p class="text-sm landing-text-muted">{{ content.contacto.phone }}</p>
+        <a
+          class="mt-1 block text-sm landing-text-muted no-underline hover:text-primary"
+          [href]="'mailto:' + content.contacto.email"
+          >{{ content.contacto.email }}</a
+        >
       </div>
     </div>
     <div
-      class="mx-auto max-w-[80rem] border-t border-[color-mix(in_srgb,var(--color-outline-variant)_10%,transparent)] px-8 py-6 text-center"
+      class="mx-auto max-w-[80rem] border-t border-[color-mix(in_srgb,var(--color-outline-variant)_22%,transparent)] px-6 py-6 text-center md:px-8"
     >
-      <p class="text-sm text-stone-600 dark:text-stone-400">
-        © 2026 Pimienta Alimentos. Excelencia en Nutrición Clínica e Industrial.
+      <p class="text-sm landing-text-muted">
+        © 2026 Pimienta Alimentos. Servicio de alimentación institucional.
       </p>
     </div>
   </footer>

@@ -1,28 +1,49 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  DestroyRef,
+  ElementRef,
+  inject,
+  PLATFORM_ID,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { isPlatformBrowser } from '@angular/common';
 import {
   FormBuilder,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { fromEvent, finalize } from 'rxjs';
 
-import { ABOUT_IMAGE_URL, BRAND_LOGO_URL, HERO_IMAGE_URL } from '../brand';
+import { BRAND_LOGO_URL } from '../brand';
 import { CONTACT_ENDPOINT } from '../contact-endpoint';
+import { LANDING_CONTENT, LANDING_NAV } from './landing-content';
 
 @Component({
   selector: 'app-home',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './home.html',
+  styleUrl: './home.css',
 })
-export class Home {
+export class Home implements AfterViewInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
+  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
+
+  /** Set to false to hide the brand cover and start at Empresa. */
+  readonly showBrandCover = true;
 
   readonly logoUrl = BRAND_LOGO_URL;
-  readonly heroImageUrl = HERO_IMAGE_URL;
-  readonly aboutImageUrl = ABOUT_IMAGE_URL;
+  readonly content = LANDING_CONTENT;
+  readonly navItems = LANDING_NAV;
+
+  readonly navScrolled = signal(false);
+  readonly activeSection = signal('inicio');
 
   readonly form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
@@ -34,6 +55,32 @@ export class Home {
   readonly statusMessage = signal<string | null>(null);
   readonly statusType = signal<'success' | 'error' | null>(null);
   readonly isSubmitting = signal(false);
+
+  ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    this.setupScrollNav();
+    this.setupRevealObserver();
+  }
+
+  scrollToSection(id: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    const targetId = id === 'inicio' && !this.showBrandCover ? 'empresa' : id;
+    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  contactPhoneHref(): string {
+    return `tel:${this.content.contacto.phone.replace(/\s/g, '')}`;
+  }
+
+  navLinkClass(id: string): string {
+    const base =
+      'landing-nav__link font-headline border-b-2 pb-1 text-sm font-bold tracking-tight md:text-base';
+    return this.activeSection() === id ? `${base} landing-nav__link--active` : base;
+  }
 
   onSubmit(): void {
     this.statusMessage.set(null);
@@ -105,23 +152,72 @@ export class Home {
   }
 
   controlClass(field: 'nombre' | 'correo' | 'mensaje'): string {
-    const base =
-      'w-full rounded-xl border border-transparent bg-surface-container-high px-6 py-4 font-body text-base text-[var(--color-on-background)] outline-none transition focus:border-[color-mix(in_srgb,var(--color-primary)_20%,transparent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary)_15%,transparent)]';
-    const textarea = field === 'mensaje' ? ' min-h-24 resize-none' : '';
-    const err = this.fieldError(field)
-      ? ' ring-2 ring-[color-mix(in_srgb,var(--color-error)_35%,transparent)]'
-      : '';
+    const base = 'landing-input';
+    const textarea = field === 'mensaje' ? ' landing-input--textarea' : '';
+    const err = this.fieldError(field) ? ' landing-input--error' : '';
     return `${base}${textarea}${err}`.trim();
   }
 
   statusAlertClass(): string {
     const t = this.statusType();
     if (t === 'success') {
-      return 'mb-5 rounded-lg border border-green-600/25 bg-green-800/10 px-4 py-3.5 text-[0.9375rem] leading-snug text-green-800 dark:text-green-300';
+      return 'mb-5 rounded-lg border border-green-600/25 bg-green-50 px-4 py-3.5 text-[0.9375rem] leading-snug text-green-900';
     }
     if (t === 'error') {
-      return 'mb-5 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_25%,transparent)] bg-[color-mix(in_srgb,var(--color-error)_12%,transparent)] px-4 py-3.5 text-[0.9375rem] leading-snug text-red-900 dark:text-red-200';
+      return 'mb-5 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_25%,transparent)] bg-red-50 px-4 py-3.5 text-[0.9375rem] leading-snug text-red-900';
     }
     return '';
+  }
+
+  private setupScrollNav(): void {
+    fromEvent(window, 'scroll', { passive: true })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.navScrolled.set(window.scrollY > 24);
+      });
+  }
+
+  private setupRevealObserver(): void {
+    const root = this.host.nativeElement;
+    const sections = Array.from(
+      root.querySelectorAll('[data-landing-section]'),
+    ) as HTMLElement[];
+    const revealBlocks = Array.from(root.querySelectorAll('.landing-reveal')) as HTMLElement[];
+
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            this.activeSection.set(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: '-40% 0px -50% 0px', threshold: 0 },
+    );
+
+    for (const section of sections) {
+      sectionObserver.observe(section);
+    }
+
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            revealObserver.unobserve(entry.target);
+          }
+        }
+      },
+      { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
+    );
+
+    for (const block of revealBlocks) {
+      revealObserver.observe(block);
+    }
+
+    this.destroyRef.onDestroy(() => {
+      sectionObserver.disconnect();
+      revealObserver.disconnect();
+    });
   }
 }

@@ -1,4 +1,4 @@
-name: pimienta-web
+name: pimienta-alimentos
 
 services:
   web:

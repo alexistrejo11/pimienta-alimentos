@@ -1,8 +1,4 @@
-/** Shared brand assets (same URLs as former vanilla landing). */
+/** Shared brand assets. */
 export const BRAND_LOGO_URL = '/logo.png';
 
-export const HERO_IMAGE_URL =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAAA9yZqHcdrNkAeoOp45Fv8q6n4lf8MmogBXta96ZepcuaF39N4zVNpcRQxsMF2nxM5ZjjD57BEcTuSc0fKGeAjcUv5RqL_k47ZNX2V2_I1gJLhyKxK3Z8hRKevckGb3CbJkD_J9wL4oM2zY7LlaHX6HrDBe-zdn00cPxSwUGJZFDZ2pw1_5zL3K-K4b9waLp7WOKkHl5_BkDjTPZCTQjvEf0FlkxUb9X4y2czY4wWj1iTpE6STyOt916KVpP4OWTGx-27cJomZJW4';
-
-export const ABOUT_IMAGE_URL =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuCOgYFYgirkHyEI_LGrlm8nLNzUV7BVJA-v4jqmVFLVsG1s0ypKiQwgxR6IfONmlfihV3FOHiYc9LrzhWQodZ4BZ59APATIXyU3AM3w_73r3x2DMqixzSLAhdPJUipfM7CyWcNhC3hLmA-h4-O7uZLIPYH1il07jOpHsdi27Chkjm4p-xpm_9OaLGyr4l-ZvxNi7L4QIs_91DK5FqByPDNl6VyET8Rz0xd-OD5QWZm-hhP34QyX4WDHhMsPpe60rD-1sCwZL7bOd5xh';
+export const LANDING_COVER_IMAGE = '/landing/mision.png';

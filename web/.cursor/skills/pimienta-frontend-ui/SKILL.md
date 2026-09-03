@@ -14,6 +14,7 @@ Stack: **Angular** (standalone), **Tailwind CSS v4** (`@import 'tailwindcss'`), 
 ## Design tokens (`src/styles.css` `@theme`)
 
 - **Brand red (primary):** `--color-primary` (#af101a), `--color-primary-container` (#d32f2f), `--color-on-primary` (#ffffff).
+- **Brand green (accent):** `--color-accent` (#80c030), `--color-accent-container` (#d4edaa), `--color-on-accent` (#1a2e0a). Use for secondary highlights (Distintivo H, pillar icons, active nav underline, trust badges) — **not** primary CTAs (those stay red).
 - **Surfaces:** `--color-background`, `--color-surface`, `--color-surface-container-lowest` through `--color-surface-container-highest` (light gray scale for cards and sections).
 - **Text:** `--color-on-background`, `--color-on-surface`, `--color-on-surface-variant` (muted body/secondary).
 - **Other:** `--color-secondary`, `--color-outline-variant`, `--color-error`, `--color-primary-fixed`, `--color-on-primary-fixed` (tinted surfaces and accents).
@@ -47,6 +48,7 @@ Do **not** introduce ad-hoc hex colors for core UI; extend `@theme` in `styles.c
 - **Cards:** `rounded-xl`, subtle border `border-stone-200/50`, soft shadow `shadow-[0_8px_30px_rgb(0,0,0,0.04)]`; optional top accent bar `h-1` gradient primary → primary-container.
 - **“Glass” panels (auth):** class **`glass-panel`** in component CSS: semi-transparent white + `backdrop-filter: blur(12px)` — use sparingly for floating cards over imagery.
 - **Hero / marketing sections:** gradient overlays with `color-mix(in srgb, …)` or `from-[var(--color-surface)]`; imagery with `object-cover`, optional `opacity` / `grayscale` for background layers.
+- **Brand cover (landing):** full-bleed hero image, centered logo + tagline, CTA + scroll arrow; toggle via `showBrandCover` flag in the home component.
 - **Workspace app shell:** sidebar offset + main (`ml-64` pattern in workspace); keep content readable on `--color-surface` / `text-on-surface`.
 
 ## States and feedback
