@@ -3,10 +3,12 @@ package io.github.alexistrejo11.pimienta.module.account.auth.infrastructure.adap
 import io.github.alexistrejo11.pimienta.module.account.auth.core.port.input.RefreshTokenStore;
 import java.time.Duration;
 import java.util.Optional;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!test")
 public class RedisRefreshTokenStore implements RefreshTokenStore {
 
   private static final String PREFIX = "pimienta:rt:";

@@ -2,43 +2,39 @@ package io.github.alexistrejo11.pimienta.config.rate_limit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.alexistrejo11.pimienta.module.account.auth.core.port.input.RefreshTokenStore;
+import io.github.alexistrejo11.pimienta.module.account.auth.infrastructure.adapter.out.persistence.InMemoryRefreshTokenStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
-/**
- * Verifies rate-limiting beans register when {@code pimienta.rate-limiting.enabled=true}
- * (see {@code application.yaml} for tests).
- */
+/** Tests never connect to Redis; rate limiting is off so CI does not need a local instance. */
 @SpringBootTest
+@ActiveProfiles("test")
 class RateLimitingBeansIT {
 
   @Autowired ApplicationContext applicationContext;
   @Autowired Environment environment;
+  @Autowired RefreshTokenStore refreshTokenStore;
 
   @Test
-  void redisAndEnabledPropertyArePresentSoLimiterCanRegister() {
-    assertThat(applicationContext.getBeanNamesForType(StringRedisTemplate.class))
-        .as("StringRedisTemplate must exist for RedisTokenBucketRateLimiter")
-        .isNotEmpty();
-    assertThat(environment.getProperty("pimienta.rate-limiting.enabled"))
-        .as("pimienta.rate-limiting.enabled from application.yaml")
-        .isEqualTo("true");
+  void rateLimitingIsDisabledInTests() {
+    assertThat(environment.getProperty("pimienta.rate-limiting.enabled")).isEqualTo("false");
+    assertThat(applicationContext.getBeanNamesForType(RedisTokenBucketRateLimiter.class)).isEmpty();
+    assertThat(applicationContext.containsBean("globalRateLimitFilterRegistration")).isFalse();
   }
 
   @Test
-  void redisTokenBucketRateLimiterBeanIsRegistered() {
-    assertThat(applicationContext.getBeanNamesForType(RedisTokenBucketRateLimiter.class))
-        .isNotEmpty();
+  void redisTemplateIsNotRegistered() {
+    assertThat(applicationContext.getBeanNamesForType(StringRedisTemplate.class)).isEmpty();
   }
 
   @Test
-  void globalRateLimitFilterRegistrationExists() {
-    assertThat(applicationContext.containsBean("globalRateLimitFilterRegistration"))
-        .as("FilterRegistrationBean for GlobalRateLimitFilter")
-        .isTrue();
+  void refreshTokensUseInMemoryStore() {
+    assertThat(refreshTokenStore).isInstanceOf(InMemoryRefreshTokenStore.class);
   }
 }
