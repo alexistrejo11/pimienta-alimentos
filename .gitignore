@@ -14,6 +14,19 @@
 *.env.test.local
 *.env.production.local
 
+# Mobile (Android / Gradle)
+mobile/**/.gradle/
+mobile/**/build/
+mobile/**/local.properties
+mobile/**/.idea/
+mobile/**/.kotlin/
+mobile/**/.cxx/
+mobile/**/.externalNativeBuild/
+mobile/**/captures/
+mobile/**/*.iml
+mobile/**/*.apk
+mobile/**/*.aab
+
 # Frontend
 # See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 

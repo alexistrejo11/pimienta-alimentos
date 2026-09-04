@@ -1,3 +1,23 @@
+# CI/CD for the Spring Boot API (image behind Cloudflare TLS).
+#
+# Flow:
+#   1) test     — Maven tests (PRs and main).
+#   2) publish  — build & push image to GHCR (main only, after test passes).
+#   3) deploy   — SSH through Cloudflare Access (cloudflared) → pull THIS image,
+#                 recreate the container, remove ONLY unused images for this project.
+#
+# Required GitHub secrets (same VPS / Cloudflare token as your other deploys):
+#   SSH_HOST              — Access hostname, e.g. ssh.alexis-trejo.com
+#   SSH_USER              — Linux user on the VPS, e.g. alexistrejo
+#   SSH_PRIVATE_KEY       — Full private key (same key you use locally for fedora-host)
+#   BACKEND_DEPLOY_PATH   — Absolute path to compose dir, e.g. /home/alexistrejo/homelab/deploys/servers/pimienta-backend
+#   CF_CLIENT_ID          — Cloudflare Access Service Token Client ID
+#   CF_CLIENT_SECRET      — Cloudflare Access Service Token Client Secret
+#   GHCR_TOKEN            — GitHub PAT with read:packages (server pull from ghcr.io)
+#
+# Server layout (homelab compose, not backend/docker-compose.yml in this repo):
+#   $BACKEND_DEPLOY_PATH/docker-compose.yml  (service name: api)
+
 name: Backend CI-CD
 
 on:
@@ -98,6 +118,13 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           set -euo pipefail
+
+          if [ -z "${SSH_HOST}" ] || [ -z "${SSH_USER}" ] || [ -z "${SSH_PRIVATE_KEY}" ]; then
+            echo "Missing secrets: SSH_HOST, SSH_USER, and/or SSH_PRIVATE_KEY" >&2
+            echo "Add them in Settings → Secrets and variables → Actions." >&2
+            exit 1
+          fi
+
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
@@ -125,31 +152,36 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           GHCR_USER: ${{ github.actor }}
           IMAGE: ghcr.io/${{ github.repository }}/backend
+          DEPLOY_PATH: ${{ secrets.BACKEND_DEPLOY_PATH }}
           # cloudflared picks these up for non-interactive Access (Service Token).
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_CLIENT_SECRET }}
         run: |
           set -euo pipefail
 
+          if [ -z "${DEPLOY_PATH}" ] || [ -z "${GHCR_TOKEN}" ] || [ -z "${CF_ACCESS_CLIENT_ID}" ] || [ -z "${CF_ACCESS_CLIENT_SECRET}" ]; then
+            echo "Missing secrets: BACKEND_DEPLOY_PATH, GHCR_TOKEN, CF_CLIENT_ID, and/or CF_CLIENT_SECRET" >&2
+            echo "Add them in Settings → Secrets and variables → Actions." >&2
+            exit 1
+          fi
+
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
 
           # printf %q keeps tokens with special chars safe inside the remote shell.
           ssh deploy-host \
-            "export GHCR_TOKEN=$(printf '%q' "$GHCR_TOKEN") GHCR_USER=$(printf '%q' "$GHCR_USER") IMAGE=$(printf '%q' "$IMAGE"); bash -s" <<'REMOTE'
+            "export GHCR_TOKEN=$(printf '%q' "$GHCR_TOKEN") GHCR_USER=$(printf '%q' "$GHCR_USER") IMAGE=$(printf '%q' "$IMAGE") DEPLOY_PATH=$(printf '%q' "$DEPLOY_PATH"); bash -s" <<'REMOTE'
           set -euo pipefail
 
-          cd ~/homeslab/deploys/servers/pimienta-backend
+          cd "${DEPLOY_PATH}"
 
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-          export IMAGE="${IMAGE}:latest"
           docker compose pull api
           docker compose up -d --remove-orphans api
 
           # Safe cleanup: only unused images for THIS project (not host-wide prune).
-          IMAGE_REPO="${IMAGE%:*}"
-          echo "Cleaning unused images for $IMAGE_REPO only..."
-          docker images "$IMAGE_REPO" --format '{{.ID}}' | sort -u | while read -r id; do
+          echo "Cleaning unused images for $IMAGE only..."
+          docker images "$IMAGE" --format '{{.ID}}' | sort -u | while read -r id; do
             if [ -z "$(docker ps -aq --filter "ancestor=${id}")" ]; then
               docker rmi "$id" 2>/dev/null || true
             fi

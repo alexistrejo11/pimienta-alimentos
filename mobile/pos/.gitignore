@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+build/
+.kotlin/
+
+# Local SDK path and machine-specific config
+local.properties
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+.navigation/
+
+# Native / profiling / captures
+.cxx/
+.externalNativeBuild/
+captures/
+*.hprof
+
+# Build artifacts
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
