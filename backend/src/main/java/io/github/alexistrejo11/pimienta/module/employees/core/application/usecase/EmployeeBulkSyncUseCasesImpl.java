@@ -31,6 +31,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
@@ -90,31 +91,59 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
   }
 
   @Override
-  public SpreadsheetBulkImportResult importEmployees(InputStream file, String originalFilename)
+  @Transactional
+  public SpreadsheetBulkImportResult importEmployees(
+      InputStream file, String originalFilename, boolean dryRun)
       throws IOException {
     log.info(
-        "import employees start originalFilename={} filenameLen={}",
-        originalFilename != null ? originalFilename : "null",
-        originalFilename != null ? originalFilename.length() : 0);
+        "import employees start dryRun={} originalFilename={}",
+        dryRun,
+        originalFilename != null ? originalFilename : "null");
 
     List<EmployeeImportRow> parsed = spreadsheetParser.parse(file, originalFilename);
-    ImportProgress progress = new ImportProgress();
+    List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
+    List<PlannedEmployeeRow> planned = new ArrayList<>();
+    int skipped = 0;
 
     for (EmployeeImportRow row : parsed) {
-      handleImportRow(row, progress);
+      if (shouldSkipRowQuietly(row)) {
+        skipped++;
+        continue;
+      }
+      try {
+        planned.add(planRow(row));
+      } catch (Exception ex) {
+        errors.add(rowError(row, ex.getMessage() != null ? ex.getMessage() : "Error al procesar fila"));
+      }
     }
 
-    SpreadsheetBulkImportResult result = new SpreadsheetBulkImportResult(
-        progress.updated, progress.created, progress.skipped, List.copyOf(progress.errors));
+    if (!errors.isEmpty()) {
+      return new SpreadsheetBulkImportResult(0, 0, skipped, List.copyOf(errors), dryRun);
+    }
+
+    int updated = 0;
+    int created = 0;
+    for (PlannedEmployeeRow p : planned) {
+      if (p.update()) {
+        updated++;
+      } else {
+        created++;
+      }
+    }
+
+    if (!dryRun) {
+      for (PlannedEmployeeRow p : planned) {
+        applyPlanned(p);
+      }
+    }
 
     log.info(
-        "import employees complete rowCount={} updated={} created={} skipped={} errorCount={}",
-        parsed.size(),
-        progress.updated,
-        progress.created,
-        progress.skipped,
-        progress.errors.size());
-    return result;
+        "import employees complete dryRun={} updated={} created={} skipped={}",
+        dryRun,
+        updated,
+        created,
+        skipped);
+    return new SpreadsheetBulkImportResult(updated, created, skipped, List.of(), dryRun);
   }
 
   private static EmployeeExportRow toExportRow(Employee e) {
@@ -147,36 +176,48 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
         .build();
   }
 
-  private void handleImportRow(EmployeeImportRow row, ImportProgress progress) {
-    try {
-      if (shouldSkipRowQuietly(row)) {
-        progress.skipped++;
-        return;
-      }
-
-      Optional<String> emailMissing = missingEmailForNewEmployee(row);
-      if (emailMissing.isPresent()) {
-        progress.errors.add(rowError(row, emailMissing.get()));
-        return;
-      }
-
-      ContractType contractType = parseEnum(ContractType.class, row.contractTypeRaw(), ContractType.INDEFINITE);
-      WorkShift workShift = parseEnum(WorkShift.class, row.workShiftRaw(), WorkShift.MORNING);
-      EmployeeStatus statusParsed = parseStatus(row.statusRaw());
-
-      if (row.id() != null) {
-        updateFromSpreadsheetRow(row, contractType, workShift, statusParsed);
-        progress.updated++;
-      } else {
-        createFromSpreadsheetRow(row, contractType, workShift, statusParsed);
-        progress.created++;
-      }
-
-    } catch (Exception ex) {
-      progress.errors.add(
-          rowError(
-              row, ex.getMessage() != null ? ex.getMessage() : "Error al procesar fila"));
+  private PlannedEmployeeRow planRow(EmployeeImportRow row) {
+    Optional<String> emailMissing = missingEmailForNewEmployee(row);
+    if (emailMissing.isPresent()) {
+      throw new IllegalArgumentException(emailMissing.get());
     }
+    if (row.id() != null) {
+      Employee existing = employeeRepository.findById(row.id()).orElse(null);
+      if (existing == null) {
+        throw new IllegalArgumentException("No existe empleado con ID " + row.id());
+      }
+      ContractType contractType =
+          parseEnum(ContractType.class, row.contractTypeRaw(), existing.getEmployment().contractType());
+      WorkShift workShift =
+          parseEnum(WorkShift.class, row.workShiftRaw(), existing.getEmployment().workShift());
+      EmployeeStatus statusParsed = parseStatus(row.statusRaw());
+      UpdateEmployeeParams merged = mergeUpdate(row, existing, contractType, workShift);
+      return PlannedEmployeeRow.update(row, merged, statusParsed);
+    }
+    if (row.firstName() == null || row.firstName().isBlank()) {
+      throw new IllegalArgumentException("El nombre es obligatorio para altas");
+    }
+    if (row.lastName() == null || row.lastName().isBlank()) {
+      throw new IllegalArgumentException("El apellido es obligatorio para altas");
+    }
+    ContractType contractType = parseEnumRequired(ContractType.class, row.contractTypeRaw(), "ContractType");
+    WorkShift workShift = parseEnumRequired(WorkShift.class, row.workShiftRaw(), "WorkShift");
+    EmployeeStatus statusParsed = parseStatus(row.statusRaw());
+    RegisterEmployeeParams reg = buildRegisterParamsForBulk(row, contractType, workShift);
+    return PlannedEmployeeRow.create(row, reg, statusParsed);
+  }
+
+  private void applyPlanned(PlannedEmployeeRow planned) {
+    if (planned.updateParams() != null) {
+      employeeManagementUseCases.update(planned.row().id(), planned.updateParams());
+      if (planned.status() != null) {
+        Employee after = employeeManagementUseCases.getById(planned.row().id());
+        persistStatusIfChanged(after, planned.status());
+      }
+      return;
+    }
+    Employee createdEmp = employeeManagementUseCases.register(planned.registerParams());
+    persistStatusIfChanged(createdEmp, planned.status());
   }
 
   private static boolean shouldSkipRowQuietly(EmployeeImportRow row) {
@@ -192,33 +233,6 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
       return Optional.of("Email obligatorio para altas sin ID");
     }
     return Optional.empty();
-  }
-
-  private void updateFromSpreadsheetRow(
-      EmployeeImportRow row,
-      ContractType contractType,
-      WorkShift workShift,
-      EmployeeStatus statusParsed) {
-    Employee existing = employeeRepository.findById(row.id()).orElse(null);
-    if (existing == null) {
-      throw new IllegalArgumentException("No existe empleado con ID " + row.id());
-    }
-    UpdateEmployeeParams merged = mergeUpdate(row, existing, contractType, workShift);
-    employeeManagementUseCases.update(row.id(), merged);
-    if (statusParsed != null) {
-      Employee after = employeeManagementUseCases.getById(row.id());
-      persistStatusIfChanged(after, statusParsed);
-    }
-  }
-
-  private void createFromSpreadsheetRow(
-      EmployeeImportRow row,
-      ContractType contractType,
-      WorkShift workShift,
-      EmployeeStatus statusParsed) {
-    RegisterEmployeeParams reg = buildRegisterParamsForBulk(row, contractType, workShift);
-    Employee createdEmp = employeeManagementUseCases.register(reg);
-    persistStatusIfChanged(createdEmp, statusParsed);
   }
 
   private void persistStatusIfChanged(Employee employee, EmployeeStatus desired) {
@@ -297,6 +311,13 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
     return fromRow.trim();
   }
 
+  private static <E extends Enum<E>> E parseEnumRequired(Class<E> type, String raw, String field) {
+    if (raw == null || raw.isBlank()) {
+      throw new IllegalArgumentException(field + " es obligatorio para altas");
+    }
+    return parseEnum(type, raw, null);
+  }
+
   private static <E extends Enum<E>> E parseEnum(Class<E> type, String raw, E defaultValue) {
     if (raw == null || raw.isBlank()) {
       return defaultValue;
@@ -319,10 +340,51 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
     return EmployeeStatus.valueOf(s);
   }
 
-  private static final class ImportProgress {
-    int updated;
-    int created;
-    int skipped;
-    final List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
+  private static final class PlannedEmployeeRow {
+    private final EmployeeImportRow row;
+    private final UpdateEmployeeParams updateParams;
+    private final RegisterEmployeeParams registerParams;
+    private final EmployeeStatus status;
+
+    private PlannedEmployeeRow(
+        EmployeeImportRow row,
+        UpdateEmployeeParams updateParams,
+        RegisterEmployeeParams registerParams,
+        EmployeeStatus status) {
+      this.row = row;
+      this.updateParams = updateParams;
+      this.registerParams = registerParams;
+      this.status = status;
+    }
+
+    static PlannedEmployeeRow update(
+        EmployeeImportRow row, UpdateEmployeeParams updateParams, EmployeeStatus status) {
+      return new PlannedEmployeeRow(row, updateParams, null, status);
+    }
+
+    static PlannedEmployeeRow create(
+        EmployeeImportRow row, RegisterEmployeeParams registerParams, EmployeeStatus status) {
+      return new PlannedEmployeeRow(row, null, registerParams, status);
+    }
+
+    boolean update() {
+      return updateParams != null;
+    }
+
+    EmployeeImportRow row() {
+      return row;
+    }
+
+    UpdateEmployeeParams updateParams() {
+      return updateParams;
+    }
+
+    RegisterEmployeeParams registerParams() {
+      return registerParams;
+    }
+
+    EmployeeStatus status() {
+      return status;
+    }
   }
 }

@@ -100,13 +100,15 @@ public class TaskManagerController {
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocTaskImport
-  public TaskBulkImportResponse importTasksFromExcel(@RequestParam("file") MultipartFile file)
+  public TaskBulkImportResponse importTasksFromExcel(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun)
       throws IOException {
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo vacío");
     }
     TaskBulkImportResult result =
-        taskBulkSyncUseCases.importTasks(file.getInputStream(), file.getOriginalFilename());
+        taskBulkSyncUseCases.importTasks(file.getInputStream(), file.getOriginalFilename(), dryRun);
     return TaskBulkImportResponse.from(result);
   }
 

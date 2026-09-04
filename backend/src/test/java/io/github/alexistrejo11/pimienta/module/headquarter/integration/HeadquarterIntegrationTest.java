@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.integration;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRe
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
+import io.github.alexistrejo11.pimienta.shared.spreadsheet.XlsxTestFiles;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -236,6 +238,106 @@ class HeadquarterIntegrationTest {
                 .file(file)
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void importHeadquarters_dryRun_doesNotPersist() throws Exception {
+    String token = obtainAccessToken();
+    String name = "IT-HQ-DRY-" + UUID.randomUUID();
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "hq.xlsx",
+            new String[] {"ID", "Name", "Address", "Description"},
+            new Object[] {null, name, "Calle 1", "Nueva sede"});
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/headquarters/import")
+                .file(file)
+                .param("dryRun", "true")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dryRun").value(true))
+        .andExpect(jsonPath("$.created").value(1))
+        .andExpect(jsonPath("$.updated").value(0))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/headquarters/name/"
+                    + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8),
+                token))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void importHeadquarters_oneInvalidRow_writesNothing() throws Exception {
+    String token = obtainAccessToken();
+    String validName = "IT-HQ-OK-" + UUID.randomUUID();
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "hq.xlsx",
+            new String[] {"ID", "Name", "Address", "Description"},
+            new Object[] {null, validName, "Calle 2", "Ok"},
+            new Object[] {null, "IT-HQ-BAD-" + UUID.randomUUID(), "", "sin dirección"});
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/headquarters/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dryRun").value(false))
+        .andExpect(jsonPath("$.created").value(0))
+        .andExpect(jsonPath("$.updated").value(0))
+        .andExpect(jsonPath("$.errors", hasSize(1)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/headquarters/name/"
+                    + java.net.URLEncoder.encode(validName, java.nio.charset.StandardCharsets.UTF_8),
+                token))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void importHeadquarters_blankAddressOnUpdate_keepsExisting() throws Exception {
+    String token = obtainAccessToken();
+    String name = "IT-HQ-PATCH-" + UUID.randomUUID();
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/headquarters", createBody(name, "Original Ave", "Desc orig"))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long id = extractLongId(created.getResponse().getContentAsString(), "$.id");
+    String newName = name + "-renamed";
+
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "hq.xlsx",
+            new String[] {"ID", "Name", "Address", "Description"},
+            new Object[] {id, newName, "", ""});
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/headquarters/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.updated").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + id, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value(newName))
+        .andExpect(jsonPath("$.address").value("Original Ave"))
+        .andExpect(jsonPath("$.description").value("Desc orig"));
   }
 
   private static String createBody(String name, String address, String description) {

@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.payroll.integration;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRe
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
+import io.github.alexistrejo11.pimienta.shared.spreadsheet.XlsxTestFiles;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -128,6 +130,134 @@ class PayrollIntegrationTest {
         .perform(
             multipart("/api/v1/payroll/import").file(file).header("Authorization", "Bearer " + token))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void importPayroll_dryRun_doesNotPersist() throws Exception {
+    String token = obtainAccessToken();
+    long employeeId = 8_200_000L + (Math.abs(ThreadLocalRandom.current().nextLong()) % 100_000L);
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "payroll.xlsx",
+            payrollHeaders(),
+            new Object[] {
+              null, employeeId, null, "2026-06-01", "2026-06-07", 4100, null, null, null, ""
+            });
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/payroll/import")
+                .file(file)
+                .param("dryRun", "true")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dryRun").value(true))
+        .andExpect(jsonPath("$.created").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/payroll/records?page=0&size=20&employeeId=" + employeeId, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.metadata.totalElements").value(0));
+  }
+
+  @Test
+  void importPayroll_oneInvalidRow_writesNothing() throws Exception {
+    String token = obtainAccessToken();
+    long employeeId = 8_200_100L + (Math.abs(ThreadLocalRandom.current().nextLong()) % 100_000L);
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "payroll.xlsx",
+            payrollHeaders(),
+            new Object[] {
+              null, employeeId, null, "2026-06-01", "2026-06-07", 4100, null, null, null, ""
+            },
+            new Object[] {
+              null, employeeId, null, "2026-06-08", "2026-06-14", null, null, null, null, ""
+            });
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/payroll/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.created").value(0))
+        .andExpect(jsonPath("$.errors", hasSize(1)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/payroll/records?page=0&size=20&employeeId=" + employeeId, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.metadata.totalElements").value(0));
+  }
+
+  @Test
+  void importPayroll_blankGrossOnUpdate_keepsExisting() throws Exception {
+    String token = obtainAccessToken();
+    long employeeId = 8_200_200L + (Math.abs(ThreadLocalRandom.current().nextLong()) % 100_000L);
+    MvcResult recordResult =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/payroll/records",
+                        """
+                        {
+                          "employeeId": %d,
+                          "periodId": null,
+                          "workedDaysStart": "2026-06-01",
+                          "workedDaysEnd": "2026-06-07",
+                          "grossAmount": 5000.00
+                        }
+                        """
+                            .formatted(employeeId))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long recordId = extractLongId(recordResult.getResponse().getContentAsString(), "$.id");
+
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "payroll.xlsx",
+            payrollHeaders(),
+            new Object[] {
+              recordId, employeeId, null, "2026-06-01", "2026-06-15", null, null, null, null, ""
+            });
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/payroll/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.updated").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/payroll/records?page=0&size=20&employeeId=" + employeeId, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].grossAmount").value(5000.0))
+        .andExpect(jsonPath("$.items[0].workedDaysEnd").value("2026-06-15"));
+  }
+
+  private static String[] payrollHeaders() {
+    return new String[] {
+      "id",
+      "employee_id",
+      "period_id",
+      "worked_days_start",
+      "worked_days_end",
+      "gross_amount",
+      "total_discounts",
+      "total_bonuses",
+      "net_amount",
+      "status"
+    };
   }
 
   @Test

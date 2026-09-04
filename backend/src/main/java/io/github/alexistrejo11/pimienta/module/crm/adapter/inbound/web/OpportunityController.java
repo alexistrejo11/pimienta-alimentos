@@ -117,13 +117,15 @@ public class OpportunityController {
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocOpportunityImport
-  public SpreadsheetBulkImportResult importOpportunities(@RequestParam("file") MultipartFile file)
+  public SpreadsheetBulkImportResult importOpportunities(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun)
       throws IOException {
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo vacío");
     }
     return opportunityBulkSyncUseCases.importOpportunities(
-        file.getInputStream(), file.getOriginalFilename());
+        file.getInputStream(), file.getOriginalFilename(), dryRun);
   }
 
   @GetMapping("/{id}")

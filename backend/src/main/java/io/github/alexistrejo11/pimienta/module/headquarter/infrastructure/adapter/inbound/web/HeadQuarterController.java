@@ -95,13 +95,15 @@ public class HeadQuarterController {
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterImport
-  public SpreadsheetBulkImportResult importHeadquarters(@RequestParam("file") MultipartFile file)
+  public SpreadsheetBulkImportResult importHeadquarters(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun)
       throws IOException {
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo vacío");
     }
     return headquarterBulkSyncUseCases.importHeadquarters(
-        file.getInputStream(), file.getOriginalFilename());
+        file.getInputStream(), file.getOriginalFilename(), dryRun);
   }
 
   @GetMapping("/{id}")

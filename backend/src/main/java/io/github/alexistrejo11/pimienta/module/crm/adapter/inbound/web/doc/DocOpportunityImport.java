@@ -25,7 +25,8 @@ import org.springframework.http.MediaType;
     summary = "Import opportunities from spreadsheet",
     description =
         """
-        Upload `multipart/form-data` with field **file** (`.xlsx`). Empty file yields **400**. \
+        Upload `multipart/form-data` with field **file** (`.xlsx`). Query **dryRun=true** validates \
+        without writing. Any row error rejects the whole file. Empty file yields **400**. \
         Rate limit: **SENSITIVE_OPERATIONS**.""")
 @RequestBody(
     required = true,

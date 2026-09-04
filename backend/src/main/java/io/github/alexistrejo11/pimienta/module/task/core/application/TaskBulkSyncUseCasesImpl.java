@@ -27,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TaskBulkSyncUseCasesImpl implements TaskBulkSyncUseCases {
@@ -115,85 +116,88 @@ public class TaskBulkSyncUseCasesImpl implements TaskBulkSyncUseCases {
   }
 
   @Override
-  public TaskBulkImportResult importTasks(InputStream file, String originalFilename)
+  @Transactional
+  public TaskBulkImportResult importTasks(InputStream file, String originalFilename, boolean dryRun)
       throws IOException {
     log.info(
-        "import tasks start originalFilename={} filenameLen={}",
-        originalFilename != null ? originalFilename : "null",
-        originalFilename != null ? originalFilename.length() : 0);
+        "import tasks start dryRun={} originalFilename={}",
+        dryRun,
+        originalFilename != null ? originalFilename : "null");
 
     List<TaskImportRow> parsed = spreadsheetParser.parse(file, originalFilename);
-
+    List<TaskBulkImportRowError> errors = new ArrayList<>();
+    List<Runnable> applies = new ArrayList<>();
+    int skipped = 0;
     int updated = 0;
     int created = 0;
-    int skipped = 0;
-    List<TaskBulkImportRowError> errors = new ArrayList<>();
 
     for (TaskImportRow row : parsed) {
-      Task.Status status;
       try {
-        status = parseStatus(row.statusRaw());
-      } catch (IllegalArgumentException ex) {
-        errors.add(
-            new TaskBulkImportRowError(
-                row.excelRowNumber(), "Estado no válido: " + row.statusRaw()));
-        continue;
-      }
-      if (row.title() == null || row.title().isBlank()) {
-        if (row.id() == null) {
+        if (row.id() == null && (row.title() == null || row.title().isBlank())) {
           skipped++;
-        } else {
-          errors.add(
-              new TaskBulkImportRowError(row.excelRowNumber(), "El título es obligatorio"));
-        }
-        continue;
-      }
-      if (row.id() != null) {
-        Optional<Task> opt = taskRepository.findById(row.id());
-        if (opt.isEmpty()) {
-          errors.add(
-              new TaskBulkImportRowError(
-                  row.excelRowNumber(), "No existe tarea con ID " + row.id()));
           continue;
         }
-        Task task = opt.get();
-        applyImportRowToTask(task, row.title(), status, row.checklistLines());
-        taskRepository.save(task);
-        updated++;
-      } else {
-        CreateTaskCommand cmd =
-            new CreateTaskCommand(
-                row.title().trim(),
-                "",
-                Task.Priority.MEDIUM,
-                null,
-                null,
-                null,
-                null,
-                null,
-                status,
-                row.checklistLines() != null ? row.checklistLines() : List.of());
-        taskManagementUseCases.create(cmd);
-        created++;
+        Task.Status parsedStatus = parseStatusOptional(row.statusRaw());
+        if (row.id() != null) {
+          Task task =
+              taskRepository
+                  .findById(row.id())
+                  .orElseThrow(
+                      () ->
+                          new IllegalArgumentException("No existe tarea con ID " + row.id()));
+          Task.Status status = parsedStatus != null ? parsedStatus : task.getStatus();
+          String title =
+              row.title() == null || row.title().isBlank() ? task.getTitle() : row.title().trim();
+          List<ChecklistDraft> lines = row.checklistLines();
+          boolean overlayChecklist = lines != null && !lines.isEmpty();
+          applies.add(
+              () -> applyImportRowToTask(task, title, status, overlayChecklist ? lines : null));
+          updated++;
+        } else {
+          if (row.title() == null || row.title().isBlank()) {
+            throw new IllegalArgumentException("El título es obligatorio para altas");
+          }
+          Task.Status status = parsedStatus != null ? parsedStatus : Task.Status.PENDING;
+          CreateTaskCommand cmd =
+              new CreateTaskCommand(
+                  row.title().trim(),
+                  "",
+                  Task.Priority.MEDIUM,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  status,
+                  row.checklistLines() != null ? row.checklistLines() : List.of());
+          applies.add(() -> taskManagementUseCases.create(cmd));
+          created++;
+        }
+      } catch (Exception ex) {
+        errors.add(
+            new TaskBulkImportRowError(
+                row.excelRowNumber(),
+                ex.getMessage() != null ? ex.getMessage() : "Error al procesar fila"));
       }
     }
 
-    TaskBulkImportResult result = new TaskBulkImportResult(updated, created, skipped, List.copyOf(errors));
-
-    log.info(
-        "import tasks complete rowCount={} updated={} created={} skipped={} errorCount={}",
-        parsed.size(),
-        updated,
-        created,
-        skipped,
-        errors.size());
-    return result;
+    if (!errors.isEmpty()) {
+      return new TaskBulkImportResult(0, 0, skipped, List.copyOf(errors), dryRun);
+    }
+    if (!dryRun) {
+      for (Runnable apply : applies) {
+        apply.run();
+      }
+    }
+    return new TaskBulkImportResult(updated, created, skipped, List.of(), dryRun);
   }
 
-  private static void applyImportRowToTask(
+  private void applyImportRowToTask(
       Task task, String title, Task.Status status, List<ChecklistDraft> lines) {
-    task.setTitle(title != null ? title.trim() : "");
-    task.setChecklist(checklistFromImportLines(lines));
+    task.setTitle(title);
+    if (lines != null) {
+      task.setChecklist(checklistFromImportLines(lines));
+    }
     task.setStatus(status);
     LocalDateTime when = LocalDateTime.now();
     if (status == Task.Status.COMPLETED) {
@@ -202,6 +206,7 @@ public class TaskBulkSyncUseCasesImpl implements TaskBulkSyncUseCases {
       task.setCompletedAt(null);
     }
     task.touch();
+    taskRepository.save(task);
   }
 
   private static List<Task.ChecklistItem> checklistFromImportLines(List<ChecklistDraft> lines) {
@@ -219,9 +224,9 @@ public class TaskBulkSyncUseCasesImpl implements TaskBulkSyncUseCases {
     return out;
   }
 
-  private static Task.Status parseStatus(String raw) {
+  private static Task.Status parseStatusOptional(String raw) {
     if (raw == null || raw.isBlank()) {
-      return Task.Status.PENDING;
+      return null;
     }
     String s =
         raw.trim().toUpperCase(Locale.ROOT).replace(' ', '_').replace('-', '_');

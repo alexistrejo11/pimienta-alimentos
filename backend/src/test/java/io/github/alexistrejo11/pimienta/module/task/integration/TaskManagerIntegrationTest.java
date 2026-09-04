@@ -15,6 +15,7 @@ import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRe
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
+import io.github.alexistrejo11.pimienta.shared.spreadsheet.XlsxTestFiles;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -295,6 +296,95 @@ class TaskManagerIntegrationTest {
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"));
+  }
+
+  @Test
+  void importTasks_dryRun_doesNotPersist() throws Exception {
+    String token = obtainAccessToken();
+    String title = "IT-TASK-DRY-" + UUID.randomUUID();
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "tasks.xlsx",
+            new String[] {"ID", "Title", "Status", "Checklist", "Headquarter"},
+            new Object[] {null, title, "", "", ""});
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/tasks/import")
+                .file(file)
+                .param("dryRun", "true")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dryRun").value(true))
+        .andExpect(jsonPath("$.created").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/tasks?page=0&size=100", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[?(@.title=='" + title + "')]", hasSize(0)));
+  }
+
+  @Test
+  void importTasks_oneInvalidRow_writesNothing() throws Exception {
+    String token = obtainAccessToken();
+    String title = "IT-TASK-OK-" + UUID.randomUUID();
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "tasks.xlsx",
+            new String[] {"ID", "Title", "Status", "Checklist", "Headquarter"},
+            new Object[] {null, title, "", "", ""},
+            new Object[] {999999999L, "nope", "", "", ""});
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/tasks/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.created").value(0))
+        .andExpect(jsonPath("$.updated").value(0))
+        .andExpect(jsonPath("$.errors", hasSize(1)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/tasks?page=0&size=100", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[?(@.title=='" + title + "')]", hasSize(0)));
+  }
+
+  @Test
+  void importTasks_blankTitleOnUpdate_keepsExisting() throws Exception {
+    String token = obtainAccessToken();
+    String title = "IT-TASK-KEEP-" + UUID.randomUUID();
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson("/api/v1/tasks", minimalCreateJson(title))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long id = extractLongId(created.getResponse().getContentAsString(), "$.id");
+
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "tasks.xlsx",
+            new String[] {"ID", "Title", "Status", "Checklist", "Headquarter"},
+            new Object[] {id, "", "IN_PROGRESS", "", ""});
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/tasks/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.updated").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/tasks/" + id, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value(title))
+        .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
   }
 
   private static String minimalCreateJson(String title) {

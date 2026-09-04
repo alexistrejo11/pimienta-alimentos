@@ -25,7 +25,8 @@ import org.springframework.http.MediaType;
     summary = "Import tasks from spreadsheet",
     description =
         """
-        Upload `multipart/form-data` with field **file** (`.xlsx`); bulk upsert by ID column. Empty \
+        Upload `multipart/form-data` with field **file** (`.xlsx`); bulk upsert by ID column. Query \
+        **dryRun=true** validates without writing. Any row error rejects the whole file. Empty \
         file yields **400**. Rate limit: **SENSITIVE_OPERATIONS**.""")
 @RequestBody(
     required = true,

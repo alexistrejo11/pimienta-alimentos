@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.employees.integration;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRe
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
+import io.github.alexistrejo11.pimienta.shared.spreadsheet.XlsxTestFiles;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -450,6 +452,142 @@ class EmployeeManagerIntegrationTest {
                 .file(file)
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void importEmployees_dryRun_doesNotPersist() throws Exception {
+    String token = obtainAccessToken();
+    String email = "dry-" + uuidSuffix() + "@mail.com";
+    MockMultipartFile file =
+        XlsxTestFiles.multipart("emp.xlsx", employeeHeaders(), employeeCreateCells("Ana", "López", email));
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/employees/import")
+                .file(file)
+                .param("dryRun", "true")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dryRun").value(true))
+        .andExpect(jsonPath("$.created").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/employees?page=0&size=100", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[?(@.email=='" + email + "')]", hasSize(0)));
+  }
+
+  @Test
+  void importEmployees_oneInvalidRow_writesNothing() throws Exception {
+    String token = obtainAccessToken();
+    String okEmail = "ok-" + uuidSuffix() + "@mail.com";
+    String badEmail = "bad-" + uuidSuffix() + "@mail.com";
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "emp.xlsx",
+            employeeHeaders(),
+            employeeCreateCells("Ana", "López", okEmail),
+            employeeCreateCells("Luis", "", badEmail));
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/employees/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.created").value(0))
+        .andExpect(jsonPath("$.errors", hasSize(1)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/employees?page=0&size=100", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[?(@.email=='" + okEmail + "')]", hasSize(0)));
+  }
+
+  @Test
+  void importEmployees_blankDepartmentOnUpdate_keepsExisting() throws Exception {
+    String token = obtainAccessToken();
+    String email = "patch-" + uuidSuffix() + "@mail.com";
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/employees",
+                        minimalRegisterJson(email, "EMP-" + uuidSuffix()))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long id = extractLongId(created.getResponse().getContentAsString(), "$.id");
+
+    Object[] update = employeeCreateCells("Renamed", "López García", email);
+    update[0] = id;
+    update[11] = "";
+
+    MockMultipartFile file = XlsxTestFiles.multipart("emp.xlsx", employeeHeaders(), update);
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/employees/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.updated").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/employees/" + id, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.firstName").value("Renamed"))
+        .andExpect(jsonPath("$.department").value("Producción"));
+  }
+
+  private static String[] employeeHeaders() {
+    return new String[] {
+      "ID",
+      "FirstName",
+      "LastName",
+      "Email",
+      "Phone",
+      "Address",
+      "CURP",
+      "RFC",
+      "NSS",
+      "Clabe",
+      "Position",
+      "Department",
+      "Status",
+      "ContractType",
+      "WorkShift",
+      "SalaryPerWeek",
+      "Bonuses",
+      "FoodVouchers",
+      "IntegrationFactor"
+    };
+  }
+
+  private static Object[] employeeCreateCells(String firstName, String lastName, String email) {
+    return new Object[] {
+      null,
+      firstName,
+      lastName,
+      email,
+      "+52 55 1234 5678",
+      "Av. Reforma 123, CDMX",
+      "LOLA850101HDFPLN09",
+      "XAXX010101000",
+      "12345678901",
+      "012180001234567890",
+      "Operador de línea",
+      "Producción",
+      "",
+      "FIXED_TERM",
+      "MORNING",
+      3500,
+      null,
+      null,
+      null
+    };
   }
 
   private static String uuidSuffix() {

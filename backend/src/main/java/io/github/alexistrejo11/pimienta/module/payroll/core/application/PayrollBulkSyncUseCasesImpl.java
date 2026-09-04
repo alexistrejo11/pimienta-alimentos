@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PayrollBulkSyncUseCasesImpl implements PayrollBulkSyncUseCases {
@@ -100,27 +101,30 @@ public class PayrollBulkSyncUseCasesImpl implements PayrollBulkSyncUseCases {
   }
 
   @Override
+  @Transactional
   public SpreadsheetBulkImportResult importPayrollRecords(
-      InputStream file, String originalFilename, PayrollBulkScopeQuery scope)
+      InputStream file, String originalFilename, PayrollBulkScopeQuery scope, boolean dryRun)
       throws IOException {
     PayrollBulkScopeQuery effective = scope != null ? scope : new PayrollBulkScopeQuery(null, null, null, null);
 
     log.info(
-        "import payroll records start originalFilename={} filenameLen={} scopeEmployeeId={} scopePeriodId={}",
-        originalFilename != null ? originalFilename : "null",
-        originalFilename != null ? originalFilename.length() : 0,
-        effective.employeeId(),
-        effective.periodId());
+        "import payroll records start dryRun={} originalFilename={}",
+        dryRun,
+        originalFilename != null ? originalFilename : "null");
 
     List<PayrollImportRow> parsedRows = spreadsheetParser.parse(file, originalFilename);
-
+    List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
+    List<PayrollRecord> toSave = new ArrayList<>();
+    int skipped = 0;
     int updated = 0;
     int created = 0;
-    int skipped = 0;
-    List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
 
     for (PayrollImportRow row : parsedRows) {
       try {
+        if (isQuietSkip(row)) {
+          skipped++;
+          continue;
+        }
         if (!inScope(row.workedDaysStart(), row.workedDaysEnd(), effective)) {
           skipped++;
           continue;
@@ -130,30 +134,30 @@ public class PayrollBulkSyncUseCasesImpl implements PayrollBulkSyncUseCases {
               payrollRepository
                   .findRecordById(row.id())
                   .orElseThrow(() -> new IllegalArgumentException("No existe payroll record con id " + row.id()));
-          PayrollRecord merged = merge(existing, row);
-          payrollRepository.saveRecord(merged);
+          toSave.add(merge(existing, row));
           updated++;
           continue;
         }
-        if (row.employeeId() == null || row.workedDaysStart() == null || row.workedDaysEnd() == null || row.grossAmount() == null) {
-          errors.add(
-              new SpreadsheetBulkImportRowError(
-                  row.excelRowNumber(),
-                  "Para crear se requiere employee_id, worked_days_start, worked_days_end y gross_amount"));
-          continue;
+        if (row.employeeId() == null
+            || row.workedDaysStart() == null
+            || row.workedDaysEnd() == null
+            || row.grossAmount() == null) {
+          throw new IllegalArgumentException(
+              "Para crear se requiere employee_id, worked_days_start, worked_days_end y gross_amount");
         }
-        PayrollRecord createdRecord = PayrollRecord.builder()
-            .withEmployeeId(row.employeeId())
-            .withPeriodId(row.periodId())
-            .withWorkedDaysStart(row.workedDaysStart())
-            .withWorkedDaysEnd(row.workedDaysEnd())
-            .withGrossAmount(nz(row.grossAmount()))
-            .withTotalDiscounts(nz(row.totalDiscounts()))
-            .withTotalBonuses(nz(row.totalBonuses()))
-            .withNetAmount(nz(row.netAmount(), row.grossAmount()))
-            .withStatus(parseStatus(row.statusRaw(), PayrollRecordStatus.PENDING))
-            .register();
-        payrollRepository.saveRecord(createdRecord);
+        PayrollRecord createdRecord =
+            PayrollRecord.builder()
+                .withEmployeeId(row.employeeId())
+                .withPeriodId(row.periodId())
+                .withWorkedDaysStart(row.workedDaysStart())
+                .withWorkedDaysEnd(row.workedDaysEnd())
+                .withGrossAmount(nz(row.grossAmount()))
+                .withTotalDiscounts(nz(row.totalDiscounts()))
+                .withTotalBonuses(nz(row.totalBonuses()))
+                .withNetAmount(nz(row.netAmount(), row.grossAmount()))
+                .withStatus(parseStatus(row.statusRaw(), PayrollRecordStatus.PENDING))
+                .register();
+        toSave.add(createdRecord);
         created++;
       } catch (Exception ex) {
         errors.add(
@@ -163,17 +167,23 @@ public class PayrollBulkSyncUseCasesImpl implements PayrollBulkSyncUseCases {
       }
     }
 
-    SpreadsheetBulkImportResult result =
-        new SpreadsheetBulkImportResult(updated, created, skipped, List.copyOf(errors));
+    if (!errors.isEmpty()) {
+      return new SpreadsheetBulkImportResult(0, 0, skipped, List.copyOf(errors), dryRun);
+    }
+    if (!dryRun) {
+      for (PayrollRecord record : toSave) {
+        payrollRepository.saveRecord(record);
+      }
+    }
+    return new SpreadsheetBulkImportResult(updated, created, skipped, List.of(), dryRun);
+  }
 
-    log.info(
-        "import payroll records complete rowCount={} updated={} created={} skipped={} errorCount={}",
-        parsedRows.size(),
-        updated,
-        created,
-        skipped,
-        errors.size());
-    return result;
+  private static boolean isQuietSkip(PayrollImportRow row) {
+    return row.id() == null
+        && row.employeeId() == null
+        && row.workedDaysStart() == null
+        && row.workedDaysEnd() == null
+        && row.grossAmount() == null;
   }
 
   private static PayrollRecord merge(PayrollRecord existing, PayrollImportRow row) {

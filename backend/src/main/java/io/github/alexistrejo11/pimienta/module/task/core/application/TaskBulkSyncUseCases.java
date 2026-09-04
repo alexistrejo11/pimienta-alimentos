@@ -10,5 +10,6 @@ public interface TaskBulkSyncUseCases {
 
   byte[] exportTasks(TaskSearchCriteria criteria, Pageable pageable) throws IOException;
 
-  TaskBulkImportResult importTasks(InputStream file, String originalFilename) throws IOException;
+  TaskBulkImportResult importTasks(InputStream file, String originalFilename, boolean dryRun)
+      throws IOException;
 }

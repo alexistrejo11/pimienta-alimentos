@@ -141,6 +141,7 @@ public class PayrollManagerController {
   @DocPayrollImport
   public SpreadsheetBulkImportResult importPayrollRecords(
       @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun,
       @ModelAttribute PayrollBulkScopeRequest request)
       throws IOException {
     if (file.isEmpty()) {
@@ -152,7 +153,8 @@ public class PayrollManagerController {
             request.getPeriodId(),
             request.getFrom(),
             request.getTo());
-    return payrollBulkSyncUseCases.importPayrollRecords(file.getInputStream(), file.getOriginalFilename(), scope);
+    return payrollBulkSyncUseCases.importPayrollRecords(
+        file.getInputStream(), file.getOriginalFilename(), scope, dryRun);
   }
 
   @PostMapping("/records")

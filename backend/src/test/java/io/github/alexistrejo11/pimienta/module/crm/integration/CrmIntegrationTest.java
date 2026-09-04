@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.crm.integration;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRe
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
+import io.github.alexistrejo11.pimienta.shared.spreadsheet.XlsxTestFiles;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -106,6 +108,119 @@ class CrmIntegrationTest {
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"));
+  }
+
+  @Test
+  void opportunities_importDryRun_doesNotPersist() throws Exception {
+    String token = obtainAccessToken();
+    String title = "IT-OPP-DRY-" + UUID.randomUUID();
+    MockMultipartFile file =
+        XlsxTestFiles.multipart("opp.xlsx", opportunityHeaders(), opportunityCreateCells(title, "Desc"));
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/opportunities/import")
+                .file(file)
+                .param("dryRun", "true")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dryRun").value(true))
+        .andExpect(jsonPath("$.created").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/opportunities?titleContains="
+                    + java.net.URLEncoder.encode(title, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&page=0&size=20",
+                token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.metadata.totalElements").value(0));
+  }
+
+  @Test
+  void opportunities_importOneInvalidRow_writesNothing() throws Exception {
+    String token = obtainAccessToken();
+    String title = "IT-OPP-OK-" + UUID.randomUUID();
+    MockMultipartFile file =
+        XlsxTestFiles.multipart(
+            "opp.xlsx",
+            opportunityHeaders(),
+            opportunityCreateCells(title, "Desc"),
+            new Object[] {
+              999999999L,
+              "nope",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              null,
+              null,
+              "",
+              "",
+              null,
+              ""
+            });
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/opportunities/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.created").value(0))
+        .andExpect(jsonPath("$.errors", hasSize(1)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/opportunities?titleContains="
+                    + java.net.URLEncoder.encode(title, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&page=0&size=20",
+                token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.metadata.totalElements").value(0));
+  }
+
+  @Test
+  void opportunities_importBlankDescriptionOnUpdate_keepsExisting() throws Exception {
+    String token = obtainAccessToken();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String title = "IT-OPP-PATCH-" + suffix;
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/opportunities",
+                        minimalCreateOpportunityJson(title, suffix))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long id = extractLongId(created.getResponse().getContentAsString(), "$.id");
+
+    Object[] update = opportunityCreateCells(title + "-renamed", "");
+    update[0] = id;
+
+    MockMultipartFile file = XlsxTestFiles.multipart("opp.xlsx", opportunityHeaders(), update);
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/opportunities/import")
+                .file(file)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.updated").value(1))
+        .andExpect(jsonPath("$.errors", hasSize(0)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/opportunities/" + id, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value(title + "-renamed"))
+        .andExpect(jsonPath("$.description").value("CRM IT"));
   }
 
   @Test
@@ -512,6 +627,46 @@ class CrmIntegrationTest {
                 "/api/v1/projects/" + projectId + "/milestones/" + milestoneId, token))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.errorCode").value("PROJECT_MILESTONE_NOT_FOUND"));
+  }
+
+  private static String[] opportunityHeaders() {
+    return new String[] {
+      "ID",
+      "Title",
+      "Description",
+      "ContactName",
+      "ContactEmail",
+      "ContactPhone",
+      "CompanyName",
+      "CompanyLocation",
+      "Industry",
+      "EstimatedValue",
+      "ProbabilityPercent",
+      "Source",
+      "ExpectedCloseDate",
+      "AssignedSalesmanId",
+      "Status"
+    };
+  }
+
+  private static Object[] opportunityCreateCells(String title, String description) {
+    return new Object[] {
+      null,
+      title,
+      description,
+      "Jane Doe",
+      "jane@example.com",
+      "+52-55-0000-0000",
+      "Acme SA",
+      "Monterrey",
+      "Food",
+      5000,
+      20,
+      "INBOUND",
+      "2026-12-31",
+      null,
+      ""
+    };
   }
 
   private static String minimalCreateOpportunityJson(String title, String companySuffix) {

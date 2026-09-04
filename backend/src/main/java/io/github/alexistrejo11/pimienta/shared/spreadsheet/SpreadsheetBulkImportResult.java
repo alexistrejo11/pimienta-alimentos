@@ -7,14 +7,16 @@ import java.util.List;
     name = "SpreadsheetBulkImportResult",
     description =
         """
-        Resultado de importación masiva: contadores de filas actualizadas, creadas, omitidas y \
-        lista de errores por fila.""")
+        Resultado de importación masiva. Si hay errores de fila, no se escribe nada \
+        (created/updated = 0). Con dryRun=true los contadores son el plan, sin persistir.""")
 public record SpreadsheetBulkImportResult(
-    @Schema(description = "Filas actualizadas (match por id u otra regla del módulo).", example = "5")
+    @Schema(description = "Filas actualizadas (o previstas en vista previa).", example = "5")
     int updated,
-    @Schema(description = "Filas insertadas como nuevos registros.", example = "12")
+    @Schema(description = "Filas insertadas (o previstas en vista previa).", example = "12")
     int created,
-    @Schema(description = "Filas ignoradas (sin efecto, p. ej. sin datos mínimos).", example = "1")
+    @Schema(description = "Filas ignoradas (sin efecto, p. ej. vacías).", example = "1")
     int skipped,
-    @Schema(description = "Errores por fila; vacío si todo OK.")
-    List<SpreadsheetBulkImportRowError> errors) {}
+    @Schema(description = "Errores por fila; si no está vacío no hubo escrituras.")
+    List<SpreadsheetBulkImportRowError> errors,
+    @Schema(description = "true si solo se validó el archivo, sin persistir.")
+    boolean dryRun) {}
