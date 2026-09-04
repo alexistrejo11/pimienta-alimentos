@@ -5,13 +5,14 @@ services:
     image: pimienta-web:local
     build:
       context: .
-      args:
-        API_BASE_URL: ${API_BASE_URL:-http://localhost:8080/api/v1}
-        ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+    env_file:
+      - .env
     ports:
       - '${PORT:-4000}:4000'
     environment:
       PORT: '4000'
+      API_BASE_URL: ${API_BASE_URL}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
     restart: unless-stopped
     networks:
       - pimienta-net

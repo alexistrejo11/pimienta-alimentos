@@ -1,5 +1,6 @@
 # Multi-stage: Angular SSR build → Node runtime.
-# Build context: frontend/
+# Build context: web/
+# Runtime config (API_BASE_URL, ALLOWED_HOSTS) comes from env / compose .env — not build args.
 
 FROM node:22-alpine AS build
 WORKDIR /app
@@ -8,19 +9,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-
-ARG API_BASE_URL=http://localhost:8080/api/v1
-ARG ALLOWED_HOSTS=localhost
-
-# Patch angular.json security.allowedHosts from comma-separated ALLOWED_HOSTS.
-RUN node -e "\
-const fs=require('fs');\
-const hosts=process.argv[1].split(',').map(h=>h.trim()).filter(Boolean);\
-const cfg=JSON.parse(fs.readFileSync('angular.json','utf8'));\
-cfg.projects.frontend.architect.build.options.security.allowedHosts=hosts;\
-fs.writeFileSync('angular.json', JSON.stringify(cfg, null, 2));\
-" "${ALLOWED_HOSTS}" \
-  && npx ng build --define __API_BASE_URL__="'${API_BASE_URL}'"
+RUN npx ng build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
@@ -32,8 +21,10 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist/frontend ./dist/frontend
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 USER node
 EXPOSE 4000
 
-CMD ["node", "dist/frontend/server/server.mjs"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
