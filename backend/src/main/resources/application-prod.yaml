@@ -1,4 +1,16 @@
-# Production: public health + info only; no metrics or other actuator endpoints over HTTP.
+# Profile: prod — Flyway migrations, schema validate, real AWS S3, tight actuator.
+spring:
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
 management:
   endpoints:
     web:
@@ -12,3 +24,7 @@ management:
   info:
     java:
       enabled: false
+
+logging:
+  level:
+    org.springframework.web: INFO

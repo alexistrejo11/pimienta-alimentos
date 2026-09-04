@@ -2,7 +2,7 @@
 
 **Production Spring Boot API for company operations — used daily by Pimienta Alimentos employees and staff.**
 
-[![Java](https://img.shields.io/badge/Java-25-orange)](https://openjdk.org/)
+[![Java](https://img.shields.io/badge/Java-26-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen)](https://spring.io/projects/spring-boot)
 
 > **Real-world system:** This is not a demo or tutorial project. The API is **deployed in the cloud** and actively supports HR, inventory, payroll, CRM, contracts, tasks, and file management for the company workforce.
@@ -100,7 +100,7 @@ deactivate
 
 ## Tech stack
 
-- **Java 25** · **Spring Boot 4.0.5** · Spring Security · Spring Data JPA
+- **Java 26** · **Spring Boot 4.0.5** · Spring Security · Spring Data JPA
 - **PostgreSQL 16** (AWS RDS) · **Flyway** migrations · Hibernate `validate`
 - **Redis 7** (Upstash, `rediss://`) — refresh tokens, rate limiting
 - **JWT** (jjwt) · **springdoc-openapi 3** · **Apache POI** (XLSX)
@@ -126,7 +126,7 @@ Full diagram, layers, and decisions: [ProjectArchitecture.md](docs/project/gener
 
 ## Prerequisites
 
-- **Java 25** and **Maven** (or `./mvnw`)
+- **Java 26** and **Maven** (or `./mvnw`)
 - **Docker & Docker Compose** (recommended for local dev)
 - **PostgreSQL** and **Redis** (local via Compose, or cloud RDS + Upstash)
 - Copy `backend/.env.example` → `backend/.env` for secrets and connection strings
@@ -141,33 +141,32 @@ Full diagram, layers, and decisions: [ProjectArchitecture.md](docs/project/gener
 cd backend
 cp .env.example .env
 docker network create pimienta-net   # once
-docker compose --profile local up --build
+docker compose up --build
 ```
 
 - Health: http://localhost:8080/api/v2/health
 - Swagger: http://localhost:8080/swagger-ui
-- Postgres (host): `localhost:5431` · Redis (host): `localhost:6378`
+- Postgres (host): `localhost:5431` · Redis (host): `localhost:6378` · LocalStack S3: `localhost:4566`
 
-For API-only (external DB/Redis): `docker compose up -d --build`.
+Spring profile is `dev` (Hibernate `update`, Flyway off, LocalStack, extra actuator). Source is bind-mounted; DevTools restarts after Java recompile.
 
 ### Local development (Maven on host)
+
+Bring up dependencies, then run the API on the host (`SPRING_PROFILES_ACTIVE=dev` in `.env`):
 
 ```bash
 cd backend
 cp .env.example .env
+docker network create pimienta-net   # once
+docker compose up -d postgres redis localstack
 ./mvnw spring-boot:run
 ```
 
-Dotenv loads `.env` automatically via `DotenvEnvironmentPostProcessor`.
+Dotenv loads `.env` automatically via `DotenvEnvironmentPostProcessor`. Host URLs use the published ports (`localhost:5431`, `redis://localhost:6378`, LocalStack `http://localhost:4566`).
 
 ### Cloud / production (EC2)
 
-```bash
-cd backend
-cp .env.example .env   # set POSTGRES_URL (RDS), REDIS_URL (Upstash rediss://), JWT, AWS
-docker network create pimienta-net   # once
-docker compose up -d --build
-```
+Production uses the fat-JAR `Dockerfile` (not this Compose file) with Spring profile `prod`, RDS, Upstash Redis, and real S3. GHCR publish/deploy is handled by CI/CD.
 
 Details: [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure.md).
 
@@ -216,7 +215,7 @@ Authentication: `Authorization: Bearer <access_token>` (JWT). Interactive refere
 
 ```
 backend/
-├── docker/                    # Dockerfile, compose (local + cloud), README
+├── docker/                    # LocalStack init + Compose helper scripts
 ├── docs/
 │   ├── project/
 │   │   ├── source/            # YAML source docs (edit these)
@@ -237,7 +236,7 @@ backend/
 
 ## Deployment
 
-**Production:** Spring Boot JAR in Docker on **AWS EC2**, connecting to **AWS RDS PostgreSQL** and **Upstash Redis** (TLS). File uploads go to **AWS S3**. Profile `docker` via `SPRING_PROFILES_ACTIVE`.
+**Production:** Spring Boot JAR in Docker on **AWS EC2**, connecting to **AWS RDS PostgreSQL** and **Upstash Redis** (TLS). File uploads go to **AWS S3**. Profile `prod` via `SPRING_PROFILES_ACTIVE`.
 
 Details: [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure.md).
 

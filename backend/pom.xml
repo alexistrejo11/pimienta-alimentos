@@ -45,9 +45,9 @@
 	
 	<!-- Properties -->
 	<properties>
-		<java.version>25</java.version>
+		<java.version>26</java.version>
 		<poi.version>5.4.1</poi.version>
-		<!-- JDK 25 needs Lombok >= 1.18.40; also register Lombok as compiler APT explicitly -->
+		<!-- JDK 26 needs Lombok >= 1.18.40; also register Lombok as compiler APT explicitly -->
 		<lombok.version>1.18.42</lombok.version>
 	</properties>
 
@@ -157,7 +157,7 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Lombok: version from spring-boot-dependencies (1.18.x, JDK 25–compatible with Boot 4.0.5) -->
+		<!-- Lombok: version from spring-boot-dependencies (1.18.x, JDK 26–compatible with Boot 4.0.5) -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

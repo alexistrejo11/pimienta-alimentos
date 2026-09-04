@@ -1,0 +1,44 @@
+# Profile: dev — local development (IDE or Compose). Not coupled to Docker.
+spring:
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,beans,mappings
+  endpoint:
+    health:
+      show-details: always
+    env:
+      enabled: true
+    beans:
+      enabled: true
+    mappings:
+      enabled: true
+
+aws:
+  s3:
+    endpoint: ${AWS_S3_ENDPOINT:http://localhost:4566}
+    public-endpoint: ${AWS_S3_PUBLIC_ENDPOINT:http://localhost:4566}
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.mvc: DEBUG
+    org.springframework.web.multipart: DEBUG
+    org.apache.coyote: DEBUG

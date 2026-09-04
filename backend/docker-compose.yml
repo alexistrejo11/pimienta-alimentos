@@ -1,12 +1,9 @@
-# Compose loads this file from backend/ automatically.
-#   docker compose up -d --build
-#   docker compose --profile local up --build
-# DotenvEnvironmentPostProcessor also loads it for mvn / IDE runs.
+# Local development only. GHCR images are published by CI/CD, not this file.
+#   docker compose up --build
 name: pimienta-backend
 
 services:
   postgres:
-    profiles: [local]
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pimienta_alimentos}
@@ -17,6 +14,8 @@ services:
       - "${POSTGRES_PORT:-5431}:5432"
     volumes:
       - pimienta_pg_data:/var/lib/postgresql/data
+      - ./docker/postgres/ensure-role.sh:/ensure-role.sh:ro
+    entrypoint: ["/bin/sh", "/ensure-role.sh"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -26,7 +25,6 @@ services:
       - pimienta-net
 
   redis:
-    profiles: [local]
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
     restart: unless-stopped
@@ -42,11 +40,30 @@ services:
     networks:
       - pimienta-net
 
-  # Default: API only (cloud). With --profile local: also postgres + redis.
-  # CI/CD sets IMAGE=ghcr.io/<owner>/<repo>/backend:latest for pull deploys.
+  localstack:
+    image: localstack/localstack:4
+    environment:
+      SERVICES: s3
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-pimienta-employees}
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./docker/localstack/init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh:ro
+      - pimienta_localstack_data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - pimienta-net
+
   api:
-    image: ghcr.io/alexistrejo11/pimienta-alimentos/backend:latest
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     ports:
       - "${API_PORT:-8080}:${API_PORT:-8080}"
     restart: unless-stopped
@@ -54,32 +71,40 @@ services:
       - path: .env
         required: false
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: ${POSTGRES_URL}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      REDIS_URL: ${REDIS_URL}
-      SERVER_PORT: ${API_PORT:-8080}
+      SPRING_PROFILES_ACTIVE: dev
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-pimienta_alimentos}
+      POSTGRES_USER: ${POSTGRES_USER:-pimienta_dba}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pimienta_dba}
+      REDIS_URL: redis://redis:6379
+      API_PORT: ${API_PORT:-8080}
       PIMIENTA_SECURITY_JWT_SECRET: ${PIMIENTA_SECURITY_JWT_SECRET}
       JAVA_OPTS: ${JAVA_OPTS:-}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
       AWS_S3_FOLDER: ${AWS_S3_FOLDER:-employees}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_S3_ENDPOINT: http://localstack:4566
+      AWS_S3_PUBLIC_ENDPOINT: http://localhost:4566
+    volumes:
+      - ./src:/workspace/src
+      - ./pom.xml:/workspace/pom.xml
+      - pimienta_m2:/root/.m2
     depends_on:
       postgres:
         condition: service_healthy
-        required: false
       redis:
         condition: service_healthy
-        required: false
+      localstack:
+        condition: service_healthy
     networks:
       - pimienta-net
 
 volumes:
   pimienta_pg_data:
   pimienta_redis_data:
+  pimienta_localstack_data:
+  pimienta_m2:
 
 networks:
   pimienta-net:
