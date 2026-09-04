@@ -65,10 +65,14 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
-		<!-- Actuator: health/info probes; metrics and other endpoints secured in SecurityConfig -->
+		<!-- Actuator: health/info probes; Prometheus scrape at /actuator/prometheus -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
 
 		<!-- Jackson (ObjectMapper, JSON) — explicit so compile scope resolves com.fasterxml.jackson.databind -->

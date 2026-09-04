@@ -28,7 +28,8 @@ public class SecurityConfig {
         private static final String[] ACTUATOR_PUBLIC_PATHS = {
                         "/actuator/health",
                         "/actuator/health/**",
-                        "/actuator/info"
+                        "/actuator/info",
+                        "/actuator/prometheus"
         };
 
         private static final String[] AUTH_PUBLIC_PATHS = {
