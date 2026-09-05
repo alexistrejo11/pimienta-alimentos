@@ -62,8 +62,6 @@ data class Product(
     val precio: Double,
     val stock: Double,
     val stockMin: Double,
-    val porPeso: Boolean,
-    val precioKg: Double,
     val actualizado: Long,
     val imagen: String? = null
 )

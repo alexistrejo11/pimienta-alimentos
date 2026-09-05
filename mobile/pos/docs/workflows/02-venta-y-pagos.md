@@ -1,0 +1,147 @@
+# Venta y pagos
+
+## Objetivo
+
+Completar una venta sin depender de red, manteniendo evidencia contable, inventario, impresión y sincronización consistentes. La pantalla principal permanece fija; el panel derecho alterna entre carrito y cobro.
+
+## Happy path de venta en efectivo
+
+```mermaid
+sequenceDiagram
+    actor Cajero
+    participant UI as Venta
+    participant DB as Room
+    participant Print as Cola de impresión
+    participant Outbox as Outbox
+    participant Sync as Sync Worker
+    participant API as Backend
+
+    Cajero->>UI: Escanea o toca un producto
+    UI->>DB: Leer catálogo local y agregar/incrementar línea
+    DB-->>UI: Carrito actualizado con precio snapshot
+    Cajero->>UI: Toca Cobrar
+    UI-->>Cajero: Panel de efectivo y numpad
+    Cajero->>UI: Captura efectivo recibido
+    UI-->>Cajero: Muestra cambio
+    Cajero->>UI: Confirma cobro
+    UI->>DB: Transacción local de venta confirmada
+    DB->>Outbox: Crear SALE_CONFIRMED
+    DB->>Print: Crear PrintJob PENDING
+    DB-->>UI: Venta confirmada; regresar a carrito vacío
+    Print-->>UI: Estado de impresión si requiere atención
+    Outbox->>Sync: Activar envío cuando sea posible
+    Sync->>API: Enviar evento idempotente
+```
+
+## Transacción local de confirmación
+
+Antes de mostrar éxito al cajero, una única transacción Room crea o actualiza:
+
+1. venta con UUID y folio visible definitivo;
+2. líneas con nombre, categoría, cantidad y precio snapshot;
+3. descuento autorizado, si existe;
+4. componentes de pago;
+5. movimientos de inventario de productos controlados;
+6. auditorías y autorizaciones asociadas;
+7. evento `SALE_CONFIRMED` en Outbox;
+8. trabajo de impresión pendiente.
+
+Si la transacción local no termina, la venta no está confirmada y la interfaz conserva el carrito para corrección o reintento. Si termina, red e impresión nunca revierten el cobro.
+
+## Agregar artículos
+
+```mermaid
+flowchart TD
+    A[Lectura de código o toque en tarjeta] --> B{Producto encontrado y disponible?}
+    B -- Sí --> C[Agregar unidad / conservar precio de la línea]
+    B -- No disponible centralmente --> D{Manager autoriza override?}
+    D -- Sí --> C
+    D -- No --> E[Mostrar aviso; volver a Venta]
+    B -- Código desconocido --> F[Mostrar producto no encontrado]
+    F --> G[Volver a catálogo o iniciar Monto abierto]
+    B -- Etiqueta por peso válida --> H[Parsear producto + peso localmente]
+    H --> C
+    B -- Etiqueta por peso inválida --> I[Mostrar aviso; no modificar carrito]
+```
+
+### Reglas de interfaz
+
+- Cada toque agrega una unidad y da feedback visual/háptico.
+- Incrementar cantidad conserva el precio de la línea existente.
+- Un producto marcado no disponible después de agregarse puede cobrarse, pero no aumentar cantidad sin override.
+- Código desconocido no inicia automáticamente una venta de monto abierto: el cajero elige esa excepción de forma explícita para evitar convertir una lectura errónea en un cobro.
+- El lector se procesa únicamente en estado Venta; durante Cobro se ignoran o se muestran como lectura no aplicable, para no cambiar el carrito congelado.
+
+## Guardias de inventario
+
+```mermaid
+flowchart TD
+    A[Agregar producto controlado] --> B[Calcular saldo local resultante]
+    B --> C{Cruza límite negativo configurado?}
+    C -- No --> D[Agregar y marcar alerta si saldo <= 0]
+    C -- Sí --> E[Solicitar PIN Manager/Superadmin]
+    E --> F{Autorizado?}
+    F -- Sí --> G[Agregar con auditoría de sobregiro]
+    F -- No --> H[No agregar; volver a carrito]
+```
+
+## Pagos
+
+### Efectivo
+
+El panel de cobro usa numpad y denominaciones rápidas. El efectivo recibido debe ser igual o mayor al total; el cambio se calcula antes de confirmar. La confirmación registra monto recibido y cambio entregado para el efectivo esperado del turno.
+
+### Tarjeta externa
+
+```text
+Carrito congelado
+      ↓
+Cajera cobra el importe en terminal externa de Mercado Pago
+      ↓
+¿Terminal aprobó?
+      ├── No: cancelar intento → mismo carrito editable
+      └── Sí: cajera confirma tarjeta en POS → venta local confirmada
+```
+
+El POS no solicita ni valida datos de tarjeta, ni consulta Mercado Pago. Puede capturar una referencia opcional si la terminal la muestra sin añadir fricción.
+
+### Pago mixto reservado
+
+El tipo `MIXTO` permanece reservado para una posible ampliación, pero no se muestra ni puede confirmarse en el POS hasta validar el requisito con el cliente. El modelo conserva la capacidad futura de asociar varios componentes a una venta, sin definir todavía interacción ni reglas de operación.
+
+## Monto abierto
+
+El flujo completo está en [Monto abierto](../ux/02-monto-abierto.md). Se resume así:
+
+```mermaid
+flowchart TD
+    A[Tarjeta Monto abierto] --> B[Elegir categoría]
+    B --> C[Capturar importe positivo con numpad]
+    C --> D[Solicitar PIN Manager/Superadmin]
+    D --> E{Autorizado?}
+    E -- Sí --> F[Agregar línea generada al carrito]
+    E -- No o cancelar --> G[Carrito intacto]
+```
+
+La línea se llama `Producto abierto · {categoría}`, no modifica inventario y queda marcada para revisión posterior.
+
+## Descuento
+
+Un cajero solicita descuento sobre el total de la venta. La interfaz conserva el carrito y solicita PIN de Manager/Superadmin. Si se autoriza, muestra importe, motivo y nuevo total. Solo existe un descuento por venta MVP.
+
+## Retornos seguros
+
+- **Cancelar intento de pago:** vuelve al mismo carrito editable; no existe venta ni pago confirmados.
+- **PIN rechazado:** conserva la acción pendiente; no modifica datos.
+- **Impresora falla tras cobro:** vuelve a carrito nuevo con alerta pendiente; la venta está confirmada y el `PrintJob` falla o espera reintento.
+- **Red falla tras cobro:** vuelve a carrito nuevo con indicador de cola; la venta está confirmada y el Outbox queda pendiente.
+- **Error al guardar localmente:** conserva el mismo carrito; no existe venta confirmada.
+
+## Criterios de aceptación
+
+1. Una venta en efectivo completa se confirma con la red desconectada.
+2. Una venta confirmada genera folio, evento de sincronización y trabajo de impresión en la misma transacción local.
+3. Cancelar tarjeta declinada no pierde artículos del carrito.
+4. Una impresión fallida no permite confirmar la misma venta otra vez ni revierte dinero.
+5. Monto abierto requiere categoría, importe y autorización, sin teclado alfanumérico.
+6. Un scanner desconocido no modifica el carrito sin una acción explícita del cajero.

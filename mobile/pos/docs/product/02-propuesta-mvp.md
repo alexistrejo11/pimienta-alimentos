@@ -180,11 +180,11 @@ La validación por catálogo antiguo se registra con el turno y no interrumpe un
 
 Cuando el artículo no exista en el catálogo local, la caja podrá registrar una línea de monto abierto o producto genérico y continuar con el cobro. Esta línea debe quedar identificada como excepción para conciliación posterior.
 
-Para agregarla, el cajero captura un monto mayor a cero, selecciona una categoría de un catálogo predefinido y escribe una descripción o motivo de al menos cuatro caracteres. La categoría permite incluir la venta en reportes; la descripción aparece en el ticket y en el historial. Cada línea de monto abierto requiere la autorización inmediata por PIN de un manager o superadmin.
+Para agregarla, el cajero captura un monto mayor a cero con numpad táctil y selecciona una categoría de un catálogo predefinido. El POS genera la descripción visible a partir de esa categoría, por ejemplo `Producto abierto · Bebidas`; no se requiere teclado alfanumérico en caja. La categoría permite incluir la venta en reportes y la descripción generada aparece en el ticket y en el historial. Cada línea de monto abierto requiere la autorización inmediata por PIN de un manager o superadmin.
 
 Como mínimo, la excepción conserva:
 
-- descripción capturada por el cajero;
+- descripción generada por el sistema;
 - categoría seleccionada;
 - monto cobrado;
 - usuario responsable;
@@ -199,7 +199,7 @@ La excepción no está ligada a un producto maestro, no descuenta inventario aut
 
 ### Medios de pago del MVP
 
-El MVP admite efectivo, tarjeta mediante una terminal física externa de Mercado Pago y pagos mixtos de efectivo más tarjeta. Transferencias y vales quedan fuera de alcance inicial.
+El MVP definido admite efectivo y tarjeta mediante una terminal física externa de Mercado Pago. El tipo `MIXTO` queda reservado en el modelo de pagos, pero no se habilita ni se diseña su flujo hasta confirmarlo con el cliente. Transferencias y vales quedan fuera de alcance inicial.
 
 La terminal de Mercado Pago opera de forma independiente del POS. La cajera captura el monto en la terminal y, solo después de ver un cobro aprobado, confirma el pago con tarjeta en el POS. En esta fase no se integra una API ni SDK de Mercado Pago; por tanto, el POS registra el medio como `TARJETA_EXTERNA_MP`, pero no puede verificar automáticamente la aprobación con Mercado Pago.
 
@@ -213,11 +213,9 @@ Si la tarjeta es declinada, la terminal falla o el cliente cambia de decisión, 
 
 Durante un intento de pago, el carrito queda protegido contra una segunda confirmación accidental. Al cancelar el intento vuelve a estar editable.
 
-### Pagos mixtos
+### Pago mixto pendiente
 
-Un pago mixto se registra como dos o más componentes de pago asociados a la misma venta. La suma aplicada debe cubrir exactamente el total de la venta para poder confirmarla.
-
-El cambio solo corresponde a efectivo entregado por encima de la porción en efectivo que se aplicará a la venta. Una tarjeta no genera cambio en efectivo.
+Si el cliente solicita pago mixto posteriormente, una venta podrá contener dos o más componentes de pago. Su interfaz, validaciones y comportamiento contable se definirán entonces; el POS no debe exponer esa opción antes de la confirmación de alcance.
 
 ### Apertura y cierre de turno
 
@@ -295,7 +293,7 @@ En el MVP, solo puede cancelarse por completo una venta pagada exclusivamente en
 
 Al cancelar una venta en efectivo, el sistema conserva el ticket original como evidencia, registra quién autorizó y cuándo, revierte los movimientos de inventario de los artículos controlados y descuenta el efectivo devuelto del esperado en caja. No se permiten cancelaciones parciales en esta fase.
 
-Las ventas pagadas mediante tarjeta externa de Mercado Pago o con pago mixto no se pueden cancelar desde el POS MVP una vez confirmadas. La aplicación no conoce todavía el proceso de reembolso de la terminal externa y no debe simularlo ni compensarlo con efectivo. Cualquier incidencia de este tipo se resuelve por el procedimiento externo vigente hasta que se diseñe una integración o proceso formal de devoluciones.
+Las ventas pagadas mediante tarjeta externa de Mercado Pago no se pueden cancelar desde el POS MVP una vez confirmadas. La aplicación no conoce todavía el proceso de reembolso de la terminal externa y no debe simularlo ni compensarlo con efectivo. Cualquier incidencia de este tipo se resuelve por el procedimiento externo vigente hasta que se diseñe una integración o proceso formal de devoluciones.
 
 ## Tickets e impresión
 
@@ -338,7 +336,7 @@ Los reportes centrales deben indicar o considerar el retraso de sincronización 
 
 - No se garantiza inventario global exacto entre las dos tablets mientras ambas estén desconectadas. La diferencia se acepta temporalmente y se refleja en el saldo central —incluso negativo— cuando las ventas se sincronizan.
 - La aplicación no autoriza por sí misma pagos bancarios sin conexión. La integración con una terminal de pago depende de las capacidades del proveedor adquirente.
-- No hay devoluciones parciales ni cancelación postventa desde el POS para tarjeta externa o pagos mixtos.
+- No hay devoluciones parciales ni cancelación postventa desde el POS para tarjeta externa.
 - La impresión es un resultado operativo importante, pero una falla de impresión no invalida una venta ya confirmada; debe poder reintentarse.
 
 ## Criterios de éxito iniciales
