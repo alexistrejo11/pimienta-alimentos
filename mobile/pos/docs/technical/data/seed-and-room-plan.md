@@ -2,7 +2,7 @@
 
 ## Fuente de verdad
 
-`docs/deprecated_product_data.json` conserva la data real de productos. No se
+`docs/technical/data/deprecated_product_data.json` conserva la data real de productos. No se
 usa directamente como modelo de Room porque su esquema está deprecated.
 
 La conversión reproducible está en:

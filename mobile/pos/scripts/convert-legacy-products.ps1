@@ -1,6 +1,6 @@
 # Convert the real deprecated catalog into the local POS bootstrap contract.
 param(
-    [string]$Source = "docs\deprecated_product_data.json",
+    [string]$Source = "docs\technical\data\deprecated_product_data.json",
     [string]$Destination = "app\src\debug\assets\pos-bootstrap.json"
 )
 
@@ -57,7 +57,7 @@ $bootstrap = [ordered]@{
     products = $products
     openAmountCategories = @("Apoyo escolar", "Otro")
     notes = @(
-        "Catalog converted from docs/deprecated_product_data.json.",
+        "Catalog converted from docs/technical/data/deprecated_product_data.json.",
         "CAF- products are NOT_CONTROLLED until prepared-food inventory rules are defined.",
         "Duplicate legacy barcodes receive a unique POS suffix and retain legacyBarcode."
     )

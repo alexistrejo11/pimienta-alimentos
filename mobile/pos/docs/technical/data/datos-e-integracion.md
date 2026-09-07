@@ -49,7 +49,7 @@ Antes de escribir cliente HTTP, se revisan el backend y base de datos existentes
 6. ¿Hay movimientos de inventario históricos o solo un saldo mutable?
 7. ¿Cuál ambiente local/desarrollo permite probar sin tocar datos productivos?
 
-El resultado debe registrarse como un documento de mapeo, por ejemplo `docs/implementation/backend-pos-mapping.md`, antes de fijar DTOs, rutas o migraciones del backend.
+El resultado debe registrarse como un documento de mapeo, por ejemplo `docs/technical/backend/backend-pos-mapping.md`, antes de fijar DTOs, rutas o migraciones del backend.
 
 ## Bootstrap y migración local
 

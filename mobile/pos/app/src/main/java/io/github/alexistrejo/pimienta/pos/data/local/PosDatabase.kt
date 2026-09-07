@@ -10,13 +10,34 @@ import io.github.alexistrejo.pimienta.pos.data.local.dao.SiteDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.BootstrapEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SiteEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.PaymentEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
+import io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao
+import io.github.alexistrejo.pimienta.pos.data.local.dao.UserDao
 
 // Defines the first local schema for catalog bootstrap data.
-@Database(entities = [SiteEntity::class, ProductEntity::class, BootstrapEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [
+        SiteEntity::class, ProductEntity::class, BootstrapEntity::class, LocalUserEntity::class,
+        DeviceEntity::class, ShiftEntity::class, SaleEntity::class, SaleLineEntity::class,
+        PaymentEntity::class, InventoryMovementEntity::class, OutboxEventEntity::class, PrintJobEntity::class
+    ],
+    version = 2,
+    exportSchema = false
+)
 abstract class PosDatabase : RoomDatabase() {
     abstract fun siteDao(): SiteDao
     abstract fun productDao(): ProductDao
     abstract fun bootstrapDao(): BootstrapDao
+    abstract fun userDao(): UserDao
+    abstract fun operationsDao(): OperationsDao
 
     companion object {
         // Builds the SQLite database owned by Room.
@@ -24,6 +45,6 @@ abstract class PosDatabase : RoomDatabase() {
             context,
             PosDatabase::class.java,
             "pimienta-pos.db"
-        ).build()
+        ).addMigrations(Migrations.V1_TO_V2).build()
     }
 }

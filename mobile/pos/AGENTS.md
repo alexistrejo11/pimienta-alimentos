@@ -12,4 +12,6 @@ When writing or substantially editing Kotlin, add **short English comments** on 
 
 Skip noise: no essay comments, no restating a one-line function name. Prefer a sentence above a class or a non-obvious block.
 
-There are no agent skills for this app yet.
+## Skills
+
+- [pimienta-pos-ui](.agents/skills/pimienta-pos-ui/SKILL.md) — brand tokens, fonts, dark surfaces, operational (non-card) layout. Tokens must stay aligned with [web pimienta-frontend-ui](../../web/.agents/skills/pimienta-frontend-ui/SKILL.md).

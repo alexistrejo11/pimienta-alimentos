@@ -18,10 +18,10 @@ stateDiagram-v2
     ValidarPIN --> VentaLista: usuario válido, turno activo
     SinTurno --> AperturaTurno
     AperturaTurno --> VentaLista: fondo inicial confirmado localmente
-    VentaLista --> BloqueoSesion: inactividad o cambio explícito
-    BloqueoSesion --> SeleccionarUsuario
+    VentaLista --> CajaBloqueada: cajero pulsa Bloquear caja
+    CajaBloqueada --> VentaLista: PIN del cajero responsable válido
     VentaLista --> CierreTurno
-    CierreTurno --> SinTurno: Corte Z aprobado
+    CierreTurno --> SeleccionarUsuario: Corte Z aprobado
 ```
 
 ## Datos mínimos para vender
@@ -89,7 +89,31 @@ flowchart TD
 
 La apertura se confirma localmente y no espera backend. Si el catálogo tiene más de 72 horas sin actualización, la aprobación de Manager queda vinculada al turno nuevo.
 
-## Sesión, acceso a Admin y retorno
+## Sesión, bloqueo de caja y acceso a Admin
+
+### Bloquear caja
+
+**Bloquear caja** es una pausa de seguridad, no un cierre de sesión ni un cierre de turno. Está disponible en la barra de estado mientras existe un turno abierto.
+
+```text
+Venta con cajero activo
+      ↓ [Bloquear caja]
+Pantalla bloqueada
+      ↓ PIN del mismo cajero responsable
+Venta con el mismo turno activo
+```
+
+Al bloquear:
+
+- el turno permanece abierto y asociado al mismo cajero;
+- el carrito no confirmado se conserva;
+- si se estaba mostrando el panel de cobro, su borrador se cancela y se regresa al carrito; no existe pago registrado;
+- se ocultan catálogo, importes y acciones hasta validar el PIN;
+- no se permite elegir otro perfil para continuar ese turno.
+
+La única transición que libera la tablet para otro cajero es **Corte Z aprobado**. Por lo tanto, bloquear caja no sustituye el cierre ni permite cambiar la responsabilidad del turno.
+
+### Acceso a Admin y retorno
 
 El acceso al panel local de Manager es una elevación temporal de permiso. El PIN autorizador no reemplaza la identidad del cajero del turno.
 
@@ -111,3 +135,5 @@ Misma sesión de cajero y mismo carrito, si existía
 4. Un PIN inválido no permite avanzar y queda sujeto a límite de intentos.
 5. Un Manager que entra al panel no se convierte en cajero de ventas previas ni futuras.
 6. Si falla sincronización de apertura, el turno continúa abierto localmente y el evento queda en outbox.
+7. Bloquear caja no cierra el turno ni elimina el carrito no confirmado.
+8. Solo el PIN del cajero responsable desbloquea una caja con turno abierto.

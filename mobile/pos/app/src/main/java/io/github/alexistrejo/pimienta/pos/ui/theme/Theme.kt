@@ -1,58 +1,116 @@
 package io.github.alexistrejo.pimienta.pos.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val LightColors = lightColorScheme(
+    primary = Primary,
+    onPrimary = OnPrimary,
+    primaryContainer = PrimaryContainer,
+    onPrimaryContainer = OnPrimaryFixed,
+    secondary = Accent,
+    onSecondary = OnAccent,
+    secondaryContainer = AccentContainer,
+    onSecondaryContainer = OnAccent,
+    tertiary = LightSecondary,
+    onTertiary = LightOnSurface,
+    error = Error,
+    onError = OnPrimary,
+    background = LightBackground,
+    onBackground = LightOnSurface,
+    surface = LightSurface,
+    onSurface = LightOnSurface,
+    surfaceVariant = LightSurfaceContainer,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = LightOutline,
+    outlineVariant = LightOutline,
+    surfaceContainerLowest = LightSurfaceContainerLowest,
+    surfaceContainerLow = LightSurfaceContainerLow,
+    surfaceContainer = LightSurfaceContainer,
+    surfaceContainerHigh = LightSurfaceContainerHigh,
+    surfaceContainerHighest = LightSurfaceContainerHighest,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val DarkColors = darkColorScheme(
+    primary = Primary,
+    onPrimary = OnPrimary,
+    primaryContainer = PrimaryContainer,
+    onPrimaryContainer = OnPrimaryFixed,
+    secondary = Accent,
+    onSecondary = OnAccent,
+    secondaryContainer = AccentContainer,
+    onSecondaryContainer = OnAccent,
+    tertiary = DarkSecondary,
+    onTertiary = DarkOnSurface,
+    error = Error,
+    onError = OnPrimary,
+    background = DarkBackground,
+    onBackground = DarkOnSurface,
+    surface = DarkSurface,
+    onSurface = DarkOnSurface,
+    surfaceVariant = DarkSurfaceContainer,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = DarkOutline,
+    outlineVariant = DarkOutline,
+    surfaceContainerLowest = DarkBackground,
+    surfaceContainerLow = DarkSurface,
+    surfaceContainer = DarkSurfaceContainer,
+    surfaceContainerHigh = DarkSurfaceContainerHigh,
+    surfaceContainerHighest = DarkSurfaceContainerHighest,
 )
 
-@Composable
-fun PosTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+// Corner radii aligned with web rounded-lg / rounded-xl rather than Material card pills.
+private val PosShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(24.dp),
+)
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+// Compose LocalView is often a wrapper; walk to the host activity to paint system bars.
+private fun Context.posActivity(): ComponentActivity {
+    var current: Context = this
+    while (current is ContextWrapper) {
+        if (current is ComponentActivity) return current
+        current = current.baseContext
     }
+    error("PosTheme must run inside a ComponentActivity")
+}
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+// Applies Angular tokens, paints the window (fixes white dark-mode scaffold), and fills the root surface.
+@Composable
+fun PosTheme(darkTheme: Boolean, content: @Composable () -> Unit) {
+    val colorScheme = if (darkTheme) DarkColors else LightColors
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val activity = view.context.posActivity()
+            val scrim = colorScheme.background.toArgb()
+            activity.enableEdgeToEdge(
+                statusBarStyle = if (darkTheme) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim),
+                navigationBarStyle = if (darkTheme) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim),
+            )
+            activity.window.decorView.setBackgroundColor(scrim)
+        }
+    }
+    MaterialTheme(colorScheme = colorScheme, typography = Typography, shapes = PosShapes) {
+        Surface(Modifier.fillMaxSize(), color = colorScheme.background, contentColor = colorScheme.onBackground, content = content)
+    }
 }

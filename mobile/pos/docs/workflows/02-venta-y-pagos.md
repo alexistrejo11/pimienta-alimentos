@@ -70,7 +70,8 @@ flowchart TD
 - Incrementar cantidad conserva el precio de la línea existente.
 - Un producto marcado no disponible después de agregarse puede cobrarse, pero no aumentar cantidad sin override.
 - Código desconocido no inicia automáticamente una venta de monto abierto: el cajero elige esa excepción de forma explícita para evitar convertir una lectura errónea en un cobro.
-- El lector se procesa únicamente en estado Venta; durante Cobro se ignoran o se muestran como lectura no aplicable, para no cambiar el carrito congelado.
+- Durante un borrador de cobro no confirmado, una lectura válida o toque de producto cancela ese borrador, agrega el artículo y devuelve el panel derecho al carrito. La interfaz avisa que el total fue actualizado; no hay venta ni pago persistido.
+- Solo durante la confirmación atómica, después de pulsar **Confirmar cobro e imprimir**, se bloquean lector, catálogo y cambios de carrito hasta recibir el resultado local.
 
 ## Guardias de inventario
 
@@ -91,19 +92,21 @@ flowchart TD
 
 El panel de cobro usa numpad y denominaciones rápidas. El efectivo recibido debe ser igual o mayor al total; el cambio se calcula antes de confirmar. La confirmación registra monto recibido y cambio entregado para el efectivo esperado del turno.
 
+Si falta un artículo antes de confirmar, el cajero puede tocarlo o escanearlo directamente desde el catálogo visible. El POS vuelve al carrito, conserva el método e importe recibido solo como borrador de interfaz y recalcula el total; nada se registra hasta la confirmación final.
+
 ### Tarjeta externa
 
 ```text
-Carrito congelado
+Carrito visible; cobro aún no confirmado
       ↓
 Cajera cobra el importe en terminal externa de Mercado Pago
       ↓
 ¿Terminal aprobó?
-      ├── No: cancelar intento → mismo carrito editable
-      └── Sí: cajera confirma tarjeta en POS → venta local confirmada
+      ├── No: cancelar intento o agregar faltante → mismo carrito editable
+      └── Sí: cajera confirma inmediatamente en POS → venta local confirmada
 ```
 
-El POS no solicita ni valida datos de tarjeta, ni consulta Mercado Pago. Puede capturar una referencia opcional si la terminal la muestra sin añadir fricción.
+El POS no solicita ni valida datos de tarjeta, ni consulta Mercado Pago. Puede capturar una referencia opcional si la terminal la muestra sin añadir fricción. Como el POS no conoce el estado real de la terminal, una vez que esta aprueba el cargo el cajero no debe volver a agregar artículos: confirma el ticket de inmediato.
 
 ### Pago mixto reservado
 
@@ -145,3 +148,5 @@ Un cajero solicita descuento sobre el total de la venta. La interfaz conserva el
 4. Una impresión fallida no permite confirmar la misma venta otra vez ni revierte dinero.
 5. Monto abierto requiere categoría, importe y autorización, sin teclado alfanumérico.
 6. Un scanner desconocido no modifica el carrito sin una acción explícita del cajero.
+7. Un producto válido leído o tocado durante un borrador de cobro vuelve automáticamente al carrito, lo agrega y recalcula el total sin crear un pago.
+8. Tras iniciar la confirmación atómica, el POS no acepta lecturas ni cambios hasta concluir el registro local.

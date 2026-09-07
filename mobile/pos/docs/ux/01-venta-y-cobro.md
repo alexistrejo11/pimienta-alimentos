@@ -4,13 +4,19 @@
 
 Permitir al cajero completar una venta habitual desde una pantalla fija en orientación horizontal, sin navegar entre pantallas ni esperar red. El flujo feliz es: agregar artículos, elegir/capturar pago y confirmar cobro.
 
+## Idioma visible
+
+Toda etiqueta, mensaje, estado, acción y error mostrado al personal en la tablet se redacta en **español de México**. Los nombres de producto, categoría o marca recibidos desde catálogo se conservan tal como fueron capturados en el dato maestro. Los identificadores técnicos, nombres de roles internos y estados de API no se exponen como texto de interfaz.
+
 ## Diseño estructural
 
 La pantalla usa un layout dividido fijo en tablet de 10–12 pulgadas, aproximadamente 60 % catálogo y 40 % carrito/cobro.
 
+En orientación vertical no se comprime esta división hasta volverla ilegible: catálogo y carrito se alternan mediante dos controles visibles, mientras que el cobro ocupa el área completa. Esta adaptación conserva el mismo carrito y no crea una segunda venta.
+
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Estado: sincronización · tablet · turno · cajero · impresora                         [ Admin ] │
+│ Estado: sincronización · tablet · turno · cajero · impresora       [ Bloquear caja ] [ Admin ] │
 ├─────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ Categorías: [Todos] [Desayunos] [Bebidas] [Snacks]                   [Buscar explícitamente]  │
 ├─────────────────────────────────────────────┬───────────────────────────────────────────────────┤
@@ -30,9 +36,26 @@ El identificador de folio visible se genera al confirmar la venta. Antes de hace
 
 ### Barra de estado
 
-Siempre visible. Expone estado de sincronización, cantidad de eventos pendientes, identidad de tablet, turno activo, cajero, estado de impresora y acceso a Admin.
+Siempre visible. Expone estado de sincronización, cantidad de eventos pendientes, identidad de tablet, turno activo, cajero, estado de impresora, **Bloquear caja** y acceso a Admin.
 
 El acceso a Admin solicita PIN de Manager/Superadmin antes de abrir el panel local. No debe interrumpir ni perder un carrito activo.
+
+**Bloquear caja** muestra una pantalla de privacidad y solicita el PIN del cajero responsable para volver. No cierra el turno, no muestra selección de perfil y no equivale a Corte Z. Si el cajero estaba en cobro, el panel vuelve a carrito y descarta solamente el borrador de pago no confirmado.
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                         Pimienta POS                          │
+│                                                              │
+│                         Caja bloqueada                        │
+│            Turno activo · Cajero responsable: Marco          │
+│                                                              │
+│                         PIN [ • • • • ]                      │
+│                                                              │
+│                    [ Desbloquear caja ]                       │
+│                                                              │
+│ El turno y el carrito continúan resguardados en la tablet.    │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Categorías y búsqueda
 
@@ -60,7 +83,7 @@ Limpiar carrito solo afecta una venta no confirmada. No equivale a cancelación 
 
 ## Estado de cobro
 
-Al tocar **Cobrar**, el panel derecho reemplaza temporalmente el carrito. El catálogo izquierdo no desaparece, pero no debe aceptar nuevas lecturas o adiciones mientras existe un intento de pago activo.
+Al tocar **Cobrar**, el panel derecho reemplaza temporalmente el carrito. El catálogo izquierdo permanece visible: no es una nueva pantalla ni un modal de pantalla completa.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
@@ -91,6 +114,21 @@ Reglas del estado:
 - cancelar intento devuelve al carrito intacto;
 - confirmar crea la venta localmente y encola impresión/sincronización;
 - una falla de impresión muestra un aviso y deja la reimpresión pendiente, sin revertir el cobro.
+
+### Producto olvidado durante cobro
+
+Mientras el cobro sea un borrador —es decir, antes de que el cajero pulse **Confirmar cobro e imprimir**— el catálogo y el escáner siguen pudiendo recibir una selección de producto. Si ocurre:
+
+1. se cancela el borrador de cobro sin crear pago, venta ni movimiento de inventario;
+2. se agrega el artículo escaneado o tocado al carrito con sus reglas normales;
+3. el panel derecho vuelve automáticamente a **Carrito**;
+4. se muestra un aviso breve: `Se agregó {producto}. Total actualizado.`
+
+No se abre una confirmación ni se obliga al cajero a pulsar primero **Volver al carrito**. El método de pago elegido y, para efectivo, el importe capturado pueden conservarse únicamente como borrador de interfaz para cuando el cajero vuelva a cobrar; no son un pago registrado ni afectan la caja.
+
+Al pulsar **Confirmar cobro e imprimir**, la interfaz entra en estado de confirmación atómica y bloquea nuevas lecturas, toques de producto y modificaciones hasta obtener el resultado local. Esto evita alterar una venta que ya está siendo registrada.
+
+Con tarjeta externa, el POS no puede saber si la terminal física ya aprobó un cargo. La regla operativa es que, una vez aprobado en Mercado Pago, el cajero confirme inmediatamente la venta en el POS y no agregue más artículos. Si se detecta un producto faltante antes de esa aprobación, se usa el retorno automático al carrito.
 
 ## Teclado y escáner
 

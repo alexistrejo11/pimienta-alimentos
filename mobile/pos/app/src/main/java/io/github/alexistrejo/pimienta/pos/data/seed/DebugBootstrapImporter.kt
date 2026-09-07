@@ -5,6 +5,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.entity.BootstrapEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SiteEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
 import java.util.concurrent.Executors
 import java.io.IOException
 import org.json.JSONObject
@@ -20,7 +22,7 @@ class DebugBootstrapImporter(private val context: Context, private val database:
                 return@execute
             }
             val snapshotId = root.getString("snapshotId")
-            if (database.bootstrapDao().count(snapshotId) > 0) return@execute
+            if (database.bootstrapDao().count(snapshotId) > 0 && database.userDao().count() > 0 && database.operationsDao().device() != null) return@execute
 
             val siteJson = root.getJSONObject("site")
             val site = SiteEntity(
@@ -32,6 +34,14 @@ class DebugBootstrapImporter(private val context: Context, private val database:
             val products = root.getJSONArray("products").let { array ->
                 (0 until array.length()).map { index -> array.getJSONObject(index).toProductEntity() }
             }
+            val users = root.getJSONArray("users").let { array ->
+                (0 until array.length()).map { index -> array.getJSONObject(index).toUserEntity() }
+            }
+            val deviceJson = root.getJSONObject("device")
+            val device = DeviceEntity(
+                id = deviceJson.getString("id"), name = deviceJson.getString("name"),
+                visibleCode = "T1", nextEventSequence = 1
+            )
 
             // Site, catalog, and applied-snapshot marker commit atomically.
             database.runInTransaction {
@@ -39,6 +49,8 @@ class DebugBootstrapImporter(private val context: Context, private val database:
                 database.productDao().clear()
                 database.siteDao().insert(site)
                 database.productDao().insertAll(products)
+                database.userDao().insertAll(users)
+                database.operationsDao().insertDevice(device)
                 database.bootstrapDao().insert(BootstrapEntity(snapshotId, root.getInt("schemaVersion"), System.currentTimeMillis()))
             }
         }
@@ -64,4 +76,10 @@ class DebugBootstrapImporter(private val context: Context, private val database:
     )
 
     private fun JSONObject.optNullableString(key: String): String? = if (has(key) && !isNull(key)) optString(key) else null
+
+    // Converts a debug-only user snapshot that contains a PIN verifier rather than a PIN.
+    private fun JSONObject.toUserEntity(): LocalUserEntity = LocalUserEntity(
+        id = getString("id"), displayName = getString("displayName"), role = getString("role"),
+        pinHash = getString("pinHash"), active = getBoolean("active")
+    )
 }

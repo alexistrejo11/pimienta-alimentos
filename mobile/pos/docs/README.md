@@ -39,11 +39,8 @@ Flujos end-to-end que conectan pantallas, dominio, datos, periféricos y sincron
 
 Estructura de código, datos de desarrollo, fases y pruebas antes de escribir funcionalidades:
 
-- [Plan técnico](implementation/README.md)
-- [Blueprint técnico](implementation/01-blueprint-tecnico.md)
-- [Datos reales e integración](implementation/02-datos-e-integracion.md)
-- [Fases y estrategia de pruebas](implementation/03-fases-y-pruebas.md)
-- [Entorno de desarrollo Android](implementation/01-entorno-desarrollo.md)
-- [Contrato local de bootstrap](implementation/local-pos-bootstrap-contract.md)
+- [Tracking de implementación](implementation/README.md)
+- [Estado actual](implementation/00-estado-actual.md)
+- [Documentación técnica](technical/README.md)
 
 La documentación de producto define el comportamiento esperado. La documentación de arquitectura propone cómo soportarlo. Si ambas entran en conflicto, primero se aclara la regla de negocio y después se actualiza la arquitectura.

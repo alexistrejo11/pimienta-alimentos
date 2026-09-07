@@ -1,0 +1,24 @@
+package io.github.alexistrejo.pimienta.pos.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+
+// Stores a locally verifiable POS user snapshot, never a plaintext PIN.
+@Entity(tableName = "local_user") data class LocalUserEntity(@PrimaryKey val id: String, val displayName: String, val role: String, val pinHash: String, val active: Boolean)
+// Stores the stable debug device identity and its local event sequence.
+@Entity(tableName = "device") data class DeviceEntity(@PrimaryKey val id: String, val name: String, val visibleCode: String, val nextEventSequence: Long)
+// Stores the one active cash shift permitted for a device.
+@Entity(tableName = "shift", indices = [Index(value = ["deviceId", "status"], unique = true)]) data class ShiftEntity(@PrimaryKey val id: String, val deviceId: String, val siteId: String, val cashierId: String, val openingCashCentavos: Long, val openedAtEpochMillis: Long, val status: String, val nextFolioNumber: Long)
+// Stores a confirmed sale as an immutable local fact.
+@Entity(tableName = "sale", indices = [Index(value = ["folio"], unique = true)]) data class SaleEntity(@PrimaryKey val id: String, val folio: String, val shiftId: String, val cashierId: String, val totalCentavos: Long, val paymentMethod: String, val tenderedCentavos: Long, val changeCentavos: Long, val confirmedAtEpochMillis: Long)
+// Stores the catalog information exactly as it was sold.
+@Entity(tableName = "sale_line") data class SaleLineEntity(@PrimaryKey val id: String, val saleId: String, val productId: String, val productName: String, val categoryName: String, val quantity: Int, val unitPriceCentavos: Long, val subtotalCentavos: Long, val stockPolicy: String)
+// Stores the selected payment type and its applied amount.
+@Entity(tableName = "payment") data class PaymentEntity(@PrimaryKey val id: String, val saleId: String, val method: String, val amountCentavos: Long)
+// Records only controlled-stock deductions created by a sale.
+@Entity(tableName = "inventory_movement") data class InventoryMovementEntity(@PrimaryKey val id: String, val saleId: String, val productId: String, val quantityDelta: Int, val createdAtEpochMillis: Long)
+// Keeps a durable event until a future sync implementation delivers it.
+@Entity(tableName = "outbox_event", indices = [Index(value = ["sequence"], unique = true)]) data class OutboxEventEntity(@PrimaryKey val id: String, val sequence: Long, val type: String, val aggregateId: String, val status: String, val createdAtEpochMillis: Long)
+// Keeps a durable print request even though no printer adapter exists yet.
+@Entity(tableName = "print_job") data class PrintJobEntity(@PrimaryKey val id: String, val saleId: String, val status: String, val duplicate: Boolean, val createdAtEpochMillis: Long)

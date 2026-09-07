@@ -15,7 +15,22 @@
     "name": "Tablet de desarrollo",
     "status": "AUTHORIZED"
   },
-  "users": [],
+  "users": [
+    {
+      "id": "user-debug-cashier",
+      "displayName": "Cajera demostración",
+      "role": "CASHIER",
+      "pinHash": "3383b6e47c9df8a2ff5f39fc976ddf7ae2591fa84434bb58594eef7a45981354",
+      "active": true
+    },
+    {
+      "id": "user-debug-manager",
+      "displayName": "Manager demostración",
+      "role": "MANAGER",
+      "pinHash": "3383b6e47c9df8a2ff5f39fc976ddf7ae2591fa84434bb58594eef7a45981354",
+      "active": true
+    }
+  ],
   "products": [
     {
       "id": "product-0001",
