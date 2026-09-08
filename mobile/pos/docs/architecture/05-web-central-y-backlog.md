@@ -60,16 +60,16 @@ El POS no administra credenciales ni permisos maestros. Solo valida localmente e
 Solo Superadmin resuelve registros `REQUIRES_REVIEW` provenientes de sincronización. Las acciones son:
 
 1. **Aceptar y clasificar:** conservar ingreso y ticket originales, agregando una categoría/etiqueta contable y nota obligatoria.
-2. **Vincular a producto o movimiento correcto:** conservar el ticket y el importe originales, pero asociar la incidencia a un producto maestro para reflejar el impacto de inventario y reportes.
+2. **Ajustar inventario por separado, cuando corresponda:** realizar un conteo físico o ajuste maestro con su propio motivo y bitácora; no se altera ni vincula retrospectivamente la venta.
 
 Cada resolución guarda responsable, fecha, acción y nota. Nunca elimina ni modifica retrospectivamente el hecho enviado por la caja.
 
 ### Reportes y auditoría consolidada
 
 - ventas por producto, categoría, sede, periodo y estado de sincronización;
-- mermas, reposiciones, cancelaciones, descuentos y motivos;
+- mermas, reposiciones, sangrías de resguardo, cancelaciones, descuentos y motivos;
 - historial de turnos, Cortes Z y diferencias de caja por tablet, cajero o sede;
-- incidentes pendientes, ventas con monto abierto y resoluciones realizadas;
+- incidentes pendientes, ventas con monto abierto, barcodes pendientes de catálogo y resoluciones realizadas;
 - métricas operativas como productos más vendidos y rotación, basadas en datos sincronizados.
 
 Los reportes centrales deben mostrar que los eventos pendientes de una tablet aún no forman parte del consolidado, en lugar de inferir que no existen ventas.
@@ -83,7 +83,7 @@ Estas ideas pueden ser valiosas para el negocio, pero no están aprobadas ni deb
 - transferencias de inventario entre sedes;
 - recetas, insumos, producción, combos, modificadores, tamaños y extras;
 - promociones, cupones, reglas de descuento por producto y listas especiales;
-- retiros, gastos de caja e ingresos adicionales durante el turno;
+- gastos de caja, pagos a proveedores, ingresos adicionales y otros retiros durante el turno distintos de la sangría de resguardo aprobada;
 - integración de Mercado Pago por API/SDK, devoluciones electrónicas y conciliación automática de terminal;
 - facturación electrónica;
 - exportaciones CSV, analítica financiera avanzada, margen/ganancia y dashboards personalizados;
@@ -97,4 +97,4 @@ La Device API existe únicamente para enrolar, descargar la proyección local y 
 
 ## Fuera del panel local de Manager
 
-El panel de Manager conserva únicamente Corte Z, inventario operativo, historial de la tablet y diagnóstico de periféricos. Su alcance y wireframe se mantienen en [Panel local de Manager](../ux/03-panel-manager.md).
+El panel de Manager conserva únicamente Corte Z, consulta de sangrías, inventario operativo, historial de la tablet y diagnóstico de periféricos. Su alcance y wireframe se mantienen en [Panel local de Manager](../ux/03-panel-manager.md).

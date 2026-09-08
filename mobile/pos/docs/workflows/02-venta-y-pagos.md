@@ -57,8 +57,9 @@ flowchart TD
     B -- No disponible centralmente --> D{Manager autoriza override?}
     D -- Sí --> C
     D -- No --> E[Mostrar aviso; volver a Venta]
-    B -- Código desconocido --> F[Mostrar producto no encontrado]
-    F --> G[Volver a catálogo o iniciar Monto abierto]
+    B -- Código desconocido --> F[Mostrar Producto pendiente de catálogo]
+    F --> G[Capturar importe y confirmar]
+    G --> J[Agregar línea pendiente sin inventario]
     B -- Etiqueta por peso válida --> H[Parsear producto + peso localmente]
     H --> C
     B -- Etiqueta por peso inválida --> I[Mostrar aviso; no modificar carrito]
@@ -69,7 +70,8 @@ flowchart TD
 - Cada toque agrega una unidad y da feedback visual/háptico.
 - Incrementar cantidad conserva el precio de la línea existente.
 - Un producto marcado no disponible después de agregarse puede cobrarse, pero no aumentar cantidad sin override.
-- Código desconocido no inicia automáticamente una venta de monto abierto: el cajero elige esa excepción de forma explícita para evitar convertir una lectura errónea en un cobro.
+- Código desconocido no inicia monto abierto manual. Abre la superficie de producto pendiente con el barcode capturado; el cajero debe capturar importe y confirmar explícitamente antes de agregar la línea.
+- La línea pendiente no tiene `productId`, no descuenta inventario y se reporta como `Pendiente de catálogo`. El barcode es su evidencia y se conserva en el ticket y la venta.
 - Durante un borrador de cobro no confirmado, una lectura válida o toque de producto cancela ese borrador, agrega el artículo y devuelve el panel derecho al carrito. La interfaz avisa que el total fue actualizado; no hay venta ni pago persistido.
 - Solo durante la confirmación atómica, después de pulsar **Confirmar cobro e imprimir**, se bloquean lector, catálogo y cambios de carrito hasta recibir el resultado local.
 
@@ -85,6 +87,21 @@ flowchart TD
     F -- Sí --> G[Agregar con auditoría de sobregiro]
     F -- No --> H[No agregar; volver a carrito]
 ```
+
+## Producto pendiente de catálogo
+
+El flujo completo está en [Producto pendiente de catálogo](../ux/04-producto-pendiente-catalogo.md). Se resume así:
+
+```mermaid
+flowchart TD
+    A[Escaneo sin coincidencia local] --> B[Mostrar barcode capturado]
+    B --> C[Capturar importe positivo con numpad]
+    C --> D{¿Cajero confirma?}
+    D -- Sí --> E[Agregar línea PENDING_CATALOG al carrito]
+    D -- No --> F[Carrito intacto]
+```
+
+No requiere PIN de Manager, categoría manual ni texto libre. Superadmin crea posteriormente el producto maestro en la Web Central; las líneas ya cobradas permanecen pendientes y no se vinculan ni afectan inventario retrospectivamente.
 
 ## Pagos
 
@@ -130,7 +147,11 @@ La línea se llama `Producto abierto · {categoría}`, no modifica inventario y 
 
 ## Descuento
 
-Un cajero solicita descuento sobre el total de la venta. La interfaz conserva el carrito y solicita PIN de Manager/Superadmin. Si se autoriza, muestra importe, motivo y nuevo total. Solo existe un descuento por venta MVP.
+Un cajero solicita un descuento sobre el total de la venta antes de confirmarla. La interfaz conserva el carrito y abre una superficie temporal de autorización: importe fijo positivo en pesos, motivo obligatorio y PIN de Manager/Superadmin. Si se autoriza, muestra importe, motivo y nuevo total. Solo existe un descuento por venta MVP; no se aceptan porcentajes ni descuentos por línea.
+
+Si el importe autorizado cubre el total, la operación se clasifica como `CORTESIA`: no recibe efectivo ni tarjeta, se confirma como venta de cortesía y conserva sus movimientos de inventario. Si es parcial, el total neto restante sigue el flujo normal de efectivo o tarjeta externa.
+
+Después de **Confirmar cobro e imprimir**, ni el precio capturado ni el descuento pueden modificarse. Una corrección posterior no es un descuento adicional: solo puede ser la cancelación total autorizada cuando la política de postventa la permita.
 
 ## Retornos seguros
 
@@ -147,6 +168,8 @@ Un cajero solicita descuento sobre el total de la venta. La interfaz conserva el
 3. Cancelar tarjeta declinada no pierde artículos del carrito.
 4. Una impresión fallida no permite confirmar la misma venta otra vez ni revierte dinero.
 5. Monto abierto requiere categoría, importe y autorización, sin teclado alfanumérico.
-6. Un scanner desconocido no modifica el carrito sin una acción explícita del cajero.
+6. Un scanner desconocido solo agrega una línea pendiente después de que el cajero capture importe y confirme explícitamente.
 7. Un producto válido leído o tocado durante un borrador de cobro vuelve automáticamente al carrito, lo agrega y recalcula el total sin crear un pago.
 8. Tras iniciar la confirmación atómica, el POS no acepta lecturas ni cambios hasta concluir el registro local.
+9. Crear posteriormente un producto maestro con un barcode pendiente afecta únicamente ventas futuras; las líneas históricas no reciben producto ni inventario retrospectivo.
+10. Un descuento requiere importe fijo en pesos, motivo y PIN; una venta de cortesía no registra efectivo ni tarjeta, pero sí conserva inventario y auditoría.

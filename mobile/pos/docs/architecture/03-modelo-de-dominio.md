@@ -70,7 +70,13 @@ Cada conteo ciego enviado por el cajero. Conserva desglose, total, fecha, actor 
 
 ### `ShiftClose`
 
-Snapshot oficial del Corte Z: pagos por método, efectivo esperado y contado, diferencia, mermas, cancelaciones y descuentos. Existe uno aprobado por turno.
+Snapshot oficial del Corte Z: pagos por método, efectivo esperado y contado, diferencia, mermas, cancelaciones, descuentos y total/cantidad de sangrías. Existe uno aprobado por turno. El snapshot conserva los totales usados para el cierre y referencias a los registros de sangría del turno.
+
+### `CashWithdrawal` (sangría)
+
+Hecho inmutable de salida física de efectivo para resguardo durante un turno abierto. En el MVP su único tipo/motivo permitido es `SAFEKEEPING` / `RESGUARDO_EFECTIVO`; no modela gastos, proveedores ni ingresos de caja.
+
+Conserva UUID técnico, folio visible consecutivo por tablet y turno, sede, dispositivo, turno, importe positivo, motivo, fecha/hora, cajero titular del turno y Manager/Superadmin que lo autorizó. Al confirmarse crea también `AuditEntry`, `OutboxEvent` y `PrintJob` en la misma transacción local. El saldo teórico de efectivo se deriva de las ventas y estas sangrías; no existe un saldo editable de cajón.
 
 ## Venta
 
@@ -93,7 +99,8 @@ Snapshot de lo vendido:
 
 - producto opcional;
 - nombre y categoría capturados, más descripción snapshot o generada;
-- tipo: catálogo, peso o monto abierto;
+- tipo: catálogo, peso, monto abierto manual o pendiente de catálogo;
+- barcode de origen opcional para una línea pendiente de catálogo;
 - cantidad exacta;
 - precio unitario capturado;
 - subtotal;
@@ -104,16 +111,19 @@ Cambiar el catálogo nunca modifica una línea confirmada.
 
 ### `SaleDiscount`
 
-Descuento único de la venta, parcial o total, con importe, motivo y autorización de Manager/Superadmin. No hay descuentos por línea en el MVP.
+Descuento único de la venta, parcial o total, con importe fijo en pesos, motivo obligatorio y autorización de Manager/Superadmin. No hay porcentajes ni descuentos por línea en el MVP. Si cubre el total, la venta queda marcada como cortesía.
 
 ### `Payment`
 
 Componente de pago asociado a la venta:
 
 - `CASH`;
-- `EXTERNAL_CARD_MP`.
+- `EXTERNAL_CARD_MP`;
+- `CORTESIA`.
 
 Una venta mixta contiene más de un componente. La suma aplicada cubre exactamente el total. La tarjeta externa se confirma manualmente.
+
+`CORTESIA` es el único componente de una venta cuyo total neto es cero: no representa un ingreso ni efectivo en cajón y debe coincidir con un descuento por el total bruto. Aun así, la venta y sus movimientos de inventario son reales.
 
 ### `Authorization`
 
@@ -160,7 +170,7 @@ No existe un estado que descarte silenciosamente una venta cobrada.
 
 ### `PrintJob`
 
-Intento durable de impresión vinculado a una venta. Estados: `PENDING`, `PRINTING`, `PRINTED`, `FAILED`. Una reimpresión crea otro intento marcado como duplicado.
+Intento durable de impresión vinculado a un documento operativo. Incluye `documentType` (`SALE`, `CASH_WITHDRAWAL` o `SHIFT_CLOSE`), `documentId`, versión de plantilla, tipo de intento (`ORIGINAL` o `DUPLICATE`) y estado. Estados: `PENDING`, `PRINTING`, `PRINTED`, `FAILED`. Una reimpresión crea otro intento marcado como duplicado. Los comandos ESC/POS generados no se persisten.
 
 ### `SyncCursor`
 
@@ -172,7 +182,7 @@ Bitácora append-only de acciones sensibles: autorizaciones, conteos, rechazos, 
 
 ### `SyncIncident`
 
-Representación central de una venta recibida que requiere revisión. Solo Superadmin puede resolverla mediante clasificación/aceptación o vínculo a producto/movimiento. La resolución no modifica el payload original.
+Representación central de una venta recibida que requiere revisión. Solo Superadmin puede resolverla mediante clasificación o aceptación con una nota de auditoría. La resolución no modifica el payload original ni vincula retrospectivamente líneas pendientes a un producto.
 
 ## Relaciones principales
 
@@ -184,12 +194,15 @@ Device 1 ── N Shift
 Shift 1 ── N Sale
 Shift 1 ── N CashCountAttempt
 Shift 1 ── 0..1 ShiftClose
+Shift 1 ── N CashWithdrawal
 Sale 1 ── N SaleLine
 Sale 1 ── N Payment
 Sale 1 ── N Authorization
 Sale 1 ── 0..1 SaleCancellation
 Sale 1 ── N InventoryMovement
 Sale 1 ── N PrintJob
+CashWithdrawal 1 ── N PrintJob
+ShiftClose 1 ── N PrintJob
 Hecho local 1 ── 1 OutboxEvent
 ```
 
@@ -200,10 +213,12 @@ Hecho local 1 ── 1 OutboxEvent
 3. Confirmar venta crea pagos, movimientos, outbox y trabajo de impresión atómicamente.
 4. El total pagado aplicado equivale al total final de la venta.
 5. Un descuento requiere autorización y existe como máximo uno por venta MVP.
-6. El monto abierto requiere importe positivo, categoría, descripción y autorización.
-7. Solo una venta totalmente en efectivo puede cancelarse después del cobro en MVP.
-8. Solo productos con inventario controlado generan movimientos de stock por venta.
-9. Folio visible y UUID interno nunca se reutilizan.
-10. Cerrar turno requiere conteo ciego y aprobación de Manager/Superadmin.
-11. Una limpieza local no elimina hechos pendientes de sincronización.
-12. Cada dato operativo pertenece a una sede.
+6. Una venta confirmada no permite cambiar precios ni descuentos; toda modificación posterior sigue el flujo de cancelación autorizado.
+7. El monto abierto manual requiere importe positivo, categoría, descripción y autorización. Una línea pendiente de catálogo requiere barcode crudo e importe positivo, usa categoría generada y no tiene `productId`.
+8. Solo una venta totalmente en efectivo puede cancelarse después del cobro en MVP.
+9. Solo productos con inventario controlado generan movimientos de stock por venta.
+10. Folio visible y UUID interno nunca se reutilizan.
+11. Cerrar turno requiere conteo ciego y aprobación de Manager/Superadmin.
+12. Una limpieza local no elimina hechos pendientes de sincronización.
+13. Cada dato operativo pertenece a una sede.
+14. Una sangría solo se registra sobre un turno abierto, tiene importe positivo, usa el motivo de resguardo y no puede editarse ni eliminarse tras confirmarse.

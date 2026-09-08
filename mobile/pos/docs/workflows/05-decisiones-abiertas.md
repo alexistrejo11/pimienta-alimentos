@@ -36,13 +36,14 @@ Está decidido que el código contiene producto y peso; falta validar el formato
 Falta identificar modelos, conexión exacta y protocolo:
 
 - lector USB/serial/SPP o SDK del fabricante;
-- impresora USB o TCP/IP y conjunto de comandos;
+- impresora térmica de 58 mm, USB o TCP/IP, y conjunto exacto de comandos ESC/POS;
+- code page soportada para acentos y `ñ` en español;
 - comportamiento ante reconexión;
 - compatibilidad con el hub USB-C y Power Delivery.
 
 ### Cajón de efectivo
 
-No forma parte del MVP hasta confirmar que existe, cómo se conecta y si la impresora puede emitir el pulso requerido. No se debe agregar un botón de apertura por suposición.
+La arquitectura contempla probar el cajón desde el panel de periféricos, pero la acción queda pendiente de validación física: tipo de conector (por ejemplo RJ11/RJ12), pulso requerido y si la impresora puede emitirlo. El botón combinado `Imprimir ticket de prueba + abrir cajón` solo se habilita cuando esa compatibilidad esté confirmada; no se asume que el cable sea Ethernet ni que el cajón pueda abrirse directamente desde la tablet.
 
 ## Seguridad y operación
 
@@ -64,7 +65,7 @@ Antes de codificar, conviene fijar criterios medibles:
 
 - tiempo máximo para agregar un producto localmente;
 - tiempo máximo para confirmar una venta local;
-- tiempo objetivo para imprimir cuando el periférico está listo;
+- tiempo objetivo de atención de un `PrintJob` cuando el periférico está listo, sin prometer una latencia fija de generación o salida;
 - capacidad mínima de eventos/ventas offline;
 - versión mínima de Android y tamaños/orientación de tablets soportados;
 - estrategia de pruebas de apagado/reinicio durante venta, impresión y sync.

@@ -16,20 +16,26 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PaymentEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleDiscountEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.CashWithdrawalEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
 import io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao
 import io.github.alexistrejo.pimienta.pos.data.local.dao.UserDao
+import io.github.alexistrejo.pimienta.pos.data.local.entity.CashCountAttemptEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftCloseEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleCancellationEntity
 
 // Defines the first local schema for catalog bootstrap data.
 @Database(
     entities = [
         SiteEntity::class, ProductEntity::class, BootstrapEntity::class, LocalUserEntity::class,
         DeviceEntity::class, ShiftEntity::class, SaleEntity::class, SaleLineEntity::class,
-        PaymentEntity::class, InventoryMovementEntity::class, OutboxEventEntity::class, PrintJobEntity::class
+        PaymentEntity::class, SaleDiscountEntity::class, CashWithdrawalEntity::class, InventoryMovementEntity::class, OutboxEventEntity::class, PrintJobEntity::class,
+        CashCountAttemptEntity::class, ShiftCloseEntity::class, SaleCancellationEntity::class
     ],
-    version = 2,
+    version = 5,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {
@@ -45,6 +51,6 @@ abstract class PosDatabase : RoomDatabase() {
             context,
             PosDatabase::class.java,
             "pimienta-pos.db"
-        ).addMigrations(Migrations.V1_TO_V2).build()
+        ).addMigrations(Migrations.V1_TO_V2, Migrations.V2_TO_V3, Migrations.V3_TO_V4, Migrations.V4_TO_V5).build()
     }
 }

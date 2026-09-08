@@ -1,8 +1,8 @@
-# Monto abierto / producto anónimo
+# Monto abierto manual
 
 ## Propósito
 
-Permitir que la caja termine una venta cuando un artículo no existe en el catálogo local, sin obligar al cajero a escribir texto ni abandonar la pantalla de venta.
+Permitir que la caja termine una venta manual excepcional sin obligar al cajero a escribir texto ni abandonar la pantalla de venta.
 
 No es un producto maestro ni una forma de editar catálogo desde la tablet. Es una línea excepcional, autorizada y marcada para revisión posterior.
 
@@ -57,7 +57,7 @@ La línea aparece en ticket e historial, no modifica inventario y no puede trans
 
 ## Revisión posterior
 
-Solo Superadmin, desde la web central, puede clasificar/aceptar la venta o vincularla posteriormente a un producto y movimiento de inventario correcto. Un Manager puede consultar el historial local, pero no reescribe ni vincula una venta ya cobrada.
+Solo Superadmin, desde la web central, puede clasificar y aceptar la venta con nota de auditoría. Un Manager puede consultar el historial local, pero no reescribe una venta ya cobrada. La venta no se vincula posteriormente a un producto ni genera inventario histórico; una corrección de existencias se hace mediante conteo físico o ajuste maestro independiente.
 
 ## Límites del MVP
 

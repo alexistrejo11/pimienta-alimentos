@@ -97,6 +97,12 @@ automatizadas y manuales anteriores pasan.
 
 No incluye todavía red real, terminal de Mercado Pago, sincronización activa ni hardware final. El resultado sí conserva sus eventos pendientes desde el primer cobro.
 
+**Límite de sangrías:** Fase 1 no crea ni consulta sangrías. La barra de
+venta conserva exclusivamente el flujo de venta/cobro y el Panel
+Manager/Admin no muestra un historial parcial o calculado de retiros. La
+operación se incorpora completa en Fase 2 para que el retiro, su auditoría,
+el comprobante y el arqueo nunca queden desalineados.
+
 ## Fase 2: operación local de Manager
 
 Objetivo: completar la operación de turno y excepciones que no dependen del backend.
@@ -105,30 +111,57 @@ Incluye:
 
 - autorización genérica por PIN;
 - monto abierto con categoría e importe;
+- producto pendiente de catálogo por barcode desconocido, con importe y auditoría de excepción;
 - descuento único parcial o total autorizado;
 - reposiciones y mermas locales;
+- sangrías de resguardo locales, con comprobante y auditoría;
 - historial de turno, reimpresión como trabajo pendiente y cancelación de efectivo permitida;
 - Corte Z con conteo ciego, corrección y aprobación;
 - estados de impresora/sincronización visibles aunque sean pendientes locales.
 
-### Subcorte en curso: prototipo visual de Manager
+### Sangría de caja: reparto por modo
+
+La sangría pertenece al turno activo y se implementa como un registro
+persistente e inmutable, no como un contador editable.
+
+- **Modo Venta:** la cajera solo puede **registrar** una sangría desde el
+  botón fijo de la barra de caja. Captura importe positivo con numpad y el
+  motivo fijo `RESGUARDO_EFECTIVO`; un Manager/Superadmin firma con PIN. No
+  se muestra el acumulado ni el historial de sangrías en este modo, y la
+  operación no altera el carrito, el borrador de pago ni el turno.
+- **Modo Manager/Admin:** es de **consulta** para sangrías: muestra cantidad,
+  total y detalle del turno, incluidos folio, importe, cajero, autorizador,
+  fecha/hora y estados de impresión/sincronización. Puede solicitar
+  reimpresión; no permite crear, editar ni eliminar sangrías.
+- La confirmación local crea atómicamente `CashWithdrawal`, evidencia de
+  autorización, trabajo de impresión y evento de outbox. El total se deriva
+  de los registros confirmados y resta del efectivo esperado del Corte Z.
+
+### Subcorte en curso: operación parcial de Manager
 
 Este subcorte permite evaluar la UX antes de implementar las transacciones de
 Fase 2. Desde Caja se solicita PIN de Manager/Superadmin para abrir el panel
-local sin cambiar el cajero ni perder el carrito. El panel presenta Corte Z,
-Inventario, Historial y Estado, con navegación lateral en horizontal y selector
-compacto en vertical.
+local sin cambiar el cajero ni perder el carrito. El panel presenta Caja y
+Corte Z (incluye la consulta de sangrías), Inventario, Historial y Estado, con navegación lateral en horizontal
+y selector compacto en vertical.
 
-**Límites explícitos:** el PIN valida el acceso, pero las acciones visuales no
-cierran turno, no modifican existencias, no cancelan ventas y no crean eventos
-de sincronización ni trabajos de impresión. Los datos de ejemplo se distinguen
-de los datos locales reales disponibles.
+**Estado actual:** el panel consulta Room y persiste sus operaciones locales.
+El Corte Z crea intentos de conteo, permite corrección con motivo y aprobación
+por PIN; inventario registra reposiciones/mermas; historial permite
+reimpresión y cancelación de efectivo; y los trabajos de impresión quedan en
+cola durable. La generación ESC/POS, el worker de sincronización y el hardware
+físico siguen siendo fases posteriores.
 
-#### Checklist del prototipo visual
+#### Checklist del panel operativo
 
 - [x] Acceso desde Caja con PIN de Manager/Superadmin y regreso que conserva el carrito.
-- [x] Panel local con Corte Z, Inventario, Historial y Estado navegables.
-- [x] Conteo ciego visual que oculta efectivo esperado hasta validación.
+- [x] Panel local con Caja/Corte Z (incluye sangrías), Inventario, Historial y Estado navegables.
+- [x] Dashboard local con métricas del día y productos más vendidos.
+- [x] Conteo ciego que oculta efectivo esperado hasta validación.
+- [x] Corrección auditada y aprobación de Corte Z con PIN.
+- [x] Inventario operativo persistente con movimientos recientes.
+- [x] Historial del turno con reimpresión y cancelación de efectivo autorizada.
+- [x] Modo de solo lectura cuando no hay turno activo.
 - [x] Adaptación de navegación a orientación horizontal y vertical.
 - [x] Límites de persistencia visibles en cada sección.
 - [ ] Validación manual en emulador y tablet para recoger mejoras de UX.
@@ -137,9 +170,16 @@ de los datos locales reales disponibles.
 
 - [ ] Autorización genérica por PIN y evidencia de autorizador.
 - [ ] Monto abierto con categoría, importe y autorización por línea.
-- [ ] Descuento único autorizado.
-- [ ] Reposición, merma, historial, reimpresión y cancelación de efectivo.
-- [ ] Corte Z con conteo ciego, corrección y aprobación.
+- [ ] Producto pendiente de catálogo con barcode crudo, importe y ausencia de movimiento de inventario.
+- [x] Descuento único parcial o total autorizado y persistido con la venta.
+- [x] Reposición, merma, historial, reimpresión y cancelación de efectivo.
+- [ ] Sangría de resguardo persistente, auditable y con outbox/PrintJob pendiente; falta reimpresión operativa y sincronización real.
+- [x] Modal de sangría en Modo Venta: importe positivo, motivo fijo y PIN de
+  Manager/Superadmin, sin exponer total ni historial al cajero.
+- [x] Consulta de sangrías en Modo Manager/Admin: cantidad, total y detalle
+  por turno, sin acciones de creación o edición.
+- [ ] Reimpresión operativa de comprobantes de sangría.
+- [x] Corte Z con conteo ciego, corrección y aprobación.
 - [ ] Pruebas de reglas, Room y UI para las excepciones de Manager.
 
 ## Fase 3: periféricos reales

@@ -21,4 +21,33 @@ object Migrations {
             database.execSQL("CREATE TABLE IF NOT EXISTS `print_job` (`id` TEXT NOT NULL, `saleId` TEXT NOT NULL, `status` TEXT NOT NULL, `duplicate` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
         }
     }
+    // Adds immutable sale totals and authorization evidence without losing prior sales.
+    val V2_TO_V3 = object : Migration(2, 3) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `sale` ADD COLUMN `grossCentavos` INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("ALTER TABLE `sale` ADD COLUMN `discountCentavos` INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("UPDATE `sale` SET `grossCentavos` = `totalCentavos`")
+            database.execSQL("CREATE TABLE IF NOT EXISTS `sale_discount` (`id` TEXT NOT NULL, `saleId` TEXT NOT NULL, `amountCentavos` INTEGER NOT NULL, `reason` TEXT NOT NULL, `authorizedByUserId` TEXT NOT NULL, `authorizedByRole` TEXT NOT NULL, `authorizedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        }
+    }
+    // Adds durable withdrawal facts for cash safeguards during a shift.
+    val V3_TO_V4 = object : Migration(3, 4) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `cash_withdrawal` (`id` TEXT NOT NULL, `folio` TEXT NOT NULL, `shiftId` TEXT NOT NULL, `cashierId` TEXT NOT NULL, `amountCentavos` INTEGER NOT NULL, `reason` TEXT NOT NULL, `authorizedByUserId` TEXT NOT NULL, `authorizedByRole` TEXT NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_cash_withdrawal_folio` ON `cash_withdrawal` (`folio`)")
+        }
+    }
+
+    // Adds local audit records needed by the functional Manager panel.
+    val V4_TO_V5 = object : Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `sale` ADD COLUMN `status` TEXT NOT NULL DEFAULT 'CONFIRMED'")
+            database.execSQL("ALTER TABLE `inventory_movement` ADD COLUMN `movementType` TEXT NOT NULL DEFAULT 'SALE'")
+            database.execSQL("ALTER TABLE `print_job` ADD COLUMN `documentType` TEXT NOT NULL DEFAULT 'SALE'")
+            database.execSQL("ALTER TABLE `print_job` ADD COLUMN `templateVersion` INTEGER NOT NULL DEFAULT 1")
+            database.execSQL("CREATE TABLE IF NOT EXISTS `cash_count_attempt` (`id` TEXT NOT NULL, `shiftId` TEXT NOT NULL, `cashierId` TEXT NOT NULL, `totalCentavos` INTEGER NOT NULL, `denominations` TEXT NOT NULL, `status` TEXT NOT NULL, `note` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            database.execSQL("CREATE TABLE IF NOT EXISTS `shift_close` (`id` TEXT NOT NULL, `shiftId` TEXT NOT NULL, `expectedCashCentavos` INTEGER NOT NULL, `countedCashCentavos` INTEGER NOT NULL, `differenceCentavos` INTEGER NOT NULL, `approvedByUserId` TEXT NOT NULL, `approvedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            database.execSQL("CREATE TABLE IF NOT EXISTS `sale_cancellation` (`id` TEXT NOT NULL, `saleId` TEXT NOT NULL, `shiftId` TEXT NOT NULL, `reason` TEXT NOT NULL, `authorizedByUserId` TEXT NOT NULL, `authorizedByRole` TEXT NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        }
+    }
 }

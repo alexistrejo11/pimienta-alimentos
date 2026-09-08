@@ -20,6 +20,7 @@ stateDiagram-v2
     AperturaTurno --> VentaLista: fondo inicial confirmado localmente
     VentaLista --> CajaBloqueada: cajero pulsa Bloquear caja
     CajaBloqueada --> VentaLista: PIN del cajero responsable válido
+    VentaLista --> VentaLista: sangría autorizada de resguardo
     VentaLista --> CierreTurno
     CierreTurno --> SeleccionarUsuario: Corte Z aprobado
 ```
@@ -126,6 +127,8 @@ Panel local de Manager
       ↓ [Volver a caja]
 Misma sesión de cajero y mismo carrito, si existía
 ```
+
+El panel permite consultar sangrías ya registradas. La creación ocurre desde la barra operativa de la caja: el cajero captura el importe y Manager/Superadmin la firma con PIN. La operación vuelve a la misma sesión y turno abiertos; solo ajusta la proyección de efectivo esperado y deja un registro persistente, no una nueva sesión ni un cierre parcial.
 
 ## Criterios de aceptación
 

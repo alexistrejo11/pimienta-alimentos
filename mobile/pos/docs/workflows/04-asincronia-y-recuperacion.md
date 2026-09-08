@@ -16,6 +16,8 @@ Confirmación local
 
 ## Impresión
 
+La tablet imprime desde datos estructurados, no desde archivos. Después del commit local, un `PrintJob` obtiene el documento, aplica la plantilla vigente de 58 mm y genera comandos ESC/POS en memoria. El adaptador los envía por USB o TCP/IP. La conversión debe respetar caracteres españoles mediante la code page soportada por la impresora; la selección exacta de esa code page es una validación de hardware pendiente.
+
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING

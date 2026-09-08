@@ -23,10 +23,9 @@ Una venta ya cobrada es un hecho contable inmutable: el backend no puede descart
 
 Solo un superadmin puede resolver una venta marcada como requiere revisión desde la web central. Un manager no puede modificarla y la tablet no puede editar, reenviar con cambios ni eliminar la venta ya cobrada. La resolución debe conservar la venta original y dejar una decisión administrativa auditable.
 
-El superadmin dispone de dos formas de resolución:
+El superadmin puede **clasificar y aceptar** el ingreso tal como lo reportó la tablet, agregando una categoría o etiqueta de auditoría y una nota obligatoria. Por ejemplo, puede registrar una discrepancia de precio o una excepción de catálogo. El importe se incorpora a los ingresos globales sin cambiar la transacción original.
 
-- **Clasificar y aceptar:** reconoce el ingreso tal como lo reportó la tablet y agrega una categoría o etiqueta de auditoría, por ejemplo una discrepancia de precio o ajuste por monto abierto. El importe se incorpora a los ingresos globales sin cambiar la transacción original.
-- **Vincular a producto o movimiento correcto:** asocia posteriormente la venta conflictiva a un producto activo del catálogo maestro. Esto crea el movimiento de inventario y corrige los reportes de rotación correspondientes, sin modificar el ticket físico, el importe cobrado ni los datos originales enviados por caja.
+No se vincula retrospectivamente una venta cobrada a un producto maestro ni se crea un movimiento de inventario histórico a partir de ella. Si una incidencia exige corregir existencias, se registra mediante conteo físico o ajuste maestro independiente y auditable.
 
 Cada resolución exige una nota explicativa y registra superadmin, fecha/hora y acción aplicada. La venta original se conserva como versión enviada por la caja.
 
@@ -176,24 +175,21 @@ La tablet puede cobrar de forma indefinida con su último catálogo descargado; 
 
 La validación por catálogo antiguo se registra con el turno y no interrumpe una venta ni un turno que ya estuviera activo. La marca de última sincronización debe referirse a una sincronización exitosa, no solo a una conexión de red detectada.
 
-## Excepción: monto abierto o producto genérico
+## Excepciones de catálogo
 
-Cuando el artículo no exista en el catálogo local, la caja podrá registrar una línea de monto abierto o producto genérico y continuar con el cobro. Esta línea debe quedar identificada como excepción para conciliación posterior.
+Existen dos excepciones deliberadamente distintas. Ninguna crea un producto maestro desde la tablet ni descuenta inventario automáticamente.
 
-Para agregarla, el cajero captura un monto mayor a cero con numpad táctil y selecciona una categoría de un catálogo predefinido. El POS genera la descripción visible a partir de esa categoría, por ejemplo `Producto abierto · Bebidas`; no se requiere teclado alfanumérico en caja. La categoría permite incluir la venta en reportes y la descripción generada aparece en el ticket y en el historial. Cada línea de monto abierto requiere la autorización inmediata por PIN de un manager o superadmin.
+### Monto abierto manual
 
-Como mínimo, la excepción conserva:
+Se usa cuando el cajero necesita vender un importe sin un código físico reconocido. El cajero selecciona una categoría predefinida y captura un monto mayor a cero con numpad táctil; el POS genera una descripción como `Producto abierto · Bebidas`. Cada línea requiere autorización inmediata por PIN de Manager o Superadmin.
 
-- descripción generada por el sistema;
-- categoría seleccionada;
-- monto cobrado;
-- usuario responsable;
-- usuario que autorizó;
-- fecha y terminal donde se originó;
-- motivo, cuando la política de operación lo exija;
-- estado de conciliación.
+### Producto pendiente de catálogo por barcode desconocido
 
-La excepción no está ligada a un producto maestro, no descuenta inventario automáticamente y no altera el stock de un artículo existente. El proceso de conciliación puede clasificarla posteriormente si corresponde.
+Cuando un escaneo no encuentra un barcode en el catálogo local, la caja abre una superficie de importe numérico con el código ya capturado. El cajero confirma explícitamente el importe y registra `Producto pendiente de catálogo · {barcode}`. No requiere texto, categoría manual ni PIN de Manager: el barcode constituye la evidencia mínima y el objetivo es no detener la fila.
+
+La línea conserva barcode crudo, importe, descripción generada, cajero, sede, tablet, turno, fecha y origen `UNKNOWN_BARCODE`. Usa la categoría de reporte `Pendiente de catálogo`, no tiene `productId` y no genera movimiento de stock.
+
+Superadmin crea posteriormente el producto real con ese barcode en la Web Central. Al sincronizar el catálogo, las **ventas futuras** lo reconocen y aplican sus reglas normales. Las líneas pendientes ya cobradas permanecen inmutables, no se vinculan al producto nuevo y no afectan inventario retrospectivamente. Cualquier diferencia se corrige mediante conteo físico o ajuste maestro separado.
 
 ## Pagos y caja
 
@@ -222,12 +218,12 @@ Si el cliente solicita pago mixto posteriormente, una venta podrá contener dos 
 Cada cajero abre un turno declarando el fondo inicial de efectivo. Al cerrar, el POS calcula:
 
 ```text
-Efectivo esperado = fondo inicial + efectivo cobrado - cambio entregado - devoluciones de efectivo autorizadas
+Efectivo esperado = fondo inicial + ventas en efectivo netas - devoluciones de efectivo autorizadas - sangrías confirmadas
 ```
 
 El cajero captura el conteo físico y el POS calcula la diferencia de caja para auditoría. El total cobrado por tarjeta se informa por separado y no forma parte del efectivo esperado.
 
-Los retiros de efectivo, ingresos adicionales y devoluciones de efectivo no son parte del MVP hasta definir sus reglas; mientras no existan, deben estar prohibidos o claramente fuera del flujo de caja.
+Las sangrías de resguardo se definen más adelante en este documento. Gastos, pagos a proveedores, ingresos adicionales y otros retiros de efectivo no forman parte del MVP y deben permanecer fuera del flujo de caja.
 
 Cada tablet admite un único turno activo. No se puede abrir otro hasta cerrar el actual. Los cambios de cajero se realizan en lapsos sin atención: se completa el corte, se libera la tablet y el siguiente cajero abre un nuevo turno con su fondo inicial declarado.
 
@@ -261,7 +257,7 @@ Si una tablet se extravía, se roba o se retira, un superadmin revoca su acceso 
 
 ### Roles
 
-- **Cajero:** puede abrir turno, escanear o seleccionar productos, usar monto abierto y cobrar. No puede aplicar descuentos, cortesías ni cancelaciones por cuenta propia.
+- **Cajero:** puede abrir turno, escanear o seleccionar productos, iniciar monto abierto con autorización, registrar un barcode desconocido como producto pendiente de catálogo y cobrar. No puede aplicar descuentos, cortesías ni cancelaciones por cuenta propia.
 - **Manager (encargado o staff):** puede cerrar y realizar corte de caja, gestionar el catálogo disponible localmente, consultar reportes e historial y autorizar acciones restringidas.
 - **Superadmin:** tiene acceso total al POS y backend; administra usuarios y puede cambiar configuraciones críticas, incluido el modo operativo de inventario. También puede solicitar limpieza local bajo las restricciones de seguridad descritas abajo.
 
@@ -273,7 +269,11 @@ La autorización no cambia la identidad de la sesión del cajero: el responsable
 
 ### Descuentos del MVP
 
-El MVP permite un descuento único sobre el total de una venta, ya sea parcial o del 100 %. Siempre requiere autorización en sitio de un manager o superadmin mediante PIN. Debe registrar el importe descontado, el responsable que lo autorizó y el motivo cuando la operación lo solicite.
+El MVP permite un descuento único **por importe fijo en pesos** sobre el total de una venta. No se captura como porcentaje. Siempre requiere autorización en sitio de un manager o superadmin mediante PIN y un motivo obligatorio. Debe registrar el importe descontado, el responsable que lo autorizó, el motivo y la fecha.
+
+Un descuento cuyo importe cubre el total se registra explícitamente como una **cortesía**. La venta se confirma con medio de pago `CORTESIA`, sin efectivo ni cargo de tarjeta, pero conserva sus líneas y por tanto sus movimientos de inventario cuando correspondan. En el Corte Z se muestra separada de efectivo y tarjeta.
+
+El descuento o cortesía solo puede aplicarse mientras el cobro aún es un borrador, antes de confirmar la venta. Una vez confirmada, el precio y el descuento son inmutables: no se corrigen mediante otro descuento; únicamente aplica el flujo autorizado de cancelación cuando sea elegible.
 
 No se incluyen descuentos por producto, reglas de promoción, cupones ni listas de precios especiales.
 
@@ -294,6 +294,26 @@ En el MVP, solo puede cancelarse por completo una venta pagada exclusivamente en
 Al cancelar una venta en efectivo, el sistema conserva el ticket original como evidencia, registra quién autorizó y cuándo, revierte los movimientos de inventario de los artículos controlados y descuenta el efectivo devuelto del esperado en caja. No se permiten cancelaciones parciales en esta fase.
 
 Las ventas pagadas mediante tarjeta externa de Mercado Pago no se pueden cancelar desde el POS MVP una vez confirmadas. La aplicación no conoce todavía el proceso de reembolso de la terminal externa y no debe simularlo ni compensarlo con efectivo. Cualquier incidencia de este tipo se resuelve por el procedimiento externo vigente hasta que se diseñe una integración o proceso formal de devoluciones.
+
+## Sangrías de efectivo durante el turno
+
+Una **sangría** es el retiro físico de efectivo para resguardo cuando el cajón se llena. No es un Corte Z, no cierra el turno ni cambia al cajero. El MVP admite exclusivamente el motivo `RESGUARDO_EFECTIVO`; gastos, pagos a proveedores, ingresos adicionales y retiros genéricos quedan fuera del alcance.
+
+El cajero inicia la sangría desde el botón operativo fijo de la caja y captura un importe positivo mediante numpad. Un Manager o Superadmin la confirma con su PIN como firma de autorización. La operación crea un registro inmutable de sangría, una entrada de auditoría, un evento de sincronización y un trabajo de impresión en la misma transacción local. El registro conserva su UUID, folio visible, tablet, sede, turno, importe, motivo, fecha/hora, cajero del turno y autorizador. No se admite editar ni borrar una sangría confirmada.
+
+El total de sangrías no se guarda como un número editable: se calcula de los registros del turno. El panel muestra tanto el total y cantidad de sangrías como la lista detallada de cada una. Si la impresora falla, el retiro sigue siendo válido y su comprobante queda pendiente de reimpresión; la apertura automática del cajón solo se habilitará cuando el hardware compatible esté confirmado.
+
+El efectivo esperado para el arqueo se calcula así:
+
+```text
+fondo inicial
++ ventas confirmadas en efectivo (ya netas de descuentos)
+- devoluciones de efectivo por cancelaciones autorizadas
+- sangrías de resguardo confirmadas
+= efectivo esperado en cajón
+```
+
+Tarjetas y cortesías no ingresan al cajón. Los descuentos no se restan por segunda vez, pues ya redujeron el efectivo efectivamente cobrado.
 
 ## Tickets e impresión
 
@@ -316,6 +336,8 @@ La pantalla de venta y el historial de tickets del turno permiten reimprimir un 
 Al cierre, la tablet produce un corte de turno local —Corte Z— basado en las operaciones registradas en esa caja. Incluye:
 
 - total de ventas por medio de pago, incluidos efectivo y tarjeta externa;
+- venta bruta, total de descuentos y venta neta, con las cortesías separadas de los cobros físicos;
+- cantidad y total de sangrías de resguardo, además del detalle identificable de cada una;
 - efectivo esperado frente a efectivo contado, con faltante o sobrante resultante;
 - total de mermas, cancelaciones y descuentos realizados durante el turno.
 

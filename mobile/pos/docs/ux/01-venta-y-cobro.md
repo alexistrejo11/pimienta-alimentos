@@ -75,11 +75,38 @@ Cada tarjeta debe mostrar nombre, precio efectivo y el estado relevante:
 
 Tocar una tarjeta agrega una unidad. Si la línea ya existe en el carrito, aumenta su cantidad y conserva el precio capturado en la línea. Si un producto pasa a no disponible mientras ya está en el carrito, esa línea puede cobrarse, pero no aumentarse sin override.
 
+Un barcode escaneado sin coincidencia no se trata como monto abierto manual: abre el flujo de [Producto pendiente de catálogo](04-producto-pendiente-catalogo.md), con el código capturado y un importe numérico por confirmar.
+
 ### Carrito
 
 Muestra líneas de venta, cantidad, precio capturado, subtotal por línea, controles de aumentar/disminuir/eliminar, descuento total si existe y total final. No hay modales de navegación para editar una cantidad o quitar una línea.
 
+El botón **Descuento / cortesía** abre una superficie temporal, no una pantalla de navegación. Solicita importe fijo en pesos, motivo obligatorio y PIN de Manager/Superadmin. Al aprobarse, el carrito muestra el total bruto, el descuento y el total neto. Si el descuento cubre todo el total, el botón de confirmación pasa a **Confirmar cortesía e imprimir**; no se presenta efectivo ni tarjeta. Esta acción solo está disponible antes de confirmar el cobro.
+
 Limpiar carrito solo afecta una venta no confirmada. No equivale a cancelación postventa.
+
+### Sangría desde la barra de caja
+
+La barra superior operativa del POS incluye el botón **Sangría** mientras exista un turno abierto. Está fuera del panel derecho de pago: una sangría no es un cobro al cliente. El cajero puede iniciarla sin abandonar ni perder su carrito; se abre un modal temporal con importe numérico, el motivo fijo `Resguardo de efectivo` y el PIN de Manager/Superadmin para firmar la acción.
+
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Pimienta POS · Turno 104 · Marco       [Sangría] [Bloquear caja] [Admin]   │
+└────────────────────────────────────────────────────────────────────────────┘
+
+                 ┌──────────────────────────────────────────────┐
+                 │ REGISTRAR SANGRÍA · TURNO 104                 │
+                 │ Motivo: Resguardo de efectivo                 │
+                 │                                              │
+                 │ Importe: $ [ 1,500.00 ]                      │
+                 │                                              │
+                 │ PIN Manager / Superadmin: [ • • • • ]        │
+                 │                                              │
+                 │ [Cancelar] [Confirmar e imprimir comprobante]│
+                 └──────────────────────────────────────────────┘
+```
+
+No se permite abrir este modal durante la confirmación atómica de una venta. Si existe un borrador de pago, el cajero debe volver al carrito primero; no hay pago ni efectivo registrado hasta confirmar la venta. Al confirmar una sangría, el modal se cierra, el carrito permanece intacto y se muestra el comprobante pendiente o impreso según corresponda.
 
 ## Estado de cobro
 
@@ -142,6 +169,7 @@ Los diálogos/superficies temporales son válidos solo para acciones que requier
 
 - PIN de Manager/Superadmin;
 - monto abierto;
+- producto pendiente de catálogo por barcode desconocido;
 - autorización de sobregiro de inventario;
 - forzar venta de producto no disponible;
 - descuento o cortesía;
@@ -151,7 +179,7 @@ No se usan para navegar entre catálogo, carrito y cobro.
 
 ## Monto abierto
 
-El monto abierto es una excepción autorizada que se documenta en [Monto abierto](02-monto-abierto.md). Usa categoría, numpad y PIN; el POS genera su descripción sin requerir teclado alfanumérico.
+El monto abierto manual es una excepción autorizada que se documenta en [Monto abierto](02-monto-abierto.md). Usa categoría, numpad y PIN; el POS genera su descripción sin requerir teclado alfanumérico. Un barcode no encontrado usa el flujo separado de [Producto pendiente de catálogo](04-producto-pendiente-catalogo.md).
 
 ## Pendiente de diseñar
 

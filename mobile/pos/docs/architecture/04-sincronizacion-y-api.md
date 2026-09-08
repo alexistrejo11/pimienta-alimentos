@@ -78,6 +78,7 @@ Eventos mínimos del MVP:
 - `SALE_CANCELLED`;
 - `WASTE_RECORDED`;
 - `RESTOCK_RECORDED`;
+- `CASH_WITHDRAWAL_RECORDED`;
 - `CASH_COUNT_SUBMITTED`;
 - `CASH_COUNT_REJECTED`;
 - `SHIFT_CLOSED`;
@@ -157,7 +158,8 @@ Estas capacidades pueden reutilizar endpoints existentes del backend; la lista i
 - `GET /api/v1/admin/sync-incidents`
 - `GET /api/v1/admin/sync-incidents/{incidentId}`
 - `POST /api/v1/admin/sync-incidents/{incidentId}/accept`
-- `POST /api/v1/admin/sync-incidents/{incidentId}/link-product`
+
+Un barcode pendiente de catálogo se consulta como excepción operativa/reportable; no necesita un endpoint para vincular una venta histórica con un producto. El alta posterior del producto usa el endpoint normal de catálogo y afecta únicamente ventas futuras.
 
 ### Reportes
 

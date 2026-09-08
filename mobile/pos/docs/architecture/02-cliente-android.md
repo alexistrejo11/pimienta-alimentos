@@ -53,7 +53,7 @@ Pantallas/áreas iniciales:
 
 Contiene casos de uso explícitos, por ejemplo:
 
-- `OpenShift` y `SubmitCashCount`;
+- `OpenShift`, `RecordCashWithdrawal` y `SubmitCashCount`;
 - `ApproveShiftClose` y `RejectCashCount`;
 - `AddProductToCart` y `AddWeightedLabelToCart`;
 - `AddOpenAmountWithAuthorization`;
@@ -130,10 +130,16 @@ Contrato conceptual:
 
 ```text
 TicketPrinter.status
-TicketPrinter.print(renderedTicket)
+TicketPrinter.print(escPosBytes)
+CashDrawer.status
+CashDrawer.open()
 ```
 
-Un servicio de aplicación renderiza el ticket y crea un `PrintJob`. El adaptador traduce el documento al protocolo USB o TCP/IP. Reimprimir crea un nuevo intento vinculado a la misma venta, no una nueva venta.
+El POS no genera ni guarda archivos PDF, HTML, imágenes ni documentos de ticket. Un renderizador toma los datos estructurados de una venta, sangría o Corte Z y produce comandos ESC/POS en memoria. El `PrintJob` conserva la referencia al documento, plantilla, estado e intentos, pero no persiste el byte array generado.
+
+La impresora objetivo es térmica de **58 mm**. El renderizador debe limitar columnas, alinear importes y adaptar el texto al ancho real del papel. Los nombres, motivos y leyendas deben imprimirse correctamente en español, incluidos acentos y `ñ`; no se debe asumir que la impresora interpreta UTF-8 sin una configuración de página de caracteres compatible. La codificación y code page exactas quedan pendientes de validar con el modelo físico.
+
+El adaptador traduce los bytes al transporte USB o TCP/IP. La apertura de cajón se solicita mediante el pulso de apertura de la impresora, si el modelo expone un puerto compatible; no se asume que un cable de red conectado al cajón sea Ethernet ni que permita abrirlo directamente. Reimprimir crea otro intento vinculado al mismo documento, nunca otra venta ni otro cobro.
 
 ## Seguridad local
 

@@ -2,7 +2,35 @@
 
 ## Objetivo
 
-Definir las acciones operativas de Manager que ocurren en la tablet: cierre de turno, reposición, merma, historial, reimpresión y cancelación permitida. Las acciones centrales siguen perteneciendo a la web administrativa.
+Definir las acciones operativas de Manager que ocurren en la tablet: autorización/consulta de sangrías de resguardo, cierre de turno, reposición, merma, historial, reimpresión y cancelación permitida. Las acciones centrales siguen perteneciendo a la web administrativa.
+
+## Sangría de resguardo durante el turno
+
+Una sangría es una salida física de efectivo para resguardar el cajón mientras el turno sigue abierto. No es un cierre parcial, no crea otro turno y no representa un gasto o pago a proveedor.
+
+```mermaid
+flowchart TD
+    A[Cajero pulsa Sangría en la barra de caja] --> B[Modal de sangría]
+    B --> C[Capturar importe positivo con numpad]
+    C --> D[Motivo fijo: Resguardo de efectivo]
+    D --> E[Manager/Superadmin confirma con PIN]
+    E --> F{PIN válido?}
+    F -- No o cancelar --> G[No se registra salida]
+    F -- Sí --> H[Transacción local: CashWithdrawal + AuditEntry + Outbox + PrintJob]
+    H --> I[Actualizar efectivo teórico y total de sangrías]
+    I --> J[Turno OPEN continúa operando]
+    H -. impresión o red fallan .-> K[Conservar sangría; comprobante/sync pendiente]
+```
+
+La operación conserva el cajero titular del turno y el autorizador. El panel de Manager no crea sangrías: solo muestra la lista del turno, cada registro y su estado de impresión/sincronización; el total se calcula al sumar dichos registros.
+
+El efectivo esperado al final del turno se deriva de:
+
+```text
+fondo inicial + efectivo neto cobrado - devoluciones de efectivo - sangrías confirmadas
+```
+
+Una sangría ya confirmada no se edita ni se borra. El procedimiento excepcional para corregirla queda pendiente de definición; no se disfraza como gasto ni como ingreso adicional.
 
 ## Corte Z con doble control
 
@@ -11,7 +39,7 @@ flowchart TD
     A[Turno OPEN] --> B[Cajero inicia conteo]
     B --> C[Captura desglose ciego con numpad]
     C --> D[Envía CashCountAttempt]
-    D --> E[Manager revisa esperado, contado y diferencia]
+    D --> E[Manager revisa esperado, contado, diferencia y sangrías]
     E --> F{¿Conteo correcto?}
     F -- No --> G[Manager selecciona Corregir conteo]
     G --> H[Registrar rechazo en bitácora]
@@ -85,7 +113,7 @@ Los siguientes flujos no se diseñan en el panel local porque requieren visión 
 - usuarios, roles, PINs, licencias y dispositivos;
 - clientes, fiados, apartados y cuentas por cobrar;
 - CSV, reportes globales, ganancia consolidada e inventario valorizado;
-- resolución de incidencias de sincronización y vínculo posterior de monto abierto.
+- resolución central de incidencias y creación de productos maestros a partir de barcodes pendientes.
 
 ## Criterios de aceptación
 
@@ -95,3 +123,4 @@ Los siguientes flujos no se diseñan en el panel local porque requieren visión 
 4. Reposición y merma modifican solo el saldo local de la tablet hasta sincronizar.
 5. Reimprimir no genera venta, pago ni movimiento de inventario.
 6. Cancelar una venta en efectivo genera reversión auditable, no borrado.
+7. Una sangría no cierra el turno, se conserva como registro inmutable y se incorpora al efectivo esperado del Corte Z.
