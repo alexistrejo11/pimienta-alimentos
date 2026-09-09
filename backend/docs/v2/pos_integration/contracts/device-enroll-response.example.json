@@ -1,0 +1,21 @@
+{
+  "deviceId": "8f3c1a2e-9b4d-4e6a-a1c0-2d5e8f7a9b01",
+  "visibleCode": "T1",
+  "status": "AUTHORIZED",
+  "site": {
+    "id": "42",
+    "name": "Cafetería Norte",
+    "address": "Av. Ejemplo 100",
+    "currency": "MXN"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example-access",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example-refresh",
+  "accessTokenExpiresInSeconds": 900,
+  "refreshTokenExpiresInSeconds": 7776000,
+  "refreshTokenMaxExpiresInSeconds": 31536000,
+  "minAppVersion": "1.0.0",
+  "eventSchemaVersions": {
+    "SALE_CONFIRMED": 1,
+    "SHIFT_CLOSED": 1
+  }
+}

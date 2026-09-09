@@ -21,4 +21,13 @@ public interface ItemJpaRepository
   Optional<ItemJpaEntity> findActiveBySkuOrBarcode(@Param("key") String key);
 
   boolean existsBySkuIgnoreCaseAndIdNot(String sku, Long id);
+
+  @Query("""
+      select case when count(e) > 0 then true else false end from ItemJpaEntity e
+      where e.barcode is not null
+        and lower(e.barcode) = lower(:barcode)
+        and e.id <> :excludeId
+      """)
+  boolean existsByBarcodeIgnoreCaseAndIdNot(
+      @Param("barcode") String barcode, @Param("excludeId") Long excludeId);
 }

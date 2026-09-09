@@ -300,6 +300,18 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(status).body(ApiErrorResponse.of(code, safeMessage, traceId, null));
   }
 
+  @ExceptionHandler({
+    org.springframework.security.access.AccessDeniedException.class,
+    org.springframework.security.authorization.AuthorizationDeniedException.class
+  })
+  public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+      Exception ex, HttpServletRequest request) {
+    String traceId = traceId(request);
+    log.warn("Forbidden traceId={} message={}", traceId, ex.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .body(ApiErrorResponse.of(ErrorCode.FORBIDDEN, "Forbidden.", traceId, null));
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiErrorResponse> handleUnhandled(
       Exception ex, HttpServletRequest request) {

@@ -2,12 +2,15 @@ package io.github.alexistrejo11.pimienta.config.security;
 
 import io.github.alexistrejo11.pimienta.module.account.auth.core.domain.entity.ParsedAccessToken;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.port.input.TokenService;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.output.DeviceTokenIssuer;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.output.DeviceTokenIssuer.ParsedDeviceAccessToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,9 +23,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final TokenService tokenService;
+  private final DeviceTokenIssuer deviceTokenIssuer;
 
-  public JwtAuthenticationFilter(TokenService tokenService) {
+  public JwtAuthenticationFilter(TokenService tokenService, DeviceTokenIssuer deviceTokenIssuer) {
     this.tokenService = tokenService;
+    this.deviceTokenIssuer = deviceTokenIssuer;
   }
 
   @Override
@@ -40,6 +45,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
     try {
+      if (tryAuthenticateDevice(request, token) || tryAuthenticateStaff(request, token)) {
+        // authenticated
+      } else {
+        SecurityContextHolder.clearContext();
+      }
+    } catch (RuntimeException ignored) {
+      SecurityContextHolder.clearContext();
+    }
+    filterChain.doFilter(request, response);
+  }
+
+  private boolean tryAuthenticateDevice(HttpServletRequest request, String token) {
+    try {
+      ParsedDeviceAccessToken parsed = deviceTokenIssuer.parseAccessToken(token);
+      List<SimpleGrantedAuthority> authorities =
+          List.of(new SimpleGrantedAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC));
+      DeviceAuthenticationContext principal = new DeviceAuthenticationContext(parsed);
+      UsernamePasswordAuthenticationToken auth =
+          new UsernamePasswordAuthenticationToken(principal, null, authorities);
+      auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+      SecurityContextHolder.getContext().setAuthentication(auth);
+      return true;
+    } catch (RuntimeException e) {
+      return false;
+    }
+  }
+
+  private boolean tryAuthenticateStaff(HttpServletRequest request, String token) {
+    try {
       ParsedAccessToken parsed = tokenService.parseAccessToken(token);
       var authorities = new ArrayList<SimpleGrantedAuthority>();
       for (String r : parsed.roles()) {
@@ -53,9 +87,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           new UsernamePasswordAuthenticationToken(principal, null, authorities);
       auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
       SecurityContextHolder.getContext().setAuthentication(auth);
-    } catch (RuntimeException ignored) {
-      SecurityContextHolder.clearContext();
+      return true;
+    } catch (RuntimeException e) {
+      return false;
     }
-    filterChain.doFilter(request, response);
   }
 }

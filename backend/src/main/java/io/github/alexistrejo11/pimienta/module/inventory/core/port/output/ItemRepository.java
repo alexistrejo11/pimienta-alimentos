@@ -17,4 +17,7 @@ public interface ItemRepository {
   Item save(Item item);
 
   boolean existsBySkuIgnoreCaseExcludingId(String sku, Long excludeId);
+
+  /** Global barcode uniqueness including soft-deleted rows (D5). */
+  boolean existsByBarcodeIgnoreCaseExcludingId(String barcode, Long excludeId);
 }

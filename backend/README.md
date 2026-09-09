@@ -23,7 +23,6 @@
 - [Project structure](#project-structure)
 - [Deployment](#deployment)
 - [Testing](#testing)
-- [Maintaining documentation](#maintaining-documentation)
 - [Contributing](#contributing)
 - [Security & compliance](#security--compliance)
 - [License](#license)
@@ -50,51 +49,25 @@ Replace `{{PRODUCTION_HOST}}` with your deployed EC2 hostname or load balancer D
 
 ## Features
 
-Short list for the README; full detail lives in generated docs.
-
 - JWT authentication with admin-approved registration and Redis-backed refresh tokens
 - Employee HR: profiles, attendance, work schedules, S3 photos, XLSX import/export
 - Inventory workflows: purchases, sales, transfers, approvals, low-stock alerts
 - Payroll, CRM (opportunities & projects), contracts, tasks, and headquarters
 - Redis token-bucket rate limiting and role-based access (ADMIN / MANAGER)
 - OpenAPI 3 + Swagger UI; 14 MockMvc integration test suites
-
-See [Project Features](docs/project/generated/ProjectFeature.md) for the complete feature breakdown.
+- POS integration is specified, not implemented yet — see [docs/v2/post_integration](docs/v2/post_integration/README.md)
 
 ---
 
 ## Documentation
 
-This repository keeps **structured source** in `docs/project/source/` (YAML frontmatter + notes) and **human-readable docs** in `docs/project/generated/`, produced by `docs/project/yaml_to_markdown.py`. The TypeScript contract for portfolio tools is `docs/project/source/schema.ts`.
+Handwritten docs live under [`docs/`](docs/README.md). Live HTTP contract is **Swagger UI** at `/swagger-ui`.
 
-### Documentation index
-
-| Document | What you will find | Read |
-|----------|-------------------|------|
-| **Overview** | Problem, solution, metrics, links | [ProjectOverview.md](docs/project/generated/ProjectOverview.md) |
-| **Metadata** | Project id, version, tech stack, URLs | [ProjectMetadata.md](docs/project/generated/ProjectMetadata.md) |
-| **API schema** | Endpoints, auth, rate limits, examples | [APISchema.md](docs/project/generated/APISchema.md) |
-| **Architecture** | Layers, patterns, diagram, data flows | [ProjectArchitecture.md](docs/project/generated/ProjectArchitecture.md) |
-| **Infrastructure** | Docker, EC2, RDS, Upstash Redis, S3 | [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure.md) |
-| **Features** | Feature cards, snippets, status per area | [ProjectFeature.md](docs/project/generated/ProjectFeature.md) |
-| **Code showcase** | Curated code examples from the codebase | [ProjectCodeShowCase.md](docs/project/generated/ProjectCodeShowCase.md) |
-| **Generated index** | Auto-generated hub linking all of the above | [docs/project/generated/README.md](docs/project/generated/README.md) |
-
-### Source vs generated
-
-| Path | Purpose |
-|------|---------|
-| `docs/project/source/*.md` | Edit YAML frontmatter here (machine-friendly, matches `schema.ts`) |
-| `docs/project/generated/*.md` | Read here on GitHub / in the IDE (do not edit by hand) |
-| `docs/project/yaml_to_markdown.py` | Regenerates `docs/project/generated/` from `docs/project/source/` |
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install pyyaml
-python docs/project/yaml_to_markdown.py
-deactivate
-```
+| Document | What you will find |
+|----------|-------------------|
+| [docs/v2/post_integration](docs/v2/post_integration/README.md) | POS ↔ API specs: audit, open decisions, Device/Admin API, module plan |
+| [docs/test](docs/test/) | Follow-ups from MockMvc integration tests |
+| [docs/extra](docs/extra/) | Extra notes from employee/attendance test passes |
 
 ---
 
@@ -120,7 +93,7 @@ flowchart LR
   EC2 --> S3[AWS S3]
 ```
 
-Full diagram, layers, and decisions: [ProjectArchitecture.md](docs/project/generated/ProjectArchitecture.md).
+POS bounded-context design (draft): [docs/v2/post_integration](docs/v2/post_integration/README.md).
 
 ---
 
@@ -168,8 +141,6 @@ Dotenv loads `.env` automatically via `DotenvEnvironmentPostProcessor`. Host URL
 
 Production uses the fat-JAR `Dockerfile` (not this Compose file) with Spring profile `prod`, RDS, Upstash Redis, and real S3. GHCR publish/deploy is handled by CI/CD.
 
-Details: [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure.md).
-
 ---
 
 ## Configuration
@@ -192,20 +163,21 @@ Full list: [.env.example](.env.example).
 
 ## API overview
 
-| Area | Base path | Doc |
-|------|-----------|-----|
-| Auth | `/api/v1/auth/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Users | `/api/v1/users/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Employees | `/api/v1/employees/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Contracts | `/api/v1/contracts/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| CRM | `/api/v1/opportunities/`, `/api/v1/projects/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Tasks | `/api/v1/tasks/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Headquarters | `/api/v1/headquarters/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Inventory | `/api/v1/inventory/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Payroll | `/api/v1/payroll/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Files | `/api/v1/files/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Notifications | `/api/v1/notifications/` | [APISchema.md](docs/project/generated/APISchema.md) |
-| Health | `/api/v2/health/` | [APISchema.md](docs/project/generated/APISchema.md) |
+| Area | Base path |
+|------|-----------|
+| Auth | `/api/v1/auth/` |
+| Users | `/api/v1/users/` |
+| Employees | `/api/v1/employees/` |
+| Contracts | `/api/v1/contracts/` |
+| CRM | `/api/v1/opportunities/`, `/api/v1/projects/` |
+| Tasks | `/api/v1/tasks/` |
+| Headquarters | `/api/v1/headquarters/` |
+| Inventory | `/api/v1/inventory/` |
+| Payroll | `/api/v1/payroll/` |
+| Files | `/api/v1/files/` |
+| Notifications | `/api/v1/notifications/` |
+| Health | `/api/v2/health/` |
+| POS (draft spec only) | `/api/v1/pos/` — [post_integration](docs/v2/post_integration/05-device-api.md) |
 
 Authentication: `Authorization: Bearer <access_token>` (JWT). Interactive reference: **Swagger UI** at `/swagger-ui`.
 
@@ -217,11 +189,9 @@ Authentication: `Authorization: Bearer <access_token>` (JWT). Interactive refere
 backend/
 ├── docker/                    # LocalStack init + Compose helper scripts
 ├── docs/
-│   ├── project/
-│   │   ├── source/            # YAML source docs (edit these)
-│   │   ├── generated/         # Readable Markdown (generated)
-│   │   └── yaml_to_markdown.py
-│   └── test/                  # Integration test follow-up notes
+│   ├── v2/post_integration/   # POS ↔ API specs (handwritten)
+│   ├── test/                  # Integration test follow-up notes
+│   └── extra/                 # Extra IT notes
 ├── src/
 │   ├── main/java/.../pimienta/
 │   │   ├── config/            # Security, Redis, OpenAPI, rate limit, AWS
@@ -238,8 +208,6 @@ backend/
 
 **Production:** Spring Boot JAR in Docker on **AWS EC2**, connecting to **AWS RDS PostgreSQL** and **Upstash Redis** (TLS). File uploads go to **AWS S3**. Profile `prod` via `SPRING_PROFILES_ACTIVE`.
 
-Details: [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure.md).
-
 ---
 
 ## Testing
@@ -249,16 +217,6 @@ Details: [ProjectInfrastructure.md](docs/project/generated/ProjectInfrastructure
 ```
 
 Integration tests use H2 in-memory; rate limiting is disabled in the test profile. See `src/test/java/.../integration/`.
-
----
-
-## Maintaining documentation
-
-1. Edit YAML in `docs/project/source/<Section>.md` (keep fields aligned with `docs/project/source/schema.ts`).
-2. Run `python docs/project/yaml_to_markdown.py`.
-3. Commit both `docs/project/source/` and `docs/project/generated/` if you want docs visible on GitHub without running the script.
-
-Optional notes that are not part of the schema (warnings, TODOs) go in the **Markdown body** below the closing `---` in each source file—they appear under **Additional notes** in generated files.
 
 ---
 
@@ -292,5 +250,5 @@ Apache License 2.0 — see [LICENSE](LICENSE) file.
 | Resource | URL |
 |----------|-----|
 | Repository | [https://github.com/alexistrejo11/pimienta](https://github.com/alexistrejo11/pimienta) |
-| Documentation hub | [docs/project/generated/README.md](docs/project/generated/README.md) |
+| Documentation hub | [docs/README.md](docs/README.md) |
 | Health (production) | [https://{{PRODUCTION_HOST}}/api/v2/health](https://{{PRODUCTION_HOST}}/api/v2/health) |

@@ -1,16 +1,22 @@
 package io.github.alexistrejo11.pimienta.config.security;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -36,14 +42,38 @@ public class SecurityConfig {
                         "/api/v1/auth/**"
         };
 
+        private static final String[] POS_DEVICE_PUBLIC_PATHS = {
+                        "/api/v1/pos/devices/enroll",
+                        "/api/v1/pos/devices/refresh"
+        };
+
         private static final String[] HEALTH_PUBLIC_PATHS = {
                         "/api/v2/health/**",
                         "/health"
         };
 
         @Bean
+        @Primary
         public PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
+        }
+
+        @Bean
+        @Qualifier("pinPasswordEncoder")
+        public PasswordEncoder pinPasswordEncoder() {
+                return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+        }
+
+        /** Staff JWT principal only (blocks POS device tokens on web/admin routes). */
+        static AuthorizationManager<RequestAuthorizationContext> staffJwtOnly() {
+                return (authentication, context) -> {
+                        var auth = authentication.get();
+                        boolean granted =
+                                        auth != null
+                                                        && auth.isAuthenticated()
+                                                        && auth.getPrincipal() instanceof JwtAuthenticationContext;
+                        return new AuthorizationDecision(granted);
+                };
         }
 
         @Bean
@@ -65,6 +95,7 @@ public class SecurityConfig {
                                                                 .requestMatchers(ACTUATOR_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(HEALTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(AUTH_PUBLIC_PATHS).permitAll()
+                                                                .requestMatchers(POS_DEVICE_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                                                                 .requestMatchers("/api/v1/notifications/management/**")
                                                                 .hasRole("ADMIN")
@@ -74,8 +105,14 @@ public class SecurityConfig {
                                                                 .hasRole("ADMIN")
                                                                 .requestMatchers("/api/v1/files/resources/**")
                                                                 .hasAnyRole("ADMIN", "MANAGER")
-                                                                .requestMatchers("/api/v1/employees/**").authenticated()
-                                                                .anyRequest().authenticated())
+                                                                .requestMatchers("/api/v1/pos/admin/**")
+                                                                .access(staffJwtOnly())
+                                                                .requestMatchers("/api/v1/pos/**")
+                                                                .hasAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC)
+                                                                .requestMatchers("/api/v1/employees/**")
+                                                                .access(staffJwtOnly())
+                                                                .anyRequest()
+                                                                .access(staffJwtOnly()))
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
                 return http.build();
         }

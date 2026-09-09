@@ -1,68 +1,85 @@
 ---
 name: pimienta-backend-conventions
 description: >-
-  General backend conventions for Pimienta Java: hexagonal layout, OpenAPI doc annotations,
-  controllers, shared web types. Use alongside pimienta-domain-repository-style.
+  Pimienta Spring Boot backend conventions: hexagonal packages (core/port, adapters),
+  Flyway migrations, ErrorCode exceptions, /api/v1 controllers, RateLimit, PagedResponse,
+  shared vs module. Use when adding or changing Java modules, REST endpoints, migrations,
+  or POS backend work under backend/.
 ---
 
 # Pimienta backend conventions
 
+Read this **before** writing new backend code. Match the module you edit; prefer **inventory / headquarter / task** layout for new work.
+
+## Before coding (checklist)
+
+1. Ports live in **`core/port/input`** and **`core/port/output`** — not under `core/application`.
+2. Adapters: match the module (`adapter/` **or** `infrastructure/adapter/`). **New modules:** prefer `infrastructure/adapter/inbound|outbound` (like inventory).
+3. Next Flyway version = max existing `V###` + 1 under `src/main/resources/db/migration/`.
+4. New API errors: add `ErrorCode` + module `*Exception` extending shared base — do not invent ad-hoc JSON.
+5. Controllers: `@RequestMapping("/api/v1/…")`, thin, `@Valid` → command → use case → DTO.
+6. POS Device/Admin API: follow `docs/v2/pos_integration/` + tracker `09-implementation-tracker.md` (do not invent richer DDD).
+
 ## Module layout (hexagonal)
 
-- **`core/domain`**: aggregates, value objects, domain exceptions—no Spring, no JPA.
-- **`core/application`**: ports (`*UseCases`), implementations (`*UseCasesImpl`), **commands**,
-  queries, DTOs for application workflows.
-- **`core/application/port` / `infrastructure/...`**: inbound adapters (web), outbound adapters
-  (JPA, clients)—depend inward on ports and domain.
+```text
+module/<context>/
+  core/domain/          # aggregates, enums, domain exceptions — no Spring, no JPA
+  core/application/     # *UseCasesImpl, command/, query/, workflow
+  core/port/input/      # use-case interfaces (*UseCases)
+  core/port/output/     # persistence/gateway ports
+  infrastructure/adapter/inbound/web/   # controllers, dto, doc/, mapper
+  infrastructure/adapter/outbound/persistence/  # *JpaEntity, SpringData, PersistenceMapper
+```
+
+Older modules may use `adapter/` instead of `infrastructure/adapter/`, or `outbound` vs `out` vs `output`. **Copy the folder names of the module you are editing.**
+
+- **`shared/`**: only cross-cutting (`BaseDomain`, exceptions, pagination, OpenAPI meta, rate limit, S3). Do **not** put module-specific types in `shared/`.
 
 ## Naming
 
-- Use cases: **`ThingManagementUseCases`**, **`ThingBulkSyncUseCases`** with impl classes
-  **`ThingManagementUseCasesImpl`**.
-- Web adapter for a resource: **`ThingController`** or **`ThingManagerController`**; mapper as
-  **`ThingWebMapper`** colocated or under `dto`.
+- Use cases: **`ThingManagementUseCases`** / **`ThingManagementUseCasesImpl`** (also `*BulkSyncUseCases`).
+- New writes: prefer **`*Command`** under `core/application/command` (avoid new domain `*Params`; legacy CRM/inventory may still use `*Params` or nested command records — do not spread that).
+- Web: **`ThingController`**, **`ThingWebMapper`**, DTOs with `@Schema`.
 - Persistence: **`ThingJpaEntity`**, **`ThingSpringDataRepository`**, **`ThingPersistenceMapper`**.
+- Persistence mappers: prefer **`blankToNull`** / `*OrNull` for optional strings/enums when writing JPA (task/contract/headquarter style). Some inventory mappers skip this — follow the gold style on new code.
 
 ## HTTP layer
 
-- Controllers stay **thin**: validate with `@Valid`, map to commands, call use case, map to
-  response DTO.
-- **Pagination**: extend **`PageableRequest`** for `@ModelAttribute` filters; return
-  **`PagedResponse<T>`** with `PagedResponse.map(page, mapper)`.
-- **Errors**: use shared **`ApiErrorResponse`**; domain/application exceptions map to HTTP via
-  global handlers where configured.
+- Controllers stay **thin**: `@Valid` → map to command → use case → response DTO.
+- Class-level `@RateLimit(profile = STANDARD)`; GETs **`READ_HEAVY`**; creates/updates/deletes/imports **`SENSITIVE_OPERATIONS`**; auth login/register **`STRICT`**; session refresh **`AUTH_SESSION`**.
+- **Pagination**: `@ModelAttribute` filters extending **`PageableRequest`**; return **`PagedResponse<T>`** via `PagedResponse.map(page, mapper)`. Do not return raw Spring `Page` on new endpoints (headquarter list is legacy `$.content`).
+- **URL**: `/api/v1/<resource>` (plural). Nested trees OK (`/api/v1/inventory/items`, `/api/v1/headquarters/{id}/pos-settings`). Staff admin under existing resources or `/api/v1/pos/admin/**` per POS specs — **no** duplicated CRUD under `/api/v1/admin`.
 
-## OpenAPI (Springdoc)
+## Flyway
 
-- **Meta-annotations** live under `.../infrastructure/adapter/inbound/web/doc/` (or module CRM
-  equivalent): one **`Doc*`** composed annotation per endpoint or per controller tag.
-- Each **`Doc*`** method annotation should include where relevant:
-  - **`@Operation`** (summary + description),
-  - **`@Parameter`** / **`@Parameters`** with **`ParameterIn.PATH`** or **`QUERY`**,
-  - **`@RequestBody`** with `schema = @Schema(implementation = …)` and **`@ExampleObject`** for JSON,
-  - **`@ApiResponse`** for **200/201/204** with response `schema`,
-  - **`@ApiResponse`** for **400** (validation / bad request) and **404** with
-    **`ApiErrorResponse`** when applicable.
-- **Multipart**: follow **`DocHeadquarterImport`** / **`DocTaskImport`**: `contentType =
-  MULTIPART_FORM_DATA`, `schema` with `requiredProperties`, **`@Encoding`** for `file` with Excel
-  `contentType`. Headquarters use the same **`Doc*`** style as tasks (`DocHeadquarterCreate`,
-  `DocHeadquarterList`, etc.).
-- **Controller class**: apply **`@DocTag`**-style annotation (e.g. **`@DocTasks`**) with **`@Tag`**
-  for the resource group.
+- Path: `src/main/resources/db/migration/V{n}__snake_case_name.sql`.
+- Enums in DB: **`VARCHAR` + `ALTER … ADD CONSTRAINT ck_* CHECK (col IN ('A','B'))`**. Do **not** use PostgreSQL `CREATE TYPE`.
+- Soft delete + auditing columns: follow existing tables (`created_at`, `updated_at`, `deleted_at`, `version`).
+- Partial unique indexes (`WHERE deleted_at IS NULL`) when matching inventory-style uniqueness.
 
-## DTO documentation
+## Exceptions and errors
 
-- Add **`@Schema`** on request/response records and filter classes: `name`, `description`,
-  `example`, `requiredMode`, `type`/`format` for dates.
-- Keep **English** descriptions in new API docs unless the module already standardizes on another
-  language.
+1. Add constant to **`shared/exception/ErrorCode.java`** (`THING_NOT_FOUND`, `THING_ALREADY_EXISTS`, …).
+2. Module exception under `core/domain/exception/`:
+   - not found → extend **`ResourceNotFoundException`**
+   - conflict → extend **`ConflictException`**
+   - pass `ErrorCode`, client message, `Map` context, log details (see `HeadquarterNotFoundException`, `ItemSkuConflictException`).
+3. **`GlobalExceptionHandler`** maps to **`ApiErrorResponse`** — do not add one-off handlers per controller.
 
-## Security and limits
+## Security
 
-- Reuse **`@DocJwtSecured`** on documented operations that require a bearer token.
-- Apply **`@RateLimit`** on controllers or methods per **`RateLimitProfile`** (e.g. `READ_HEAVY`,
-  `SENSITIVE_OPERATIONS`).
+- Default: `/api/v1/**` requires JWT (**authenticated**).
+- Edit **`SecurityConfig`** only for new **public** paths or **role-gated** trees (`hasRole("ADMIN")`, etc.). Ordinary staff CRUD needs no new matcher.
+- Unauthenticated secured call → **401**; authenticated without permission → **403**.
 
-## Related skill
+## OpenAPI
 
-- **`pimienta-domain-repository-style`**: domain shape, JPA nullability, validation boundaries.
+- Per-endpoint **`Doc*`** meta-annotations under `…/web/doc/`. No `io.swagger.v3.oas.annotations` imports in controller sources.
+- Details: skill **`pimienta-backend-openapi`**.
+
+## Related skills
+
+- **`pimienta-domain-repository-style`** — SafeBuilder, nullability, validation boundaries (canonical; Spanish skill is alias).
+- **`pimienta-backend-openapi`** — Doc* / springdoc.
+- **`pimienta-backend-integration-tests`** — MockMvc ITs + follow-up docs.

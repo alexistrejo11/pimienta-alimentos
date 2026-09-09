@@ -1,0 +1,64 @@
+{
+  "events": [
+    {
+      "eventId": "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f70819",
+      "eventType": "SALE_CONFIRMED",
+      "schemaVersion": 1,
+      "deviceId": "8f3c1a2e-9b4d-4e6a-a1c0-2d5e8f7a9b01",
+      "siteId": "42",
+      "deviceSequence": 1842,
+      "aggregateId": "c0ffee00-1234-5678-9abc-def012345678",
+      "shiftId": "b1b2b3b4-c5c6-4789-a012-3456789abcde",
+      "occurredAt": "2026-09-08T15:23:12Z",
+      "payload": {
+        "saleId": "c0ffee00-1234-5678-9abc-def012345678",
+        "folio": "T1-104-0023",
+        "cashierOperatorId": "101",
+        "grossCentavos": 6500,
+        "discountCentavos": 0,
+        "totalCentavos": 6500,
+        "status": "CONFIRMED",
+        "lines": [
+          {
+            "lineId": "11111111-2222-3333-4444-555555555555",
+            "productId": "1002",
+            "productName": "Refresco 600 ml",
+            "saleCategory": "Bebidas",
+            "quantity": 1,
+            "unit": "PIECE",
+            "unitPriceCentavos": 2500,
+            "subtotalCentavos": 2500,
+            "stockPolicy": "CONTROLLED",
+            "soldWithNegativeStock": false,
+            "soldWhileUnavailable": false,
+            "rawBarcode": null
+          },
+          {
+            "lineId": "66666666-7777-8888-9999-aaaaaaaaaaaa",
+            "productId": "1001",
+            "productName": "Hot Cakes con Avena y Plátano",
+            "saleCategory": "Deli",
+            "quantity": 1,
+            "unit": "PIECE",
+            "unitPriceCentavos": 4000,
+            "subtotalCentavos": 4000,
+            "stockPolicy": "NOT_CONTROLLED",
+            "soldWithNegativeStock": false,
+            "soldWhileUnavailable": false,
+            "rawBarcode": null
+          }
+        ],
+        "payments": [
+          {
+            "paymentId": "dddddddd-eeee-ffff-0000-111111111111",
+            "method": "CASH",
+            "amountCentavos": 6500,
+            "tenderedCentavos": 10000,
+            "changeCentavos": 3500
+          }
+        ],
+        "discount": null
+      }
+    }
+  ]
+}

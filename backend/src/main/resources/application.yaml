@@ -123,6 +123,10 @@ pimienta:
       secret: ${PIMIENTA_SECURITY_JWT_SECRET:change-me-use-at-least-256-bits-for-hs256-secret-key-pimienta}
       access-token-ttl-minutes: 15
       refresh-token-ttl-days: 7
+    device-jwt:
+      access-token-ttl-minutes: 15
+      refresh-token-ttl-days: 90
+      refresh-token-max-ttl-days: 365
 
 aws:
   region: ${AWS_REGION:us-east-1}

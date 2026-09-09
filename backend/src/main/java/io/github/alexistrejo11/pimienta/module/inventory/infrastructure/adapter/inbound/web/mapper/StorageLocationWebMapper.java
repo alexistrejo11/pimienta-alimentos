@@ -43,6 +43,7 @@ public final class StorageLocationWebMapper {
         location.getDescription(),
         location.getType(),
         location.getParentId(),
+        location.getHeadquarterId(),
         location.getMaxCapacity(),
         location.getOccupiedCapacity(),
         location.getStatus(),

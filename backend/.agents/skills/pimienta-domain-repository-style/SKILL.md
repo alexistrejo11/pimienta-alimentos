@@ -1,9 +1,9 @@
 ---
 name: pimienta-domain-repository-style
 description: >-
-  Repository-style domain in Pimienta: thin aggregates, SafeBuilder, nullable-friendly JPA,
-  Jakarta validation at HTTP edges. Use when adding or refactoring Java modules (task, contract,
-  employee, etc.).
+  Pimienta repository-style domain: thin aggregates, BaseDomain, SafeBuilder (register/reconstruct),
+  sentinel enums, nullable JPA, Jakarta validation on HTTP DTOs only. Use when adding or
+  refactoring domain/persistence in backend Java modules (task, contract, employee, inventory, POS).
 ---
 
 # Pimienta domain (repository-oriented)
@@ -24,7 +24,11 @@ orchestration and invariants that belong to application services.
   entity). Prefer **commands + use case** methods that load, mutate via setters or builder steps,
   and persist.
 - Avoid domain **parameter records** that mirror HTTP or application DTOs; use **commands** under
-  `core/application/command` for writes.
+  `core/application/command` for writes. Prefer new `*Command` types; do not add CRM-style
+  application `*Params` on greenfield code.
+- **`revise(existing)`** on SafeBuilder is **Contract-specific** (and similar legacy paths). Most
+  aggregates only need `register()` / `reconstruct()` plus setters or use-case mutation. Do not
+  add `revise()` to new aggregates unless matching an existing pattern in that module.
 
 ## BaseDomain and builder
 

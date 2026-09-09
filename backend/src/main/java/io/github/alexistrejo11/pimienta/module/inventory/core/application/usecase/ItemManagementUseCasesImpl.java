@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.core.application.useca
 
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.ItemSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemBarcodeConflictException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemNotFoundException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemSkuConflictException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.ItemManagementUseCases;
@@ -81,6 +82,7 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     if (itemRepository.existsBySkuIgnoreCaseExcludingId(item.getSku(), null)) {
       throw new ItemSkuConflictException(item.getSku());
     }
+    assertBarcodeUnique(item.getBarcode(), null);
 
     Item saved = itemRepository.save(item);
 
@@ -97,6 +99,7 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     if (itemRepository.existsBySkuIgnoreCaseExcludingId(merged.getSku(), id)) {
       throw new ItemSkuConflictException(merged.getSku());
     }
+    assertBarcodeUnique(merged.getBarcode(), id);
     existing.setSku(merged.getSku());
     existing.setName(merged.getName());
     existing.setDescription(merged.getDescription());
@@ -149,5 +152,14 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
 
     itemRepository.save(item);
     log.info("delete item complete itemId={}", id);
+  }
+
+  private void assertBarcodeUnique(String barcode, Long excludeId) {
+    if (barcode == null || barcode.isBlank()) {
+      return;
+    }
+    if (itemRepository.existsByBarcodeIgnoreCaseExcludingId(barcode, excludeId)) {
+      throw new ItemBarcodeConflictException(barcode.trim());
+    }
   }
 }

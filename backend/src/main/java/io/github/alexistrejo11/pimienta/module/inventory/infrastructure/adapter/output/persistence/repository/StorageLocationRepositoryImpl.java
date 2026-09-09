@@ -46,6 +46,24 @@ public class StorageLocationRepositoryImpl implements StorageLocationRepository 
   }
 
   @Override
+  public Optional<StorageLocation> findPosByHeadquarterId(long headquarterId) {
+    return jpaRepository
+        .findByHeadquarterIdAndTypeAndDeletedAtIsNull(
+            headquarterId, StorageLocation.LocationType.POS)
+        .map(StorageLocationPersistenceMapper::toDomain);
+  }
+
+  @Override
+  public Optional<StorageLocation> findByCode(String code) {
+    if (code == null || code.isBlank()) {
+      return Optional.empty();
+    }
+    return jpaRepository
+        .findByCodeAndDeletedAtIsNull(code.trim())
+        .map(StorageLocationPersistenceMapper::toDomain);
+  }
+
+  @Override
   public Page<StorageLocation> search(StorageLocationSearchCriteria criteria, Pageable pageable) {
     Specification<StorageLocationJpaEntity> spec = StorageLocationSpecifications.fromCriteria(criteria);
     return jpaRepository.findAll(spec, pageable).map(StorageLocationPersistenceMapper::toDomain);

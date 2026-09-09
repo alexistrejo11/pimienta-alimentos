@@ -1,9 +1,21 @@
 # Backend (Spring API)
 
-Production operations API for Pimienta Alimentos: auth, employees, contracts, CRM, inventory, payroll, tasks, headquarters, files, notifications.
+Production operations API for Pimienta Alimentos: auth, employees, contracts, CRM, inventory, payroll, tasks, headquarters, files, notifications. POS Device API is specified under `docs/v2/pos_integration/` (tracker: `09-implementation-tracker.md`), not implemented yet.
 
 - **Stack:** Java 26, Spring Boot 4, `/api/v1`, PostgreSQL + Flyway, Redis, JWT, S3.
 - **Package:** `io.github.alexistrejo11.pimienta.module.<boundedContext>`
+
+## Before writing code
+
+**Always** open [`.agents/skills/pimienta-backend-conventions/SKILL.md`](.agents/skills/pimienta-backend-conventions/SKILL.md) for backend work (modules, endpoints, migrations, POS). Then open any other matching skill below. Do not invent packages, Flyway enums, or error JSON.
+
+Quick invariants (detail in that skill):
+
+- Ports: `core/port/input` | `core/port/output`. Adapters: match the module (`adapter/` or `infrastructure/adapter/`); prefer `infrastructure/adapter` for new modules.
+- Flyway: `db/migration/V{n}__*.sql`; enums as `VARCHAR` + `ck_*` CHECK — no PG `CREATE TYPE`.
+- Errors: `ErrorCode` + module exception extending `ResourceNotFoundException` / `ConflictException` → `ApiErrorResponse`.
+- Controllers thin: `@Valid` → `*Command` → use case → DTO; `@RateLimit` profiles; new lists use `PagedResponse`.
+- Unauthenticated secured calls → **401**; POS contracts → `docs/v2/pos_integration/`.
 
 ## Architecture (hexagonal, thin domain)
 
@@ -12,22 +24,20 @@ This is a **simple server**: structure is hexagonal; **business rules in the dom
 Per module (follow the folder names already used in that module):
 
 - `core/domain` — aggregates as **state holders** (`BaseDomain` + `SafeBuilder`). No Spring, no JPA. No workflow policy on entities.
-- `core/application` — `*UseCases` / `*UseCasesImpl`, commands, queries. **Workflow lives here** (status, stock, approvals, imports).
+- `core/application` — `*UseCasesImpl`, commands, queries. **Workflow lives here**. Use-case **interfaces** live in `core/port/input`.
 - `core/port/input` and `core/port/output` — ports.
 - Inbound web / outbound JPA adapters — some modules use `adapter/`, others `infrastructure/adapter/`. **Match the module you are editing.**
 
 Jakarta validation belongs on **HTTP DTOs**, not on rich domain invariants.
 
-Controllers stay thin: `@Valid` → command → use case → response DTO.
-
 ## Skills
 
-Read the matching skill when the task needs it:
+| Skill | When |
+|-------|------|
+| [pimienta-backend-conventions](.agents/skills/pimienta-backend-conventions/SKILL.md) | **Default** — layout, Flyway, errors, HTTP, RateLimit |
+| [pimienta-domain-repository-style](.agents/skills/pimienta-domain-repository-style/SKILL.md) | Aggregates, SafeBuilder, JPA nullability |
+| [pimienta-domain-model](.agents/skills/pimienta-domain-model/SKILL.md) | Spanish alias → same as repository-style |
+| [pimienta-backend-openapi](.agents/skills/pimienta-backend-openapi/SKILL.md) | Controllers / `Doc*` / springdoc |
+| [pimienta-backend-integration-tests](.agents/skills/pimienta-backend-integration-tests/SKILL.md) | MockMvc `*IntegrationTest` |
 
-- [pimienta-backend-conventions](.agents/skills/pimienta-backend-conventions/SKILL.md) — layout, naming, thin controllers, pagination
-- [pimienta-domain-repository-style](.agents/skills/pimienta-domain-repository-style/SKILL.md) — canonical English domain / persistence style
-- [pimienta-domain-model](.agents/skills/pimienta-domain-model/SKILL.md) — same topic in Spanish
-- [pimienta-backend-openapi](.agents/skills/pimienta-backend-openapi/SKILL.md) — springdoc `Doc*` annotations
-- [pimienta-backend-integration-tests](.agents/skills/pimienta-backend-integration-tests/SKILL.md) — MockMvc ITs
-
-Do not treat generated architecture docs as richer DDD than the skills above.
+POS specs: [docs/v2/pos_integration/](docs/v2/pos_integration/README.md) · progress: [09-implementation-tracker.md](docs/v2/pos_integration/09-implementation-tracker.md). Do not treat those drafts as richer DDD than the skills above.

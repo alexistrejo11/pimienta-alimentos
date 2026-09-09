@@ -1,9 +1,9 @@
 ---
 name: pimienta-backend-openapi
 description: >-
-  Pimienta Alimentos Spring Boot API: OpenAPI 3 (springdoc), per-endpoint Doc* annotations,
-  shared DocJwtSecured / DocPublicEndpoint, StandardErrorResponses, global OpenAPI config,
-  Swagger UI security. Apply when adding or editing REST controllers or API docs in backend/.
+  Pimienta Spring Boot OpenAPI 3 (springdoc): per-endpoint Doc* annotations, DocJwtSecured /
+  DocPublicEndpoint, StandardErrorResponses, no swagger imports in controllers. Use when adding
+  or editing REST controllers, Doc* types, or Swagger docs in backend/.
 ---
 
 # Pimienta backend — OpenAPI & controller documentation
@@ -58,5 +58,6 @@ Place these in **`…adapter.inbound.web.doc`** next to the controller package.
 
 ## Related
 
-- Hexagonal controller rules: `pimienta-backend-layer-conventions`.
-- Package layout: `pimienta-backend-project-structure`.
+- Package layout, RateLimit, errors, Flyway: **`pimienta-backend-conventions`** and **`backend/AGENTS.md`**.
+- Domain / SafeBuilder: **`pimienta-domain-repository-style`**.
+- MockMvc ITs: **`pimienta-backend-integration-tests`**.

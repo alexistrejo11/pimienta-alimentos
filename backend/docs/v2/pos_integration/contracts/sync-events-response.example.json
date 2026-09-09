@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "eventId": "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f70819",
+      "status": "ACCEPTED",
+      "serverReceivedAt": "2026-09-08T15:24:01Z",
+      "incidentId": null,
+      "message": null
+    },
+    {
+      "eventId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "status": "DUPLICATE",
+      "serverReceivedAt": "2026-09-08T14:10:00Z",
+      "incidentId": null,
+      "message": "Event already processed"
+    },
+    {
+      "eventId": "ffffffff-0000-1111-2222-333333333333",
+      "status": "REQUIRES_REVIEW",
+      "serverReceivedAt": "2026-09-08T15:24:02Z",
+      "incidentId": "99999999-aaaa-bbbb-cccc-dddddddddddd",
+      "message": "Business inconsistency flagged for Superadmin"
+    }
+  ]
+}

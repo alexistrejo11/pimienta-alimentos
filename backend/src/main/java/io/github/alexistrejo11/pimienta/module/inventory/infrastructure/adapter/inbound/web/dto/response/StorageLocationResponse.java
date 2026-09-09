@@ -11,6 +11,7 @@ public record StorageLocationResponse(
     String description,
     LocationType type,
     Long parentId,
+    Long headquarterId,
     int maxCapacity,
     int occupiedCapacity,
     LocationStatus status,
