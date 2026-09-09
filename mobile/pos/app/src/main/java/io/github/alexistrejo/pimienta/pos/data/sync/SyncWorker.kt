@@ -1,0 +1,121 @@
+package io.github.alexistrejo.pimienta.pos.data.sync
+
+import android.content.Context
+import androidx.work.BackoffPolicy
+import androidx.work.CoroutineWorker
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
+import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
+import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Interceptor
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+import retrofit2.HttpException
+
+private const val UNIQUE_SYNC = "pos-sync"
+
+class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
+    private val provider = PosDatabaseProvider(appContext)
+    private val db get() = provider.database(RuntimeMode.PRODUCTION)
+    private val credentials = DeviceCredentials(appContext)
+    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+
+    override suspend fun doWork(): Result {
+        if (provider.modes.mode() != RuntimeMode.PRODUCTION) return Result.success()
+        val state = db.syncDao().state() ?: return Result.success()
+        val baseUrl = state.baseUrl?.trim()?.let { if (it.endsWith("/")) it else "$it/" } ?: return Result.success()
+        val device = db.operationsDao().device() ?: return Result.success()
+        if (credentials.access() == null) return Result.success()
+        val api = api(baseUrl)
+        return try {
+            val events = db.syncDao().eligible(System.currentTimeMillis(), 50)
+            if (events.isNotEmpty()) {
+                val siteId = device.siteId ?: return Result.success()
+                val response = api.events(EventsRequest(events.map { it.toEnvelope(device.id, siteId, json) }))
+                response.results.forEach { result ->
+                    when (result.status.uppercase()) {
+                        "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> db.syncDao().terminal(result.eventId, "ACKNOWLEDGED", result.status, result.incidentId, result.message)
+                        "REJECTED" -> db.syncDao().terminal(result.eventId, "BLOCKED", result.status, result.incidentId, result.message)
+                        else -> db.syncDao().retry(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
+                    }
+                }
+            }
+            val current = db.syncDao().state() ?: state
+            if (current.changesCursor == null) ProvisioningRepository(applicationContext, provider).applyBootstrap(api.bootstrap())
+            else {
+                val changes = api.changes(current.changesCursor)
+                ProvisioningRepository(applicationContext, provider).applyChanges(changes)
+            }
+            db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
+            Result.success()
+        } catch (e: HttpException) {
+            if (e.code() == 401) {
+                val refresh = credentials.refresh() ?: return Result.failure()
+                try {
+                    val token = refreshApi(baseUrl).refresh(RefreshRequest(refresh))
+                    credentials.save(token.accessToken, token.refreshToken)
+                    Result.retry()
+                } catch (_: Exception) {
+                    credentials.clear()
+                    db.syncDao().saveState(state.copy(status = "REQUIRES_REENROLLMENT", lastError = "refresh revoked"))
+                    Result.failure()
+                }
+            } else if (e.code() == 403) {
+                db.syncDao().saveState(state.copy(status = "REQUIRES_REENROLLMENT", lastError = "device revoked"))
+                Result.failure()
+            } else {
+                db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message()))
+                Result.retry()
+            }
+        } catch (e: Exception) {
+            db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message ?: e.javaClass.simpleName))
+            Result.retry()
+        }
+    }
+
+    private fun api(baseUrl: String): DeviceApi {
+        val client = OkHttpClient.Builder().addInterceptor(Interceptor { chain ->
+            val token = credentials.access()
+            val request = chain.request().newBuilder().apply { if (token != null) header("Authorization", "Bearer $token") }.build()
+            chain.proceed(request)
+        }).build()
+        return Retrofit.Builder().baseUrl(baseUrl).client(client).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
+    }
+    private fun refreshApi(baseUrl: String): DeviceApi = Retrofit.Builder().baseUrl(baseUrl).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
+    private fun backoff(attempt: Int) = minOf(TimeUnit.HOURS.toMillis(6), TimeUnit.MINUTES.toMillis(1L shl minOf(attempt, 8)))
+
+    companion object {
+        fun cancel(context: Context) {
+            val wm = WorkManager.getInstance(context)
+            wm.cancelUniqueWork(UNIQUE_SYNC)
+            wm.cancelUniqueWork(UNIQUE_SYNC + "-periodic")
+        }
+
+        fun enqueue(context: Context) {
+            val wm = WorkManager.getInstance(context)
+            val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            wm.enqueueUniqueWork(UNIQUE_SYNC, ExistingWorkPolicy.KEEP, OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
+            wm.enqueueUniquePeriodicWork(UNIQUE_SYNC + "-periodic", ExistingPeriodicWorkPolicy.KEEP, PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setConstraints(constraints).build())
+        }
+    }
+}
+
+private fun OutboxEventEntity.toEnvelope(deviceId: String, siteId: String, json: Json): EventEnvelope {
+    val payload = payloadJson?.let { runCatching { json.parseToJsonElement(it).jsonObject }.getOrNull() } ?: buildJsonObject { put("aggregateId", aggregateId) }
+    return EventEnvelope(id, type, schemaVersion, deviceId, this.siteId ?: siteId, sequence, aggregateId, shiftId, Instant.ofEpochMilli(occurredAtEpochMillis).toString(), payload)
+}

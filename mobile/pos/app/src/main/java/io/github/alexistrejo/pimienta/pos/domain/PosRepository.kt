@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.domain
 
-import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
+import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
+import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -49,7 +50,10 @@ object Money {
 }
 
 // Holds the local rules and atomic persistence needed by the Phase 1 POS flow.
-class PosRepository(private val database: PosDatabase) {
+class PosRepository(private val provider: PosDatabaseProvider, private val mode: RuntimeMode = provider.modes.mode()) {
+    private val database get() = provider.database(mode)
+    fun mode() = mode
+    fun syncState() = database.syncDao().state()
     fun users() = database.userDao().activeUsers()
     fun products() = database.productDao().getAll()
     fun activeShift() = database.operationsDao().activeShift()

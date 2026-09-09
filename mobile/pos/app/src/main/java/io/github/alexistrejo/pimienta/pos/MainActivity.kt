@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
+import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -45,6 +47,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.content.edit
+import androidx.compose.ui.platform.LocalContext
+import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 
 // Identifies the visible panel used by portrait tablets during a draft sale.
 internal enum class PortraitPanel { CATALOG, CART }
@@ -56,7 +60,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val preferences = getSharedPreferences("pos-demo", MODE_PRIVATE)
-        val repository = PosRepository((application as PosApplication).database)
+        val repository = PosRepository((application as PosApplication).databaseProvider)
 
         setContent {
             var dark by remember {
@@ -72,45 +76,95 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Selects the local screen from data persisted in Room rather than from a remote service.
+// Selects the active data space and keeps sandbox isolated from backend services.
 @Composable
 private fun PosApp(repository: PosRepository, dark: Boolean, onTheme: (Boolean) -> Unit) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val app = context.applicationContext as PosApplication
+    val mode = repository.mode()
     var users by remember { mutableStateOf<List<LocalUserEntity>>(emptyList()) }
     var products by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
     var shift by remember { mutableStateOf<ShiftEntity?>(null) }
     var managerReadOnly by remember { mutableStateOf<LocalUserEntity?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    var enrolling by remember { mutableStateOf(false) }
+    var enrollError by remember { mutableStateOf<String?>(null) }
+    var syncState by remember { mutableStateOf<SyncStateEntity?>(null) }
+    var initialized by remember { mutableStateOf(false) }
 
     fun reload() {
         scope.launch {
             val state = withContext(Dispatchers.IO) {
-                Triple(repository.users(), repository.products(), repository.activeShift())
+                Quadruple(repository.syncState(), repository.users(), repository.products(), repository.activeShift())
             }
-            users = state.first
-            products = state.second
-            shift = state.third
+            syncState = state.first
+            users = state.second
+            products = state.third
+            shift = state.fourth
+            initialized = true
+        }
+    }
+
+    fun switchMode(target: RuntimeMode, pin: String) {
+        scope.launch {
+            val managerRepository = if (users.isNotEmpty()) repository else PosRepository(app.databaseProvider, RuntimeMode.SANDBOX)
+            val manager = withContext(Dispatchers.IO) {
+                managerRepository.users().firstOrNull { it.active && (it.role.equals("MANAGER", true) || it.role.equals("SUPERADMIN", true)) }
+            }
+            val valid = withContext(Dispatchers.IO) { manager != null && managerRepository.authenticate(manager.id, pin) }
+            if (!valid) { notice = "PIN de Manager/Superadmin invalido"; return@launch }
+            if (shift != null) { notice = "Cierra el turno antes de cambiar de modo"; return@launch }
+            app.switchMode(target)
+            (context as? ComponentActivity)?.recreate()
         }
     }
 
     LaunchedEffect(Unit) { reload() }
 
-    when {
-        users.isEmpty() || products.isEmpty() -> Loading(notice, ::reload)
-        shift == null && managerReadOnly != null -> ManagerReadOnlyPanel(managerReadOnly!!, repository) { managerReadOnly = null }
-        shift == null -> Access(users, repository, notice, { shift = it }, { notice = it }) { managerReadOnly = it }
-        else -> Sale(
-            repository = repository,
-            shift = shift!!,
-            cashier = users.firstOrNull { it.id == shift!!.cashierId }?.displayName ?: "Cajero",
-            users = users,
-            products = products,
-            dark = dark,
-            onTheme = onTheme,
-            onShiftClosed = { shift = null },
-        )
+    Column {
+        RuntimeModeBanner(mode, ::switchMode)
+        if (!initialized) {
+            Loading("Cargando base de datos...", ::reload)
+        } else {
+            when {
+                mode == RuntimeMode.PRODUCTION && syncState?.baseUrl == null -> EnrollmentScreen( busy = enrolling, error = enrollError ) { url, code, name, pin ->
+                    scope.launch {
+                        enrolling = true
+                        enrollError = null
+                        try {
+                            val managerRepository = PosRepository(app.databaseProvider, RuntimeMode.SANDBOX)
+                            val manager = withContext(Dispatchers.IO) {
+                                managerRepository.users().firstOrNull { it.active && (it.role.equals("MANAGER", true) || it.role.equals("SUPERADMIN", true)) }
+                            }
+                            check(manager != null && withContext(Dispatchers.IO) { managerRepository.authenticate(manager.id, pin) }) { "PIN de Manager/Superadmin invalido" }
+                            withContext(Dispatchers.IO) { ProvisioningRepository(context, app.databaseProvider).enroll(url, code, name) }
+                            reload()
+                        } catch (e: Exception) {
+                            enrollError = e.message ?: "No fue posible enrolar el dispositivo"
+                        } finally { enrolling = false }
+                    }
+                }
+                users.isEmpty() || products.isEmpty() -> Loading(notice, ::reload)
+                shift == null && managerReadOnly != null -> ManagerReadOnlyPanel(managerReadOnly!!, repository) { managerReadOnly = null }
+                shift == null -> Access(users, repository, notice, { shift = it }, { notice = it }) { managerReadOnly = it }
+                else -> Sale(
+                    repository = repository,
+                    shift = shift!!,
+                    cashier = users.firstOrNull { it.id == shift!!.cashierId }?.displayName ?: "Cajero",
+                    users = users,
+                    products = products,
+                    dark = dark,
+                    onTheme = onTheme,
+                    onShiftClosed = { shift = null },
+                )
+            }
+        }
     }
 }
+
+// Small immutable tuple used to load the active database state together.
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 // Waits for the debug bootstrap without blocking the Compose UI thread.
 @Composable
@@ -189,7 +243,7 @@ private fun Access(
                             busy = true
                             val result = withContext(Dispatchers.IO) {
                                 val cash = Money.fromInput(opening) ?: -1
-                                when {
+    when {
                                     cash < 0 -> Result.failure<ShiftEntity>(IllegalArgumentException("Ingresa un fondo inicial válido."))
                                     !repository.authenticate(user.id, pin) -> Result.failure<ShiftEntity>(IllegalArgumentException("El PIN no corresponde al perfil seleccionado."))
                                     else -> repository.openShift(user.id, cash)?.let { Result.success(it) }

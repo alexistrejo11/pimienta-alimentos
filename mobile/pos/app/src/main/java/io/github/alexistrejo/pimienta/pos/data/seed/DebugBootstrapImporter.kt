@@ -18,7 +18,7 @@ class DebugBootstrapImporter(private val context: Context, private val database:
             val root = try {
                 JSONObject(context.assets.open("pos-bootstrap.json").bufferedReader().use { it.readText() })
             } catch (_: IOException) {
-                // Release builds do not package the debug-only bootstrap asset.
+                // Release builds do not package the sandbox bootstrap asset.
                 return@execute
             }
             val snapshotId = root.getString("snapshotId")
@@ -77,7 +77,7 @@ class DebugBootstrapImporter(private val context: Context, private val database:
 
     private fun JSONObject.optNullableString(key: String): String? = if (has(key) && !isNull(key)) optString(key) else null
 
-    // Converts a debug-only user snapshot that contains a PIN verifier rather than a PIN.
+    // Converts a sandbox user snapshot that contains a PIN verifier rather than a PIN.
     private fun JSONObject.toUserEntity(): LocalUserEntity = LocalUserEntity(
         id = getString("id"), displayName = getString("displayName"), role = getString("role"),
         pinHash = getString("pinHash"), active = getBoolean("active")

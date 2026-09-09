@@ -10,4 +10,5 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.SiteEntity
 interface SiteDao {
     @Insert fun insert(site: SiteEntity)
     @Query("DELETE FROM site") fun clear()
+    @Query("DELETE FROM site WHERE id = :id") fun deleteById(id: String)
 }

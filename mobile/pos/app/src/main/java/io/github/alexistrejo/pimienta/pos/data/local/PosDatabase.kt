@@ -26,6 +26,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.dao.UserDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CashCountAttemptEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftCloseEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleCancellationEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
+import io.github.alexistrejo.pimienta.pos.data.local.dao.SyncDao
 
 // Defines the first local schema for catalog bootstrap data.
 @Database(
@@ -33,9 +35,9 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleCancellationEnti
         SiteEntity::class, ProductEntity::class, BootstrapEntity::class, LocalUserEntity::class,
         DeviceEntity::class, ShiftEntity::class, SaleEntity::class, SaleLineEntity::class,
         PaymentEntity::class, SaleDiscountEntity::class, CashWithdrawalEntity::class, InventoryMovementEntity::class, OutboxEventEntity::class, PrintJobEntity::class,
-        CashCountAttemptEntity::class, ShiftCloseEntity::class, SaleCancellationEntity::class
+        CashCountAttemptEntity::class, ShiftCloseEntity::class, SaleCancellationEntity::class, SyncStateEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {
@@ -44,13 +46,14 @@ abstract class PosDatabase : RoomDatabase() {
     abstract fun bootstrapDao(): BootstrapDao
     abstract fun userDao(): UserDao
     abstract fun operationsDao(): OperationsDao
+    abstract fun syncDao(): SyncDao
 
     companion object {
         // Builds the SQLite database owned by Room.
-        fun create(context: Context): PosDatabase = Room.databaseBuilder(
+        fun create(context: Context, databaseName: String = "pimienta-pos.db"): PosDatabase = Room.databaseBuilder(
             context,
             PosDatabase::class.java,
-            "pimienta-pos.db"
-        ).addMigrations(Migrations.V1_TO_V2, Migrations.V2_TO_V3, Migrations.V3_TO_V4, Migrations.V4_TO_V5).build()
+            databaseName
+        ).addMigrations(Migrations.V1_TO_V2, Migrations.V2_TO_V3, Migrations.V3_TO_V4, Migrations.V4_TO_V5, Migrations.V5_TO_V6).build()
     }
 }

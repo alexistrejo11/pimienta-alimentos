@@ -50,4 +50,25 @@ object Migrations {
             database.execSQL("CREATE TABLE IF NOT EXISTS `sale_cancellation` (`id` TEXT NOT NULL, `saleId` TEXT NOT NULL, `shiftId` TEXT NOT NULL, `reason` TEXT NOT NULL, `authorizedByUserId` TEXT NOT NULL, `authorizedByRole` TEXT NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
         }
     }
+    val V5_TO_V6 = object : Migration(5, 6) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `device` ADD COLUMN `siteId` TEXT")
+            database.execSQL("ALTER TABLE `device` ADD COLUMN `status` TEXT NOT NULL DEFAULT 'SANDBOX'")
+            database.execSQL("ALTER TABLE `device` ADD COLUMN `minAppVersion` TEXT")
+            database.execSQL("ALTER TABLE `device` ADD COLUMN `schemaVersionsJson` TEXT")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `schemaVersion` INTEGER NOT NULL DEFAULT 1")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `deviceId` TEXT")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `siteId` TEXT")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `shiftId` TEXT")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `occurredAtEpochMillis` INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `payloadJson` TEXT")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `attemptCount` INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `nextAttemptAtEpochMillis` INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `lastError` TEXT")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `resultStatus` TEXT")
+            database.execSQL("ALTER TABLE `outbox_event` ADD COLUMN `incidentId` TEXT")
+            database.execSQL("CREATE TABLE IF NOT EXISTS `sync_state` (`id` INTEGER NOT NULL, `baseUrl` TEXT, `changesCursor` TEXT, `bootstrapSnapshotId` TEXT, `lastSuccessfulAtEpochMillis` INTEGER, `lastError` TEXT, `status` TEXT NOT NULL, PRIMARY KEY(`id`))")
+            database.execSQL("INSERT OR IGNORE INTO `sync_state` (`id`, `status`) VALUES (1, 'NOT_CONFIGURED')")
+        }
+    }
 }
