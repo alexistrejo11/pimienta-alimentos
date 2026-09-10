@@ -71,4 +71,10 @@ object Migrations {
             database.execSQL("INSERT OR IGNORE INTO `sync_state` (`id`, `status`) VALUES (1, 'NOT_CONFIGURED')")
         }
     }
+    // Adds the bounded local queue used for best-effort client diagnostics.
+    val V6_TO_V7 = object : Migration(6, 7) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `telemetry_event` (`id` TEXT NOT NULL, `schemaVersion` INTEGER NOT NULL, `eventType` TEXT NOT NULL, `level` TEXT NOT NULL, `message` TEXT NOT NULL, `stack` TEXT, `occurredAtEpochMillis` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        }
+    }
 }

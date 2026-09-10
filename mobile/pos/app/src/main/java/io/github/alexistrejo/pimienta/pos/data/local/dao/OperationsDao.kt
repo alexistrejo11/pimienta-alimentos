@@ -50,4 +50,10 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.*
     @Query("SELECT * FROM inventory_movement WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun inventoryMovementsBetween(from: Long, to: Long): List<InventoryMovementEntity>
     @Query("SELECT * FROM inventory_movement ORDER BY createdAtEpochMillis DESC LIMIT 20") fun recentInventoryMovements(): List<InventoryMovementEntity>
     @Query("SELECT COUNT(*) FROM sale_cancellation WHERE shiftId = :shiftId") fun cancellationCountForShift(shiftId: String): Int
+    @Insert fun insertTelemetry(event: TelemetryEventEntity)
+    @Query("SELECT * FROM telemetry_event ORDER BY createdAtEpochMillis LIMIT :limit") fun pendingTelemetry(limit: Int): List<TelemetryEventEntity>
+    @Query("DELETE FROM telemetry_event WHERE id IN (:ids)") fun deleteTelemetry(ids: List<String>)
+    @Query("DELETE FROM telemetry_event WHERE id IN (SELECT id FROM telemetry_event ORDER BY createdAtEpochMillis LIMIT -1 OFFSET :maxEntries)") fun trimTelemetry(maxEntries: Int)
+    @Query("SELECT COUNT(*) FROM telemetry_event") fun telemetryCount(): Int
+    @Query("SELECT MIN(createdAtEpochMillis) FROM outbox_event WHERE status IN ('PENDING','RETRY')") fun oldestPendingEventAt(): Long?
 }

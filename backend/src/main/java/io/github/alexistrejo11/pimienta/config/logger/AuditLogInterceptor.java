@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class AuditLogInterceptor implements HandlerInterceptor {
   protected static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuditLogInterceptor.class);
@@ -16,12 +17,17 @@ public class AuditLogInterceptor implements HandlerInterceptor {
   protected final String serviceName;
   protected final ThreadLocal<Long> startTime = new ThreadLocal<>();
 
+  private static final Set<String> MUTATION_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
+  private static final Pattern UUID_SEGMENT = Pattern.compile("/[0-9a-fA-F-]{36}");
+
   protected final Set<String> excludedEndpoints = Set.of(
       "/actuator/health",
       "/actuator/info",
       "/actuator/metrics",
       "/actuator/prometheus",
       "/api/v2/health",
+      "/api/v1/telemetry/",
+      "/api/v1/pos/telemetry/",
       "/favicon.ico",
       "/swagger-ui.html",
       "/v3/api-docs",
@@ -92,16 +98,18 @@ public class AuditLogInterceptor implements HandlerInterceptor {
       }
     }
 
-    // Exclude OPTIONS requests commonly used for CORS preflight
-    return "OPTIONS".equalsIgnoreCase(request.getMethod());
+    // Audit mutations and security-sensitive actions, not ordinary reads.
+    return !MUTATION_METHODS.contains(request.getMethod().toUpperCase(Locale.ROOT));
   }
 
   protected String sanitizeEndpoint(String endpoint) {
     if (endpoint == null)
       return "";
 
+    // Keep query parameters out even if a proxy or test double includes them in the URI.
+    endpoint = endpoint.split("\\?", 2)[0];
     return endpoint.replaceAll("/\\d+", "/{id}")
-        .replaceAll("/[0-9a-fA-F-]{36}", "/{uuid}")
+        .replaceAll(UUID_SEGMENT.pattern(), "/{uuid}")
         .replaceAll("/[A-Z0-9]{10,}", "/{code}");
   }
 
@@ -175,24 +183,11 @@ public class AuditLogInterceptor implements HandlerInterceptor {
   protected Map<String, Object> buildMetadata(HttpServletRequest request, Exception ex) {
     Map<String, Object> metadata = new HashMap<>();
 
-    metadata.put("queryString", request.getQueryString());
     metadata.put("contentType", request.getContentType());
-    metadata.put("serverName", request.getServerName());
-    metadata.put("serverPort", request.getServerPort());
-    metadata.put("locale", request.getLocale().toString());
-
-    metadata.put("accept", request.getHeader("Accept"));
-    metadata.put("acceptLanguage", request.getHeader("Accept-Language"));
-    metadata.put("acceptEncoding", request.getHeader("Accept-Encoding"));
-
-    if (request.getSession(false) != null) {
-      metadata.put("sessionId", request.getSession().getId());
-    }
 
     if (ex != null) {
       metadata.put("errorType", ex.getClass().getSimpleName());
-      metadata.put("errorMessage", ex.getMessage());
-      // Stacktrace limited to the first element for brevity
+      // Keep location for diagnosis without storing potentially sensitive messages.
       StackTraceElement[] stackTrace = ex.getStackTrace();
       if (stackTrace.length > 0) {
         metadata.put("errorLocation", stackTrace[0].toString());

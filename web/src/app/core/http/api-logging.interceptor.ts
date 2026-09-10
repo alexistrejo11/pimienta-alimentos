@@ -17,6 +17,7 @@ import {
   summarizeRequest,
   summarizeResponse,
 } from './api-logger';
+import { WebTelemetryService } from '../telemetry/web-telemetry.service';
 
 /** Set on a request to skip console logging (rare; default is to log all /api/v1 calls). */
 export const SKIP_API_LOGGING = new HttpContextToken<boolean>(() => false);
@@ -41,6 +42,7 @@ export const apiLoggingInterceptor: HttpInterceptorFn = (
 
   const started = performance.now();
   const reqSummary = summarizeRequest(req);
+  const telemetry = inject(WebTelemetryService);
 
   return next(req).pipe(
     tap((event) => {
@@ -60,8 +62,26 @@ export const apiLoggingInterceptor: HttpInterceptorFn = (
       if (err instanceof HttpErrorResponse) {
         const durationMs = Math.round(performance.now() - started);
         logApiHttpError(req.method, reqSummary.path, err, durationMs);
+        if (shouldReportToTelemetry(req.method, err)) {
+          telemetry.reportApiFailure(
+            req.method,
+            reqSummary.path.split('?')[0],
+            err.status,
+            readTraceId(err),
+          );
+        }
       }
       return throwError(() => err);
     }),
   );
 };
+
+function shouldReportToTelemetry(method: string, error: HttpErrorResponse): boolean {
+  const write = !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+  return error.status === 0 || error.status >= 500 || (write && error.status >= 400);
+}
+
+function readTraceId(error: HttpErrorResponse): string | undefined {
+  const traceId = error.headers.get('X-Trace-Id');
+  return traceId || undefined;
+}

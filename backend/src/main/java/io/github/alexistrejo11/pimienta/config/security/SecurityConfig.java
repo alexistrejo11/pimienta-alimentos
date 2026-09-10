@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
@@ -34,8 +35,7 @@ public class SecurityConfig {
         private static final String[] ACTUATOR_PUBLIC_PATHS = {
                         "/actuator/health",
                         "/actuator/health/**",
-                        "/actuator/info",
-                        "/actuator/prometheus"
+                        "/actuator/info"
         };
 
         private static final String[] AUTH_PUBLIC_PATHS = {
@@ -82,7 +82,9 @@ public class SecurityConfig {
                         HttpSecurity http,
                         JwtAuthenticationFilter jwtAuthenticationFilter,
                         PimientaAuthenticationEntryPoint authenticationEntryPoint,
-                        PimientaAccessDeniedHandler accessDeniedHandler) throws Exception {
+                        PimientaAccessDeniedHandler accessDeniedHandler,
+                        Environment environment) throws Exception {
+                boolean localDevelopment = environment.matchesProfiles("dev");
                 http.csrf(AbstractHttpConfigurer::disable)
                                 .cors(Customizer.withDefaults())
                                 .sessionManagement(
@@ -93,8 +95,10 @@ public class SecurityConfig {
                                                                 .accessDeniedHandler(accessDeniedHandler))
                                 .authorizeHttpRequests(
                                                 auth -> auth.requestMatchers(SWAGGER_PUBLIC_PATHS).permitAll()
-                                                                .requestMatchers(ACTUATOR_PUBLIC_PATHS).permitAll()
-                                                                .requestMatchers(HEALTH_PUBLIC_PATHS).permitAll()
+                                                                 .requestMatchers(ACTUATOR_PUBLIC_PATHS).permitAll()
+                                                                 .requestMatchers(localDevelopment ? "/actuator/prometheus" : "/actuator/prometheus-disabled")
+                                                                 .permitAll()
+                                                                 .requestMatchers(HEALTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(AUTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(POS_DEVICE_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers("/actuator/**").hasRole("ADMIN")

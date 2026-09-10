@@ -26,6 +26,18 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "outbox_event", indices = [Index(value = ["sequence"], unique = true)]) data class OutboxEventEntity(@PrimaryKey val id: String, val sequence: Long, val type: String, val aggregateId: String, val status: String, val createdAtEpochMillis: Long, val schemaVersion: Int = 1, val deviceId: String? = null, val siteId: String? = null, val shiftId: String? = null, val occurredAtEpochMillis: Long = createdAtEpochMillis, val payloadJson: String? = null, val attemptCount: Int = 0, val nextAttemptAtEpochMillis: Long = 0, val lastError: String? = null, val resultStatus: String? = null, val incidentId: String? = null)
 @Entity(tableName = "sync_state") data class SyncStateEntity(@PrimaryKey val id: Int = 1, val baseUrl: String? = null, val changesCursor: String? = null, val bootstrapSnapshotId: String? = null, val lastSuccessfulAtEpochMillis: Long? = null, val lastError: String? = null, val status: String = "NOT_CONFIGURED")
 
+// Keeps bounded diagnostic events until the next successful telemetry upload.
+@Entity(tableName = "telemetry_event") data class TelemetryEventEntity(
+    @PrimaryKey val id: String,
+    val schemaVersion: Int = 1,
+    val eventType: String,
+    val level: String,
+    val message: String,
+    val stack: String? = null,
+    val occurredAtEpochMillis: Long,
+    val createdAtEpochMillis: Long = occurredAtEpochMillis,
+)
+
 // Keeps a durable print request even though no printer adapter exists yet.
 @Entity(tableName = "print_job") data class PrintJobEntity(@PrimaryKey val id: String, val saleId: String, val status: String, val duplicate: Boolean, val createdAtEpochMillis: Long, val documentType: String = "SALE", val templateVersion: Int = 1)
 

@@ -14,4 +14,5 @@ interface DeviceApi {
     @GET("api/v1/pos/sync/bootstrap") suspend fun bootstrap(): BootstrapResponse
     @GET("api/v1/pos/sync/changes") suspend fun changes(@Query("cursor") cursor: String): ChangesResponse
     @POST("api/v1/pos/sync/events") suspend fun events(@Body body: EventsRequest): EventsResponse
+    @POST("api/v1/pos/telemetry/events") suspend fun telemetry(@Body body: TelemetryBatchRequest): TelemetryAcceptedResponse
 }

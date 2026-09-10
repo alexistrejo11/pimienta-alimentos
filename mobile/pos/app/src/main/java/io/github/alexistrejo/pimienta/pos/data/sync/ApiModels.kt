@@ -19,3 +19,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class EventsRequest(val events: List<EventEnvelope>)
 @Serializable data class EventResult(val eventId: String, val status: String, val serverReceivedAt: String? = null, val incidentId: String? = null, val message: String? = null)
 @Serializable data class EventsResponse(val results: List<EventResult>)
+@Serializable data class TelemetryLogDto(val schemaVersion: Int, val eventType: String, val level: String, val message: String, val stack: String? = null, val occurredAt: String)
+@Serializable data class TelemetryHealthDto(val syncState: String, val pendingEvents: Int, val oldestPendingAgeSeconds: Long, val appVersion: String)
+@Serializable data class TelemetryBatchRequest(val events: List<TelemetryLogDto>, val health: TelemetryHealthDto? = null)
+@Serializable data class TelemetryAcceptedResponse(val accepted: Int)

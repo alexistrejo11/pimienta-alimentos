@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.data.sync
 
 import android.content.Context
+import io.github.alexistrejo.pimienta.pos.BuildConfig
 import androidx.work.BackoffPolicy
 import androidx.work.CoroutineWorker
 import androidx.work.Constraints
@@ -14,6 +15,7 @@ import androidx.work.WorkerParameters
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
+import io.github.alexistrejo.pimienta.pos.data.telemetry.PosTelemetryLogger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -34,6 +36,7 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
     private val db get() = provider.database(RuntimeMode.PRODUCTION)
     private val credentials = DeviceCredentials(appContext)
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+    private val telemetryLogger = PosTelemetryLogger(db)
 
     override suspend fun doWork(): Result {
         if (provider.modes.mode() != RuntimeMode.PRODUCTION) return Result.success()
@@ -61,9 +64,11 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
                 val changes = api.changes(current.changesCursor)
                 ProvisioningRepository(applicationContext, provider).applyChanges(changes)
             }
+            uploadTelemetry(api, device.id, device.siteId, state)
             db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
             Result.success()
         } catch (e: HttpException) {
+            recordDiagnostic("ERROR", "sync_http_failure", "POS sync HTTP ${e.code()}")
             if (e.code() == 401) {
                 val refresh = credentials.refresh() ?: return Result.failure()
                 try {
@@ -93,6 +98,7 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
                 Result.retry()
             }
         } catch (e: Exception) {
+            recordDiagnostic("ERROR", "sync_failure", "POS sync ${e.javaClass.simpleName}")
             db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message ?: e.javaClass.simpleName))
             Result.retry()
         }
@@ -107,6 +113,31 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         return Retrofit.Builder().baseUrl(baseUrl).client(client).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
     }
     private fun refreshApi(baseUrl: String): DeviceApi = Retrofit.Builder().baseUrl(baseUrl).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
+
+    // Records a diagnostic only when the local telemetry database is healthy.
+    private fun recordDiagnostic(level: String, type: String, message: String) {
+        runCatching { telemetryLogger.record(level, type, message) }
+    }
+
+    // Uploads diagnostics separately from business events so telemetry cannot block sync.
+    private suspend fun uploadTelemetry(api: DeviceApi, deviceId: String, siteId: String?, state: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity) {
+        try {
+            val rows = db.operationsDao().pendingTelemetry(50)
+            val now = System.currentTimeMillis()
+            val oldest = db.operationsDao().oldestPendingEventAt()?.let { ((now - it).coerceAtLeast(0) / 1000) } ?: 0
+            val batch = TelemetryBatchRequest(
+                events = rows.map {
+                    TelemetryLogDto(it.schemaVersion, it.eventType, it.level, it.message, it.stack, Instant.ofEpochMilli(it.occurredAtEpochMillis).toString())
+                },
+                health = TelemetryHealthDto(state.status, db.operationsDao().pendingEventCount(), oldest, BuildConfig.VERSION_NAME),
+            )
+            api.telemetry(batch)
+            if (rows.isNotEmpty()) db.operationsDao().deleteTelemetry(rows.map { it.id })
+        } catch (_: Exception) {
+            // Keep the local queue for a later connected worker attempt.
+        }
+    }
+
     private fun backoff(attempt: Int) = minOf(TimeUnit.HOURS.toMillis(6), TimeUnit.MINUTES.toMillis(1L shl minOf(attempt, 8)))
 
     companion object {

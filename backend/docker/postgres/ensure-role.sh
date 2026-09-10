@@ -8,15 +8,15 @@ docker-entrypoint.sh postgres &
 pid=$!
 trap 'kill -TERM "$pid" 2>/dev/null; wait "$pid"' TERM INT
 
-until pg_isready -q; do
-  sleep 0.3
-done
-
 USER_NAME="${POSTGRES_USER:-pimienta_dba}"
 PASSWORD="${POSTGRES_PASSWORD:-pimienta_dba}"
 DB_NAME="${POSTGRES_DB:-pimienta_alimentos}"
 
-gosu postgres psql -v ON_ERROR_STOP=1 -d postgres \
+until pg_isready -q -U "$USER_NAME"; do
+  sleep 0.3
+done
+
+gosu postgres psql -v ON_ERROR_STOP=1 -U "$USER_NAME" -d postgres \
   --set=user_name="$USER_NAME" \
   --set=pass="$PASSWORD" \
   --set=db_name="$DB_NAME" <<'SQL'
@@ -37,7 +37,7 @@ WHERE EXISTS (SELECT FROM pg_database WHERE datname = :'db_name')
 \gexec
 SQL
 
-gosu postgres psql -v ON_ERROR_STOP=1 -d "$DB_NAME" \
+gosu postgres psql -v ON_ERROR_STOP=1 -U "$USER_NAME" -d "$DB_NAME" \
   --set=user_name="$USER_NAME" <<'SQL'
 SELECT format('GRANT ALL ON SCHEMA public TO %I', :'user_name')
 \gexec

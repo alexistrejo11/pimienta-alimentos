@@ -1,7 +1,5 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outbound.storage;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosApkManifest;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosApkReleaseStoragePort;
 import io.github.alexistrejo11.pimienta.shared.storage.S3PresignService;
@@ -16,6 +14,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class S3PosApkReleaseStorageAdapter implements PosApkReleaseStoragePort {
