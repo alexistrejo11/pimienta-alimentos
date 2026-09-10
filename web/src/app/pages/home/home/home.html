@@ -394,9 +394,96 @@
         </div>
       </section>
 
-      <!-- Contacto -->
+      <!-- Plataformas -->
       <section
         class="landing-section scroll-mt-[5.5rem] py-24"
+        id="plataformas"
+        data-landing-section
+        aria-labelledby="plataformas-title"
+      >
+        <div class="container mx-auto max-w-[80rem] px-6 md:px-8">
+          <header class="landing-reveal mb-12 text-center">
+            <h2
+              id="plataformas-title"
+              class="mb-4 font-headline text-4xl font-extrabold tracking-tight"
+            >
+              Nuestras <span class="text-primary">plataformas</span>
+            </h2>
+            <p class="mx-auto max-w-[40rem] landing-text-muted">
+              {{ content.plataformas.intro }}
+            </p>
+          </header>
+
+          <div class="mx-auto grid max-w-[56rem] grid-cols-1 gap-6 md:grid-cols-2">
+            <article
+              class="landing-reveal landing-card flex flex-col rounded-xl p-8"
+            >
+              <span
+                class="material-symbols-outlined mb-4 text-4xl text-accent"
+                aria-hidden="true"
+                >{{ content.plataformas.web.icon }}</span
+              >
+              <h3 class="mb-3 font-headline text-xl font-extrabold tracking-tight">
+                {{ content.plataformas.web.title }}
+              </h3>
+              <p class="mb-8 flex-1 leading-relaxed landing-text-muted">
+                {{ content.plataformas.web.description }}
+              </p>
+              <a
+                routerLink="/auth/login"
+                class="font-headline inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary no-underline transition hover:-translate-y-0.5"
+              >
+                <span class="material-symbols-outlined text-lg" aria-hidden="true"
+                  >login</span
+                >
+                {{ content.plataformas.web.cta }}
+              </a>
+            </article>
+
+            <article
+              class="landing-reveal landing-card flex flex-col rounded-xl p-8"
+            >
+              <span
+                class="material-symbols-outlined mb-4 text-4xl text-accent"
+                aria-hidden="true"
+                >{{ content.plataformas.pos.icon }}</span
+              >
+              <h3 class="mb-3 font-headline text-xl font-extrabold tracking-tight">
+                {{ content.plataformas.pos.title }}
+              </h3>
+              <p class="mb-8 flex-1 leading-relaxed landing-text-muted">
+                {{ content.plataformas.pos.description }}
+              </p>
+              <button
+                type="button"
+                class="font-headline inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="apkDownloading()"
+                (click)="downloadPosApk()"
+              >
+                <span class="material-symbols-outlined text-lg" aria-hidden="true"
+                  >download</span
+                >
+                @if (apkDownloading()) {
+                  Obteniendo enlace…
+                } @else {
+                  {{ apkCtaLabel() }}
+                }
+              </button>
+              @if (apkError()) {
+                <p class="mt-3 text-sm text-[var(--color-error)]" role="alert">
+                  {{ apkError() }}
+                </p>
+              } @else if (apkLoading() && !apkVersionName()) {
+                <p class="mt-3 text-sm landing-text-muted">Consultando versión…</p>
+              }
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contacto -->
+      <section
+        class="landing-section landing-section--alt scroll-mt-[5.5rem] py-24"
         id="contacto"
         data-landing-section
         aria-labelledby="contacto-title"

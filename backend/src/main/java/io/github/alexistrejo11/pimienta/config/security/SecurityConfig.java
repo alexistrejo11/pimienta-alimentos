@@ -44,7 +44,8 @@ public class SecurityConfig {
 
         private static final String[] POS_DEVICE_PUBLIC_PATHS = {
                         "/api/v1/pos/devices/enroll",
-                        "/api/v1/pos/devices/refresh"
+                        "/api/v1/pos/devices/refresh",
+                        "/api/v1/pos/releases/android/latest"
         };
 
         private static final String[] HEALTH_PUBLIC_PATHS = {

@@ -3,76 +3,105 @@ name: pimienta-frontend-ui
 description: >-
   Visual UI rules for the Pimienta Alimentos Angular app: Tailwind v4 theme tokens,
   typography (Manrope / Work Sans), Material Symbols, layout and component
-  patterns (auth cards, marketing sections, workspace shell). Apply when styling
-  or building new pages, components, or templates in frontend/src.
+  patterns (auth, marketing, workspace). Apply when styling or building pages,
+  components, or templates in web/src.
 ---
 
 # Pimienta frontend — visual UI conventions
 
-Stack: **Angular** (standalone), **Tailwind CSS v4** (`@import 'tailwindcss'`), fonts and icons loaded from `src/index.html`; component-level CSS only when a pattern is repeated (e.g. `.glass-panel` on auth pages).
+Stack: **Angular** (standalone), **Tailwind CSS v4** (`@import 'tailwindcss'`), fonts and icons loaded from `src/index.html`; component-level CSS only when a pattern is repeated.
 
-## Design tokens (`src/styles.css` `@theme`)
+Source of truth for tokens is **`src/styles.css`**. Do not invent brand colors. If a token is missing, add it to `@theme` / `html.dark` first, then use it.
 
-- **Brand red (primary):** `--color-primary` (#af101a), `--color-primary-container` (#d32f2f), `--color-on-primary` (#ffffff).
-- **Brand green (accent):** `--color-accent` (#80c030), `--color-accent-container` (#d4edaa), `--color-on-accent` (#1a2e0a). Use for secondary highlights (Distintivo H, pillar icons, active nav underline, trust badges) — **not** primary CTAs (those stay red).
-- **Surfaces:** `--color-background`, `--color-surface`, `--color-surface-container-lowest` through `--color-surface-container-highest` (light gray scale for cards and sections).
-- **Text:** `--color-on-background`, `--color-on-surface`, `--color-on-surface-variant` (muted body/secondary).
-- **Other:** `--color-secondary`, `--color-outline-variant`, `--color-error`, `--color-primary-fixed`, `--color-on-primary-fixed` (tinted surfaces and accents).
-- Prefer **`text-[var(--color-…)]`**, **`bg-[var(--color-…)]`**, or matching **Tailwind theme aliases** where they exist (e.g. `bg-primary`, `text-on-primary` if generated from `@theme`).
+## Design tokens (`src/styles.css`)
 
-Do **not** introduce ad-hoc hex colors for core UI; extend `@theme` in `styles.css` if a new semantic token is needed.
+### Light (`@theme`)
+
+| Token | Hex | Role |
+|-------|-----|------|
+| `--color-primary` | `#af101a` | Brand red. Primary CTAs only. |
+| `--color-primary-container` | `#e57373` | Hover / softer red fill. |
+| `--color-on-primary` | `#ffffff` | Text/icons on primary. |
+| `--color-accent` | `#80c030` | Secondary highlight ( Distintivo H, active nav underline, trust). **Not** primary CTAs. |
+| `--color-accent-container` | `#d4edaa` | Accent wash. |
+| `--color-on-accent` | `#1a2e0a` | Text on accent fills. |
+| `--color-background` | `#f7f6f4` | Page canvas. |
+| `--color-surface` | `#f3f2ef` | Main content surface. |
+| `--color-surface-container-lowest` | `#ffffff` | Highest lift / innermost panel. |
+| `--color-surface-container-low` | `#f0efec` | |
+| `--color-surface-container` | `#ebe9e5` | Inputs, recessed wells. |
+| `--color-surface-container-high` | `#e4e2dd` | |
+| `--color-surface-container-highest` | `#dbd8d2` | |
+| `--color-on-background` / `--color-on-surface` | `#1a1c1c` | Body text. |
+| `--color-on-surface-variant` | `#5f6367` | Muted / secondary text. |
+| `--color-outline-variant` | `#8e918f` | Ghost borders only (low opacity). |
+| `--color-secondary` | `#6f7478` | Neutral secondary. |
+| `--color-error` | `#ba1a1a` | Errors. |
+| `--color-primary-fixed` | `#ffdad6` | Tinted red wash. |
+| `--color-on-primary-fixed` | `#410003` | Text on primary-fixed. |
+
+Prefer **`text-[var(--color-…)]`**, **`bg-[var(--color-…)]`**, or Tailwind aliases generated from `@theme` (`bg-primary`, `text-on-surface`).
+
+### Dark (`html.dark` in `src/index.html`)
+
+Workspace and auth are **dark-first**: `<html class="dark">`. Marketing landing remaps back to the light palette in `home.css`.
+
+`html.dark` remaps **surfaces and text only**. Brand red and accent stay the same.
+
+| Token | Dark hex |
+|-------|----------|
+| `--color-background` / `--color-surface-container-lowest` | `#0c0a09` |
+| `--color-surface` / `--color-surface-container-low` | `#1c1917` |
+| `--color-surface-container` | `#292524` |
+| `--color-surface-container-high` | `#44403c` |
+| `--color-surface-container-highest` | `#57534e` |
+| `--color-on-background` / `--color-on-surface` | `#fafaf9` |
+| `--color-on-surface-variant` | `#a8a29e` |
+| `--color-outline-variant` | `#78716c` |
+| `--color-secondary` | `#a8a29e` |
 
 ## Typography
 
-- **Headlines / titles:** `font-headline` (Manrope). Use for `h1`–`h4` and strong page/section titles.
-- **Body / UI:** default (Work Sans via `body`); use `font-body` explicitly when needed for consistency in custom blocks.
-- **Hierarchy:** large hero titles may use `text-[clamp(...)]`, `font-extrabold`, tight `tracking`; supporting copy uses `text-sm` / `text-xl` and muted color via `--color-on-surface-variant` or `text-stone-500` where appropriate.
+- **Headlines / titles:** `font-headline` (**Manrope** 400/600/700/800). `h1`–`h4` and strong page titles.
+- **Body / UI:** **Work Sans** 300/400/500/600 via `body` / `font-body`.
+- Muted copy: `--color-on-surface-variant`. Do not introduce a third brand typeface.
 
 ## Icons
 
-- **Material Symbols Outlined** only (linked in `index.html`).
-- Default icon class: **`material-symbols-outlined`** (defined in `@layer components` in `styles.css`).
-- Filled variant when needed: **`material-symbols-outlined--filled`** (e.g. small trust badges).
+- **Material Symbols Outlined** only (`index.html`).
+- Default: **`material-symbols-outlined`**. Filled: **`material-symbols-outlined--filled`**.
 
 ## Layout and spacing
 
-- **Page shell:** full-height layouts use `min-h-screen`, flex column, `max-w-*` + horizontal padding (`px-6`, `px-8`, `max-w-7xl` / `max-w-[80rem]` for marketing).
-- **Auth-style pages:** centered column `max-w-[440px]`–`max-w-[480px]`, vertical rhythm `gap-8`, card `p-8` / `md:p-12`.
-- **Responsive:** use breakpoints (`sm:`, `md:`, `lg:`) for nav visibility, grids, and stacking; prefer `flex` / `grid` with `gap-*` over manual margins for groups.
+- Full-height shells: `min-h-screen`, flex column, `max-w-*` + `px-6` / `px-8`.
+- Auth: centered column `max-w-[440px]`–`max-w-[480px]`, `gap-8`, padding `p-8` / `md:p-12`.
+- **No-line rule:** section with **surface-tier shifts**, not 1px solid borders. Ghost border (`outline-variant` at ~30% opacity) only when a control needs an accessible edge.
 
-## Components patterns
+## Component patterns
 
-- **Primary button / CTA:** red fill `bg-[var(--color-primary)]` or `bg-primary`, `text-[var(--color-on-primary)]`, `rounded-lg` or `rounded-xl`, `font-bold`, hover to `primary-container` or slight motion (`hover:-translate-y-0.5`, `shadow`).
-- **Secondary / outline:** border + `bg-surface-container-lowest` or light surface, hover darken surface.
-- **Inputs:** `rounded-lg`, `bg-stone-100` (or surface-container), `focus:ring-2` with primary tint `focus:ring-[var(--color-primary)]/20`, no heavy borders unless error state.
-- **Cards:** `rounded-xl`, subtle border `border-stone-200/50`, soft shadow `shadow-[0_8px_30px_rgb(0,0,0,0.04)]`; optional top accent bar `h-1` gradient primary → primary-container.
-- **“Glass” panels (auth):** class **`glass-panel`** in component CSS: semi-transparent white + `backdrop-filter: blur(12px)` — use sparingly for floating cards over imagery.
-- **Hero / marketing sections:** gradient overlays with `color-mix(in srgb, …)` or `from-[var(--color-surface)]`; imagery with `object-cover`, optional `opacity` / `grayscale` for background layers.
-- **Brand cover (landing):** full-bleed hero image, centered logo + tagline, CTA + scroll arrow; toggle via `showBrandCover` flag in the home component.
-- **Workspace app shell:** sidebar offset + main (`ml-64` pattern in workspace); keep content readable on `--color-surface` / `text-on-surface`.
-
-## States and feedback
-
-- **Errors:** `--color-error` or Tailwind red scale; alerts `rounded-lg`, `border`, `bg-red-50`, `text-red-900`, optional `role="alert"`.
-- **Loading / disabled:** `disabled:opacity-60`, `disabled:cursor-not-allowed`; swap label text (“Enviando…”) rather than silent buttons.
-
-## Content and accessibility
-
-- **Language:** UI copy is predominantly **Spanish**; keep tone professional (institutional / corporate).
-- **Semantics:** use real headings (`h1` once per view when possible), `label` + `for` tied to controls, meaningful `alt` on non-decorative images (empty `alt=""` acceptable for decorative backgrounds).
+- **Primary CTA:** `bg-primary` / `bg-[var(--color-primary)]`, `text-on-primary`, `rounded-lg` or `rounded-xl`, `font-bold`. Hover to `primary-container`.
+- **Secondary / outline:** light/dark surface fill, ghost border. Not a second red button.
+- **Inputs:** `rounded-lg`, fill `surface-container` (auth uses `.auth-field`). Focus ring `color-mix` with primary at ~20%. No heavy chrome borders.
+- **Auth chrome:** `.auth-shell`, `.auth-card` (frosted **surface**, not opaque white cards on dark).
+- **Workspace:** sidebar + main on `--color-surface` / `text-on-surface`.
 
 ## What to avoid
 
-- Pasting full HTML documents (`<html>`, `<head>`, CDN Tailwind) into **component templates** — use root layout, `styles.css`, and `index.html` assets only.
-- Inline `<style>` blocks in templates when the rule can live in **`styles.css`** (`@layer`) or the component’s **`.css`** file.
-- Mixing unrelated icon sets (stick to Material Symbols as linked).
+- Ad-hoc hex for core UI (purple/teal Material defaults, “AI dashboard” palettes, neon gradients).
+- Generic **elevated card grids**: stacked `shadow-lg` cards, thick borders, and decorative Material cards as the default layout. Depth comes from **surface tiers** and spacing.
+- Mixing icon families.
+- Pasting full HTML documents or CDN Tailwind into component templates.
+- Inline `<style>` when the rule belongs in `styles.css` or the component `.css`.
+
+Auth and marketing may use a single contained panel (`.auth-card`, philosophy blocks). That is not a license to wrap every list row in a card.
 
 ## File touchpoints
 
-| Area            | Location |
-|-----------------|----------|
-| Global theme    | `frontend/src/styles.css` |
-| Entry fonts     | `frontend/src/index.html` |
-| Page-specific   | `*.html` + optional `*.css` next to the component |
+| Area | Location |
+|------|----------|
+| Global theme | `src/styles.css` (`@theme` + `html.dark`) |
+| Entry fonts / dark class | `src/index.html` |
+| Marketing light override | `src/app/pages/home/home/home.css` |
+| Page-specific | `*.html` + optional `*.css` |
 
-When adding large new UI surfaces, **mirror existing files** (`pages/auth/register`, `pages/home/home-landing`) before inventing new patterns.
+When adding large new UI surfaces, **mirror existing files** (`pages/auth/login`, `pages/home/home`, workspace pages) before inventing new patterns.

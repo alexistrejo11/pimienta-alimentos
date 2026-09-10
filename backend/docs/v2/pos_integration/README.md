@@ -1,4 +1,10 @@
-# POS integration (backend)
+# POS integration (backend, historical)
+
+> Superseded on 2026-09-08. The canonical cross-app contract and Android
+> implementation plan are now in
+> [mobile/pos/docs/integration](../../../../mobile/pos/docs/integration/README.md).
+> Keep this directory only as the implementation-era record; do not update it
+> or use it as a second source of truth.
 
 Estado: **specs alineadas** · corte 1 decidido · 2026-09-08
 

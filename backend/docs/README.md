@@ -4,7 +4,7 @@ Handwritten operational documentation. OpenAPI remains the live HTTP contract in
 
 | Path | Purpose |
 |------|---------|
-| [v2/post_integration/](v2/post_integration/README.md) | POS ↔ Spring Boot integration specs (current work) |
+| [../../mobile/pos/docs/integration/](../../mobile/pos/docs/integration/README.md) | Canonical POS ↔ Spring Boot contract and Android plan |
 | [test/](test/) | Follow-ups from MockMvc integration tests |
 | [extra/](extra/) | Extra notes from employee/attendance test passes |
 

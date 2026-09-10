@@ -134,6 +134,8 @@ aws:
     bucket: ${AWS_S3_BUCKET_NAME}
     folder: ${AWS_S3_FOLDER:employees}
     sources-root: ${AWS_S3_SOURCES_ROOT:pimienta/sources}
+    pos-apk-key: ${AWS_S3_POS_APK_KEY:pimienta/releases/pos/android/latest.apk}
+    pos-apk-manifest-key: ${AWS_S3_POS_APK_MANIFEST_KEY:pimienta/releases/pos/android/current.json}
     endpoint: "${AWS_S3_ENDPOINT:}"
     public-endpoint: "${AWS_S3_PUBLIC_ENDPOINT:}"
 

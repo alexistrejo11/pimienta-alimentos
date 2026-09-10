@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  OnInit,
   inject,
   PLATFORM_ID,
   signal,
@@ -18,6 +19,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { fromEvent, finalize } from 'rxjs';
 
+import { PosReleaseService } from '../../../core/pos/pos-release.service';
 import { BRAND_LOGO_URL } from '../brand';
 import { CONTACT_ENDPOINT } from '../contact-endpoint';
 import { LANDING_CONTENT, LANDING_NAV } from './landing-content';
@@ -28,9 +30,10 @@ import { LANDING_CONTENT, LANDING_NAV } from './landing-content';
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
-export class Home implements AfterViewInit {
+export class Home implements OnInit, AfterViewInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
+  private readonly posRelease = inject(PosReleaseService);
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
@@ -56,6 +59,18 @@ export class Home implements AfterViewInit {
   readonly statusType = signal<'success' | 'error' | null>(null);
   readonly isSubmitting = signal(false);
 
+  readonly apkVersionName = signal<string | null>(null);
+  readonly apkLoading = signal(false);
+  readonly apkDownloading = signal(false);
+  readonly apkError = signal<string | null>(null);
+
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    this.loadApkRelease();
+  }
+
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
@@ -74,6 +89,34 @@ export class Home implements AfterViewInit {
 
   contactPhoneHref(): string {
     return `tel:${this.content.contacto.phone.replace(/\s/g, '')}`;
+  }
+
+  apkCtaLabel(): string {
+    const version = this.apkVersionName();
+    const base = this.content.plataformas.pos.cta;
+    return version ? `${base} (v${version})` : base;
+  }
+
+  downloadPosApk(): void {
+    if (!isPlatformBrowser(this.platformId) || this.apkDownloading()) {
+      return;
+    }
+    this.apkError.set(null);
+    this.apkDownloading.set(true);
+    this.posRelease
+      .getLatestAndroid()
+      .pipe(finalize(() => this.apkDownloading.set(false)))
+      .subscribe({
+        next: (release) => {
+          this.apkVersionName.set(release.versionName);
+          window.location.assign(release.url);
+        },
+        error: () => {
+          this.apkError.set(
+            'La APK aún no está disponible. Intente de nuevo más tarde.',
+          );
+        },
+      });
   }
 
   navLinkClass(id: string): string {
@@ -167,6 +210,22 @@ export class Home implements AfterViewInit {
       return 'mb-5 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_25%,transparent)] bg-red-50 px-4 py-3.5 text-[0.9375rem] leading-snug text-red-900';
     }
     return '';
+  }
+
+  private loadApkRelease(): void {
+    this.apkLoading.set(true);
+    this.posRelease
+      .getLatestAndroid()
+      .pipe(finalize(() => this.apkLoading.set(false)))
+      .subscribe({
+        next: (release) => {
+          this.apkVersionName.set(release.versionName);
+          this.apkError.set(null);
+        },
+        error: () => {
+          this.apkVersionName.set(null);
+        },
+      });
   }
 
   private setupScrollNav(): void {

@@ -19,13 +19,43 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing from env (CI). Local builds without these stay unsigned / debug-signed.
+    val storeFilePath = System.getenv("POS_STORE_FILE")
+    val storePasswordEnv = System.getenv("POS_STORE_PASSWORD")
+    val keyAliasEnv = System.getenv("POS_KEY_ALIAS")
+    val keyPasswordEnv = System.getenv("POS_KEY_PASSWORD")
+    val hasReleaseSigning =
+        !storeFilePath.isNullOrBlank() &&
+            !storePasswordEnv.isNullOrBlank() &&
+            !keyAliasEnv.isNullOrBlank() &&
+            !keyPasswordEnv.isNullOrBlank()
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(storeFilePath!!)
+                storePassword = storePasswordEnv
+                keyAlias = keyAliasEnv
+                keyPassword = keyPasswordEnv
+            }
+        }
+    } else {
+        project.logger.warn(
+            "POS release signing env vars missing (POS_STORE_FILE, POS_STORE_PASSWORD, " +
+                "POS_KEY_ALIAS, POS_KEY_PASSWORD); release builds will not use a production keystore.",
+        )
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {

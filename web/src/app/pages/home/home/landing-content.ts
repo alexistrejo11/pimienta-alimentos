@@ -20,6 +20,7 @@ export const LANDING_NAV: LandingNavItem[] = [
   { id: 'servicios', label: 'Servicios' },
   { id: 'higiene', label: 'Higiene' },
   { id: 'clientes', label: 'Clientes' },
+  { id: 'plataformas', label: 'Plataformas' },
 ];
 
 export const LANDING_CONTENT = {
@@ -131,6 +132,25 @@ export const LANDING_CONTENT = {
       { name: 'Posadas', src: '/landing/posadas.png' },
       { name: 'Bocanegra', src: '/landing/bocanegra.png' },
     ] satisfies LandingClientLogo[],
+  },
+
+  plataformas: {
+    intro:
+      'Accede a nuestras herramientas digitales: la web central de operaciones y el punto de venta Android para cajas.',
+    web: {
+      title: 'ERP y Web Central',
+      description:
+        'Sistema de gestión administrativa y auditoría multi-sede para el equipo de Pimienta.',
+      cta: 'Iniciar sesión en Web',
+      icon: 'dns',
+    },
+    pos: {
+      title: 'Android POS',
+      description:
+        'Punto de venta táctil offline-first para operadoras de caja en cafeterías escolares.',
+      cta: 'Descargar APK',
+      icon: 'tablet_mac',
+    },
   },
 
   contacto: {

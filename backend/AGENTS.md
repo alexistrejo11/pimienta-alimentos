@@ -1,6 +1,6 @@
 # Backend (Spring API)
 
-Production operations API for Pimienta Alimentos: auth, employees, contracts, CRM, inventory, payroll, tasks, headquarters, files, notifications. POS Device API is specified under `docs/v2/pos_integration/` (tracker: `09-implementation-tracker.md`), not implemented yet.
+Production operations API for Pimienta Alimentos: auth, employees, contracts, CRM, inventory, payroll, tasks, headquarters, files, notifications. The POS Device API is implemented; its canonical cross-app contract and Android plan live in `../mobile/pos/docs/integration/`.
 
 - **Stack:** Java 26, Spring Boot 4, `/api/v1`, PostgreSQL + Flyway, Redis, JWT, S3.
 - **Package:** `io.github.alexistrejo11.pimienta.module.<boundedContext>`
@@ -15,7 +15,7 @@ Quick invariants (detail in that skill):
 - Flyway: `db/migration/V{n}__*.sql`; enums as `VARCHAR` + `ck_*` CHECK — no PG `CREATE TYPE`.
 - Errors: `ErrorCode` + module exception extending `ResourceNotFoundException` / `ConflictException` → `ApiErrorResponse`.
 - Controllers thin: `@Valid` → `*Command` → use case → DTO; `@RateLimit` profiles; new lists use `PagedResponse`.
-- Unauthenticated secured calls → **401**; POS contracts → `docs/v2/pos_integration/`.
+- Unauthenticated secured calls → **401**; POS contracts → `../mobile/pos/docs/integration/`.
 
 ## Architecture (hexagonal, thin domain)
 
@@ -40,4 +40,4 @@ Jakarta validation belongs on **HTTP DTOs**, not on rich domain invariants.
 | [pimienta-backend-openapi](.agents/skills/pimienta-backend-openapi/SKILL.md) | Controllers / `Doc*` / springdoc |
 | [pimienta-backend-integration-tests](.agents/skills/pimienta-backend-integration-tests/SKILL.md) | MockMvc `*IntegrationTest` |
 
-POS specs: [docs/v2/pos_integration/](docs/v2/pos_integration/README.md) · progress: [09-implementation-tracker.md](docs/v2/pos_integration/09-implementation-tracker.md). Do not treat those drafts as richer DDD than the skills above.
+POS contract and Android progress: [../mobile/pos/docs/integration/](../mobile/pos/docs/integration/README.md). Backend `docs/v2/pos_integration/` is historical only. Do not treat documentation as richer DDD than the skills above.

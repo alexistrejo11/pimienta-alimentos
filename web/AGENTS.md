@@ -16,6 +16,6 @@ Visual tokens and layout patterns: use the UI skill below; do not invent ad-hoc 
 ## Skills
 
 - [angular-developer](.agents/skills/angular-developer/SKILL.md) — official Angular (signals, CLI, templates, DI)
-- [pimienta-frontend-ui](.agents/skills/pimienta-frontend-ui/SKILL.md) — brand, Tailwind theme, workspace/marketing layouts
+- [pimienta-frontend-ui](.agents/skills/pimienta-frontend-ui/SKILL.md) — brand tokens from `src/styles.css` (keep this skill in sync with that file)
 
 Skip `angular-new-app`; this application already exists.

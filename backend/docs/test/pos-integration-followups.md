@@ -8,3 +8,10 @@
 - Method-security denials (`AuthorizationDeniedException` from `@PreAuthorize`) now map to **403** `FORBIDDEN` in `GlobalExceptionHandler` (previously fell through to 500).
 
 No extra follow-ups blocking B6 merge from this pass.
+
+## 2026-09-10 — Public Android APK release endpoint
+
+- `GET /api/v1/pos/releases/android/latest` is public (`permitAll`). Anyone who can hit the API can obtain a time-limited pre-signed APK URL once CI has published the manifest. Acceptable for internal staff distribution via the marketing home; revisit if the APK must stay staff-JWT only.
+- Until the first POS CI publish, the endpoint returns `404` / `POS_APK_NOT_FOUND`; the landing CTA shows a soft error rather than a hard failure of the page.
+
+No extra follow-ups blocking this pass.
