@@ -53,4 +53,38 @@ public interface PosSyncEventSpringDataRepository
       @Param("eventTypes") Collection<String> eventTypes,
       @Param("accepted") PosEventResultStatus accepted,
       Pageable pageable);
+
+  @Query(
+      """
+      SELECT COUNT(e) FROM PosSyncEventJpaEntity e
+      WHERE e.deletedAt IS NULL
+        AND e.status = :accepted
+        AND e.headquarterId = :headquarterId
+        AND e.occurredAt >= :from
+        AND e.occurredAt < :to
+        AND e.eventType = :eventType
+      """)
+  long countAcceptedByEventType(
+      @Param("headquarterId") long headquarterId,
+      @Param("from") Instant from,
+      @Param("to") Instant to,
+      @Param("eventType") String eventType,
+      @Param("accepted") PosEventResultStatus accepted);
+
+  @Query(
+      """
+      SELECT MAX(e.occurredAt) FROM PosSyncEventJpaEntity e
+      WHERE e.deletedAt IS NULL
+        AND e.status = :accepted
+        AND e.headquarterId = :headquarterId
+        AND e.occurredAt >= :from
+        AND e.occurredAt < :to
+        AND e.eventType = :eventType
+      """)
+  Instant findLastAcceptedEventAt(
+      @Param("headquarterId") long headquarterId,
+      @Param("from") Instant from,
+      @Param("to") Instant to,
+      @Param("eventType") String eventType,
+      @Param("accepted") PosEventResultStatus accepted);
 }

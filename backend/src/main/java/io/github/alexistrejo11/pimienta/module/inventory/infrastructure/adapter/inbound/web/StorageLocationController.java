@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web;
 
+import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.LocationTreeNode;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLocation;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.StorageLocationManagementUseCases;
@@ -28,6 +30,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -46,17 +49,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class StorageLocationController {
 
   private final StorageLocationManagementUseCases storageLocationManagementUseCases;
+  private final HeadquarterAccessService headquarterAccessService;
 
-  public StorageLocationController(StorageLocationManagementUseCases storageLocationManagementUseCases) {
+  public StorageLocationController(
+      StorageLocationManagementUseCases storageLocationManagementUseCases,
+      HeadquarterAccessService headquarterAccessService) {
     this.storageLocationManagementUseCases = storageLocationManagementUseCases;
+    this.headquarterAccessService = headquarterAccessService;
   }
 
   @GetMapping
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocStorageLocationSearch
   public PagedResponse<StorageLocationResponse> searchLocations(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @ParameterObject @ModelAttribute StorageLocationSearchRequest filter) {
-    Page<StorageLocation> page = storageLocationManagementUseCases.search(filter.toCriteria(), filter.toPageable());
+    Long hq = headquarterAccessService.enforceHeadquarterFilter(principal, filter.getHeadquarterId());
+    Page<StorageLocation> page =
+        storageLocationManagementUseCases.search(filter.toCriteria(hq), filter.toPageable());
     return PagedResponse.map(page, StorageLocationWebMapper::toResponse);
   }
 

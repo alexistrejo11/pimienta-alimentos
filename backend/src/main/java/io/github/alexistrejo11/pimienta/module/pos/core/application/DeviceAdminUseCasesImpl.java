@@ -33,6 +33,14 @@ public class DeviceAdminUseCasesImpl implements DeviceAdminUseCases {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public PosDevice get(UUID deviceId) {
+    return deviceRepository
+        .findById(deviceId)
+        .orElseThrow(() -> new PosDeviceNotFoundException(deviceId));
+  }
+
+  @Override
   @Transactional
   public PosDevice revoke(UUID deviceId) {
     PosDevice device =

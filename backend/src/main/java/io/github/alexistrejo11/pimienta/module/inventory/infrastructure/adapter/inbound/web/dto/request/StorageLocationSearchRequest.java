@@ -9,6 +9,7 @@ public class StorageLocationSearchRequest extends PageableRequest {
 
   private LocationType type;
   private LocationStatus status;
+  private Long headquarterId;
 
   public LocationType getType() {
     return type;
@@ -26,7 +27,15 @@ public class StorageLocationSearchRequest extends PageableRequest {
     this.status = status;
   }
 
-  public StorageLocationSearchCriteria toCriteria() {
-    return new StorageLocationSearchCriteria(type, status);
+  public Long getHeadquarterId() {
+    return headquarterId;
+  }
+
+  public void setHeadquarterId(Long headquarterId) {
+    this.headquarterId = headquarterId;
+  }
+
+  public StorageLocationSearchCriteria toCriteria(Long effectiveHeadquarterId) {
+    return new StorageLocationSearchCriteria(type, status, effectiveHeadquarterId);
   }
 }

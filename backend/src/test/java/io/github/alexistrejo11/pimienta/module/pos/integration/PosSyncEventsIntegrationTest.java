@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRequests;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
+import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
@@ -16,6 +17,8 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosLocationUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -437,6 +440,7 @@ class PosSyncEventsIntegrationTest {
             .findByEmailAndDeletedAtIsNull(email)
             .orElseThrow(() -> new AssertionError("user missing"));
     u.setAccountStatus(AccountStatus.ACTIVE);
+    u.setRoles(new LinkedHashSet<>(Set.of(Role.ADMIN)));
     userJpaRepository.saveAndFlush(u);
 
     MvcResult login =

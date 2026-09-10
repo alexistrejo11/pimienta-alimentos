@@ -101,4 +101,25 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       @Param("shiftId") UUID shiftId,
       @Param("productId") Long productId,
       @Param("accepted") PosEventResultStatus accepted);
+
+  @Query(
+      """
+      SELECT COALESCE(SUM(s.totalCentavos), 0), COUNT(s)
+      FROM PosSaleJpaEntity s
+      WHERE s.deletedAt IS NULL
+        AND s.headquarterId = :headquarterId
+        AND s.occurredAt >= :from
+        AND s.occurredAt < :to
+        AND EXISTS (
+              SELECT 1 FROM PosSyncEventJpaEntity e
+              WHERE e.eventId = s.eventId
+                AND e.deletedAt IS NULL
+                AND e.status = :accepted
+            )
+      """)
+  Object[] summarizeAcceptedSales(
+      @Param("headquarterId") long headquarterId,
+      @Param("from") Instant from,
+      @Param("to") Instant to,
+      @Param("accepted") PosEventResultStatus accepted);
 }

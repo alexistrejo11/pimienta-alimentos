@@ -76,6 +76,14 @@ public class UserJpaEntity {
   @Enumerated(EnumType.STRING)
   private Set<Role> roles = new HashSet<>();
 
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
+      name = "account_user_headquarters",
+      joinColumns = @JoinColumn(name = "user_id"),
+      indexes = @Index(name = "idx_account_user_headquarters_hq", columnList = "headquarter_id"))
+  @Column(name = "headquarter_id")
+  private Set<Long> assignedHeadquarterIds = new HashSet<>();
+
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
@@ -182,6 +190,14 @@ public class UserJpaEntity {
 
   public void setRoles(Set<Role> roles) {
     this.roles = roles;
+  }
+
+  public Set<Long> getAssignedHeadquarterIds() {
+    return assignedHeadquarterIds;
+  }
+
+  public void setAssignedHeadquarterIds(Set<Long> assignedHeadquarterIds) {
+    this.assignedHeadquarterIds = assignedHeadquarterIds;
   }
 
   public LocalDateTime getCreatedAt() {

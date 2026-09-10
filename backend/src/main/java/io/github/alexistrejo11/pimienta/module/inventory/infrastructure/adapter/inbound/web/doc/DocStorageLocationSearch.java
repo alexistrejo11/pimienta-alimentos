@@ -37,7 +37,12 @@ import java.lang.annotation.Target;
   @Parameter(
       name = "status",
       in = ParameterIn.QUERY,
-      schema = @Schema(implementation = StorageLocation.LocationStatus.class))
+      schema = @Schema(implementation = StorageLocation.LocationStatus.class)),
+  @Parameter(
+      name = "headquarterId",
+      in = ParameterIn.QUERY,
+      description = "Filtrar por sede (MANAGER: sede asignada; ADMIN: opcional).",
+      example = "1")
 })
 @Operation(summary = "Search storage locations", description = "Lista paginada. Rate limit: **READ_HEAVY**.")
 @ApiResponse(

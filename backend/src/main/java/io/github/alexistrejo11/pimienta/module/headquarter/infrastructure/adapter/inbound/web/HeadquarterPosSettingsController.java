@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web;
 
+import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.input.HeadquarterPosSettingsUseCases;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosSettings;
@@ -10,6 +12,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapte
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,15 +27,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class HeadquarterPosSettingsController {
 
   private final HeadquarterPosSettingsUseCases posSettingsUseCases;
+  private final HeadquarterAccessService headquarterAccessService;
 
-  public HeadquarterPosSettingsController(HeadquarterPosSettingsUseCases posSettingsUseCases) {
+  public HeadquarterPosSettingsController(
+      HeadquarterPosSettingsUseCases posSettingsUseCases,
+      HeadquarterAccessService headquarterAccessService) {
     this.posSettingsUseCases = posSettingsUseCases;
+    this.headquarterAccessService = headquarterAccessService;
   }
 
   @GetMapping
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocHeadquarterPosSettingsGet
-  public PosSettingsResponse get(@PathVariable("id") Long headquarterId) {
+  public PosSettingsResponse get(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("id") Long headquarterId) {
+    headquarterAccessService.requireHeadquarterAccess(principal, headquarterId);
     PosOperationalConfig config = posSettingsUseCases.get(headquarterId);
     return HeadquarterPosWebMapper.toResponse(config);
   }
@@ -41,7 +51,10 @@ public class HeadquarterPosSettingsController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterPosSettingsPut
   public PosSettingsResponse put(
-      @PathVariable("id") Long headquarterId, @Valid @RequestBody PosSettingsRequest request) {
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("id") Long headquarterId,
+      @Valid @RequestBody PosSettingsRequest request) {
+    headquarterAccessService.requireHeadquarterAccess(principal, headquarterId);
     PosOperationalConfig saved =
         posSettingsUseCases.upsert(headquarterId, HeadquarterPosWebMapper.toCommand(request));
     return HeadquarterPosWebMapper.toResponse(saved);

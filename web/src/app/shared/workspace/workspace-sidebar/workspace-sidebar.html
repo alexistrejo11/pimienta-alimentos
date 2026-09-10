@@ -103,6 +103,100 @@
       </a>
     </div>
 
+    <!-- ── POS (admin / manager) ───────────────────────────── -->
+    @if (canAccessPos()) {
+      <div class="pt-4">
+        <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-600">
+          Punto de venta
+        </p>
+
+        @if (isAdmin()) {
+          <a
+            routerLink="/app/catalogo"
+            routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+            [class]="navLinkInactive"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+            <span class="font-headline font-bold tracking-tight">Catálogo maestro</span>
+          </a>
+        }
+
+        <a
+          routerLink="/app/inventario"
+          routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">warehouse</span>
+          <span class="font-headline font-bold tracking-tight">Inventario POS</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/dispositivos"
+          routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">tablet_android</span>
+          <span class="font-headline font-bold tracking-tight">Dispositivos</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/enrolamiento"
+          routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">qr_code_2</span>
+          <span class="font-headline font-bold tracking-tight">Enrolamiento</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/operadores"
+          routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">group</span>
+          <span class="font-headline font-bold tracking-tight">Operadores</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/ventas"
+          routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+          <span class="font-headline font-bold tracking-tight">Ventas</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/mermas"
+          routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
+          <span class="font-headline font-bold tracking-tight">Mermas</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/cortes"
+          routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">point_of_sale</span>
+          <span class="font-headline font-bold tracking-tight">Cortes</span>
+        </a>
+
+        @if (isAdmin()) {
+          <a
+            routerLink="/app/pos/incidencias"
+            routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+            [class]="navLinkInactive"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">sync_problem</span>
+            <span class="font-headline font-bold tracking-tight">Incidencias</span>
+          </a>
+        }
+      </div>
+    }
+
     <!-- ── Asistencia (acceso rápido global) ──────────────── -->
     <div class="pt-4">
       <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-600">

@@ -30,4 +30,6 @@ public interface PosSyncIncidentSpringDataRepository
       @Param("headquarterId") Long headquarterId,
       @Param("openOnly") Boolean openOnly,
       Pageable pageable);
+
+  long countByHeadquarterIdAndAcceptedAtIsNullAndDeletedAtIsNull(long headquarterId);
 }

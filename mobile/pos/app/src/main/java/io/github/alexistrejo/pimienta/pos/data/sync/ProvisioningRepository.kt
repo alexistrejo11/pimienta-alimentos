@@ -49,9 +49,18 @@ class ProvisioningRepository(private val context: Context, private val provider:
         db.runInTransaction {
             changes.operations.forEach { op ->
                 when (op.entity.lowercase()) {
-                    "product" -> if (op.op == "DELETE") db.productDao().deleteById(op.id) else op.data?.let { db.productDao().insertAll(listOf(json.decodeFromJsonElement(ProductDto.serializer(), it).toProduct())) }
-                    "operator", "user" -> if (op.op == "DELETE") db.userDao().deleteById(op.id) else op.data?.let { db.userDao().insertAll(listOf(json.decodeFromJsonElement(OperatorDto.serializer(), it).toUser())) }
-                    "site" -> if (op.op == "DELETE") db.siteDao().deleteById(op.id) else op.data?.let { db.siteDao().insert(json.decodeFromJsonElement(SiteDto.serializer(), it).toSite()) }
+                    "product" -> when (op.op.lowercase()) {
+                        "deactivate" -> db.productDao().deleteById(op.id)
+                        else -> op.data?.let { db.productDao().insertAll(listOf(json.decodeFromJsonElement(ProductDto.serializer(), it).toProduct())) }
+                    }
+                    "operator", "user" -> when (op.op.lowercase()) {
+                        "deactivate" -> db.userDao().deleteById(op.id)
+                        else -> op.data?.let { db.userDao().insertAll(listOf(json.decodeFromJsonElement(OperatorDto.serializer(), it).toUser())) }
+                    }
+                    "site" -> when (op.op.lowercase()) {
+                        "deactivate" -> db.siteDao().deleteById(op.id)
+                        else -> op.data?.let { db.siteDao().insert(json.decodeFromJsonElement(SiteDto.serializer(), it).toSite()) }
+                    }
                 }
             }
             val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()

@@ -1,6 +1,9 @@
 # Mapeo backend ↔ POS
 
-Estado: descubrimiento de Phase 0, 2026-09-05.
+Estado: descubrimiento de Phase 0, 2026-09-05. **Superseded as the backend
+source of truth** by
+[`backend/docs/v2/post_integration/`](../../../../../backend/docs/v2/post_integration/README.md)
+(audit 2026-09-08). Keep this file as the Phase 0 note; do not extend it.
 
 Este documento registra lo observado en `../../backend` antes de crear DTOs,
 migraciones Room o cliente HTTP. No implica que el contrato POS ya esté

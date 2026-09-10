@@ -78,6 +78,16 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             } else if (e.code() == 403) {
                 db.syncDao().saveState(state.copy(status = "REQUIRES_REENROLLMENT", lastError = "device revoked"))
                 Result.failure()
+            } else if (e.code() == 409) {
+                // Invalid sync cursor: replace local catalog snapshot from a fresh bootstrap.
+                try {
+                    ProvisioningRepository(applicationContext, provider).applyBootstrap(api(baseUrl).bootstrap())
+                    db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
+                    Result.success()
+                } catch (bootstrapError: Exception) {
+                    db.syncDao().saveState(state.copy(status = "RETRYING", lastError = bootstrapError.message ?: "bootstrap after cursor 409 failed"))
+                    Result.retry()
+                }
             } else {
                 db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message()))
                 Result.retry()
@@ -115,7 +125,12 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
     }
 }
 
-private fun OutboxEventEntity.toEnvelope(deviceId: String, siteId: String, json: Json): EventEnvelope {
-    val payload = payloadJson?.let { runCatching { json.parseToJsonElement(it).jsonObject }.getOrNull() } ?: buildJsonObject { put("aggregateId", aggregateId) }
-    return EventEnvelope(id, type, schemaVersion, deviceId, this.siteId ?: siteId, sequence, aggregateId, shiftId, Instant.ofEpochMilli(occurredAtEpochMillis).toString(), payload)
+// Maps a stored outbox row to the wire envelope, preferring persisted device/site/shift metadata.
+private fun OutboxEventEntity.toEnvelope(defaultDeviceId: String, defaultSiteId: String, json: Json): EventEnvelope {
+    val payload = payloadJson?.let { runCatching { json.parseToJsonElement(it).jsonObject }.getOrNull() }
+        ?: buildJsonObject { put("aggregateId", aggregateId) }
+    return EventEnvelope(
+        id, type, schemaVersion, deviceId ?: defaultDeviceId, siteId ?: defaultSiteId, sequence,
+        aggregateId, shiftId, Instant.ofEpochMilli(occurredAtEpochMillis).toString(), payload
+    )
 }

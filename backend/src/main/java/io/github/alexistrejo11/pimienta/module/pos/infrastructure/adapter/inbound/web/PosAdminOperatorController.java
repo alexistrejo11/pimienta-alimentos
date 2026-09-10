@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web;
 
+import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.OperatorManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosAdminOperators;
@@ -19,6 +21,7 @@ import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
 import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -36,15 +39,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class PosAdminOperatorController {
 
   private final OperatorManagementUseCases operatorManagementUseCases;
+  private final HeadquarterAccessService headquarterAccessService;
 
-  public PosAdminOperatorController(OperatorManagementUseCases operatorManagementUseCases) {
+  public PosAdminOperatorController(
+      OperatorManagementUseCases operatorManagementUseCases,
+      HeadquarterAccessService headquarterAccessService) {
     this.operatorManagementUseCases = operatorManagementUseCases;
+    this.headquarterAccessService = headquarterAccessService;
   }
 
   @GetMapping
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocPosOperatorList
-  public PagedResponse<PosOperatorResponse> list(@ModelAttribute PageableRequest pageable) {
+  public PagedResponse<PosOperatorResponse> list(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @ModelAttribute PageableRequest pageable) {
+    if (headquarterAccessService.isManager(principal) && !headquarterAccessService.isAdmin(principal)) {
+      headquarterAccessService.resolveManagerHeadquarter(principal);
+    }
     return PagedResponse.map(
         operatorManagementUseCases.list(pageable.toPageable()), PosWebMapper::toOperatorResponse);
   }
@@ -52,14 +64,24 @@ public class PosAdminOperatorController {
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocPosOperatorGet
-  public PosOperatorResponse get(@PathVariable("id") long id) {
-    return PosWebMapper.toOperatorResponse(operatorManagementUseCases.get(id));
+  public PosOperatorResponse get(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable("id") long id) {
+    PosOperator operator = operatorManagementUseCases.get(id);
+    requireOperatorAccess(principal, operator);
+    return PosWebMapper.toOperatorResponse(operator);
   }
 
   @PostMapping
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocPosOperatorCreate
-  public PosOperatorResponse create(@Valid @RequestBody CreatePosOperatorRequest request) {
+  public PosOperatorResponse create(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @Valid @RequestBody CreatePosOperatorRequest request) {
+    if (request.headquarterIds() != null) {
+      for (Long hqId : request.headquarterIds()) {
+        headquarterAccessService.requireHeadquarterAccess(principal, hqId);
+      }
+    }
     PosOperator created =
         operatorManagementUseCases.create(PosWebMapper.toCreateOperatorCommand(request));
     return PosWebMapper.toOperatorResponse(created);
@@ -69,7 +91,11 @@ public class PosAdminOperatorController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocPosOperatorUpdate
   public PosOperatorResponse update(
-      @PathVariable("id") long id, @Valid @RequestBody UpdatePosOperatorRequest request) {
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("id") long id,
+      @Valid @RequestBody UpdatePosOperatorRequest request) {
+    PosOperator existing = operatorManagementUseCases.get(id);
+    requireOperatorAccess(principal, existing);
     return PosWebMapper.toOperatorResponse(
         operatorManagementUseCases.update(id, PosWebMapper.toUpdateOperatorCommand(request)));
   }
@@ -78,7 +104,10 @@ public class PosAdminOperatorController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocPosOperatorAssignHq
   public PosOperatorResponse assignHeadquarter(
-      @PathVariable("id") long id, @Valid @RequestBody AssignOperatorHeadquarterRequest request) {
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("id") long id,
+      @Valid @RequestBody AssignOperatorHeadquarterRequest request) {
+    headquarterAccessService.requireHeadquarterAccess(principal, request.headquarterId());
     return PosWebMapper.toOperatorResponse(
         operatorManagementUseCases.assignHeadquarter(id, request.headquarterId()));
   }
@@ -87,8 +116,21 @@ public class PosAdminOperatorController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocPosOperatorUnassignHq
   public PosOperatorResponse unassignHeadquarter(
-      @PathVariable("id") long id, @PathVariable("headquarterId") long headquarterId) {
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("id") long id,
+      @PathVariable("headquarterId") long headquarterId) {
+    headquarterAccessService.requireHeadquarterAccess(principal, headquarterId);
     return PosWebMapper.toOperatorResponse(
         operatorManagementUseCases.unassignHeadquarter(id, headquarterId));
+  }
+
+  private void requireOperatorAccess(JwtAuthenticationContext principal, PosOperator operator) {
+    if (headquarterAccessService.isAdmin(principal)) {
+      return;
+    }
+    Long managerHq = headquarterAccessService.resolveManagerHeadquarter(principal);
+    if (!operator.getHeadquarterIds().contains(managerHq)) {
+      headquarterAccessService.requireHeadquarterAccess(principal, managerHq);
+    }
   }
 }

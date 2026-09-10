@@ -1,12 +1,14 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence;
 
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosProductReportRow;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosSalesSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosReportFilterQuery;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSaleRepository;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.mapper.PosSalePersistenceMapper;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosSaleSpringDataRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,5 +71,15 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
     int start = (int) Math.min(pageable.getOffset(), all.size());
     int end = Math.min(start + pageable.getPageSize(), all.size());
     return new PageImpl<>(all.subList(start, end), pageable, all.size());
+  }
+
+  @Override
+  public PosSalesSummary summarizeAcceptedSales(long headquarterId, Instant from, Instant to) {
+    Object[] row =
+        jpa.summarizeAcceptedSales(
+            headquarterId, from, to, PosEventResultStatus.ACCEPTED);
+    long salesCentavos = row[0] != null ? ((Number) row[0]).longValue() : 0L;
+    long ticketCount = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+    return new PosSalesSummary(salesCentavos, ticketCount);
   }
 }

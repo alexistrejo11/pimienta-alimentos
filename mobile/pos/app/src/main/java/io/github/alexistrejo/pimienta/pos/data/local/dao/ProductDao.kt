@@ -2,13 +2,14 @@ package io.github.alexistrejo.pimienta.pos.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 
 // Provides the first local catalog queries.
 @Dao
 interface ProductDao {
-    @Insert fun insertAll(products: List<ProductEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) fun insertAll(products: List<ProductEntity>)
     @Query("DELETE FROM product") fun clear()
     @Query("DELETE FROM product WHERE id = :id") fun deleteById(id: String)
     @Query("SELECT * FROM product ORDER BY saleCategory, name") fun getAll(): List<ProductEntity>

@@ -17,5 +17,7 @@ public interface PosDeviceRepository {
 
   long countByHeadquarterIdAndStatusNot(long headquarterId, PosDeviceStatus status);
 
+  long countByHeadquarterId(long headquarterId);
+
   PosDevice save(PosDevice device);
 }

@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web;
 
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AddRolesCommand;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AssignHeadquartersCommand;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.BanUserCommand;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.User;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.UserStatistics;
@@ -15,6 +16,7 @@ import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.doc.DocUserManagementStatistics;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.doc.DocUserManagementUnbanUser;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.AddRolesRequest;
+import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.AssignHeadquartersRequest;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.BanUserRequest;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.UserResponse;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.UserStatisticsResponse;
@@ -111,6 +113,15 @@ public class UserManagerController {
   public UserResponse addRoles(@PathVariable Long id, @Valid @RequestBody AddRolesRequest request) {
     AddRolesCommand command = UserManagerWebMapper.toAddRolesCommand(request);
     User updated = userManagementUseCases.addRoles(id, command);
+    return UserManagerWebMapper.toResponse(updated);
+  }
+
+  @PostMapping("/{id}/headquarters")
+  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+  public UserResponse assignHeadquarters(
+      @PathVariable Long id, @Valid @RequestBody AssignHeadquartersRequest request) {
+    AssignHeadquartersCommand command = UserManagerWebMapper.toAssignHeadquartersCommand(request);
+    User updated = userManagementUseCases.assignHeadquarters(id, command);
     return UserManagerWebMapper.toResponse(updated);
   }
 

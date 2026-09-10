@@ -19,6 +19,7 @@ public record UserResponse(
         LocalDateTime bannedAt,
         List<String> roles,
         List<String> permissions,
+        List<Long> assignedHeadquarterIds,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 }

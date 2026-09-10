@@ -2,10 +2,12 @@ package io.github.alexistrejo.pimienta.pos.domain
 
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
+import io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
+import io.github.alexistrejo.pimienta.pos.data.sync.OutboxPayloadBuilder
+import io.github.alexistrejo.pimienta.pos.data.sync.PinVerifier
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.security.MessageDigest
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -85,13 +87,19 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         }.sortedWith(compareByDescending<TopProductSummary> { it.quantity }.thenByDescending { it.amountCentavos }).take(5)
         return DashboardSummary(gross, discounts, net, validSales.size, if (validSales.isEmpty()) 0 else net / validSales.size, validSales.filter { it.paymentMethod == "CASH" }.sumOf { it.totalCentavos }, withdrawals.sumOf { it.amountCentavos }, withdrawals.size, sales.count { it.status == "CANCELLED" }, movements.count { it.movementType == "WASTE" }, dao.pendingEventCount(), top)
     }
-    fun authenticate(userId: String, pin: String): Boolean = database.userDao().find(userId)?.let { it.active && it.pinHash == hashPin(pin) } ?: false
+    fun authenticate(userId: String, pin: String): Boolean =
+        database.userDao().find(userId)?.let { it.active && PinVerifier.matches(pin, it.pinHash, mode == RuntimeMode.SANDBOX) } ?: false
+
+    // Opens the single allowed shift and records a durable SHIFT_OPENED sync event.
     fun openShift(userId: String, openingCashCentavos: Long): ShiftEntity? = database.runInTransaction<ShiftEntity?> {
         val operations = database.operationsDao()
         operations.activeShift()?.let { return@runInTransaction it }
         val device = operations.device() ?: return@runInTransaction null
-        val shift = ShiftEntity(UUID.randomUUID().toString(), device.id, "site-debug-001", userId, openingCashCentavos, System.currentTimeMillis(), "OPEN", 1)
+        val siteId = device.siteId ?: database.siteDao().current()?.id ?: return@runInTransaction null
+        val openedAt = System.currentTimeMillis()
+        val shift = ShiftEntity(UUID.randomUUID().toString(), device.id, siteId, userId, openingCashCentavos, openedAt, "OPEN", 1)
         operations.insertShift(shift)
+        enqueueOutbox(operations, device, siteId, shift.id, "SHIFT_OPENED", shift.id, OutboxPayloadBuilder.shiftOpened(shift), openedAt)
         shift
     }
     // Persists an authorized cash safeguard withdrawal with its print and sync work.
@@ -108,9 +116,11 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val folio = "SG-${device.visibleCode}-${liveShift.id.take(4).uppercase()}-${device.nextEventSequence.toString().padStart(4, '0')}"
             val withdrawal = CashWithdrawalEntity(id, folio, liveShift.id, liveShift.cashierId, amountCentavos, "RESGUARDO_EFECTIVO", authorizer.id, authorizer.role, System.currentTimeMillis())
             operations.insertWithdrawal(withdrawal)
-            operations.insertOutbox(OutboxEventEntity(UUID.randomUUID().toString(), device.nextEventSequence, "CASH_WITHDRAWAL_RECORDED", id, "PENDING", System.currentTimeMillis()))
+            enqueueOutbox(
+                operations, device, liveShift.siteId, liveShift.id, "CASH_WITHDRAWAL_RECORDED", id,
+                OutboxPayloadBuilder.cashWithdrawalRecorded(withdrawal), withdrawal.createdAtEpochMillis
+            )
             operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), id, "PENDING", false, System.currentTimeMillis(), "CASH_WITHDRAWAL"))
-            operations.updateSequence(device.id, device.nextEventSequence + 1)
             withdrawal
         }
     }
@@ -120,16 +130,22 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         if (quantity <= 0 || reason.isBlank()) return false
         return database.runInTransaction<Boolean> {
             val operations = database.operationsDao()
+            val liveShift = operations.activeShift() ?: return@runInTransaction false
+            if (liveShift.id != shift.id) return@runInTransaction false
             val device = operations.device() ?: return@runInTransaction false
             val movementId = UUID.randomUUID().toString()
+            val createdAt = System.currentTimeMillis()
             val delta = if (type == "WASTE") -quantity else quantity
-            operations.insertMovements(listOf(InventoryMovementEntity(movementId, movementId, product.id, delta, System.currentTimeMillis(), type)))
+            val movement = InventoryMovementEntity(movementId, movementId, product.id, delta, createdAt, type)
+            operations.insertMovements(listOf(movement))
             if (product.stockPolicy == "CONTROLLED") {
                 val current = product.stock.toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO
                 database.productDao().updateStock(product.id, current.add(java.math.BigDecimal.valueOf(delta.toLong())).toPlainString())
             }
-            operations.insertOutbox(OutboxEventEntity(UUID.randomUUID().toString(), device.nextEventSequence, if (type == "WASTE") "WASTE_RECORDED" else "RESTOCK_RECORDED", movementId, "PENDING", System.currentTimeMillis()))
-            operations.updateSequence(device.id, device.nextEventSequence + 1)
+            val eventType = if (type == "WASTE") "WASTE_RECORDED" else "RESTOCK_RECORDED"
+            val payload = if (type == "WASTE") OutboxPayloadBuilder.wasteRecorded(movement, product, reason.trim())
+            else OutboxPayloadBuilder.restockRecorded(movement, product, reason.trim())
+            enqueueOutbox(operations, device, liveShift.siteId, liveShift.id, eventType, movementId, payload, createdAt)
             true
         }
     }
@@ -143,8 +159,10 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val attempt = CashCountAttemptEntity(UUID.randomUUID().toString(), shift.id, shift.cashierId, totalCentavos, denominations, "SUBMITTED", null, System.currentTimeMillis())
             operations.insertCashCountAttempt(attempt)
             val device = operations.device() ?: return@runInTransaction attempt
-            operations.insertOutbox(OutboxEventEntity(UUID.randomUUID().toString(), device.nextEventSequence, "CASH_COUNT_SUBMITTED", attempt.id, "PENDING", System.currentTimeMillis()))
-            operations.updateSequence(device.id, device.nextEventSequence + 1)
+            enqueueOutbox(
+                operations, device, shift.siteId, shift.id, "CASH_COUNT_SUBMITTED", attempt.id,
+                OutboxPayloadBuilder.cashCountSubmitted(attempt), attempt.createdAtEpochMillis
+            )
             attempt
         }
     }
@@ -167,9 +185,11 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             operations.updateCashCountStatus(attempt.id, "APPROVED", null)
             operations.updateShiftStatus(shift.id, "CLOSED")
             val device = operations.device() ?: return@runInTransaction false
-            operations.insertOutbox(OutboxEventEntity(UUID.randomUUID().toString(), device.nextEventSequence, "SHIFT_CLOSED", close.id, "PENDING", System.currentTimeMillis()))
+            enqueueOutbox(
+                operations, device, shift.siteId, shift.id, "SHIFT_CLOSED", close.id,
+                OutboxPayloadBuilder.shiftClosed(close), close.approvedAtEpochMillis
+            )
             operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), close.id, "PENDING", false, System.currentTimeMillis(), "SHIFT_CLOSE"))
-            operations.updateSequence(device.id, device.nextEventSequence + 1)
             true
         }
     }
@@ -191,12 +211,16 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             if (liveShift.id != sale.shiftId) return@runInTransaction false
             val lines = operations.linesForSale(sale.id)
             val device = operations.device() ?: return@runInTransaction false
+            val cancelledAt = System.currentTimeMillis()
             operations.markSaleCancelled(sale.id)
-            operations.insertCancellation(SaleCancellationEntity(UUID.randomUUID().toString(), sale.id, sale.shiftId, reason.trim(), manager.id, manager.role, System.currentTimeMillis()))
-            operations.insertMovements(lines.filter { it.stockPolicy == "CONTROLLED" }.map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId, line.quantity, System.currentTimeMillis(), "SALE_CANCELLATION") })
+            val cancellation = SaleCancellationEntity(UUID.randomUUID().toString(), sale.id, sale.shiftId, reason.trim(), manager.id, manager.role, cancelledAt)
+            operations.insertCancellation(cancellation)
+            operations.insertMovements(lines.filter { it.stockPolicy == "CONTROLLED" }.map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId, line.quantity, cancelledAt, "SALE_CANCELLATION") })
             lines.filter { it.stockPolicy == "CONTROLLED" }.forEach { line -> adjustStock(line.productId, line.quantity) }
-            operations.insertOutbox(OutboxEventEntity(UUID.randomUUID().toString(), device.nextEventSequence, "SALE_CANCELLED", sale.id, "PENDING", System.currentTimeMillis()))
-            operations.updateSequence(device.id, device.nextEventSequence + 1)
+            enqueueOutbox(
+                operations, device, liveShift.siteId, liveShift.id, "SALE_CANCELLED", sale.id,
+                OutboxPayloadBuilder.saleCancelled(sale, cancellation), cancelledAt
+            )
             true
         }
     }
@@ -215,18 +239,27 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             if (liveShift.id != shift.id) return@runInTransaction null
             val device = operations.device() ?: return@runInTransaction null
             val saleId = UUID.randomUUID().toString()
+            val confirmedAt = System.currentTimeMillis()
             val change = if (method == PaymentMethod.CASH) tenderedCentavos - total else 0
             val folio = "${device.visibleCode}-${liveShift.id.take(4).uppercase()}-${liveShift.nextFolioNumber.toString().padStart(4, '0')}"
-            val sale = SaleEntity(saleId, folio, liveShift.id, liveShift.cashierId, gross, discount?.amountCentavos ?: 0, total, method.name, if (method == PaymentMethod.CASH) tenderedCentavos else total, change, System.currentTimeMillis())
+            val sale = SaleEntity(saleId, folio, liveShift.id, liveShift.cashierId, gross, discount?.amountCentavos ?: 0, total, method.name, if (method == PaymentMethod.CASH) tenderedCentavos else total, change, confirmedAt)
             operations.insertSale(sale)
-            discount?.let { operations.insertDiscount(SaleDiscountEntity(UUID.randomUUID().toString(), saleId, it.amountCentavos, it.reason.trim(), it.authorizedBy.id, it.authorizedBy.role, System.currentTimeMillis())) }
-            operations.insertLines(lines.map { line -> SaleLineEntity(UUID.randomUUID().toString(), saleId, line.productId, line.name, line.category, line.quantity, line.unitPriceCentavos, line.unitPriceCentavos * line.quantity, line.stockPolicy) })
-            operations.insertPayment(PaymentEntity(UUID.randomUUID().toString(), saleId, method.name, total))
-            operations.insertMovements(lines.filter { it.stockPolicy == "CONTROLLED" }.map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId, -line.quantity, System.currentTimeMillis()) })
+            val discountEntity = discount?.let {
+                SaleDiscountEntity(UUID.randomUUID().toString(), saleId, it.amountCentavos, it.reason.trim(), it.authorizedBy.id, it.authorizedBy.role, confirmedAt)
+            }
+            discountEntity?.let { operations.insertDiscount(it) }
+            val saleLines = lines.map { line -> SaleLineEntity(UUID.randomUUID().toString(), saleId, line.productId, line.name, line.category, line.quantity, line.unitPriceCentavos, line.unitPriceCentavos * line.quantity, line.stockPolicy) }
+            operations.insertLines(saleLines)
+            val payment = PaymentEntity(UUID.randomUUID().toString(), saleId, method.name, total)
+            operations.insertPayment(payment)
+            operations.insertMovements(lines.filter { it.stockPolicy == "CONTROLLED" }.map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId, -line.quantity, confirmedAt) })
             lines.filter { it.stockPolicy == "CONTROLLED" }.forEach { line -> adjustStock(line.productId, -line.quantity) }
-            operations.insertOutbox(OutboxEventEntity(UUID.randomUUID().toString(), device.nextEventSequence, "SALE_CONFIRMED", saleId, "PENDING", System.currentTimeMillis()))
-            operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, System.currentTimeMillis()))
-            operations.updateSequence(device.id, device.nextEventSequence + 1)
+            val products = lines.mapNotNull { database.productDao().findById(it.productId) }.associateBy { it.id }
+            enqueueOutbox(
+                operations, device, liveShift.siteId, liveShift.id, "SALE_CONFIRMED", saleId,
+                OutboxPayloadBuilder.saleConfirmed(sale, saleLines, payment, discountEntity, products), confirmedAt
+            )
+            operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, confirmedAt))
             operations.updateFolioNumber(liveShift.id, liveShift.nextFolioNumber + 1)
             sale
         }
@@ -237,5 +270,25 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         val current = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
         database.productDao().updateStock(productId, current.add(BigDecimal.valueOf(delta.toLong())).toPlainString())
     }
-    private fun hashPin(pin: String): String = MessageDigest.getInstance("SHA-256").digest("pimienta-debug|$pin".toByteArray()).joinToString("") { "%02x".format(it) }
+
+    // Persists one outbox row with envelope metadata and advances the device sequence.
+    private fun enqueueOutbox(
+        operations: OperationsDao,
+        device: DeviceEntity,
+        siteId: String,
+        shiftId: String,
+        type: String,
+        aggregateId: String,
+        payloadJson: String,
+        occurredAt: Long,
+    ) {
+        operations.insertOutbox(
+            OutboxEventEntity(
+                UUID.randomUUID().toString(), device.nextEventSequence, type, aggregateId, "PENDING", occurredAt,
+                schemaVersion = 1, deviceId = device.id, siteId = siteId, shiftId = shiftId,
+                occurredAtEpochMillis = occurredAt, payloadJson = payloadJson
+            )
+        )
+        operations.updateSequence(device.id, device.nextEventSequence + 1)
+    }
 }

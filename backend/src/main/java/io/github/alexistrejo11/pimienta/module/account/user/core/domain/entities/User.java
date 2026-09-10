@@ -24,6 +24,7 @@ public class User extends BaseDomain<Long> {
   private String bannedReason;
   private LocalDateTime bannedAt;
   private List<Role> roles;
+  private List<Long> assignedHeadquarterIds;
 
   public String getEmail() {
     return email;
@@ -77,6 +78,10 @@ public class User extends BaseDomain<Long> {
     return List.copyOf(roles);
   }
 
+  public List<Long> getAssignedHeadquarterIds() {
+    return assignedHeadquarterIds != null ? List.copyOf(assignedHeadquarterIds) : List.of();
+  }
+
   private User() {
     super();
   }
@@ -115,6 +120,7 @@ public class User extends BaseDomain<Long> {
     u.bannedReason = null;
     u.bannedAt = null;
     u.roles = new ArrayList<>();
+    u.assignedHeadquarterIds = new ArrayList<>();
     u.createdAt = now;
     u.updatedAt = now;
     u.deletedAt = null;
@@ -138,6 +144,10 @@ public class User extends BaseDomain<Long> {
     u.bannedReason = params.bannedReason();
     u.bannedAt = params.bannedAt();
     u.roles = params.roles() != null ? new ArrayList<>(params.roles()) : new ArrayList<>();
+    u.assignedHeadquarterIds =
+        params.assignedHeadquarterIds() != null
+            ? new ArrayList<>(params.assignedHeadquarterIds())
+            : new ArrayList<>();
     u.createdAt = params.createdAt() != null ? params.createdAt() : LocalDateTime.now();
     u.updatedAt = params.updatedAt() != null ? params.updatedAt() : u.createdAt;
     u.deletedAt = params.deletedAt();
@@ -215,6 +225,12 @@ public class User extends BaseDomain<Long> {
 
   public void replaceRoles(List<Role> newRoles) {
     this.roles = newRoles != null ? new ArrayList<>(newRoles) : new ArrayList<>();
+    touch();
+  }
+
+  public void replaceAssignedHeadquarters(List<Long> headquarterIds) {
+    this.assignedHeadquarterIds =
+        headquarterIds != null ? new ArrayList<>(headquarterIds) : new ArrayList<>();
     touch();
   }
 

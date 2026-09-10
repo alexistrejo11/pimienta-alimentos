@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web;
 
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.AcceptPosSyncIncidentCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncIncidentAdminUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosAdminSyncIncidents;
@@ -34,28 +35,38 @@ import org.springframework.web.bind.annotation.RestController;
 public class PosAdminSyncIncidentController {
 
   private final PosSyncIncidentAdminUseCases incidentAdminUseCases;
+  private final HeadquarterAccessService headquarterAccessService;
 
-  public PosAdminSyncIncidentController(PosSyncIncidentAdminUseCases incidentAdminUseCases) {
+  public PosAdminSyncIncidentController(
+      PosSyncIncidentAdminUseCases incidentAdminUseCases,
+      HeadquarterAccessService headquarterAccessService) {
     this.incidentAdminUseCases = incidentAdminUseCases;
+    this.headquarterAccessService = headquarterAccessService;
   }
 
   @GetMapping
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocPosSyncIncidentList
   public PagedResponse<PosSyncIncidentResponse> list(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @RequestParam(value = "headquarterId", required = false) Long headquarterId,
       @RequestParam(value = "openOnly", required = false) Boolean openOnly,
       @ModelAttribute PageableRequest pageable) {
+    Long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
-        incidentAdminUseCases.list(headquarterId, openOnly, pageable.toPageable()),
+        incidentAdminUseCases.list(hq, openOnly, pageable.toPageable()),
         PosWebMapper::toSyncIncidentResponse);
   }
 
   @GetMapping("/{incidentId}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocPosSyncIncidentGet
-  public PosSyncIncidentResponse get(@PathVariable("incidentId") UUID incidentId) {
-    return PosWebMapper.toSyncIncidentResponse(incidentAdminUseCases.get(incidentId));
+  public PosSyncIncidentResponse get(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("incidentId") UUID incidentId) {
+    var incident = incidentAdminUseCases.get(incidentId);
+    headquarterAccessService.requireHeadquarterAccess(principal, incident.getHeadquarterId());
+    return PosWebMapper.toSyncIncidentResponse(incident);
   }
 
   @PostMapping("/{incidentId}/accept")
@@ -66,6 +77,8 @@ public class PosAdminSyncIncidentController {
       @PathVariable("incidentId") UUID incidentId,
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @Valid @RequestBody AcceptPosSyncIncidentRequest request) {
+    var incident = incidentAdminUseCases.get(incidentId);
+    headquarterAccessService.requireHeadquarterAccess(principal, incident.getHeadquarterId());
     return PosWebMapper.toSyncIncidentResponse(
         incidentAdminUseCases.accept(
             new AcceptPosSyncIncidentCommand(

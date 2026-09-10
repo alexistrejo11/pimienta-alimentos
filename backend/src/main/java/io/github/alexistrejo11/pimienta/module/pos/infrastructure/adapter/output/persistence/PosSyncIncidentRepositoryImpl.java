@@ -38,4 +38,9 @@ public class PosSyncIncidentRepositoryImpl implements PosSyncIncidentRepository 
     return jpa.findFiltered(headquarterId, openOnly, pageable)
         .map(PosSyncIncidentPersistenceMapper::toDomain);
   }
+
+  @Override
+  public long countOpenByHeadquarterId(long headquarterId) {
+    return jpa.countByHeadquarterIdAndAcceptedAtIsNullAndDeletedAtIsNull(headquarterId);
+  }
 }

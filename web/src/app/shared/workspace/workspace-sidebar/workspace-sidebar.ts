@@ -1,6 +1,7 @@
-import { Component, output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
+import { SessionContextService } from '../../../core/auth/session-context.service';
 import { BRAND_LOGO_URL } from '../../../pages/home/brand';
 
 @Component({
@@ -10,7 +11,11 @@ import { BRAND_LOGO_URL } from '../../../pages/home/brand';
   templateUrl: './workspace-sidebar.html',
 })
 export class WorkspaceSidebarComponent {
+  private readonly session = inject(SessionContextService);
+
   readonly logoUrl = BRAND_LOGO_URL;
+  readonly canAccessPos = this.session.canAccessPos;
+  readonly isAdmin = this.session.isAdmin;
 
   readonly abrirAsistenciaHoy = output<void>();
   readonly abrirAsistenciaBusqueda = output<void>();

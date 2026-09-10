@@ -1,0 +1,65 @@
+<div class="flex flex-col gap-6 p-8">
+  <app-page-header title="Dispositivos POS" subtitle="Tablets enroladas por sede" />
+
+  @if (isAdmin()) {
+    <label class="flex max-w-xs flex-col gap-1 text-sm">
+      <span class="font-medium">Filtrar por sede</span>
+      <select
+        class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950"
+        [(ngModel)]="filterHeadquarterId"
+        (ngModelChange)="cargar()"
+      >
+        <option [ngValue]="null">Todas las sedes</option>
+        @for (sede of sedes(); track sede.id) {
+          <option [ngValue]="sede.id">{{ sede.name }}</option>
+        }
+      </select>
+    </label>
+  }
+
+  <app-data-state
+    [loading]="loading()"
+    [error]="error()"
+    [empty]="devices().length === 0"
+    emptyMessage="No hay dispositivos registrados."
+    (retry)="cargar()"
+  >
+    <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+      <table class="w-full text-sm">
+        <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+          <tr>
+            <th class="px-4 py-3 text-left">Código</th>
+            <th class="px-4 py-3 text-left">Nombre</th>
+            <th class="px-4 py-3 text-left">Sede</th>
+            <th class="px-4 py-3 text-left">Versión</th>
+            <th class="px-4 py-3 text-left">Estado</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+          @for (d of devices(); track d.id) {
+            <tr>
+              <td class="px-4 py-3 font-mono">{{ d.visibleCode }}</td>
+              <td class="px-4 py-3">{{ d.deviceName || '—' }}</td>
+              <td class="px-4 py-3">#{{ d.headquarterId }}</td>
+              <td class="px-4 py-3">{{ d.appVersion || '—' }}</td>
+              <td class="px-4 py-3">{{ d.status }}</td>
+              <td class="px-4 py-3 text-right">
+                @if (d.status !== 'REVOKED') {
+                  <button
+                    type="button"
+                    class="text-sm font-semibold text-red-700 disabled:opacity-50"
+                    [disabled]="revokingId() === d.id"
+                    (click)="revoke(d)"
+                  >
+                    Revocar
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </app-data-state>
+</div>

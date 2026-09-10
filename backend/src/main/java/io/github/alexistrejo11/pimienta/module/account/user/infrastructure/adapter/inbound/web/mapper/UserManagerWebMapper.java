@@ -1,11 +1,13 @@
 package io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.mapper;
 
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AddRolesCommand;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AssignHeadquartersCommand;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.BanUserCommand;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.User;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.UserStatistics;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.AddRolesRequest;
+import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.AssignHeadquartersRequest;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.BanUserRequest;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.UserResponse;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web.dto.UserStatisticsResponse;
@@ -44,6 +46,7 @@ public final class UserManagerWebMapper {
         user.getBannedAt(),
         roleNames,
         permissions,
+        user.getAssignedHeadquarterIds(),
         user.getCreatedAt(),
         user.getUpdatedAt());
   }
@@ -61,5 +64,9 @@ public final class UserManagerWebMapper {
       roles.add(Role.valueOf(name.trim().toUpperCase()));
     }
     return new AddRolesCommand(roles);
+  }
+
+  public static AssignHeadquartersCommand toAssignHeadquartersCommand(AssignHeadquartersRequest request) {
+    return new AssignHeadquartersCommand(request.headquarterIds());
   }
 }

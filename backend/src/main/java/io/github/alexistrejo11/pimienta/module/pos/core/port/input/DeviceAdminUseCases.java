@@ -9,5 +9,7 @@ public interface DeviceAdminUseCases {
 
   Page<PosDevice> list(Long headquarterId, Pageable pageable);
 
+  PosDevice get(UUID deviceId);
+
   PosDevice revoke(UUID deviceId);
 }

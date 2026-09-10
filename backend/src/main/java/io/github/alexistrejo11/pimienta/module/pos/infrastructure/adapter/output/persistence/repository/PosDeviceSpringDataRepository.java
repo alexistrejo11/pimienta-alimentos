@@ -19,4 +19,6 @@ public interface PosDeviceSpringDataRepository extends JpaRepository<PosDeviceJp
 
   long countByHeadquarterIdAndStatusNotAndDeletedAtIsNull(
       Long headquarterId, PosDeviceStatus status);
+
+  long countByHeadquarterIdAndDeletedAtIsNull(Long headquarterId);
 }

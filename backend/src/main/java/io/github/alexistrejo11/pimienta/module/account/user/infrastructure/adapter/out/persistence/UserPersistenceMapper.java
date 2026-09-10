@@ -28,6 +28,7 @@ final class UserPersistenceMapper {
     e.setBannedReason(domain.getBannedReason());
     e.setBannedAt(domain.getBannedAt());
     e.setRoles(new LinkedHashSet<>(domain.getRoles()));
+    e.setAssignedHeadquarterIds(new LinkedHashSet<>(domain.getAssignedHeadquarterIds()));
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
@@ -40,7 +41,12 @@ final class UserPersistenceMapper {
     if (e.getRoles() != null) {
       roles.addAll(e.getRoles());
     }
-    UserReconstructParams params = UserReconstructParams.builder()
+    var hqIds = new ArrayList<Long>();
+    if (e.getAssignedHeadquarterIds() != null) {
+      hqIds.addAll(e.getAssignedHeadquarterIds());
+    }
+    UserReconstructParams params =
+        UserReconstructParams.builder()
         .id(e.getId())
         .email(e.getEmail())
         .passwordHash(e.getPasswordHash())
@@ -53,6 +59,7 @@ final class UserPersistenceMapper {
         .bannedReason(e.getBannedReason())
         .bannedAt(e.getBannedAt())
         .roles(roles)
+        .assignedHeadquarterIds(hqIds)
         .createdAt(e.getCreatedAt())
         .updatedAt(e.getUpdatedAt())
         .deletedAt(e.getDeletedAt())

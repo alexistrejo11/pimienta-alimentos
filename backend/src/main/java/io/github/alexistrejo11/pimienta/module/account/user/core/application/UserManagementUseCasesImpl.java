@@ -1,13 +1,17 @@
 package io.github.alexistrejo11.pimienta.module.account.user.core.application;
 
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AddRolesCommand;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AssignHeadquartersCommand;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.BanUserCommand;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.exception.HeadquarterNotFoundException;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.User;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.UserStatistics;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.exceptions.UserNotFoundException;
 import io.github.alexistrejo11.pimienta.module.account.user.core.port.input.UserManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.account.user.core.port.output.UserRepository;
 
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -21,9 +25,12 @@ public class UserManagementUseCasesImpl implements UserManagementUseCases {
   private static final Logger log = LoggerFactory.getLogger(UserManagementUseCasesImpl.class);
 
   private final UserRepository userRepository;
+  private final HeadquarterRepository headquarterRepository;
 
-  public UserManagementUseCasesImpl(UserRepository userRepository) {
+  public UserManagementUseCasesImpl(
+      UserRepository userRepository, HeadquarterRepository headquarterRepository) {
     this.userRepository = userRepository;
+    this.headquarterRepository = headquarterRepository;
   }
 
   @Override
@@ -112,6 +119,23 @@ public class UserManagementUseCasesImpl implements UserManagementUseCases {
     User saved = userRepository.save(user);
 
     log.info("add roles complete userId={}", userId);
+    return saved;
+  }
+
+  @Override
+  @Transactional
+  public User assignHeadquarters(Long userId, AssignHeadquartersCommand command) {
+    log.info("assign headquarters start userId={}", userId);
+    User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+    var ids = command.headquarterIds() != null ? command.headquarterIds() : List.<Long>of();
+    for (Long hqId : ids) {
+      headquarterRepository
+          .findById(hqId)
+          .orElseThrow(() -> new HeadquarterNotFoundException(hqId));
+    }
+    user.replaceAssignedHeadquarters(ids);
+    User saved = userRepository.save(user);
+    log.info("assign headquarters complete userId={} count={}", userId, ids.size());
     return saved;
   }
 

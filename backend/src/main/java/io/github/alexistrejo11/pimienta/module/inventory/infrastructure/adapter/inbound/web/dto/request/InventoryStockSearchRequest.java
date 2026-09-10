@@ -9,6 +9,7 @@ public class InventoryStockSearchRequest extends PageableRequest {
   private Long itemId;
   private Long locationId;
   private InventoryStatus status;
+  private Long headquarterId;
 
   public Long getItemId() {
     return itemId;
@@ -34,7 +35,15 @@ public class InventoryStockSearchRequest extends PageableRequest {
     this.status = status;
   }
 
-  public InventorySearchCriteria toCriteria() {
-    return new InventorySearchCriteria(itemId, locationId, status);
+  public Long getHeadquarterId() {
+    return headquarterId;
+  }
+
+  public void setHeadquarterId(Long headquarterId) {
+    this.headquarterId = headquarterId;
+  }
+
+  public InventorySearchCriteria toCriteria(Long effectiveHeadquarterId) {
+    return new InventorySearchCriteria(itemId, locationId, status, effectiveHeadquarterId);
   }
 }

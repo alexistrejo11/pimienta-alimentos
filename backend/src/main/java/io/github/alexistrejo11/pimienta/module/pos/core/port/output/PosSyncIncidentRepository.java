@@ -13,4 +13,6 @@ public interface PosSyncIncidentRepository {
   Optional<PosSyncIncident> findById(UUID id);
 
   Page<PosSyncIncident> findFiltered(Long headquarterId, Boolean openOnly, Pageable pageable);
+
+  long countOpenByHeadquarterId(long headquarterId);
 }

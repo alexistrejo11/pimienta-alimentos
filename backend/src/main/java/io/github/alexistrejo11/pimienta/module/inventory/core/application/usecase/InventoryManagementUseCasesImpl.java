@@ -45,12 +45,13 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
     InventorySearchCriteria effective = criteria != null ? criteria : InventorySearchCriteria.empty();
 
     log.debug(
-        "search inventory balances query start page={} size={} itemId={} locationId={} status={}",
+        "search inventory balances query start page={} size={} itemId={} locationId={} status={} headquarterId={}",
         pageable != null ? pageable.getPageNumber() : null,
         pageable != null ? pageable.getPageSize() : null,
         effective.itemId(),
         effective.locationId(),
-        effective.status());
+        effective.status(),
+        effective.headquarterId());
 
     Page<Inventory> page = inventoryRepository.search(effective, pageable);
 

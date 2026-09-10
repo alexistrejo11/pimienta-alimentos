@@ -23,6 +23,9 @@ public final class StorageLocationSpecifications {
         if (criteria.status() != null) {
           parts.add(cb.equal(root.get("status"), criteria.status()));
         }
+        if (criteria.headquarterId() != null) {
+          parts.add(cb.equal(root.get("headquarterId"), criteria.headquarterId()));
+        }
       }
       return cb.and(parts.toArray(Predicate[]::new));
     };

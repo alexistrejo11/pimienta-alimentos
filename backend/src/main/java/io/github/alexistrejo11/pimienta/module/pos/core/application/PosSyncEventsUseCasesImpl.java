@@ -51,6 +51,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
   private final PosSyncIncidentRepository incidentRepository;
   private final HeadquarterItemRepository headquarterItemRepository;
   private final PosSaleInventoryUseCases posSaleInventoryUseCases;
+  private final PosEventStockProjector eventStockProjector;
   private final TransactionTemplate transactionTemplate;
 
   public PosSyncEventsUseCasesImpl(
@@ -60,6 +61,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       PosSyncIncidentRepository incidentRepository,
       HeadquarterItemRepository headquarterItemRepository,
       PosSaleInventoryUseCases posSaleInventoryUseCases,
+      PosEventStockProjector eventStockProjector,
       PlatformTransactionManager transactionManager) {
     this.deviceRepository = deviceRepository;
     this.syncEventRepository = syncEventRepository;
@@ -67,6 +69,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
     this.incidentRepository = incidentRepository;
     this.headquarterItemRepository = headquarterItemRepository;
     this.posSaleInventoryUseCases = posSaleInventoryUseCases;
+    this.eventStockProjector = eventStockProjector;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
   }
 
@@ -140,6 +143,12 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
             .withMessage(null)
             .register();
     PosSyncEvent saved = syncEventRepository.save(event);
+    eventStockProjector.project(
+        device.getHeadquarterId(),
+        saved.getId(),
+        item.eventType(),
+        item.aggregateId(),
+        item.payloadJson());
     bumpDeviceSequence(device, item.deviceSequence());
     return new EventIngestResult(
         saved.getId(),

@@ -1,0 +1,52 @@
+<div class="flex flex-col gap-6 p-8">
+  <app-page-header title="Ventas POS" subtitle="Tickets aceptados por sede y periodo" />
+
+  <div class="flex flex-wrap gap-3">
+    @if (isAdmin()) {
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium">Sede</span>
+        <select class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" [(ngModel)]="selectedHeadquarterId">
+          @for (sede of sedes(); track sede.id) {
+            <option [ngValue]="sede.id">{{ sede.name }}</option>
+          }
+        </select>
+      </label>
+    }
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="font-medium">Desde</span>
+      <input type="date" class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" [(ngModel)]="dateFrom" />
+    </label>
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="font-medium">Hasta</span>
+      <input type="date" class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" [(ngModel)]="dateTo" />
+    </label>
+    <button type="button" class="self-end rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" (click)="cargar()">
+      Consultar
+    </button>
+  </div>
+
+  <app-data-state [loading]="loading()" [error]="error()" [empty]="sales().length === 0" emptyMessage="Sin ventas en el periodo." (retry)="cargar()">
+    <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+      <table class="w-full text-sm">
+        <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+          <tr>
+            <th class="px-4 py-3 text-left">Folio</th>
+            <th class="px-4 py-3 text-left">Fecha</th>
+            <th class="px-4 py-3 text-left">Total</th>
+            <th class="px-4 py-3 text-left">Estado</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+          @for (s of sales(); track s.saleId) {
+            <tr>
+              <td class="px-4 py-3 font-mono">{{ s.folio }}</td>
+              <td class="px-4 py-3">{{ s.occurredAt | date: 'short' }}</td>
+              <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.totalCentavos) }}</td>
+              <td class="px-4 py-3">{{ s.status }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </app-data-state>
+</div>

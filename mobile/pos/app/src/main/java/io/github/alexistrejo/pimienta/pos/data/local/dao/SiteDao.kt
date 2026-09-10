@@ -11,4 +11,5 @@ interface SiteDao {
     @Insert fun insert(site: SiteEntity)
     @Query("DELETE FROM site") fun clear()
     @Query("DELETE FROM site WHERE id = :id") fun deleteById(id: String)
+    @Query("SELECT * FROM site LIMIT 1") fun current(): SiteEntity?
 }

@@ -1,10 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { HeadQuarterResponse } from '../../../../core/model/headquarter/headquarter.dto';
+import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 
@@ -12,12 +13,13 @@ import { DataStateComponent } from '../../../../shared/ui/data-state/data-state'
 @Component({
   selector: 'app-sede-detail-page',
   
-  imports: [PageHeaderComponent, DataStateComponent],
+  imports: [PageHeaderComponent, DataStateComponent, RouterLink],
   templateUrl: './sede-detail-page.html',
 })
 export class SedeDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly service = inject(HeadquarterService);
+  readonly session = inject(SessionContextService);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);

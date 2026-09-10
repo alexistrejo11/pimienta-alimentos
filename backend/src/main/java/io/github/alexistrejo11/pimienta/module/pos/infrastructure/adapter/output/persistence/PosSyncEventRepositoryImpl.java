@@ -6,6 +6,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventRes
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncEventRepository;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.mapper.PosSyncEventPersistenceMapper;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosSyncEventSpringDataRepository;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,5 +50,19 @@ public class PosSyncEventRepositoryImpl implements PosSyncEventRepository {
             PosEventResultStatus.ACCEPTED,
             pageable)
         .map(PosSyncEventPersistenceMapper::toDomain);
+  }
+
+  @Override
+  public long countAcceptedByEventType(
+      long headquarterId, Instant from, Instant to, String eventType) {
+    return jpa.countAcceptedByEventType(
+        headquarterId, from, to, eventType, PosEventResultStatus.ACCEPTED);
+  }
+
+  @Override
+  public Instant findLastAcceptedEventAt(
+      long headquarterId, Instant from, Instant to, String eventType) {
+    return jpa.findLastAcceptedEventAt(
+        headquarterId, from, to, eventType, PosEventResultStatus.ACCEPTED);
   }
 }

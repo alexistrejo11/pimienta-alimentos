@@ -42,6 +42,7 @@ class PosAdminSyncIncidentIntegrationTest {
     TokenPair manager = obtainToken(Set.of(Role.MANAGER));
 
     long hqId = createHeadquarter(admin.token(), "POS-B6-HQ-" + UUID.randomUUID());
+    assignHeadquarters(admin.token(), manager.userId(), hqId);
     putPosSettings(admin.token(), hqId);
     long itemId = createItem(admin.token(), "SKU-B6-" + UUID.randomUUID(), "Refresco B6");
     putCatalog(admin.token(), hqId, itemId, "Bebidas", "25.00", "CONTROLLED");
@@ -489,5 +490,19 @@ class PosAdminSyncIncidentIntegrationTest {
             .andReturn();
     Number n = JsonPath.read(r.getResponse().getContentAsString(), "$.id");
     return n.longValue();
+  }
+
+  private void assignHeadquarters(String adminToken, long userId, long headquarterId)
+      throws Exception {
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/users/management/" + userId + "/headquarters",
+                adminToken,
+                """
+                {"headquarterIds":[%d]}
+                """
+                    .formatted(headquarterId)))
+        .andExpect(status().isOk());
   }
 }

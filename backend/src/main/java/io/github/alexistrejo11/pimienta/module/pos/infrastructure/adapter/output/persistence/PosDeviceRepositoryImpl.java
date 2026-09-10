@@ -42,6 +42,11 @@ public class PosDeviceRepositoryImpl implements PosDeviceRepository {
   }
 
   @Override
+  public long countByHeadquarterId(long headquarterId) {
+    return jpa.countByHeadquarterIdAndDeletedAtIsNull(headquarterId);
+  }
+
+  @Override
   public PosDevice save(PosDevice device) {
     boolean exists = jpa.existsById(device.getId());
     var entity = PosDevicePersistenceMapper.toEntity(device);
