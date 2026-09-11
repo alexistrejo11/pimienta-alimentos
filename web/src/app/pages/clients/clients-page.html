@@ -1,6 +1,6 @@
 <div class="flex min-h-screen flex-col">
   <header
-    class="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-stone-200/10 bg-surface-container-lowest/80 px-10 backdrop-blur-md dark:border-stone-800/10"
+    class="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-outline-variant/10 bg-surface-container-lowest/80 px-10 backdrop-blur-md "
   >
     <h2 class="font-headline text-2xl font-extrabold tracking-tighter text-on-surface">
       Client Management
@@ -13,7 +13,7 @@
           >search</span
         >
         <input
-          class="w-64 rounded-full border-none bg-surface-container-high py-2 pr-4 pl-10 text-sm placeholder:text-stone-400 focus:ring-2 focus:ring-primary/20"
+          class="w-64 rounded-full border-none bg-surface-container-high py-2 pr-4 pl-10 text-sm placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary/20"
           placeholder="Search clients..."
           type="search"
           aria-label="Search clients"
@@ -42,7 +42,7 @@
       <div
         class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-6 shadow-sm"
       >
-        <p class="mb-1 text-xs font-bold tracking-widest text-stone-500 uppercase">
+        <p class="mb-1 text-xs font-bold tracking-widest text-on-surface-variant uppercase">
           Total Hospitals
         </p>
         <div class="flex items-end justify-between">
@@ -55,7 +55,7 @@
       <div
         class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-6 shadow-sm"
       >
-        <p class="mb-1 text-xs font-bold tracking-widest text-stone-500 uppercase">
+        <p class="mb-1 text-xs font-bold tracking-widest text-on-surface-variant uppercase">
           Active Schools
         </p>
         <div class="flex items-end justify-between">
@@ -68,13 +68,13 @@
       <div
         class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-6 shadow-sm"
       >
-        <p class="mb-1 text-xs font-bold tracking-widest text-stone-500 uppercase">
+        <p class="mb-1 text-xs font-bold tracking-widest text-on-surface-variant uppercase">
           Factory Partners
         </p>
         <div class="flex items-end justify-between">
           <span class="font-headline text-3xl font-extrabold">18</span>
           <span
-            class="rounded-full bg-surface-container-high px-2 py-1 text-xs font-bold text-stone-400"
+            class="rounded-full bg-surface-container-high px-2 py-1 text-xs font-bold text-on-surface-variant"
             >0%</span
           >
         </div>
@@ -82,7 +82,7 @@
       <div
         class="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-6 shadow-sm"
       >
-        <p class="mb-1 text-xs font-bold tracking-widest text-stone-500 uppercase">
+        <p class="mb-1 text-xs font-bold tracking-widest text-on-surface-variant uppercase">
           Avg. Order Value
         </p>
         <div class="flex items-end justify-between">
@@ -96,7 +96,7 @@
 
     <div class="overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm">
       <div
-        class="flex items-center justify-between border-b border-surface-container bg-white px-8 py-6"
+        class="flex items-center justify-between border-b border-surface-container bg-surface-container-lowest px-8 py-6"
       >
         <div class="flex flex-wrap items-center gap-4">
           <button
@@ -107,26 +107,26 @@
           </button>
           <button
             type="button"
-            class="rounded-lg px-4 py-2 font-headline text-sm font-bold text-stone-500 transition-all hover:text-on-surface"
+            class="rounded-lg px-4 py-2 font-headline text-sm font-bold text-on-surface-variant transition-all hover:text-on-surface"
           >
             Hospitals
           </button>
           <button
             type="button"
-            class="rounded-lg px-4 py-2 font-headline text-sm font-bold text-stone-500 transition-all hover:text-on-surface"
+            class="rounded-lg px-4 py-2 font-headline text-sm font-bold text-on-surface-variant transition-all hover:text-on-surface"
           >
             Schools
           </button>
           <button
             type="button"
-            class="rounded-lg px-4 py-2 font-headline text-sm font-bold text-stone-500 transition-all hover:text-on-surface"
+            class="rounded-lg px-4 py-2 font-headline text-sm font-bold text-on-surface-variant transition-all hover:text-on-surface"
           >
             Factories
           </button>
         </div>
         <button
           type="button"
-          class="flex items-center gap-2 text-sm font-semibold text-stone-600 transition-colors hover:text-primary"
+          class="flex items-center gap-2 text-sm font-semibold text-on-surface transition-colors hover:text-primary"
         >
           <span class="material-symbols-outlined text-lg" aria-hidden="true">filter_list</span>
           Advanced Filters
@@ -138,27 +138,27 @@
           <thead>
             <tr class="bg-surface-container-low">
               <th
-                class="px-8 py-5 text-xs font-extrabold tracking-widest text-stone-500 uppercase"
+                class="px-8 py-5 text-xs font-extrabold tracking-widest text-on-surface-variant uppercase"
               >
                 Client Name
               </th>
               <th
-                class="px-8 py-5 text-xs font-extrabold tracking-widest text-stone-500 uppercase"
+                class="px-8 py-5 text-xs font-extrabold tracking-widest text-on-surface-variant uppercase"
               >
                 Type
               </th>
               <th
-                class="px-8 py-5 text-xs font-extrabold tracking-widest text-stone-500 uppercase"
+                class="px-8 py-5 text-xs font-extrabold tracking-widest text-on-surface-variant uppercase"
               >
                 Status
               </th>
               <th
-                class="px-8 py-5 text-xs font-extrabold tracking-widest text-stone-500 uppercase"
+                class="px-8 py-5 text-xs font-extrabold tracking-widest text-on-surface-variant uppercase"
               >
                 Last Order
               </th>
               <th
-                class="px-8 py-5 text-right text-xs font-extrabold tracking-widest text-stone-500 uppercase"
+                class="px-8 py-5 text-right text-xs font-extrabold tracking-widest text-on-surface-variant uppercase"
               >
                 Actions
               </th>
@@ -169,7 +169,7 @@
               <td class="px-8 py-6">
                 <div class="flex items-center gap-3">
                   <div
-                    class="h-10 w-10 overflow-hidden rounded-lg border border-stone-200/20 bg-stone-100"
+                    class="h-10 w-10 overflow-hidden rounded-lg border border-outline-variant/20 bg-surface-container"
                   >
                     <img
                       class="h-full w-full object-cover"
@@ -179,12 +179,12 @@
                   </div>
                   <div>
                     <p class="font-headline font-bold text-on-surface">St. Jude Medical Center</p>
-                    <p class="text-xs text-stone-500">Contract #4401-HJ</p>
+                    <p class="text-xs text-on-surface-variant">Contract #4401-HJ</p>
                   </div>
                 </div>
               </td>
               <td class="px-8 py-6">
-                <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-700"
+                <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-bold text-on-surface"
                   >Hospital</span
                 >
               </td>
@@ -196,7 +196,7 @@
               </td>
               <td class="px-8 py-6">
                 <p class="text-sm font-medium text-on-surface">Oct 24, 2024</p>
-                <p class="text-xs text-stone-400">$12,450.00</p>
+                <p class="text-xs text-on-surface-variant">$12,450.00</p>
               </td>
               <td class="px-8 py-6 text-right">
                 <div
@@ -204,7 +204,7 @@
                 >
                   <button
                     type="button"
-                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-stone-600 transition-all hover:bg-stone-50"
+                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-on-surface transition-all hover:bg-surface-container"
                   >
                     Edit
                   </button>
@@ -221,7 +221,7 @@
               <td class="px-8 py-6">
                 <div class="flex items-center gap-3">
                   <div
-                    class="h-10 w-10 overflow-hidden rounded-lg border border-stone-200/20 bg-stone-100"
+                    class="h-10 w-10 overflow-hidden rounded-lg border border-outline-variant/20 bg-surface-container"
                   >
                     <img
                       class="h-full w-full object-cover"
@@ -231,12 +231,12 @@
                   </div>
                   <div>
                     <p class="font-headline font-bold text-on-surface">Lincoln High School</p>
-                    <p class="text-xs text-stone-500">Contract #8892-LS</p>
+                    <p class="text-xs text-on-surface-variant">Contract #8892-LS</p>
                   </div>
                 </div>
               </td>
               <td class="px-8 py-6">
-                <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-700"
+                <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-bold text-on-surface"
                   >School</span
                 >
               </td>
@@ -248,7 +248,7 @@
               </td>
               <td class="px-8 py-6">
                 <p class="text-sm font-medium text-on-surface">Oct 26, 2024</p>
-                <p class="text-xs text-stone-400">$5,120.00</p>
+                <p class="text-xs text-on-surface-variant">$5,120.00</p>
               </td>
               <td class="px-8 py-6 text-right">
                 <div
@@ -256,7 +256,7 @@
                 >
                   <button
                     type="button"
-                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-stone-600 transition-all hover:bg-stone-50"
+                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-on-surface transition-all hover:bg-surface-container"
                   >
                     Edit
                   </button>
@@ -273,7 +273,7 @@
               <td class="px-8 py-6">
                 <div class="flex items-center gap-3">
                   <div
-                    class="h-10 w-10 overflow-hidden rounded-lg border border-stone-200/20 bg-stone-100"
+                    class="h-10 w-10 overflow-hidden rounded-lg border border-outline-variant/20 bg-surface-container"
                   >
                     <img
                       class="h-full w-full object-cover"
@@ -283,24 +283,24 @@
                   </div>
                   <div>
                     <p class="font-headline font-bold text-on-surface">Omega Dynamics Mfg</p>
-                    <p class="text-xs text-stone-500">Contract #1105-OM</p>
+                    <p class="text-xs text-on-surface-variant">Contract #1105-OM</p>
                   </div>
                 </div>
               </td>
               <td class="px-8 py-6">
-                <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-700"
+                <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-bold text-on-surface"
                   >Factory</span
                 >
               </td>
               <td class="px-8 py-6">
                 <div class="flex items-center gap-2">
                   <span class="h-2 w-2 rounded-full bg-stone-300"></span>
-                  <span class="text-sm font-medium text-stone-400">Inactive</span>
+                  <span class="text-sm font-medium text-on-surface-variant">Inactive</span>
                 </div>
               </td>
               <td class="px-8 py-6">
                 <p class="text-sm font-medium text-on-surface">Sep 12, 2024</p>
-                <p class="text-xs text-stone-400">$22,800.00</p>
+                <p class="text-xs text-on-surface-variant">$22,800.00</p>
               </td>
               <td class="px-8 py-6 text-right">
                 <div
@@ -308,7 +308,7 @@
                 >
                   <button
                     type="button"
-                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-stone-600 transition-all hover:bg-stone-50"
+                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-on-surface transition-all hover:bg-surface-container"
                   >
                     Edit
                   </button>
@@ -325,7 +325,7 @@
               <td class="px-8 py-6">
                 <div class="flex items-center gap-3">
                   <div
-                    class="h-10 w-10 overflow-hidden rounded-lg border border-stone-200/20 bg-stone-100"
+                    class="h-10 w-10 overflow-hidden rounded-lg border border-outline-variant/20 bg-surface-container"
                   >
                     <img
                       class="h-full w-full object-cover"
@@ -337,12 +337,12 @@
                     <p class="font-headline font-bold text-on-surface">
                       Northside Specialized Care
                     </p>
-                    <p class="text-xs text-stone-500">Contract #4552-NC</p>
+                    <p class="text-xs text-on-surface-variant">Contract #4552-NC</p>
                   </div>
                 </div>
               </td>
               <td class="px-8 py-6">
-                <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-700"
+                <span class="rounded-full bg-surface-container px-3 py-1 text-xs font-bold text-on-surface"
                   >Hospital</span
                 >
               </td>
@@ -354,7 +354,7 @@
               </td>
               <td class="px-8 py-6">
                 <p class="text-sm font-medium text-on-surface">Oct 25, 2024</p>
-                <p class="text-xs text-stone-400">$9,890.00</p>
+                <p class="text-xs text-on-surface-variant">$9,890.00</p>
               </td>
               <td class="px-8 py-6 text-right">
                 <div
@@ -362,7 +362,7 @@
                 >
                   <button
                     type="button"
-                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-stone-600 transition-all hover:bg-stone-50"
+                    class="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-xs font-bold text-on-surface transition-all hover:bg-surface-container"
                   >
                     Edit
                   </button>
@@ -379,10 +379,10 @@
         </table>
       </div>
 
-      <div class="flex items-center justify-between bg-stone-50 px-8 py-6">
-        <p class="text-xs font-semibold text-stone-500">Showing 1 to 4 of 188 clients</p>
+      <div class="flex items-center justify-between bg-surface-container-low px-8 py-6">
+        <p class="text-xs font-semibold text-on-surface-variant">Showing 1 to 4 of 188 clients</p>
         <div class="flex items-center gap-1">
-          <button type="button" class="rounded-lg p-2 transition-colors hover:bg-stone-200" aria-label="Previous page">
+          <button type="button" class="rounded-lg p-2 transition-colors hover:bg-surface-container-high" aria-label="Previous page">
             <span class="material-symbols-outlined text-lg" aria-hidden="true">chevron_left</span>
           </button>
           <button
@@ -393,24 +393,24 @@
           </button>
           <button
             type="button"
-            class="h-8 w-8 rounded-lg text-xs font-bold transition-colors hover:bg-stone-200"
+            class="h-8 w-8 rounded-lg text-xs font-bold transition-colors hover:bg-surface-container-high"
           >
             2
           </button>
           <button
             type="button"
-            class="h-8 w-8 rounded-lg text-xs font-bold transition-colors hover:bg-stone-200"
+            class="h-8 w-8 rounded-lg text-xs font-bold transition-colors hover:bg-surface-container-high"
           >
             3
           </button>
-          <span class="px-2 text-stone-400">...</span>
+          <span class="px-2 text-on-surface-variant">...</span>
           <button
             type="button"
-            class="h-8 w-8 rounded-lg text-xs font-bold transition-colors hover:bg-stone-200"
+            class="h-8 w-8 rounded-lg text-xs font-bold transition-colors hover:bg-surface-container-high"
           >
             47
           </button>
-          <button type="button" class="rounded-lg p-2 transition-colors hover:bg-stone-200" aria-label="Next page">
+          <button type="button" class="rounded-lg p-2 transition-colors hover:bg-surface-container-high" aria-label="Next page">
             <span class="material-symbols-outlined text-lg" aria-hidden="true">chevron_right</span>
           </button>
         </div>

@@ -26,7 +26,7 @@
     <!-- Panel de carga -->
     @if (showUpload()) {
       <section
-        class="rounded-xl border border-stone-200 bg-[var(--color-surface-container-lowest)] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-stone-800 dark:bg-stone-950"
         aria-labelledby="archivo-upload-titulo"
       >
         <h2 id="archivo-upload-titulo" class="font-headline text-lg font-bold text-on-surface">
@@ -52,7 +52,7 @@
                 id="up-cat"
                 [(ngModel)]="uploadCategory"
                 [ngModelOptions]="{ standalone: true }"
-                class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+                class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
               >
                 <option value="COMPANY">Empresa</option>
                 <option value="TEMPLATE">Plantilla</option>
@@ -70,7 +70,7 @@
                   id="up-mod"
                   [(ngModel)]="uploadModule"
                   [ngModelOptions]="{ standalone: true }"
-                  class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+                  class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
                 >
                   @for (m of moduleOptions; track m.value) {
                     <option [value]="m.value">{{ m.label }}</option>
@@ -96,7 +96,7 @@
               type="text"
               [(ngModel)]="uploadDescription"
               [ngModelOptions]="{ standalone: true }"
-              class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+              class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
               placeholder="Nota sobre el archivo…"
               autocomplete="off"
             />
@@ -104,7 +104,7 @@
 
           <div class="md:col-span-2">
             <label
-              class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
+              class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm hover:bg-surface-container dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
             >
               <span class="material-symbols-outlined text-lg" aria-hidden="true">attach_file</span>
               Seleccionar archivo
@@ -137,7 +137,7 @@
             </button>
             <button
               type="button"
-              class="rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-bold text-on-surface hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-900"
+              class="rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-bold text-on-surface hover:bg-surface-container"
               (click)="toggleUpload()"
             >
               Cancelar
@@ -148,12 +148,12 @@
     }
 
     @if (uploadSuccess(); as msg) {
-      <p class="text-sm text-green-800 dark:text-green-300" role="status">{{ msg }}</p>
+      <p class="text-sm text-on-surface" role="status">{{ msg }}</p>
     }
 
     <!-- Filtros -->
     <section
-      class="rounded-xl border border-stone-200 bg-[var(--color-surface-container-lowest)] p-4 dark:border-stone-800"
+      class="ui-panel p-4"
       aria-label="Filtros de archivos"
     >
       <div class="flex flex-wrap items-end gap-4">
@@ -166,7 +166,7 @@
               id="f-cat"
               [(ngModel)]="filterCategory"
               [ngModelOptions]="{ standalone: true }"
-              class="rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+              class="rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
               <option value="">Todas</option>
               <option value="COMPANY">Empresa</option>
@@ -185,7 +185,7 @@
             id="f-mod"
             [(ngModel)]="filterModule"
             [ngModelOptions]="{ standalone: true }"
-            class="rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+            class="rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           >
             @for (m of moduleOptions; track m.value) {
               <option [value]="m.value">{{ m.label }}</option>
@@ -202,7 +202,7 @@
             type="text"
             [(ngModel)]="filterName"
             [ngModelOptions]="{ standalone: true }"
-            class="w-40 rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+            class="w-40 rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             placeholder="reporte"
             autocomplete="off"
           />
@@ -217,7 +217,7 @@
             type="text"
             [(ngModel)]="filterContentType"
             [ngModelOptions]="{ standalone: true }"
-            class="w-32 rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+            class="w-32 rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             placeholder="pdf"
             autocomplete="off"
           />
@@ -232,7 +232,7 @@
             type="date"
             [(ngModel)]="filterCreatedFrom"
             [ngModelOptions]="{ standalone: true }"
-            class="rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+            class="rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -245,7 +245,7 @@
             type="date"
             [(ngModel)]="filterCreatedTo"
             [ngModelOptions]="{ standalone: true }"
-            class="rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+            class="rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -268,9 +268,9 @@
       emptyMessage="No hay archivos que coincidan con los filtros."
       (retry)="reloadList()"
     >
-      <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+      <div class="overflow-x-auto rounded-xl border ui-panel">
         <table class="w-full min-w-[720px] text-sm" aria-label="Lista de archivos">
-          <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+          <thead class="border-b border-outline-variant/20 bg-surface-container-low">
             <tr>
               <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Nombre</th>
               <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Categoría</th>
@@ -280,7 +280,7 @@
               <th class="px-4 py-3 text-right font-semibold text-on-surface-variant">Acciones</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+          <tbody class="divide-y divide-outline-variant/15">
             @for (f of items(); track f.id) {
               <tr
                 app-archivo-row

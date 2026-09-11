@@ -20,9 +20,9 @@
     emptyMessage="No hay productos en el catálogo maestro."
     (retry)="cargar()"
   >
-    <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+    <div class="overflow-x-auto rounded-xl border ui-panel">
       <table class="w-full text-sm" aria-label="Catálogo maestro">
-        <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">SKU</th>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Nombre</th>
@@ -32,7 +32,7 @@
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+        <tbody class="divide-y divide-outline-variant/15">
           @for (item of items(); track item.id) {
             <tr>
               <td class="px-4 py-3 font-mono text-xs">{{ item.sku }}</td>

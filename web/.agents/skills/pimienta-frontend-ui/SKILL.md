@@ -42,9 +42,9 @@ Source of truth for tokens is **`src/styles.css`**. Do not invent brand colors. 
 
 Prefer **`text-[var(--color-…)]`**, **`bg-[var(--color-…)]`**, or Tailwind aliases generated from `@theme` (`bg-primary`, `text-on-surface`).
 
-### Dark (`html.dark` in `src/index.html`)
+### Dark (`html.dark`)
 
-Workspace and auth are **dark-first**: `<html class="dark">`. Marketing landing remaps back to the light palette in `home.css`.
+Theme is toggled at runtime via `ThemeService` (`localStorage` key `pimienta-theme`). On first visit, `prefers-color-scheme` applies; an inline script in `index.html` sets `html.dark` before paint to avoid flash.
 
 `html.dark` remaps **surfaces and text only**. Brand red and accent stay the same.
 
@@ -85,8 +85,24 @@ Workspace and auth are **dark-first**: `<html class="dark">`. Marketing landing 
 - **Auth chrome:** `.auth-shell`, `.auth-card` (frosted **surface**, not opaque white cards on dark).
 - **Workspace:** sidebar + main on `--color-surface` / `text-on-surface`.
 
+## Theme toggle
+
+- Component: `shared/ui/theme-toggle/` (sun/moon icon, calls `ThemeService`).
+- Landing: nav in `pages/home/home/home.html`.
+- Workspace: footer in `shared/workspace/workspace-footer/`.
+
+## Shared UI utilities (`styles.css` `@layer components`)
+
+- `.ui-panel` — elevated card/panel (replaces `bg-white dark:bg-stone-950` pairs).
+- `.ui-panel-muted` — recessed table header / secondary surface.
+- `.ui-chrome` — sidebar/footer chrome.
+- `.ui-badge-success` / `-warning` / `-danger` / `-info` / `-neutral` — status pills.
+
+Prefer these over Tailwind `stone-*` + `dark:` duplication.
+
 ## What to avoid
 
+- `stone-*`, `bg-white` + `dark:bg-stone-*` in workspace templates — use semantic tokens or `.ui-*` classes.
 - Ad-hoc hex for core UI (purple/teal Material defaults, “AI dashboard” palettes, neon gradients).
 - Generic **elevated card grids**: stacked `shadow-lg` cards, thick borders, and decorative Material cards as the default layout. Depth comes from **surface tiers** and spacing.
 - Mixing icon families.
@@ -99,9 +115,10 @@ Auth and marketing may use a single contained panel (`.auth-card`, philosophy bl
 
 | Area | Location |
 |------|----------|
-| Global theme | `src/styles.css` (`@theme` + `html.dark`) |
-| Entry fonts / dark class | `src/index.html` |
-| Marketing light override | `src/app/pages/home/home/home.css` |
+| Global theme | `src/styles.css` (`@theme` + `html.dark` + `.ui-*`) |
+| Theme init script | `src/index.html` |
+| Theme service | `src/app/core/theme/theme.service.ts` |
+| Landing layout | `src/app/pages/home/home/home.css` |
 | Page-specific | `*.html` + optional `*.css` |
 
 When adding large new UI surfaces, **mirror existing files** (`pages/auth/login`, `pages/home/home`, workspace pages) before inventing new patterns.

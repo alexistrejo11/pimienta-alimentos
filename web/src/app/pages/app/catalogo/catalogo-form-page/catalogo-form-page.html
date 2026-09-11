@@ -22,27 +22,27 @@
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">SKU</span>
-          <input class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="sku" />
+          <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="sku" />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Nombre</span>
-          <input class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="name" />
+          <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="name" />
         </label>
         <label class="flex flex-col gap-1 text-sm sm:col-span-2">
           <span class="font-medium text-on-surface">Descripción</span>
-          <textarea class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" rows="2" formControlName="description"></textarea>
+          <textarea class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" rows="2" formControlName="description"></textarea>
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Precio costo</span>
-          <input type="number" step="0.01" class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="costPrice" />
+          <input type="number" step="0.01" class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="costPrice" />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Precio venta</span>
-          <input type="number" step="0.01" class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="salePrice" />
+          <input type="number" step="0.01" class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="salePrice" />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Categoría</span>
-          <select class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="category">
+          <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="category">
             @for (c of categories; track c) {
               <option [value]="c">{{ c }}</option>
             }
@@ -50,7 +50,7 @@
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Unidad</span>
-          <select class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="unit">
+          <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="unit">
             @for (u of units; track u) {
               <option [value]="u">{{ u }}</option>
             }
@@ -58,24 +58,24 @@
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Punto de reorden</span>
-          <input type="number" class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="reorderPoint" />
+          <input type="number" class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="reorderPoint" />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Cantidad de reorden</span>
-          <input type="number" class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="reorderQuantity" />
+          <input type="number" class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="reorderQuantity" />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Marca</span>
-          <input class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="brand" />
+          <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="brand" />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Código de barras</span>
-          <input class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="barcode" />
+          <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="barcode" />
         </label>
         @if (itemId()) {
           <label class="flex flex-col gap-1 text-sm">
             <span class="font-medium text-on-surface">Estado</span>
-            <select class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="status">
+            <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="status">
               @for (s of statuses; track s) {
                 <option [value]="s">{{ itemStatusLabel(s) }}</option>
               }
@@ -92,7 +92,7 @@
         >
           {{ loading() ? 'Guardando…' : 'Guardar' }}
         </button>
-        <a routerLink="/app/catalogo" class="rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-semibold">Cancelar</a>
+        <a routerLink="/app/catalogo" class="rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold">Cancelar</a>
       </div>
     </form>
   }

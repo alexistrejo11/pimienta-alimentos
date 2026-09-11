@@ -18,7 +18,7 @@
 
   @if (showCreate()) {
     <section
-      class="rounded-xl border border-stone-200 bg-[var(--color-surface-container-lowest)] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-stone-800 dark:bg-stone-950"
+      class="ui-panel p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-stone-800 dark:bg-stone-950"
       aria-labelledby="contrato-nuevo-titulo"
     >
       <h2 id="contrato-nuevo-titulo" class="font-headline text-lg font-bold text-on-surface">
@@ -41,7 +41,7 @@
             id="c-name"
             type="text"
             formControlName="name"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
             autocomplete="off"
           />
         </div>
@@ -52,7 +52,7 @@
             id="c-desc"
             formControlName="description"
             rows="2"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           ></textarea>
         </div>
 
@@ -61,7 +61,7 @@
           <select
             id="c-cat"
             formControlName="category"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           >
             <option value="EMPLOYEE">Empleado</option>
             <option value="SUPPLIER">Proveedor</option>
@@ -76,7 +76,7 @@
           <select
             id="c-term"
             formControlName="termKind"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           >
             <option value="INDEFINITE">Indefinido / permanente</option>
             <option value="FIXED_TERM">Plazo fijo</option>
@@ -89,7 +89,7 @@
             <select
               id="c-emp"
               formControlName="employeeId"
-              class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+              class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option [ngValue]="null">Selecciona…</option>
               @for (e of employeeOptions(); track e.id) {
@@ -104,7 +104,7 @@
           <select
             id="c-opp"
             formControlName="opportunityId"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           >
             <option [ngValue]="null">Sin vínculo</option>
             @for (o of opportunityOptions(); track o.id) {
@@ -118,7 +118,7 @@
           <select
             id="c-proj"
             formControlName="projectId"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           >
             <option [ngValue]="null">Sin vínculo</option>
             @for (p of projectOptions(); track p.id) {
@@ -133,7 +133,7 @@
             id="c-start"
             type="date"
             formControlName="effectiveStart"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           />
         </div>
 
@@ -144,7 +144,7 @@
               id="c-end"
               type="date"
               formControlName="effectiveEnd"
-              class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+              class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
             />
           </div>
         }
@@ -156,7 +156,7 @@
             type="url"
             formControlName="documentUrl"
             placeholder="https://…"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
             autocomplete="off"
           />
         </div>
@@ -167,7 +167,7 @@
             id="c-terms"
             formControlName="termsAndConditions"
             rows="3"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           ></textarea>
         </div>
 
@@ -177,7 +177,7 @@
             id="c-ref"
             type="text"
             formControlName="referenceCode"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
             autocomplete="off"
           />
         </div>
@@ -189,7 +189,7 @@
             type="number"
             min="1"
             formControlName="renewalCycleMonths"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           />
         </div>
 
@@ -200,7 +200,7 @@
             type="number"
             step="0.01"
             formControlName="agreedValue"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
           />
         </div>
 
@@ -212,7 +212,7 @@
             maxlength="3"
             formControlName="currencyCode"
             placeholder="MXN"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/25 dark:border-stone-700 dark:bg-stone-900"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
             autocomplete="off"
           />
         </div>
@@ -231,7 +231,7 @@
           </button>
           <button
             type="button"
-            class="rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-bold text-on-surface hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-900"
+            class="rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-bold text-on-surface hover:bg-surface-container"
             (click)="toggleCreate()"
           >
             Cancelar
@@ -248,9 +248,9 @@
     emptyMessage="Aún no hay contratos registrados."
     (retry)="reloadList()"
   >
-    <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+    <div class="overflow-x-auto rounded-xl border ui-panel">
       <table class="w-full min-w-[720px] text-sm" aria-label="Lista de contratos">
-        <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Nombre</th>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Categoría</th>
@@ -259,20 +259,20 @@
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Documento</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+        <tbody class="divide-y divide-outline-variant/15">
           @for (c of items(); track c.id) {
             <tr>
               <td class="px-4 py-3 font-medium text-on-surface">{{ c.name }}</td>
               <td class="px-4 py-3 text-on-surface-variant">{{ c.category }}</td>
               <td class="px-4 py-3 text-xs text-on-surface-variant">
                 @if (c.employeeId != null) {
-                  <span class="mr-2 inline-block rounded bg-stone-100 px-2 py-0.5 dark:bg-stone-800">Emp. #{{ c.employeeId }}</span>
+                  <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">Emp. #{{ c.employeeId }}</span>
                 }
                 @if (c.opportunityId != null) {
-                  <span class="mr-2 inline-block rounded bg-stone-100 px-2 py-0.5 dark:bg-stone-800">Opp. #{{ c.opportunityId }}</span>
+                  <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">Opp. #{{ c.opportunityId }}</span>
                 }
                 @if (c.projectId != null) {
-                  <span class="inline-block rounded bg-stone-100 px-2 py-0.5 dark:bg-stone-800">Proy. #{{ c.projectId }}</span>
+                  <span class="inline-block rounded bg-surface-container px-2 py-0.5">Proy. #{{ c.projectId }}</span>
                 }
                 @if (c.employeeId == null && c.opportunityId == null && c.projectId == null) {
                   —
@@ -283,7 +283,7 @@
                 @if (c.effectiveEnd) {
                   → {{ c.effectiveEnd }}
                 } @else {
-                  <span class="text-stone-400">(sin fin)</span>
+                  <span class="text-on-surface-variant">(sin fin)</span>
                 }
               </td>
               <td class="px-4 py-3">

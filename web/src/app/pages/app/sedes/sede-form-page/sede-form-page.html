@@ -22,7 +22,7 @@
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-medium text-on-surface">Nombre <span class="text-[var(--color-error)]">*</span></span>
         <input
-          class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950"
+          class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
           formControlName="name"
           autocomplete="organization"
           maxlength="512"
@@ -38,7 +38,7 @@
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-medium text-on-surface">Dirección</span>
         <input
-          class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950"
+          class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
           formControlName="address"
           autocomplete="street-address"
           maxlength="1024"
@@ -52,7 +52,7 @@
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-medium text-on-surface">Descripción</span>
         <textarea
-          class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950"
+          class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
           rows="3"
           formControlName="description"
           maxlength="4096"
@@ -79,7 +79,7 @@
         </button>
         <a
           routerLink="/app/sedes"
-          class="inline-flex items-center justify-center rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-stone-50 dark:border-stone-700 dark:hover:bg-stone-900"
+          class="inline-flex items-center justify-center rounded-lg border border-outline-variant/20 px-4 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-surface-container"
         >
           Cancelar
         </a>

@@ -20,13 +20,14 @@ import { RouterLink } from '@angular/router';
 import { fromEvent, finalize } from 'rxjs';
 
 import { PosReleaseService } from '../../../core/pos/pos-release.service';
+import { ThemeToggleComponent } from '../../../shared/ui/theme-toggle/theme-toggle';
 import { BRAND_LOGO_URL } from '../brand';
 import { CONTACT_ENDPOINT } from '../contact-endpoint';
 import { LANDING_CONTENT, LANDING_NAV } from './landing-content';
 
 @Component({
   selector: 'app-home',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, ThemeToggleComponent],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })

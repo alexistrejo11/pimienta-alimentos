@@ -8,7 +8,7 @@
     <label class="flex max-w-xs flex-col gap-1 text-sm">
       <span class="font-medium text-on-surface">Sede</span>
       <select
-        class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950"
+        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
         [(ngModel)]="selectedHeadquarterId"
         (ngModelChange)="onHeadquarterChange()"
       >
@@ -26,9 +26,9 @@
     emptyMessage="No hay stock POS registrado para esta sede."
     (retry)="cargarStock()"
   >
-    <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+    <div class="overflow-x-auto rounded-xl border ui-panel">
       <table class="w-full text-sm" aria-label="Stock POS">
-        <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">SKU</th>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Producto</th>
@@ -37,7 +37,7 @@
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+        <tbody class="divide-y divide-outline-variant/15">
           @for (row of stock(); track row.id) {
             <tr>
               <td class="px-4 py-3 font-mono text-xs">{{ row.itemSku }}</td>

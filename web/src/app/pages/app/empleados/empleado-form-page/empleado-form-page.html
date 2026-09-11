@@ -30,14 +30,14 @@
 
       <!-- Información personal -->
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Información personal"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Información personal</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-firstName">Nombre *</label>
-            <input id="emp-firstName" formControlName="firstName" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-firstName" formControlName="firstName" type="text" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             @if (form.controls.firstName.touched && form.controls.firstName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
@@ -46,7 +46,7 @@
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-lastName">Apellido *</label>
-            <input id="emp-lastName" formControlName="lastName" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-lastName" formControlName="lastName" type="text" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             @if (form.controls.lastName.touched && form.controls.lastName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
@@ -55,52 +55,52 @@
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-email">Correo electrónico</label>
-            <input id="emp-email" formControlName="email" type="email" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-email" formControlName="email" type="email" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             @if (apiFieldMessage('email'); as m) { <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p> }
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-phone">Teléfono</label>
-            <input id="emp-phone" formControlName="phone" type="tel" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-phone" formControlName="phone" type="tel" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           <div class="sm:col-span-2 space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-address">Dirección</label>
-            <input id="emp-address" formControlName="address" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-address" formControlName="address" type="text" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           @if (!isEdit) {
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-birthDate">Fecha de nacimiento</label>
-              <input id="emp-birthDate" formControlName="birthDate" type="date" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+              <input id="emp-birthDate" formControlName="birthDate" type="date" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             </div>
           }
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-curp">CURP</label>
-            <input id="emp-curp" formControlName="curp" type="text" maxlength="18" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-curp" formControlName="curp" type="text" maxlength="18" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-rfc">RFC</label>
-            <input id="emp-rfc" formControlName="rfc" type="text" maxlength="13" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-rfc" formControlName="rfc" type="text" maxlength="13" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-nss">NSS (IMSS)</label>
-            <input id="emp-nss" formControlName="nss" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-nss" formControlName="nss" type="text" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-clabe">CLABE bancaria</label>
-            <input id="emp-clabe" formControlName="clabe" type="text" maxlength="18" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-clabe" formControlName="clabe" type="text" maxlength="18" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
         </div>
       </section>
 
       <!-- Información laboral -->
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Información laboral"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Información laboral</h2>
@@ -108,12 +108,12 @@
           @if (!isEdit) {
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-employeeNumber">Número de empleado</label>
-              <input id="emp-employeeNumber" formControlName="employeeNumber" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+              <input id="emp-employeeNumber" formControlName="employeeNumber" type="text" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             </div>
 
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-onboardingPhase">Fase de onboarding</label>
-              <select id="emp-onboardingPhase" formControlName="onboardingPhase" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900">
+              <select id="emp-onboardingPhase" formControlName="onboardingPhase" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20">
                 @for (phase of onboardingPhases; track phase) {
                   <option [value]="phase">{{ onboardingPhaseLabel[phase] }}</option>
                 }
@@ -123,17 +123,17 @@
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-position">Puesto</label>
-            <input id="emp-position" formControlName="position" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-position" formControlName="position" type="text" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-department">Departamento</label>
-            <input id="emp-department" formControlName="department" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-department" formControlName="department" type="text" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-contractType">Tipo de contrato</label>
-            <select id="emp-contractType" formControlName="contractType" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900">
+            <select id="emp-contractType" formControlName="contractType" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20">
               <option value="">— Opcional —</option>
               @for (ct of contractTypes; track ct) {
                 <option [value]="ct">{{ contractTypeLabel[ct] }}</option>
@@ -143,7 +143,7 @@
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-workShift">Turno</label>
-            <select id="emp-workShift" formControlName="workShift" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900">
+            <select id="emp-workShift" formControlName="workShift" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20">
               <option value="">— Opcional —</option>
               @for (ws of workShifts; track ws) {
                 <option [value]="ws">{{ workShiftLabel[ws] }}</option>
@@ -155,30 +155,30 @@
 
       <!-- Nómina -->
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Nómina"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Nómina</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-salaryPerWeek">Salario semanal (MXN)</label>
-            <input id="emp-salaryPerWeek" formControlName="salaryPerWeek" type="number" min="0" step="0.01" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+            <input id="emp-salaryPerWeek" formControlName="salaryPerWeek" type="number" min="0" step="0.01" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
           </div>
 
           @if (isEdit) {
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-bonuses">Bonos (MXN)</label>
-              <input id="emp-bonuses" formControlName="bonuses" type="number" min="0" step="0.01" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+              <input id="emp-bonuses" formControlName="bonuses" type="number" min="0" step="0.01" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             </div>
 
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-foodVouchers">Vales de despensa (MXN)</label>
-              <input id="emp-foodVouchers" formControlName="foodVouchers" type="number" min="0" step="0.01" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+              <input id="emp-foodVouchers" formControlName="foodVouchers" type="number" min="0" step="0.01" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             </div>
 
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-integrationFactor">Factor de integración</label>
-              <input id="emp-integrationFactor" formControlName="integrationFactor" type="number" min="0" step="0.0001" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
+              <input id="emp-integrationFactor" formControlName="integrationFactor" type="number" min="0" step="0.0001" class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
             </div>
           }
         </div>
@@ -186,7 +186,7 @@
 
       <!-- Foto opcional -->
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Foto de perfil"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Foto de perfil (opcional)</h2>
@@ -202,7 +202,7 @@
           }
           <div>
             <label
-              class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-semibold text-on-surface shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-900 dark:hover:bg-stone-800"
+              class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-semibold text-on-surface shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800"
               for="emp-photo"
             >
               <span class="material-symbols-outlined text-lg" aria-hidden="true">photo_camera</span>
@@ -230,7 +230,7 @@
         </button>
         <a
           [routerLink]="isEdit ? ['/app/empleados', employeeId()] : ['/app/empleados']"
-          class="inline-flex items-center justify-center rounded-lg border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
+          class="inline-flex items-center justify-center rounded-lg border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-surface-container dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
         >
           Cancelar
         </a>

@@ -1,6 +1,15 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es">
   <head>
+    <script>
+      (function () {
+        var stored = localStorage.getItem('pimienta-theme');
+        var dark =
+          stored === 'dark' ||
+          (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
     <meta charset="utf-8" />
     <title>Pimienta Alimentos | Excelencia en Nutrición</title>
     <base href="/" />

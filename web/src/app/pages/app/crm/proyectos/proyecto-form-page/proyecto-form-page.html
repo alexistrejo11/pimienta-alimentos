@@ -27,7 +27,7 @@
       }
 
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Identificación del proyecto"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Identificación</h2>
@@ -61,7 +61,7 @@
               id="pr-name"
               formControlName="projectName"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
             @if (form.controls.projectName.touched && form.controls.projectName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -114,14 +114,14 @@
               id="pr-desc"
               formControlName="description"
               rows="3"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             ></textarea>
           </div>
         </div>
       </section>
 
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Clasificación y fechas"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Clasificación y fechas</h2>
@@ -133,7 +133,7 @@
             <select
               id="pr-type"
               formControlName="type"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
               @for (t of types; track t) {
                 <option [value]="t">{{ typeLabel[t] }}</option>
@@ -148,7 +148,7 @@
             <select
               id="pr-prio"
               formControlName="priority"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
               @for (p of priorities; track p) {
                 <option [value]="p">{{ priorityLabel[p] }}</option>
@@ -165,7 +165,7 @@
               formControlName="projectManagerId"
               type="number"
               min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -178,7 +178,7 @@
               formControlName="assignedSalesmanId"
               type="number"
               min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -190,7 +190,7 @@
               id="pr-ps"
               formControlName="plannedStartDate"
               type="date"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -202,14 +202,14 @@
               id="pr-pe"
               formControlName="plannedEndDate"
               type="date"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
       </section>
 
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Financiero"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Financiero</h2>
@@ -224,7 +224,7 @@
               type="number"
               step="0.01"
               min="0"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -238,7 +238,7 @@
               type="number"
               step="0.01"
               min="0"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -253,7 +253,7 @@
                 type="number"
                 min="0"
                 max="100"
-                class="w-full max-w-xs rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+                class="w-full max-w-xs rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
               />
             </div>
           }
@@ -276,7 +276,7 @@
         </button>
         <a
           routerLink="/app/crm/proyectos"
-          class="rounded-lg border border-stone-300 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-900"
+          class="rounded-lg border border-outline-variant/30 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-surface-container"
         >
           Cancelar
         </a>

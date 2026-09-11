@@ -1,21 +1,4 @@
-/**
- * Landing page uses the light @theme palette regardless of html.dark (workspace/auth).
- * Semantic tokens are re-scoped here so Tailwind utilities and var() references stay readable.
- */
 .landing-page {
-  --color-on-background: #1a1c1c;
-  --color-on-surface: #1a1c1c;
-  --color-on-surface-variant: #5f6367;
-  --color-background: #f7f6f4;
-  --color-surface: #f3f2ef;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f0efec;
-  --color-surface-container: #ebe9e5;
-  --color-surface-container-high: #e4e2dd;
-  --color-surface-container-highest: #dbd8d2;
-  --color-outline-variant: #8e918f;
-  --color-secondary: #6f7478;
-
   background-color: var(--color-background);
   color: var(--color-on-background);
 }

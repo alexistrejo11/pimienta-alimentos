@@ -110,7 +110,7 @@ export class NominaPageComponent implements OnInit {
   ).map((value) => ({ value, label: payrollFrequencyLabel(value) }));
 
   readonly tabButtonInactive =
-    'rounded-lg px-4 py-2 text-sm font-semibold text-stone-600 transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900';
+    'rounded-lg px-4 py-2 text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container';
   readonly tabButtonActive =
     'rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)] shadow-sm';
 

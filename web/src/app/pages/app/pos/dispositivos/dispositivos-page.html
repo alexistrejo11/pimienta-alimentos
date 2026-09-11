@@ -5,7 +5,7 @@
     <label class="flex max-w-xs flex-col gap-1 text-sm">
       <span class="font-medium">Filtrar por sede</span>
       <select
-        class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950"
+        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
         [(ngModel)]="filterHeadquarterId"
         (ngModelChange)="cargar()"
       >
@@ -24,9 +24,9 @@
     emptyMessage="No hay dispositivos registrados."
     (retry)="cargar()"
   >
-    <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+    <div class="overflow-x-auto rounded-xl border ui-panel">
       <table class="w-full text-sm">
-        <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
             <th class="px-4 py-3 text-left">Código</th>
             <th class="px-4 py-3 text-left">Nombre</th>
@@ -36,7 +36,7 @@
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+        <tbody class="divide-y divide-outline-variant/15">
           @for (d of devices(); track d.id) {
             <tr>
               <td class="px-4 py-3 font-mono">{{ d.visibleCode }}</td>

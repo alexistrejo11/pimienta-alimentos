@@ -86,9 +86,9 @@ export class AsistenciaBusquedaModalComponent {
   }
 
   statusClasses(s: AttendanceStatus): string {
-    if (s === 'CHECKED_IN') return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-    if (s === 'CHECKED_OUT') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-    return 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400';
+    if (s === 'CHECKED_IN') return 'ui-badge-success';
+    if (s === 'CHECKED_OUT') return 'ui-badge-info';
+    return 'bg-surface-container text-on-surface-variant';
   }
 
   formatDateTime(iso: string | null): string {

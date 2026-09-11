@@ -23,7 +23,7 @@
           </div>
         }
 
-        <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+        <section class="ui-panel p-6">
           <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Acciones</h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="space-y-1.5">
@@ -32,7 +32,7 @@
               </label>
               <select
                 id="task-status"
-                class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+                class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
                 [ngModel]="updateStatus()"
                 (ngModelChange)="updateStatus.set($event)"
                 [ngModelOptions]="{ standalone: true }"
@@ -56,7 +56,7 @@
                 id="task-assignee"
                 type="number"
                 min="1"
-                class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+                class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
                 [ngModel]="assigneeId()"
                 (ngModelChange)="assigneeId.set($event)"
                 [ngModelOptions]="{ standalone: true }"
@@ -85,7 +85,7 @@
         </section>
 
         <!-- Información general -->
-        <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+        <section class="ui-panel p-6">
           <div class="mb-4 flex flex-wrap items-center gap-3">
             <app-status-badge [status]="t.status" kind="task" />
             <span class="text-sm text-on-surface-variant">Prioridad: {{ prioridadLabel }}</span>
@@ -107,7 +107,7 @@
             <div>
               <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Progreso del checklist</dt>
               <dd class="mt-1 flex items-center gap-2">
-                <div class="h-2 w-24 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+                <div class="h-2 w-24 overflow-hidden rounded-full bg-surface-container-high">
                   <div class="h-full rounded-full bg-primary transition-all" [style.width.%]="t.progressPercent"></div>
                 </div>
                 <span class="text-sm tabular-nums text-on-surface">{{ t.progressPercent }}%</span>

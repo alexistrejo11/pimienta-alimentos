@@ -20,9 +20,9 @@
     emptyMessage="No hay proyectos registrados."
     (retry)="cargar()"
   >
-    <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+    <div class="overflow-x-auto rounded-xl border ui-panel">
       <table class="w-full text-sm" aria-label="Lista de proyectos">
-        <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Código</th>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Nombre</th>
@@ -33,7 +33,7 @@
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+        <tbody class="divide-y divide-outline-variant/15">
           @for (proyecto of proyectos(); track proyecto.id) {
             <tr app-proyecto-row [proyecto]="proyecto"></tr>
           }

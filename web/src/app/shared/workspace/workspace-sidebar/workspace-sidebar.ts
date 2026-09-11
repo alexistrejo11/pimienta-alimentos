@@ -23,5 +23,5 @@ export class WorkspaceSidebarComponent {
 
   /** Base styles; active state is layered via {@link RouterLinkActive}. */
   readonly navLinkInactive =
-    'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900';
+    'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-bold tracking-tight text-on-surface-variant transition-colors hover:bg-surface-container';
 }
