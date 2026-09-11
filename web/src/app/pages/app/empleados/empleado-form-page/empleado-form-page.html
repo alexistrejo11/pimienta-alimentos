@@ -3,7 +3,7 @@
     [title]="isEdit ? 'Editar empleado' : 'Nuevo empleado'"
     [subtitle]="isEdit
       ? 'Modifique solo los campos que necesite; el resto conserva los valores actuales.'
-      : 'Registro de colaborador en onboarding (RegisterEmployeeRequest).'"
+      : 'Solo nombre y apellido son obligatorios; el resto puede completarse después.'"
     backLink="/app/empleados"
     backLabel="Empleados"
   />
@@ -36,7 +36,7 @@
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Información personal</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-firstName">Nombre</label>
+            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-firstName">Nombre *</label>
             <input id="emp-firstName" formControlName="firstName" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
             @if (form.controls.firstName.touched && form.controls.firstName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -45,7 +45,7 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-lastName">Apellido</label>
+            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-lastName">Apellido *</label>
             <input id="emp-lastName" formControlName="lastName" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
             @if (form.controls.lastName.touched && form.controls.lastName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -56,68 +56,44 @@
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-email">Correo electrónico</label>
             <input id="emp-email" formControlName="email" type="email" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.email.touched && form.controls.email.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
             @if (apiFieldMessage('email'); as m) { <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p> }
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-phone">Teléfono</label>
             <input id="emp-phone" formControlName="phone" type="tel" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.phone.touched && form.controls.phone.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
           </div>
 
           <div class="sm:col-span-2 space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-address">Dirección</label>
             <input id="emp-address" formControlName="address" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.address.touched && form.controls.address.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
           </div>
 
           @if (!isEdit) {
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-birthDate">Fecha de nacimiento</label>
               <input id="emp-birthDate" formControlName="birthDate" type="date" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-              @if (form.controls.birthDate.touched && form.controls.birthDate.hasError('required')) {
-                <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-              }
             </div>
           }
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-curp">CURP</label>
             <input id="emp-curp" formControlName="curp" type="text" maxlength="18" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.curp.touched && form.controls.curp.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido (18 caracteres).</p>
-            }
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-rfc">RFC</label>
             <input id="emp-rfc" formControlName="rfc" type="text" maxlength="13" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.rfc.touched && form.controls.rfc.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido (12–13 caracteres).</p>
-            }
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-nss">NSS (IMSS)</label>
             <input id="emp-nss" formControlName="nss" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.nss.touched && form.controls.nss.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-clabe">CLABE bancaria</label>
             <input id="emp-clabe" formControlName="clabe" type="text" maxlength="18" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.clabe.touched && form.controls.clabe.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido (18 dígitos).</p>
-            }
           </div>
         </div>
       </section>
@@ -133,9 +109,6 @@
             <div class="space-y-1.5">
               <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-employeeNumber">Número de empleado</label>
               <input id="emp-employeeNumber" formControlName="employeeNumber" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 font-mono text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-              @if (form.controls.employeeNumber.touched && form.controls.employeeNumber.hasError('required')) {
-                <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-              }
             </div>
 
             <div class="space-y-1.5">
@@ -151,22 +124,17 @@
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-position">Puesto</label>
             <input id="emp-position" formControlName="position" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.position.touched && form.controls.position.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-department">Departamento</label>
             <input id="emp-department" formControlName="department" type="text" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.department.touched && form.controls.department.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
           </div>
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-contractType">Tipo de contrato</label>
             <select id="emp-contractType" formControlName="contractType" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900">
+              <option value="">— Opcional —</option>
               @for (ct of contractTypes; track ct) {
                 <option [value]="ct">{{ contractTypeLabel[ct] }}</option>
               }
@@ -176,6 +144,7 @@
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-workShift">Turno</label>
             <select id="emp-workShift" formControlName="workShift" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900">
+              <option value="">— Opcional —</option>
               @for (ws of workShifts; track ws) {
                 <option [value]="ws">{{ workShiftLabel[ws] }}</option>
               }
@@ -194,9 +163,6 @@
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="emp-salaryPerWeek">Salario semanal (MXN)</label>
             <input id="emp-salaryPerWeek" formControlName="salaryPerWeek" type="number" min="0" step="0.01" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-            @if (form.controls.salaryPerWeek.touched && form.controls.salaryPerWeek.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
           </div>
 
           @if (isEdit) {
@@ -224,17 +190,34 @@
         aria-label="Foto de perfil"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Foto de perfil (opcional)</h2>
-        <label
-          class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-semibold text-on-surface shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-900 dark:hover:bg-stone-800"
-          for="emp-photo"
-        >
-          <span class="material-symbols-outlined text-lg" aria-hidden="true">photo_camera</span>
-          Seleccionar imagen
-          <input id="emp-photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" (change)="onPhotoSelected($event)" />
-        </label>
-        @if (photoFile(); as file) {
-          <p class="mt-2 text-sm text-on-surface-variant">{{ file.name }}</p>
-        }
+        <div class="flex flex-wrap items-center gap-4">
+          @if (displayPhotoUrl(); as url) {
+            <img
+              [src]="url"
+              alt="Vista previa"
+              class="h-20 w-20 rounded-full border border-stone-200 object-cover dark:border-stone-700"
+              width="80"
+              height="80"
+            />
+          }
+          <div>
+            <label
+              class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-semibold text-on-surface shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-900 dark:hover:bg-stone-800"
+              for="emp-photo"
+            >
+              <span class="material-symbols-outlined text-lg" aria-hidden="true">photo_camera</span>
+              Seleccionar imagen
+              <input id="emp-photo" type="file" accept="image/jpeg,image/png" class="sr-only" (change)="onPhotoSelected($event)" />
+            </label>
+            <p class="mt-2 text-xs text-on-surface-variant">JPEG o PNG, máximo 2 MB. Si no hay foto, se usa un avatar con iniciales.</p>
+            @if (photoFile(); as file) {
+              <p class="mt-1 text-sm text-on-surface-variant">{{ file.name }}</p>
+            }
+            @if (photoError(); as err) {
+              <p class="mt-1 text-xs text-[var(--color-error)]">{{ err }}</p>
+            }
+          </div>
+        </div>
       </section>
 
       <div class="flex flex-wrap items-center gap-3">

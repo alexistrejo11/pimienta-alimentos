@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { EmployeeService } from '../../../../core/employees/employee.service';
+import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { EmployeeResponse } from '../../../../core/model/employee/employee.dto';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
@@ -35,6 +36,7 @@ import { EmpleadoAsistenciaCardComponent } from '../components/empleado-asistenc
 export class EmpleadoDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly service = inject(EmployeeService);
+  readonly session = inject(SessionContextService);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);

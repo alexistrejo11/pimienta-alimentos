@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
 import type {
+  HeadQuarterRequest,
   HeadQuarterResponse,
   HeadquarterStatisticsResponse,
 } from '../model/headquarter/headquarter.dto';
@@ -29,5 +30,15 @@ export class HeadquarterService {
   /** Estadísticas globales: total, activas, dadas de baja. */
   statistics(): Observable<HeadquarterStatisticsResponse> {
     return this.http.get<HeadquarterStatisticsResponse>(`${this.base}/statistics`);
+  }
+
+  /** Crea una sede (`POST`, requiere ROLE_ADMIN). */
+  create(body: HeadQuarterRequest): Observable<HeadQuarterResponse> {
+    return this.http.post<HeadQuarterResponse>(this.base, body);
+  }
+
+  /** Actualiza una sede (`PUT`, requiere ROLE_ADMIN). */
+  update(id: number, body: HeadQuarterRequest): Observable<HeadQuarterResponse> {
+    return this.http.put<HeadQuarterResponse>(`${this.base}/${id}`, body);
   }
 }

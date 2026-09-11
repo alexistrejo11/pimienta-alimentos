@@ -4,17 +4,10 @@ import { finalize } from 'rxjs';
 
 import { EmployeeService } from '../../../../../core/employees/employee.service';
 import { parseApiError, type ParsedApiError } from '../../../../../core/http/parse-api-error';
+import { attendanceStatusLabel } from '../../../../../core/i18n/enum-labels';
 import type { AttendanceResponse, AttendanceStatus } from '../../../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../../../core/model/common/pagination';
 import { DataStateComponent } from '../../../../../shared/ui/data-state/data-state';
-
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  UNDEFINED: 'Indefinido',
-  CHECKED_IN: 'Entrada registrada',
-  CHECKED_OUT: 'Salida registrada',
-  AUTO_CLOSED_EXCEEDED_MAX_SHIFT_HOURS: 'Cierre automático (excedió horas)',
-  AUTO_CLOSED_ASSUMED_CONTRACT_DAY: 'Cierre automático (jornada contractual)',
-};
 
 /**
  * Tarjeta de historial de asistencias de un empleado.
@@ -76,7 +69,7 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
   }
 
   statusLabel(s: AttendanceStatus): string {
-    return STATUS_LABELS[s] ?? s;
+    return attendanceStatusLabel(s);
   }
 
   statusClasses(s: AttendanceStatus): string {

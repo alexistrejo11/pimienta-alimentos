@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.account.auth.core.port.input;
 
+import io.github.alexistrejo11.pimienta.module.account.auth.core.application.RegisterResult;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LoginCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LogoutCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.RefreshSessionCommand;
@@ -8,7 +9,7 @@ import io.github.alexistrejo11.pimienta.module.account.auth.core.domain.entity.I
 
 public interface AuthUseCases {
 
-  String register(RegisterCommand command);
+  RegisterResult register(RegisterCommand command);
 
   IssuedTokens login(LoginCommand command);
 

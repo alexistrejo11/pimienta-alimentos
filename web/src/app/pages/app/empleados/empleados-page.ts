@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { SessionContextService } from '../../../core/auth/session-context.service';
 import { EmployeeService } from '../../../core/employees/employee.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
 import type { 
@@ -25,8 +26,9 @@ import { EmpleadoRowComponent } from './components/empleado-row/empleado-row';
 })
 export class EmpleadosPageComponent implements OnInit {
   private readonly service = inject(EmployeeService);
+  private readonly session = inject(SessionContextService);
 
-  // ── Estado de la vista ──────────────────────────────────────────────────
+  readonly isAdmin = this.session.isAdmin;
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly empleados = signal<EmployeeListItemResponse[]>([]);
@@ -43,8 +45,6 @@ export class EmpleadosPageComponent implements OnInit {
     this.error.set(null);
     this.loading.set(true);
 
-    // Cargamos lista y estadísticas en paralelo con forkJoin implícito:
-    // cada llamada es independiente, así que las hacemos por separado.
     this.service
       .statistics()
       .subscribe({ next: (s) => this.stats.set(s), error: () => {} });

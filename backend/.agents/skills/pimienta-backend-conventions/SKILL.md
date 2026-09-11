@@ -76,6 +76,7 @@ Older modules may use `adapter/` instead of `infrastructure/adapter/`, or `outbo
   - **`/api/v1/pos/admin/**`** and HQ **`pos-settings` / `pos-catalog`**: `ADMIN` or `MANAGER` (HQ scope via `HeadquarterAccessService`).
   - **Device** `/api/v1/pos/**`: `SCOPE_pos:sync`.
 - Unauthenticated secured call → **401**; authenticated without permission → **403**.
+- Client-facing error **`message`** is Spanish (`ClientErrorMessages` + `i18n/messages_es.properties`). Domain / logs stay English. Wire `errorCode` and enum names stay English.
 
 ## OpenAPI
 

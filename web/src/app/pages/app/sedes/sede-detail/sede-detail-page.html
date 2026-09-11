@@ -6,15 +6,28 @@
       backLink="/app/sedes"
       backLabel="Sedes"
     />
-    @if (session.canAccessPos()) {
-      <a
-        [routerLink]="['/app/sedes', sede()?.id, 'pos']"
-        class="inline-flex shrink-0 items-center justify-center rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
-      >
-        <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">point_of_sale</span>
-        Configuración POS
-      </a>
-    }
+    <div class="flex flex-wrap gap-2">
+      @if (session.isAdmin()) {
+        @if (sede(); as s) {
+          <a
+            [routerLink]="['/app/sedes', s.id, 'editar']"
+            class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
+          >
+            <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">edit</span>
+            Editar
+          </a>
+        }
+      }
+      @if (session.canAccessPos()) {
+        <a
+          [routerLink]="['/app/sedes', sede()?.id, 'pos']"
+          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
+        >
+          <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">point_of_sale</span>
+          Configuración POS
+        </a>
+      }
+    </div>
   </div>
 
   <app-data-state

@@ -19,6 +19,7 @@ export class WorkspaceSidebarComponent {
 
   readonly abrirAsistenciaHoy = output<void>();
   readonly abrirAsistenciaBusqueda = output<void>();
+  readonly abrirPerfil = output<void>();
 
   /** Base styles; active state is layered via {@link RouterLinkActive}. */
   readonly navLinkInactive =

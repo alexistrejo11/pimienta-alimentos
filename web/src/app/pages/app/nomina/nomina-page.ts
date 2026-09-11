@@ -4,6 +4,10 @@ import { finalize } from 'rxjs';
 
 import { PayrollService } from '../../../core/payroll/payroll.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
+import {
+  payrollFrequencyLabel,
+  payrollRecordStatusLabel,
+} from '../../../core/i18n/enum-labels';
 import type { PageMetadata } from '../../../core/model/common/pagination';
 import type {
   PayrollDebtResponse,
@@ -101,12 +105,9 @@ export class NominaPageComponent implements OnInit {
   readonly importMessage = signal<string | null>(null);
   readonly importError = signal<ParsedApiError | null>(null);
 
-  readonly frequencyOptions: { value: PayrollFrequency; label: string }[] = [
-    { value: 'WEEKLY', label: 'Semanal' },
-    { value: 'BIWEEKLY', label: 'Quincenal' },
-    { value: 'MONTHLY', label: 'Mensual' },
-    { value: 'CUSTOM', label: 'Personalizado' },
-  ];
+  readonly frequencyOptions: { value: PayrollFrequency; label: string }[] = (
+    ['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM'] as PayrollFrequency[]
+  ).map((value) => ({ value, label: payrollFrequencyLabel(value) }));
 
   readonly tabButtonInactive =
     'rounded-lg px-4 py-2 text-sm font-semibold text-stone-600 transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900';
@@ -444,26 +445,14 @@ export class NominaPageComponent implements OnInit {
   }
 
   statusLabel(status: PayrollRecordStatus): string {
-    const map: Record<PayrollRecordStatus, string> = {
-      PENDING: 'Pendiente',
-      PAID: 'Pagado',
-      PARTIAL: 'Parcial',
-      DEFERRED: 'Diferido',
-    };
-    return map[status] ?? status;
+    return payrollRecordStatusLabel(status);
   }
 
   paymentStatusLabel(status: string): string {
-    const map: Record<string, string> = {
-      PENDING: 'Pendiente',
-      PAID: 'Pagado',
-      PARTIAL: 'Parcial',
-      DEFERRED: 'Diferido',
-    };
-    return map[status] ?? status;
+    return payrollRecordStatusLabel(status);
   }
 
   frequencyLabel(f: PayrollFrequency): string {
-    return this.frequencyOptions.find((o) => o.value === f)?.label ?? f;
+    return payrollFrequencyLabel(f);
   }
 }

@@ -1,5 +1,13 @@
 import { Component, input } from '@angular/core';
 
+import {
+  employeeStatusLabel,
+  milestoneStatusLabel,
+  opportunityStatusLabel,
+  projectStatusLabel,
+  taskStatusLabel,
+} from '../../../core/i18n/enum-labels';
+
 /**
  * Tipos de entidad que tienen estado (status).
  * Cada uno tiene su propia paleta de colores en la plantilla.
@@ -15,7 +23,7 @@ export type StatusBadgeKind = 'employee' | 'task' | 'opportunity' | 'project' | 
  */
 @Component({
   selector: 'app-status-badge',
-  
+
   templateUrl: './status-badge.html',
 })
 export class StatusBadgeComponent {
@@ -36,75 +44,20 @@ export class StatusBadgeComponent {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Mapas de etiquetas en español
-// ---------------------------------------------------------------------------
-
 function labelFor(kind: StatusBadgeKind, status: string): string {
   switch (kind) {
     case 'employee':
-      return EMPLOYEE_LABELS[status] ?? status;
+      return employeeStatusLabel(status);
     case 'task':
-      return TASK_LABELS[status] ?? status;
+      return taskStatusLabel(status);
     case 'opportunity':
-      return OPPORTUNITY_LABELS[status] ?? status;
+      return opportunityStatusLabel(status);
     case 'project':
-      return PROJECT_LABELS[status] ?? status;
+      return projectStatusLabel(status);
     case 'milestone':
-      return MILESTONE_LABELS[status] ?? status;
+      return milestoneStatusLabel(status);
   }
 }
-
-const EMPLOYEE_LABELS: Record<string, string> = {
-  ACTIVE: 'Activo',
-  SICK: 'Incapacitado',
-  ON_VACATION: 'Vacaciones',
-  ON_LEAVE: 'Permiso',
-  TERMINATED: 'Baja',
-  FIRED: 'Despedido',
-  RESIGNED: 'Renunció',
-};
-
-const TASK_LABELS: Record<string, string> = {
-  PENDING: 'Pendiente',
-  IN_PROGRESS: 'En progreso',
-  COMPLETED: 'Completada',
-  CANCELLED: 'Cancelada',
-  DELAYED: 'Retrasada',
-  ON_HOLD: 'En espera',
-  FAILED: 'Fallida',
-};
-
-const OPPORTUNITY_LABELS: Record<string, string> = {
-  NEW: 'Nueva',
-  DISCOVERY: 'Exploración',
-  PROPOSAL: 'Propuesta',
-  NEGOTIATION: 'Negociación',
-  WON: 'Ganada',
-  LOST: 'Perdida',
-  ABANDONED: 'Abandonada',
-};
-
-const PROJECT_LABELS: Record<string, string> = {
-  PLANNING: 'Planeación',
-  ACTIVE: 'Activo',
-  ON_HOLD: 'En pausa',
-  COMPLETED: 'Completado',
-  CANCELLED: 'Cancelado',
-  ARCHIVED: 'Archivado',
-};
-
-const MILESTONE_LABELS: Record<string, string> = {
-  PENDING: 'Pendiente',
-  IN_PROGRESS: 'En progreso',
-  COMPLETED: 'Completado',
-  DELAYED: 'Retrasado',
-  CANCELLED: 'Cancelado',
-};
-
-// ---------------------------------------------------------------------------
-// Mapas de colores Tailwind
-// ---------------------------------------------------------------------------
 
 function colorFor(kind: StatusBadgeKind, status: string): string {
   switch (kind) {
@@ -124,6 +77,8 @@ function colorFor(kind: StatusBadgeKind, status: string): string {
 const DEFAULT_COLOR = 'bg-surface-container text-on-surface';
 
 const EMPLOYEE_COLORS: Record<string, string> = {
+  DRAFT: 'bg-surface-container text-on-surface-variant',
+  PENDING_CONTRACT: 'bg-amber-100 text-amber-800',
   ACTIVE: 'bg-emerald-100 text-emerald-800',
   SICK: 'bg-amber-100 text-amber-800',
   ON_VACATION: 'bg-surface-container-high text-on-surface',

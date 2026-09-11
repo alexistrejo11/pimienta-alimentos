@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
         an administrator approves the account. Rate limit: **STRICT**.""")
 @ApiResponse(
     responseCode = "201",
-    description = "Account created; response explains pending approval.",
+    description = "Account created; Spanish message explains pending admin approval.",
     content =
         @Content(
             mediaType = "application/json",

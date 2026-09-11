@@ -1,8 +1,8 @@
-/** POST/PUT /api/v1/headquarters, PUT /api/v1/headquarters/:id */
+/** POST/PUT /api/v1/headquarters — solo `name` es obligatorio. */
 export interface HeadQuarterRequest {
   name: string;
-  address: string;
-  description: string;
+  address?: string | null;
+  description?: string | null;
 }
 
 /** GET /api/v1/headquarters/:id, POST, PUT */

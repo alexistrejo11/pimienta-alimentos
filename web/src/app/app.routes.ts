@@ -28,6 +28,7 @@ import { TareaDetailPageComponent } from './pages/app/tareas/tarea-detail/tarea-
 import { TareaFormPageComponent } from './pages/app/tareas/tarea-form/tarea-form-page';
 import { SedesPageComponent } from './pages/app/sedes/sedes-page';
 import { SedeDetailPageComponent } from './pages/app/sedes/sede-detail/sede-detail-page';
+import { SedeFormPageComponent } from './pages/app/sedes/sede-form-page/sede-form-page';
 import { SedePosPageComponent } from './pages/app/sedes/sede-pos-page/sede-pos-page';
 import { ContratosPageComponent } from './pages/app/contratos/contratos-page';
 import { NominaPageComponent } from './pages/app/nomina/nomina-page';
@@ -70,8 +71,8 @@ export const routes: Routes = [
       { path: 'tasks', component: TasksPageComponent },
 
       // ── Empleados ────────────────────────────────────────────────────────
-      { path: 'empleados/nuevo', component: EmpleadoFormPageComponent },
-      { path: 'empleados/:id/editar', component: EmpleadoFormPageComponent },
+      { path: 'empleados/nuevo', component: EmpleadoFormPageComponent, canActivate: [roleGuard], data: { roles: [ROLE_ADMIN] } },
+      { path: 'empleados/:id/editar', component: EmpleadoFormPageComponent, canActivate: [roleGuard], data: { roles: [ROLE_ADMIN] } },
       { path: 'empleados/:id', component: EmpleadoDetailPageComponent },
       { path: 'empleados', component: EmpleadosPageComponent },
 
@@ -94,6 +95,18 @@ export const routes: Routes = [
 
       // ── Sedes ────────────────────────────────────────────────────────────
       { path: 'sedes', component: SedesPageComponent },
+      {
+        path: 'sedes/nueva',
+        component: SedeFormPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
+      {
+        path: 'sedes/:id/editar',
+        component: SedeFormPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
       {
         path: 'sedes/:id/pos',
         component: SedePosPageComponent,

@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
+import { posRoleLabel } from '../../../../core/i18n/enum-labels';
 import type { PosOperatorResponse } from '../../../../core/model/pos/pos.dto';
 import type { PosRole } from '../../../../core/model/pos/pos.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
@@ -29,6 +30,7 @@ export class OperadoresPageComponent implements OnInit {
   readonly showForm = signal(false);
 
   readonly posRoles = POS_ROLES;
+  readonly posRoleLabel = posRoleLabel;
   readonly managerHqId = this.session.managerHeadquarterId;
 
   readonly form = this.fb.nonNullable.group({

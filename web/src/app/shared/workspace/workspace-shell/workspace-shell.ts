@@ -6,6 +6,7 @@ import { WorkspaceFooterComponent } from '../workspace-footer/workspace-footer';
 import { WorkspaceSidebarComponent } from '../workspace-sidebar/workspace-sidebar';
 import { AsistenciaHoyModalComponent } from '../../ui/asistencia-hoy-modal/asistencia-hoy-modal';
 import { AsistenciaBusquedaModalComponent } from '../../ui/asistencia-busqueda-modal/asistencia-busqueda-modal';
+import { UserProfileModalComponent } from '../../ui/user-profile-modal/user-profile-modal';
 
 @Component({
   selector: 'app-workspace-shell',
@@ -16,6 +17,7 @@ import { AsistenciaBusquedaModalComponent } from '../../ui/asistencia-busqueda-m
     WorkspaceFooterComponent,
     AsistenciaHoyModalComponent,
     AsistenciaBusquedaModalComponent,
+    UserProfileModalComponent,
   ],
   templateUrl: './workspace-shell.html',
 })
@@ -24,6 +26,7 @@ export class WorkspaceShellComponent implements OnInit {
 
   readonly mostrarAsistenciaHoy = signal(false);
   readonly mostrarAsistenciaBusqueda = signal(false);
+  readonly mostrarPerfil = signal(false);
 
   ngOnInit(): void {
     this.session.load();

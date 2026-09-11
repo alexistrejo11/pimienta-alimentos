@@ -4,16 +4,9 @@ import { finalize } from 'rxjs';
 
 import { AttendanceService } from '../../../core/employees/attendance.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
+import { attendanceStatusLabel } from '../../../core/i18n/enum-labels';
 import type { AttendanceResponse, AttendanceStatus } from '../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../core/model/common/pagination';
-
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  UNDEFINED: 'Indefinido',
-  CHECKED_IN: 'En turno',
-  CHECKED_OUT: 'Salió',
-  AUTO_CLOSED_EXCEEDED_MAX_SHIFT_HOURS: 'Cierre auto (horas)',
-  AUTO_CLOSED_ASSUMED_CONTRACT_DAY: 'Cierre auto (jornada)',
-};
 
 const ALL_STATUSES: AttendanceStatus[] = [
   'CHECKED_IN',
@@ -89,7 +82,7 @@ export class AsistenciaBusquedaModalComponent {
   }
 
   statusLabel(s: AttendanceStatus): string {
-    return STATUS_LABELS[s] ?? s;
+    return attendanceStatusLabel(s);
   }
 
   statusClasses(s: AttendanceStatus): string {

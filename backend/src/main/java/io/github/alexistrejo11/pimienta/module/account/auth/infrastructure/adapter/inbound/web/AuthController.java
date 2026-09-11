@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.account.auth.infrastructure.adapter.inbound.web;
 
+import io.github.alexistrejo11.pimienta.module.account.auth.core.application.RegisterResult;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LoginCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LogoutCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.RefreshSessionCommand;
@@ -45,10 +46,12 @@ public class AuthController {
   @DocAuthRegister
   public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
     RegisterCommand command = AuthWebMapper.toRegisterCommand(request);
-    authUseCases.register(command);
-    return new RegisterResponse(
-        "Registration successful. Your account is pending approval by an administrator.",
-        "PENDING_APPROVAL");
+    RegisterResult result = authUseCases.register(command);
+    String message =
+        result.requireAdminActivation()
+            ? "Registro exitoso. Tu cuenta está pendiente de aprobación por un administrador."
+            : "Registro exitoso.";
+    return new RegisterResponse(message, "PENDING_APPROVAL");
   }
 
   @PostMapping("/login")

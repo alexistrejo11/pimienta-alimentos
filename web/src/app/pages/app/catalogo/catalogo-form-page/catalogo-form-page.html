@@ -77,7 +77,7 @@
             <span class="font-medium text-on-surface">Estado</span>
             <select class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="status">
               @for (s of statuses; track s) {
-                <option [value]="s">{{ s }}</option>
+                <option [value]="s">{{ itemStatusLabel(s) }}</option>
               }
             </select>
           </label>

@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
+import { itemStatusLabel } from '../../../../core/i18n/enum-labels';
 import type { ItemCategory, ItemStatus, ItemUnit } from '../../../../core/model/inventory/inventory.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 
@@ -43,6 +44,7 @@ export class CatalogoFormPageComponent implements OnInit {
   readonly categories = CATEGORIES;
   readonly units = UNITS;
   readonly statuses = STATUSES;
+  readonly itemStatusLabel = itemStatusLabel;
 
   readonly form = this.fb.nonNullable.group({
     sku: ['', Validators.required],

@@ -7,6 +7,9 @@ import { UserProfileService } from '../user/user-profile.service';
 /**
  * Sesión del workspace: perfil del usuario autenticado y alcance por sede.
  * Se carga una vez en {@link WorkspaceShellComponent}.
+ *
+ * `/users/me` returns enum names (`ADMIN`); Spring authorities use `ROLE_ADMIN`.
+ * Roles are normalized to the `ROLE_*` form when the profile is loaded.
  */
 @Injectable({ providedIn: 'root' })
 export class SessionContextService {
@@ -37,10 +40,25 @@ export class SessionContextService {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (user) => {
-          this.roles.set(user.roles);
+          this.roles.set((user.roles ?? []).map(toSpringRole));
           this.assignedHeadquarterIds.set(user.assignedHeadquarterIds ?? []);
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
   }
+
+  /** Limpia el estado de sesión (p. ej. tras logout). */
+  clear(): void {
+    this.roles.set([]);
+    this.assignedHeadquarterIds.set([]);
+    this.loading.set(false);
+    this.error.set(null);
+  }
+}
+
+/** Maps API enum names (`ADMIN`) to Spring-style authorities (`ROLE_ADMIN`). */
+function toSpringRole(role: string): string {
+  const trimmed = role.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.startsWith('ROLE_') ? trimmed : `ROLE_${trimmed}`;
 }

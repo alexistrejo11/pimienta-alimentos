@@ -57,7 +57,7 @@ class AuthIntegrationTest {
         .andExpect(
             jsonPath("$.message")
                 .value(
-                    "Registration successful. Your account is pending approval by an administrator."))
+                    "Registro exitoso. Tu cuenta está pendiente de aprobación por un administrador."))
         .andExpect(jsonPath("$.status").value("PENDING_APPROVAL"));
 
     UserJpaEntity saved =
@@ -88,6 +88,7 @@ class AuthIntegrationTest {
         .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.message").value("La validación de la solicitud falló."))
         .andExpect(jsonPath("$.fieldErrors[*].field", hasItem("firstName")));
   }
 
@@ -150,7 +151,8 @@ class AuthIntegrationTest {
     mockMvc
         .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(b2))
         .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.errorCode").value("EMAIL_ALREADY_EXISTS"));
+        .andExpect(jsonPath("$.errorCode").value("EMAIL_ALREADY_EXISTS"))
+        .andExpect(jsonPath("$.message").value("El correo electrónico ya está registrado."));
   }
 
   @Test
@@ -189,7 +191,11 @@ class AuthIntegrationTest {
             AccountTestRequests.postJson(
                 "/api/v1/auth/login", AccountTestRequests.loginJson(email, "StrongPass1!")))
         .andExpect(status().isForbidden())
-        .andExpect(jsonPath("$.errorCode").value("ACCOUNT_PENDING_APPROVAL"));
+        .andExpect(jsonPath("$.errorCode").value("ACCOUNT_PENDING_APPROVAL"))
+        .andExpect(
+            jsonPath("$.message")
+                .value(
+                    "Tu cuenta está pendiente de aprobación. Espera a que un administrador la active."));
   }
 
   @Test

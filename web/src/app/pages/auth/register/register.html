@@ -59,7 +59,8 @@
                 <div class="space-y-2">
                   <p class="font-medium leading-snug">{{ ok.message }}</p>
                   <p class="auth-success__meta">
-                    Estado de la cuenta: <span class="font-mono font-semibold">{{ ok.status }}</span>
+                    Estado de la cuenta:
+                    <span class="font-semibold">{{ accountStatusLabel(ok.status) }}</span>
                   </p>
                 </div>
               </div>

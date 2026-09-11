@@ -74,7 +74,9 @@ export class ArchivosPageComponent implements OnInit {
       .pipe(finalize(() => this.profileLoading.set(false)))
       .subscribe({
         next: (user) => {
-          this.isAdmin.set(user.roles.includes('ROLE_ADMIN'));
+          this.isAdmin.set(
+            user.roles.some((r) => r === 'ROLE_ADMIN' || r === 'ADMIN'),
+          );
           this.userId.set(user.id);
           this.reloadList();
         },

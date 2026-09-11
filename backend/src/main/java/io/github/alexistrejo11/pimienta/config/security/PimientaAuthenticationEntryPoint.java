@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.config.security;
 
 import io.github.alexistrejo11.pimienta.config.web.ApiErrorHttpResponseWriter;
+import io.github.alexistrejo11.pimienta.config.web.ClientErrorMessages;
 import io.github.alexistrejo11.pimienta.shared.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +18,12 @@ public class PimientaAuthenticationEntryPoint implements AuthenticationEntryPoin
 
   private static final Logger log = LoggerFactory.getLogger(PimientaAuthenticationEntryPoint.class);
 
+  private final ClientErrorMessages clientErrorMessages;
+
+  public PimientaAuthenticationEntryPoint(ClientErrorMessages clientErrorMessages) {
+    this.clientErrorMessages = clientErrorMessages;
+  }
+
   @Override
   public void commence(
       HttpServletRequest request,
@@ -28,6 +35,10 @@ public class PimientaAuthenticationEntryPoint implements AuthenticationEntryPoin
         request.getRequestURI(),
         authException.getMessage());
     ApiErrorHttpResponseWriter.write(
-        request, response, HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, "Unauthorized.");
+        request,
+        response,
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.UNAUTHORIZED,
+        clientErrorMessages.resolve(ErrorCode.UNAUTHORIZED));
   }
 }

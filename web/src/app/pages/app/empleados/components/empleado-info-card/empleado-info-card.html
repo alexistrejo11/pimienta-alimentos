@@ -3,24 +3,18 @@
 
   <!-- Encabezado con foto -->
   <div class="mb-6 flex items-center gap-4">
-    @if (empleado().photoUrl) {
-      <img
-        [src]="empleado().photoUrl"
-        [alt]="empleado().firstName + ' ' + empleado().lastName"
-        class="h-16 w-16 rounded-full border-2 border-stone-200 object-cover shadow-sm dark:border-stone-700"
-        width="64"
-        height="64"
-      />
-    } @else {
-      <div class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-stone-200 bg-stone-100 text-xl font-bold uppercase text-stone-500 shadow-sm dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400">
-        {{ empleado().firstName.charAt(0) }}{{ empleado().lastName.charAt(0) }}
-      </div>
-    }
-    <div>
+    <img
+      [src]="empleado().photoUrl"
+      [alt]="empleado().firstName + ' ' + empleado().lastName"
+      class="h-16 w-16 rounded-full border-2 border-stone-200 object-cover shadow-sm dark:border-stone-700"
+      width="64"
+      height="64"
+      (error)="onPhotoError($event)"
+    />    <div>
       <h2 class="font-headline text-xl font-bold text-on-surface">
         {{ empleado().firstName }} {{ empleado().lastName }}
       </h2>
-      <p class="text-sm text-on-surface-variant">{{ empleado().position }} · {{ empleado().department }}</p>
+      <p class="text-sm text-on-surface-variant">{{ empleado().position || '—' }} · {{ empleado().department || '—' }}</p>
     </div>
   </div>
 

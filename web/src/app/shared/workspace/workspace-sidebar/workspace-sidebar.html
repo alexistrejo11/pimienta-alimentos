@@ -249,9 +249,9 @@
       <span class="material-symbols-outlined" aria-hidden="true">folder</span>
       <span class="font-headline font-bold tracking-tight">Archivos</span>
     </a>
-    <a [class]="navLinkInactive" routerLink="/app/dashboard">
-      <span class="material-symbols-outlined" aria-hidden="true">settings</span>
-      <span class="font-headline font-bold tracking-tight">Configuración</span>
-    </a>
+    <button type="button" [class]="navLinkInactive + ' w-full text-left'" (click)="abrirPerfil.emit()">
+      <span class="material-symbols-outlined" aria-hidden="true">person</span>
+      <span class="font-headline font-bold tracking-tight">Mi perfil</span>
+    </button>
   </div>
 </aside>

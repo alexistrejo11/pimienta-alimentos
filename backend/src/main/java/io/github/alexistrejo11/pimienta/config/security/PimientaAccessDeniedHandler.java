@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.config.security;
 
 import io.github.alexistrejo11.pimienta.config.web.ApiErrorHttpResponseWriter;
+import io.github.alexistrejo11.pimienta.config.web.ClientErrorMessages;
 import io.github.alexistrejo11.pimienta.shared.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +18,12 @@ public class PimientaAccessDeniedHandler implements AccessDeniedHandler {
 
   private static final Logger log = LoggerFactory.getLogger(PimientaAccessDeniedHandler.class);
 
+  private final ClientErrorMessages clientErrorMessages;
+
+  public PimientaAccessDeniedHandler(ClientErrorMessages clientErrorMessages) {
+    this.clientErrorMessages = clientErrorMessages;
+  }
+
   @Override
   public void handle(
       HttpServletRequest request,
@@ -28,6 +35,10 @@ public class PimientaAccessDeniedHandler implements AccessDeniedHandler {
         request.getRequestURI(),
         accessDeniedException.getMessage());
     ApiErrorHttpResponseWriter.write(
-        request, response, HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN, "Forbidden.");
+        request,
+        response,
+        HttpStatus.FORBIDDEN,
+        ErrorCode.FORBIDDEN,
+        clientErrorMessages.resolve(ErrorCode.FORBIDDEN));
   }
 }

@@ -22,7 +22,7 @@
           <span>Rol POS</span>
           <select class="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950" formControlName="posRole">
             @for (r of posRoles; track r) {
-              <option [value]="r">{{ r }}</option>
+              <option [value]="r">{{ posRoleLabel(r) }}</option>
             }
           </select>
         </label>
@@ -58,7 +58,7 @@
           @for (op of operators(); track op.id) {
             <tr>
               <td class="px-4 py-3">{{ op.displayName }}</td>
-              <td class="px-4 py-3">{{ op.posRole }}</td>
+              <td class="px-4 py-3">{{ posRoleLabel(op.posRole) }}</td>
               <td class="px-4 py-3">{{ op.headquarterIds.join(', ') || '—' }}</td>
               <td class="px-4 py-3">{{ op.active ? 'Sí' : 'No' }}</td>
             </tr>
