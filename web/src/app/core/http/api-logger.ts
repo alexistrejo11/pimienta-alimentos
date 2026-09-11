@@ -96,14 +96,20 @@ export function logApiFailure(
   durationMs: number,
   parsed: ParsedApiError,
 ): void {
+  const traceId =
+    parsed.traceId ??
+    (parsed.rawBody &&
+    typeof parsed.rawBody === 'object' &&
+    'traceId' in (parsed.rawBody as object)
+      ? String((parsed.rawBody as Record<string, unknown>)['traceId'])
+      : null);
+
   const payload: Record<string, unknown> = {
     status: parsed.httpStatus,
     errorCode: parsed.errorCode,
     message: parsed.message,
-    traceId: parsed.traceId,
-    ...(parsed.fieldErrors.length > 0
-      ? { fieldErrors: parsed.fieldErrors.map((f) => f.field) }
-      : {}),
+    traceId,
+    ...(parsed.fieldErrors.length > 0 ? { fieldErrors: parsed.fieldErrors } : {}),
   };
 
   if (parsed.httpStatus === 403 && parsed.errorCode !== 'FORBIDDEN') {

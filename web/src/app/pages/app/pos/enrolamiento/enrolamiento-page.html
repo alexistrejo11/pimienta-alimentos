@@ -4,21 +4,15 @@
     subtitle="Genera un código de un solo uso (válido 10 minutos) para registrar una tablet"
   />
 
-  @if (error(); as err) {
-    <div role="alert" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">{{ err.message }}</div>
-  }
+  <app-api-form-error [error]="error()" />
 
   <section class="max-w-lg ui-panel p-6">
-    @if (isAdmin()) {
-      <label class="mb-4 flex flex-col gap-1 text-sm">
-        <span class="font-medium">Sede</span>
-        <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [(ngModel)]="selectedHeadquarterId">
-          @for (sede of sedes(); track sede.id) {
-            <option [ngValue]="sede.id">{{ sede.name }}</option>
-          }
-        </select>
-      </label>
-    }
+    <app-headquarter-select
+      class="mb-4 block max-w-xs"
+      label="Sede"
+      [value]="selectedHeadquarterId"
+      (valueChange)="onHeadquarterChange($event)"
+    />
 
     <button
       type="button"
@@ -31,7 +25,7 @@
 
     @if (lastCode(); as code) {
       <div class="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/30">
-        <p class="text-sm text-on-surface-variant">Código para sede #{{ code.headquarterId }}</p>
+        <p class="text-sm text-on-surface-variant">Código para {{ hqName(code.headquarterId) }}</p>
         <p class="font-headline mt-2 text-3xl font-bold tracking-widest text-on-surface">{{ code.code }}</p>
         <p class="mt-2 text-xs text-on-surface-variant">Expira: {{ formatExpiry(code.expiresAt) }}</p>
       </div>

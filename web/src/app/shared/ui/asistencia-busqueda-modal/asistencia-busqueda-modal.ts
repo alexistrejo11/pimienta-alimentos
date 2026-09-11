@@ -7,6 +7,7 @@ import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api
 import { attendanceStatusLabel } from '../../../core/i18n/enum-labels';
 import type { AttendanceResponse, AttendanceStatus } from '../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../core/model/common/pagination';
+import { EmployeeSelectComponent } from '../employee-select/employee-select';
 
 const ALL_STATUSES: AttendanceStatus[] = [
   'CHECKED_IN',
@@ -21,7 +22,7 @@ const ALL_STATUSES: AttendanceStatus[] = [
 @Component({
   selector: 'app-asistencia-busqueda-modal',
   
-  imports: [FormsModule],
+  imports: [FormsModule, EmployeeSelectComponent],
   templateUrl: './asistencia-busqueda-modal.html',
 })
 export class AsistenciaBusquedaModalComponent {
@@ -30,7 +31,7 @@ export class AsistenciaBusquedaModalComponent {
   private readonly service = inject(AttendanceService);
 
   // Filtros
-  empleadoId = '';
+  empleadoId: number | null = null;
   fechaExacta = '';
   fechaDesde = '';
   fechaHasta = '';
@@ -55,7 +56,7 @@ export class AsistenciaBusquedaModalComponent {
 
     this.service
       .search({
-        employeeId: this.empleadoId ? Number(this.empleadoId) : undefined,
+        employeeId: this.empleadoId ?? undefined,
         workDate: this.fechaExacta || undefined,
         workDateFrom: this.fechaDesde || undefined,
         workDateTo: this.fechaHasta || undefined,
@@ -71,7 +72,7 @@ export class AsistenciaBusquedaModalComponent {
   }
 
   limpiar(): void {
-    this.empleadoId = '';
+    this.empleadoId = null;
     this.fechaExacta = '';
     this.fechaDesde = '';
     this.fechaHasta = '';

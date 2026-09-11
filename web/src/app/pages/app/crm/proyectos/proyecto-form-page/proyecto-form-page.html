@@ -68,43 +68,32 @@
             }
           </div>
 
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-client"
-              >ID cliente</label
-            >
-            <input
-              id="pr-client"
-              formControlName="clientId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-stone-900"
-            />
-            @if (isEdit) {
-              <p class="ml-1 text-xs text-on-surface-variant">El cliente no se modifica por API de actualización.</p>
-            }
-            @if (!isEdit && form.controls.clientId.touched && form.controls.clientId.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
-            @if (apiFieldMessage('clientId'); as m) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
-            }
-          </div>
+          <app-client-select
+            label="Cliente"
+            [allowNull]="false"
+            [disabled]="isEdit"
+            [value]="form.controls.clientId.value"
+            (valueChange)="form.controls.clientId.setValue($event)"
+          />
+          @if (isEdit) {
+            <p class="text-xs text-on-surface-variant sm:col-span-2">El cliente no se modifica por API de actualización.</p>
+          }
+          @if (!isEdit && form.controls.clientId.touched && form.controls.clientId.hasError('required')) {
+            <p class="text-xs text-[var(--color-error)] sm:col-span-2">Selecciona un cliente.</p>
+          }
+          @if (apiFieldMessage('clientId'); as m) {
+            <p class="text-xs text-[var(--color-error)] sm:col-span-2">{{ m }}</p>
+          }
 
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-opp"
-              >ID oportunidad origen (opcional)</label
-            >
-            <input
-              id="pr-opp"
-              formControlName="originOpportunityId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-stone-900"
-            />
-            @if (isEdit) {
-              <p class="ml-1 text-xs text-on-surface-variant">Solo aplica al crear.</p>
-            }
-          </div>
+          <app-opportunity-select
+            label="Oportunidad origen (opcional)"
+            [disabled]="isEdit"
+            [value]="form.controls.originOpportunityId.value"
+            (valueChange)="form.controls.originOpportunityId.setValue($event)"
+          />
+          @if (isEdit) {
+            <p class="text-xs text-on-surface-variant">Solo aplica al crear.</p>
+          }
 
           <div class="sm:col-span-2 space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-desc"
@@ -156,31 +145,16 @@
             </select>
           </div>
 
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-pm"
-              >ID director de proyecto (empleado)</label
-            >
-            <input
-              id="pr-pm"
-              formControlName="projectManagerId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-sales"
-              >ID vendedor asignado (empleado)</label
-            >
-            <input
-              id="pr-sales"
-              formControlName="assignedSalesmanId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
+          <app-employee-select
+            label="Director de proyecto"
+            [value]="form.controls.projectManagerId.value"
+            (valueChange)="form.controls.projectManagerId.setValue($event)"
+          />
+          <app-employee-select
+            label="Vendedor asignado"
+            [value]="form.controls.assignedSalesmanId.value"
+            (valueChange)="form.controls.assignedSalesmanId.setValue($event)"
+          />
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-ps"

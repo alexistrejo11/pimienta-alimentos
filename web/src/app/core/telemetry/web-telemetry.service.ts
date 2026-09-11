@@ -33,7 +33,7 @@ export class WebTelemetryService {
       message: normalized.message,
       stack: normalized.stack,
       route: window.location.pathname,
-      userAgent: navigator.userAgent,
+      userAgent: truncateUserAgent(navigator.userAgent),
       occurredAt: new Date().toISOString(),
     });
   }
@@ -46,8 +46,8 @@ export class WebTelemetryService {
       level: status >= 500 || status === 0 ? 'ERROR' : 'WARN',
       message: `API ${method} ${path} failed (${status || 'network'})`,
       route: window.location.pathname,
-      traceId,
-      userAgent: navigator.userAgent,
+      traceId: traceId ? truncate(traceId, 120) : undefined,
+      userAgent: truncateUserAgent(navigator.userAgent),
       occurredAt: new Date().toISOString(),
     });
   }
@@ -84,7 +84,15 @@ function normalizeError(error: unknown): { message: string; stack?: string } {
 }
 
 function limit(value: string | undefined, max = 2000): string | undefined {
+  return truncate(value, max);
+}
+
+function truncate(value: string | undefined, max: number): string | undefined {
   if (value === undefined) return undefined;
   const clean = value.replace(/[\r\n]+/g, ' ').trim();
   return clean.length <= max ? clean : clean.slice(0, max);
+}
+
+function truncateUserAgent(ua: string): string {
+  return truncate(ua, 120) ?? '';
 }

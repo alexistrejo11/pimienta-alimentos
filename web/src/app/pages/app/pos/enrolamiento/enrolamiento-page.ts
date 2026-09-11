@@ -1,46 +1,40 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
-import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
+import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import type { HeadQuarterResponse } from '../../../../core/model/headquarter/headquarter.dto';
 import type { EnrollmentCodeResponse } from '../../../../core/model/pos/pos.dto';
+import { ApiFormErrorComponent } from '../../../../shared/ui/api-form-error/api-form-error';
+import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 
 @Component({
   selector: 'app-enrolamiento-page',
-  imports: [PageHeaderComponent, FormsModule],
+  imports: [PageHeaderComponent, HeadquarterSelectComponent, ApiFormErrorComponent],
   templateUrl: './enrolamiento-page.html',
 })
 export class EnrolamientoPageComponent implements OnInit {
   private readonly posAdmin = inject(PosAdminService);
   private readonly session = inject(SessionContextService);
-  private readonly hqService = inject(HeadquarterService);
+  private readonly lookup = inject(HeadquarterLookupService);
 
   readonly error = signal<ParsedApiError | null>(null);
   readonly generating = signal(false);
   readonly lastCode = signal<EnrollmentCodeResponse | null>(null);
-  readonly sedes = signal<HeadQuarterResponse[]>([]);
 
   readonly isAdmin = this.session.isAdmin;
+  readonly hqName = this.lookup.name.bind(this.lookup);
+
   selectedHeadquarterId: number | null = null;
 
   ngOnInit(): void {
-    if (this.session.isAdmin()) {
-      this.hqService.list(0, 100).subscribe({
-        next: (page) => {
-          this.sedes.set(page.content);
-          if (page.content.length > 0) {
-            this.selectedHeadquarterId = page.content[0].id;
-          }
-        },
-      });
-    } else {
-      this.selectedHeadquarterId = this.session.managerHeadquarterId();
-    }
+    void this.lookup.ensureLoaded();
+  }
+
+  onHeadquarterChange(value: number | number[] | null): void {
+    this.selectedHeadquarterId = typeof value === 'number' ? value : null;
   }
 
   emitir(): void {

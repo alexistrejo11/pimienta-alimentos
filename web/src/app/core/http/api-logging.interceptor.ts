@@ -17,6 +17,7 @@ import {
   summarizeRequest,
   summarizeResponse,
 } from './api-logger';
+import { parseApiError } from './parse-api-error';
 import { WebTelemetryService } from '../telemetry/web-telemetry.service';
 
 /** Set on a request to skip console logging (rare; default is to log all /api/v1 calls). */
@@ -62,12 +63,13 @@ export const apiLoggingInterceptor: HttpInterceptorFn = (
       if (err instanceof HttpErrorResponse) {
         const durationMs = Math.round(performance.now() - started);
         logApiHttpError(req.method, reqSummary.path, err, durationMs);
-        if (shouldReportToTelemetry(req.method, err)) {
+        if (shouldReportToTelemetry(err)) {
+          const parsed = parseApiError(err);
           telemetry.reportApiFailure(
             req.method,
             reqSummary.path.split('?')[0],
             err.status,
-            readTraceId(err),
+            parsed.traceId ?? readTraceId(err),
           );
         }
       }
@@ -76,9 +78,18 @@ export const apiLoggingInterceptor: HttpInterceptorFn = (
   );
 };
 
-function shouldReportToTelemetry(method: string, error: HttpErrorResponse): boolean {
-  const write = !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
-  return error.status === 0 || error.status >= 500 || (write && error.status >= 400);
+function shouldReportToTelemetry(error: HttpErrorResponse): boolean {
+  if (error.status === 0 || error.status >= 500) {
+    return true;
+  }
+  if (error.status === 401 || error.status === 403) {
+    return true;
+  }
+  if (error.status === 400) {
+    const parsed = parseApiError(error);
+    return parsed.errorCode !== 'VALIDATION_FAILED' && parsed.errorCode !== 'CONSTRAINT_VIOLATION';
+  }
+  return false;
 }
 
 function readTraceId(error: HttpErrorResponse): string | undefined {

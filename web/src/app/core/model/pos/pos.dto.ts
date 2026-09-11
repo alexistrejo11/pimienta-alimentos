@@ -84,7 +84,7 @@ export interface CreatePosOperatorRequest {
   posRole: PosRole;
   pin: string;
   userId?: number | null;
-  headquarterIds?: number[];
+  headquarterIds: number[];
 }
 
 export interface UpdatePosOperatorRequest {

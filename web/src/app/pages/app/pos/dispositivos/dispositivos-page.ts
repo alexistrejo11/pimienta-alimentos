@@ -1,46 +1,45 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
-import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
+import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import type { HeadQuarterResponse } from '../../../../core/model/headquarter/headquarter.dto';
 import type { PosDeviceAdminResponse } from '../../../../core/model/pos/pos.dto';
+import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 
 @Component({
   selector: 'app-dispositivos-page',
-  imports: [PageHeaderComponent, DataStateComponent, FormsModule],
+  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent],
   templateUrl: './dispositivos-page.html',
 })
 export class DispositivosPageComponent implements OnInit {
   private readonly posAdmin = inject(PosAdminService);
   private readonly session = inject(SessionContextService);
-  private readonly hqService = inject(HeadquarterService);
+  private readonly lookup = inject(HeadquarterLookupService);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly devices = signal<PosDeviceAdminResponse[]>([]);
-  readonly sedes = signal<HeadQuarterResponse[]>([]);
   readonly revokingId = signal<string | null>(null);
 
   readonly isAdmin = this.session.isAdmin;
+  readonly hqName = this.lookup.name.bind(this.lookup);
+
   filterHeadquarterId: number | null = null;
 
   ngOnInit(): void {
+    void this.lookup.ensureLoaded();
     if (!this.session.isAdmin()) {
       this.filterHeadquarterId = this.session.managerHeadquarterId();
-      this.cargar();
-      return;
     }
+    this.cargar();
+  }
 
-    this.hqService.list(0, 100).subscribe({
-      next: (page) => this.sedes.set(page.content),
-      error: () => {},
-    });
+  onFilterChange(value: number | number[] | null): void {
+    this.filterHeadquarterId = typeof value === 'number' ? value : null;
     this.cargar();
   }
 

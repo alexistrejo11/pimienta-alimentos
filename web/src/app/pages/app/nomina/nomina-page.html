@@ -147,28 +147,18 @@
       }
 
       <div class="flex flex-wrap items-end gap-4 ui-panel p-4">
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-on-surface-variant" for="f-emp">ID empleado</label>
-          <input
-            id="f-emp"
-            type="number"
-            [(ngModel)]="filterEmployeeId"
-            [ngModelOptions]="{ standalone: true }"
-            class="w-36 rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm"
-            placeholder="Opcional"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-on-surface-variant" for="f-per">ID período</label>
-          <input
-            id="f-per"
-            type="number"
-            [(ngModel)]="filterPeriodId"
-            [ngModelOptions]="{ standalone: true }"
-            class="w-36 rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm"
-            placeholder="Opcional"
-          />
-        </div>
+        <app-employee-select
+          label="Empleado"
+          nullLabel="Todos"
+          [value]="filterEmployeeId"
+          (valueChange)="filterEmployeeId = $event"
+        />
+        <app-payroll-period-select
+          label="Período"
+          nullLabel="Todos"
+          [value]="filterPeriodId"
+          (valueChange)="filterPeriodId = $event"
+        />
         <button
           type="button"
           class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]"
@@ -184,14 +174,17 @@
           <p class="mb-2 text-sm text-[var(--color-error)]">{{ fe.message }}</p>
         }
         <form [formGroup]="recordForm" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" (ngSubmit)="submitRecord()">
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-on-surface-variant" for="nr-emp">Empleado (ID)</label>
-            <input id="nr-emp" type="number" formControlName="employeeId" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-on-surface-variant" for="nr-per">Período (ID)</label>
-            <input id="nr-per" type="number" formControlName="periodId" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" placeholder="Opcional" />
-          </div>
+          <app-employee-select
+            label="Empleado"
+            [allowNull]="false"
+            [value]="recordForm.controls.employeeId.value"
+            (valueChange)="recordForm.controls.employeeId.setValue($event)"
+          />
+          <app-payroll-period-select
+            label="Período"
+            [value]="recordForm.controls.periodId.value"
+            (valueChange)="recordForm.controls.periodId.setValue($event)"
+          />
           <div class="space-y-1">
             <label class="text-xs font-medium text-on-surface-variant" for="nr-start">Inicio labores</label>
             <input id="nr-start" type="date" formControlName="workedDaysStart" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
@@ -241,8 +234,8 @@
               @for (r of records(); track r.id) {
                 <tr>
                   <td class="px-3 py-3 tabular-nums text-on-surface">{{ r.id }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ r.employeeId }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ r.periodId ?? '—' }}</td>
+                  <td class="px-3 py-3">{{ empName(r.employeeId) }}</td>
+                  <td class="px-3 py-3">{{ periodName(r.periodId) }}</td>
                   <td class="px-3 py-3 text-on-surface-variant">{{ formatDate(r.workedDaysStart) }} – {{ formatDate(r.workedDaysEnd) }}</td>
                   <td class="px-3 py-3 text-right tabular-nums">{{ formatMXN(r.grossAmount) }}</td>
                   <td class="px-3 py-3 text-right font-medium tabular-nums">{{ formatMXN(r.netAmount) }}</td>
@@ -391,17 +384,12 @@
   @if (activeTab() === 'pagos') {
     <section class="space-y-4" aria-label="Pagos de nómina">
       <div class="flex flex-wrap items-end gap-4 ui-panel p-4">
-        <div class="space-y-1">
-          <label class="text-xs font-medium" for="pay-emp">ID empleado</label>
-          <input
-            id="pay-emp"
-            type="number"
-            [(ngModel)]="filterPaymentEmployeeId"
-            [ngModelOptions]="{ standalone: true }"
-            class="w-40 rounded-lg bg-surface-container px-3 py-2 text-sm"
-            placeholder="Todos"
-          />
-        </div>
+        <app-employee-select
+          label="Empleado"
+          nullLabel="Todos"
+          [value]="filterPaymentEmployeeId"
+          (valueChange)="filterPaymentEmployeeId = $event"
+        />
         <button type="button" class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]" (click)="applyPaymentFilters()">
           Filtrar
         </button>
@@ -428,7 +416,7 @@
               @for (p of payments(); track p.id) {
                 <tr>
                   <td class="px-3 py-3 tabular-nums">{{ p.id }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ p.employeeId }}</td>
+                  <td class="px-3 py-3">{{ empName(p.employeeId) }}</td>
                   <td class="px-3 py-3 text-on-surface-variant">{{ formatDate(p.workedDaysStart) }} – {{ formatDate(p.workedDaysEnd) }}</td>
                   <td class="px-3 py-3 text-right font-medium">{{ formatMXN(p.netAmount) }}</td>
                   <td class="px-3 py-3">{{ paymentStatusLabel(p.status) }}</td>
@@ -475,7 +463,7 @@
               @for (d of debts(); track d.id) {
                 <tr>
                   <td class="px-3 py-3 tabular-nums">{{ d.id }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ d.employeeId }}</td>
+                  <td class="px-3 py-3">{{ empName(d.employeeId) }}</td>
                   <td class="px-3 py-3 text-right tabular-nums">{{ formatMXN(d.amountOwed) }}</td>
                   <td class="px-3 py-3 text-on-surface-variant">{{ d.reason ?? '—' }}</td>
                   <td class="px-3 py-3">{{ d.settled ? 'Sí' : 'No' }}</td>

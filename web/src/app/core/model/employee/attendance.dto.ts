@@ -24,6 +24,8 @@ export interface EndWorkdayRequest {
 export interface AttendanceResponse {
   id: number;
   employeeId: number;
+  /** Full name for display in lists and modals. */
+  employeeFullName: string;
   headquarterId: number;
   /** ISO date (yyyy-MM-dd). */
   workDate: string;

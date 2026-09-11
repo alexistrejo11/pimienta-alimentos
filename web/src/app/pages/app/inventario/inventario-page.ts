@@ -1,30 +1,28 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
-import { HeadquarterService } from '../../../core/headquarters/headquarter.service';
+import { HeadquarterLookupService } from '../../../core/headquarters/headquarter-lookup.service';
 import { InventoryService } from '../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
-import type { HeadQuarterResponse } from '../../../core/model/headquarter/headquarter.dto';
 import type { InventoryStockResponse, StorageLocationResponse } from '../../../core/model/inventory/inventory.dto';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
+import { HeadquarterSelectComponent } from '../../../shared/ui/headquarter-select/headquarter-select';
 
 @Component({
   selector: 'app-inventario-page',
-  imports: [PageHeaderComponent, DataStateComponent, FormsModule],
+  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent],
   templateUrl: './inventario-page.html',
 })
 export class InventarioPageComponent implements OnInit {
   private readonly session = inject(SessionContextService);
   private readonly inventory = inject(InventoryService);
-  private readonly hqService = inject(HeadquarterService);
+  private readonly hqLookup = inject(HeadquarterLookupService);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly stock = signal<InventoryStockResponse[]>([]);
-  readonly sedes = signal<HeadQuarterResponse[]>([]);
   readonly posLocations = signal<StorageLocationResponse[]>([]);
 
   selectedHeadquarterId: number | null = null;
@@ -39,30 +37,16 @@ export class InventarioPageComponent implements OnInit {
   readonly isAdmin = this.session.isAdmin;
 
   ngOnInit(): void {
+    void this.hqLookup.ensureLoaded();
     if (!this.session.isAdmin()) {
       this.selectedHeadquarterId = this.session.managerHeadquarterId();
       this.cargarStock();
-      return;
     }
-
-    this.hqService.list(0, 100).subscribe({
-      next: (page) => {
-        this.sedes.set(page.content);
-        if (page.content.length > 0) {
-          this.selectedHeadquarterId = page.content[0].id;
-          this.cargarStock();
-        } else {
-          this.loading.set(false);
-        }
-      },
-      error: (err: unknown) => {
-        this.error.set(parseApiError(err));
-        this.loading.set(false);
-      },
-    });
   }
 
-  onHeadquarterChange(): void {
+  onHeadquarterChange(id: number | number[] | null): void {
+    const hqId = Array.isArray(id) ? id[0] ?? null : id;
+    this.selectedHeadquarterId = hqId;
     this.cargarStock();
   }
 

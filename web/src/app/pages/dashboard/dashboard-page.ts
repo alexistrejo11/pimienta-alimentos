@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../core/auth/session-context.service';
+import { HeadquarterLookupService } from '../../core/headquarters/headquarter-lookup.service';
 import {
   parseApiError,
   type ParsedApiError,
@@ -23,7 +24,10 @@ type MetricKey = keyof UserDashboardResponse;
 export class DashboardPageComponent implements OnInit {
   private readonly profile = inject(UserProfileService);
   private readonly posAdmin = inject(PosAdminService);
+  private readonly lookup = inject(HeadquarterLookupService);
   readonly session = inject(SessionContextService);
+
+  readonly hqName = this.lookup.name.bind(this.lookup);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
@@ -75,6 +79,7 @@ export class DashboardPageComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    void this.lookup.ensureLoaded();
     this.load();
   }
 

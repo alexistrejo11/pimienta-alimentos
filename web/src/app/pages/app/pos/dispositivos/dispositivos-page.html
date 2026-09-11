@@ -2,19 +2,13 @@
   <app-page-header title="Dispositivos POS" subtitle="Tablets enroladas por sede" />
 
   @if (isAdmin()) {
-    <label class="flex max-w-xs flex-col gap-1 text-sm">
-      <span class="font-medium">Filtrar por sede</span>
-      <select
-        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-        [(ngModel)]="filterHeadquarterId"
-        (ngModelChange)="cargar()"
-      >
-        <option [ngValue]="null">Todas las sedes</option>
-        @for (sede of sedes(); track sede.id) {
-          <option [ngValue]="sede.id">{{ sede.name }}</option>
-        }
-      </select>
-    </label>
+    <app-headquarter-select
+      class="max-w-xs"
+      label="Filtrar por sede"
+      [allowAll]="true"
+      [value]="filterHeadquarterId"
+      (valueChange)="onFilterChange($event)"
+    />
   }
 
   <app-data-state
@@ -41,7 +35,7 @@
             <tr>
               <td class="px-4 py-3 font-mono">{{ d.visibleCode }}</td>
               <td class="px-4 py-3">{{ d.deviceName || '—' }}</td>
-              <td class="px-4 py-3">#{{ d.headquarterId }}</td>
+              <td class="px-4 py-3">{{ hqName(d.headquarterId) }}</td>
               <td class="px-4 py-3">{{ d.appVersion || '—' }}</td>
               <td class="px-4 py-3">{{ d.status }}</td>
               <td class="px-4 py-3 text-right">

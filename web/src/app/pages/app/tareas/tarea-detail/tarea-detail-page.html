@@ -48,20 +48,12 @@
               </select>
             </div>
 
-            <div class="space-y-1.5">
-              <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="task-assignee">
-                ID empleado asignado
-              </label>
-              <input
-                id="task-assignee"
-                type="number"
-                min="1"
-                class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-                [ngModel]="assigneeId()"
-                (ngModelChange)="assigneeId.set($event)"
-                [ngModelOptions]="{ standalone: true }"
-              />
-            </div>
+            <app-employee-select
+              label="Colaborador asignado"
+              nullLabel="Sin asignar"
+              [value]="assigneeId()"
+              (valueChange)="assigneeId.set($event)"
+            />
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">

@@ -18,6 +18,13 @@
   >
     <p class="font-semibold text-red-900 dark:text-red-100">No se pudo cargar la información</p>
     <p class="mt-1 text-sm text-red-800 opacity-90 dark:text-red-200">{{ err.message }}</p>
+    @if (err.fieldErrors.length > 0) {
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-800 dark:text-red-200">
+        @for (fe of err.fieldErrors; track fe.field + fe.message) {
+          <li><span class="font-medium">{{ fe.field }}</span>: {{ fe.message }}</li>
+        }
+      </ul>
+    }
     <button
       type="button"
       class="mt-3 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 active:scale-[0.98]"

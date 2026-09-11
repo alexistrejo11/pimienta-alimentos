@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { finalize } from 'rxjs';
 
+import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { PosSyncIncidentResponse } from '../../../../core/model/pos/pos.dto';
@@ -16,7 +17,10 @@ import { DataStateComponent } from '../../../../shared/ui/data-state/data-state'
 })
 export class IncidenciasPageComponent implements OnInit {
   private readonly posAdmin = inject(PosAdminService);
+  private readonly lookup = inject(HeadquarterLookupService);
   private readonly fb = inject(FormBuilder);
+
+  readonly hqName = this.lookup.name.bind(this.lookup);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
@@ -30,6 +34,7 @@ export class IncidenciasPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    void this.lookup.ensureLoaded();
     this.cargar();
   }
 

@@ -49,9 +49,14 @@ export class PosAdminService {
 
   // ── Operadores ────────────────────────────────────────────────────────────
 
-  listOperators(page = 0, size = 20): Observable<PagedResponse<PosOperatorResponse>> {
-    const params = new HttpParams().set('page', page).set('size', size);
-    return this.http.get<PagedResponse<PosOperatorResponse>>(`${this.base}/operators`, { params });
+  listOperators(params: PosAdminListParams = {}): Observable<PagedResponse<PosOperatorResponse>> {
+    let p = new HttpParams()
+      .set('page', String(params.page ?? 0))
+      .set('size', String(params.size ?? 20));
+    if (params.headquarterId != null) {
+      p = p.set('headquarterId', String(params.headquarterId));
+    }
+    return this.http.get<PagedResponse<PosOperatorResponse>>(`${this.base}/operators`, { params: p });
   }
 
   getOperator(id: number): Observable<PosOperatorResponse> {

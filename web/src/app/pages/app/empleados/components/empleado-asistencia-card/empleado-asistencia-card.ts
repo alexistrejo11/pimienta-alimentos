@@ -8,6 +8,7 @@ import { attendanceStatusLabel } from '../../../../../core/i18n/enum-labels';
 import type { AttendanceResponse, AttendanceStatus } from '../../../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../../../core/model/common/pagination';
 import { DataStateComponent } from '../../../../../shared/ui/data-state/data-state';
+import { HeadquarterSelectComponent } from '../../../../../shared/ui/headquarter-select/headquarter-select';
 
 /**
  * Tarjeta de historial de asistencias de un empleado.
@@ -16,7 +17,7 @@ import { DataStateComponent } from '../../../../../shared/ui/data-state/data-sta
 @Component({
   selector: 'app-empleado-asistencia-card',
   
-  imports: [FormsModule, DataStateComponent],
+  imports: [FormsModule, DataStateComponent, HeadquarterSelectComponent],
   templateUrl: './empleado-asistencia-card.html',
 })
 export class EmpleadoAsistenciaCardComponent implements OnInit {
@@ -40,8 +41,7 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
   readonly actionError = signal<ParsedApiError | null>(null);
   readonly actionSuccess = signal('');
 
-  /** headquarterId default (sin selector de sede en esta tarjeta). */
-  headquarterId = 1;
+  headquarterId: number | null = null;
   checkinPhoto: File | null = null;
   checkoutPhoto: File | null = null;
 
@@ -105,7 +105,23 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
     this.checkoutPhoto = input.files?.[0] ?? null;
   }
 
+  onHeadquarterChange(value: number | number[] | null): void {
+    this.headquarterId = Array.isArray(value) ? value[0] ?? null : value;
+  }
+
   registrarEntrada(): void {
+    if (this.headquarterId == null || this.headquarterId <= 0) {
+      this.actionError.set({
+        message: 'Selecciona la sede donde registras la entrada.',
+        httpStatus: 0,
+        traceId: null,
+        errorCode: null,
+        fieldErrors: [],
+        context: null,
+        rawBody: null,
+      });
+      return;
+    }
     this.actionLoading.set(true);
     this.actionError.set(null);
     this.service

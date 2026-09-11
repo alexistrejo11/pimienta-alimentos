@@ -1,6 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.controller;
 
-import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.EmployeePhotoUrlPresenter;
+import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.AttendanceResponsePresenter;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocAttendanceEndWorkday;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocAttendanceEndWorkdayJsonHidden;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocAttendanceGetById;
@@ -14,7 +14,6 @@ import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.request.StartWorkdayRequest;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.response.AttendanceResponse;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.AttendanceMultipartPayloadReader;
-import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.AttendanceWebMapper;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.command.EndWorkdayCommand;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.command.StartWorkdayCommand;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.query.AttendanceSearchCriteria;
@@ -53,17 +52,17 @@ public class EmployeeAttendanceController {
   private final AttendanceTrackingUseCases attendanceTrackingUseCases;
   private final AttendanceQueryUseCases attendanceQueryUseCases;
   private final AttendanceMultipartPayloadReader attendanceMultipartPayloadReader;
-  private final EmployeePhotoUrlPresenter employeePhotoUrlPresenter;
+  private final AttendanceResponsePresenter attendanceResponsePresenter;
 
   public EmployeeAttendanceController(
       AttendanceTrackingUseCases attendanceTrackingUseCases,
       AttendanceQueryUseCases attendanceQueryUseCases,
       AttendanceMultipartPayloadReader attendanceMultipartPayloadReader,
-      EmployeePhotoUrlPresenter employeePhotoUrlPresenter) {
+      AttendanceResponsePresenter attendanceResponsePresenter) {
     this.attendanceTrackingUseCases = attendanceTrackingUseCases;
     this.attendanceQueryUseCases = attendanceQueryUseCases;
     this.attendanceMultipartPayloadReader = attendanceMultipartPayloadReader;
-    this.employeePhotoUrlPresenter = employeePhotoUrlPresenter;
+    this.attendanceResponsePresenter = attendanceResponsePresenter;
   }
 
   @PostMapping(value = "/{employeeId}/attendance/start-workday", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -123,8 +122,7 @@ public class EmployeeAttendanceController {
     AttendanceSearchCriteria criteria = new AttendanceSearchCriteria(
         employeeId, headquarterId, workDate, workDateFrom, workDateTo, status, onlyOpen);
     Page<Attendance> page = attendanceQueryUseCases.search(criteria, pageable.toPageable());
-    return PagedResponse.map(
-        page, a -> AttendanceWebMapper.toResponse(a, employeePhotoUrlPresenter::present));
+    return attendanceResponsePresenter.toResponsePage(page);
   }
 
   @GetMapping("/attendances/for-today")
@@ -133,8 +131,7 @@ public class EmployeeAttendanceController {
   public PagedResponse<AttendanceResponse> listAttendancesForToday(
       @RequestParam(required = false) Long headquarterId, @ModelAttribute PageableRequest pageable) {
     Page<Attendance> page = attendanceQueryUseCases.listForToday(headquarterId, pageable.toPageable());
-    return PagedResponse.map(
-        page, a -> AttendanceWebMapper.toResponse(a, employeePhotoUrlPresenter::present));
+    return attendanceResponsePresenter.toResponsePage(page);
   }
 
   @GetMapping("/{employeeId}/attendances")
@@ -148,8 +145,7 @@ public class EmployeeAttendanceController {
     Page<Attendance> page =
         attendanceQueryUseCases.listByEmployee(
             employeeId, workDateFrom, workDateTo, pageable.toPageable());
-    return PagedResponse.map(
-        page, a -> AttendanceWebMapper.toResponse(a, employeePhotoUrlPresenter::present));
+    return attendanceResponsePresenter.toResponsePage(page);
   }
 
   @GetMapping("/attendances/{attendanceId}")
@@ -157,7 +153,7 @@ public class EmployeeAttendanceController {
   @DocAttendanceGetById
   public AttendanceResponse getAttendanceById(@PathVariable Long attendanceId) {
     Attendance row = attendanceQueryUseCases.getById(attendanceId);
-    return AttendanceWebMapper.toResponse(row, employeePhotoUrlPresenter::present);
+    return attendanceResponsePresenter.toResponse(row);
   }
 
   private AttendanceResponse startWorkdayInternal(
@@ -166,7 +162,7 @@ public class EmployeeAttendanceController {
     StartWorkdayCommand command =
         new StartWorkdayCommand(employeeId, request.headquarterId(), workDate, checkInEvidencePhoto);
     Attendance saved = attendanceTrackingUseCases.startWorkday(command);
-    return AttendanceWebMapper.toResponse(saved, employeePhotoUrlPresenter::present);
+    return attendanceResponsePresenter.toResponse(saved);
   }
 
   private AttendanceResponse endWorkdayInternal(
@@ -174,6 +170,6 @@ public class EmployeeAttendanceController {
     LocalDate workDate = request.workDate() != null ? request.workDate() : LocalDate.now();
     EndWorkdayCommand command = new EndWorkdayCommand(employeeId, workDate, checkOutEvidencePhoto);
     Attendance saved = attendanceTrackingUseCases.endWorkday(command);
-    return AttendanceWebMapper.toResponse(saved, employeePhotoUrlPresenter::present);
+    return attendanceResponsePresenter.toResponse(saved);
   }
 }

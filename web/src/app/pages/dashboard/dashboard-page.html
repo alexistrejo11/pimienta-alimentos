@@ -45,7 +45,7 @@
             <tbody class="divide-y divide-outline-variant/15">
               @for (row of posSummary(); track row.headquarterId) {
                 <tr>
-                  <td class="px-4 py-3 font-semibold">#{{ row.headquarterId }}</td>
+                  <td class="px-4 py-3 font-semibold">{{ hqName(row.headquarterId) }}</td>
                   <td class="px-4 py-3 tabular-nums">{{ formatCentavos(row.salesCentavos) }}</td>
                   <td class="px-4 py-3 tabular-nums">{{ row.ticketCount }}</td>
                   <td class="px-4 py-3 tabular-nums">{{ row.wasteCount }}</td>

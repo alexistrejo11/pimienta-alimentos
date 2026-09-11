@@ -96,3 +96,22 @@ export function fieldMessage(parsed: ParsedApiError, field: string): string | un
   const match = parsed.fieldErrors.find((f) => f.field === field);
   return match?.message;
 }
+
+/** Human-readable summary from field-level validation errors. */
+export function validationSummary(parsed: ParsedApiError): string {
+  if (parsed.fieldErrors.length === 0) {
+    return parsed.message;
+  }
+  return parsed.fieldErrors.map((f) => `${f.field}: ${f.message}`).join('; ');
+}
+
+/** Message for UI banners: generic summary + field details when present. */
+export function displayApiErrorMessage(parsed: ParsedApiError): string {
+  if (parsed.fieldErrors.length === 0) {
+    return parsed.message;
+  }
+  if (parsed.errorCode === 'VALIDATION_FAILED' || parsed.errorCode === 'CONSTRAINT_VIOLATION') {
+    return validationSummary(parsed);
+  }
+  return parsed.message;
+}

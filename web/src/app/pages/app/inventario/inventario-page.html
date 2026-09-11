@@ -5,18 +5,12 @@
   />
 
   @if (isAdmin()) {
-    <label class="flex max-w-xs flex-col gap-1 text-sm">
-      <span class="font-medium text-on-surface">Sede</span>
-      <select
-        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-        [(ngModel)]="selectedHeadquarterId"
-        (ngModelChange)="onHeadquarterChange()"
-      >
-        @for (sede of sedes(); track sede.id) {
-          <option [ngValue]="sede.id">{{ sede.name }}</option>
-        }
-      </select>
-    </label>
+    <app-headquarter-select
+      class="max-w-xs"
+      label="Sede"
+      [value]="selectedHeadquarterId"
+      (valueChange)="onHeadquarterChange($event)"
+    />
   }
 
   <app-data-state

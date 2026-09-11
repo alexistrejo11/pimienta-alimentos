@@ -13,6 +13,9 @@
   @if (showForm()) {
     <form class="max-w-md ui-panel p-4" [formGroup]="form" (ngSubmit)="crear()">
       <h2 class="font-semibold text-on-surface">Alta de operador</h2>
+
+      <app-api-form-error class="mt-3 block" [error]="submitError()" />
+
       <div class="mt-3 flex flex-col gap-3">
         <label class="flex flex-col gap-1 text-sm">
           <span>Nombre visible</span>
@@ -30,6 +33,17 @@
           <span>PIN (solo escritura)</span>
           <input type="password" class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="pin" />
         </label>
+
+        <app-headquarter-select
+          [mode]="isAdmin() ? 'multi' : 'single'"
+          label="Sedes asignadas"
+          [value]="form.controls.headquarterIds.value"
+          (valueChange)="onHeadquartersChange($event)"
+        />
+        @if (form.controls.headquarterIds.touched && form.controls.headquarterIds.invalid) {
+          <p class="text-xs text-red-700 dark:text-red-300">Selecciona al menos una sede.</p>
+        }
+
         <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" [disabled]="creating()">
           {{ creating() ? 'Creando…' : 'Crear operador' }}
         </button>
@@ -39,7 +53,7 @@
 
   <app-data-state
     [loading]="loading()"
-    [error]="error()"
+    [error]="loadError()"
     [empty]="operators().length === 0"
     emptyMessage="No hay operadores POS."
     (retry)="cargar()"
@@ -59,7 +73,7 @@
             <tr>
               <td class="px-4 py-3">{{ op.displayName }}</td>
               <td class="px-4 py-3">{{ posRoleLabel(op.posRole) }}</td>
-              <td class="px-4 py-3">{{ op.headquarterIds.join(', ') || '—' }}</td>
+              <td class="px-4 py-3">{{ hqNames(op.headquarterIds) }}</td>
               <td class="px-4 py-3">{{ op.active ? 'Sí' : 'No' }}</td>
             </tr>
           }

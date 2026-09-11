@@ -39,6 +39,12 @@ export class EmployeeService {
     return this.http.get<PagedResponse<EmployeeListItemResponse>>(this.base, { params });
   }
 
+  /** Empleados activos — útil para selectores. */
+  listActive(page = 0, size = 100): Observable<PagedResponse<EmployeeListItemResponse>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PagedResponse<EmployeeListItemResponse>>(`${this.base}/active`, { params });
+  }
+
   /** Detalle completo de un empleado por su ID. */
   getById(id: number): Observable<EmployeeResponse> {
     return this.http.get<EmployeeResponse>(`${this.base}/${id}`);

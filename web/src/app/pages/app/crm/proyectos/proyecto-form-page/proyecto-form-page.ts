@@ -12,6 +12,9 @@ import type {
   UpdateProjectRequest,
 } from '../../../../../core/model/crm/project.dto';
 import { PageHeaderComponent } from '../../../../../shared/ui/page-header/page-header';
+import { ClientSelectComponent } from '../../../../../shared/ui/client-select/client-select';
+import { EmployeeSelectComponent } from '../../../../../shared/ui/employee-select/employee-select';
+import { OpportunitySelectComponent } from '../../../../../shared/ui/opportunity-select/opportunity-select';
 
 const TYPES: ProjectType[] = [
   'CONSULTING',
@@ -28,7 +31,14 @@ const PRIORITIES: ProjectPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 @Component({
   selector: 'app-proyecto-form-page',
   
-  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    PageHeaderComponent,
+    ClientSelectComponent,
+    EmployeeSelectComponent,
+    OpportunitySelectComponent,
+  ],
   templateUrl: './proyecto-form-page.html',
 })
 export class ProyectoFormPageComponent implements OnInit {
@@ -66,12 +76,12 @@ export class ProyectoFormPageComponent implements OnInit {
     projectCode: ['', [Validators.required]],
     projectName: ['', [Validators.required]],
     description: [''],
-    clientId: ['', [Validators.required, Validators.min(1)]],
-    originOpportunityId: [''],
+    clientId: this.fb.control<number | null>(null, Validators.required),
+    originOpportunityId: this.fb.control<number | null>(null),
     type: this.fb.nonNullable.control<ProjectType>('CONSULTING', [Validators.required]),
     priority: this.fb.nonNullable.control<ProjectPriority>('MEDIUM', [Validators.required]),
-    projectManagerId: [''],
-    assignedSalesmanId: [''],
+    projectManagerId: this.fb.control<number | null>(null),
+    assignedSalesmanId: this.fb.control<number | null>(null),
     plannedStartDate: [''],
     plannedEndDate: [''],
     contractedValue: ['', [Validators.required, Validators.min(0)]],
@@ -103,12 +113,12 @@ export class ProyectoFormPageComponent implements OnInit {
           projectCode: p.projectCode,
           projectName: p.projectName,
           description: p.description ?? '',
-          clientId: String(p.clientId),
-          originOpportunityId: p.originOpportunityId != null ? String(p.originOpportunityId) : '',
+          clientId: p.clientId,
+          originOpportunityId: p.originOpportunityId,
           type: p.type,
           priority: p.priority,
-          projectManagerId: p.projectManagerId != null ? String(p.projectManagerId) : '',
-          assignedSalesmanId: p.assignedSalesmanId != null ? String(p.assignedSalesmanId) : '',
+          projectManagerId: p.projectManagerId,
+          assignedSalesmanId: p.assignedSalesmanId,
           plannedStartDate: p.plannedStartDate ? p.plannedStartDate.slice(0, 10) : '',
           plannedEndDate: p.plannedEndDate ? p.plannedEndDate.slice(0, 10) : '',
           contractedValue: String(p.contractedValue),
@@ -164,11 +174,10 @@ export class ProyectoFormPageComponent implements OnInit {
 
   private buildCreateBody(): CreateProjectRequest {
     const v = this.form.getRawValue();
-    const clientId = Number(v.clientId);
     const body: CreateProjectRequest = {
       projectCode: this.asText(v.projectCode),
       projectName: this.asText(v.projectName),
-      clientId,
+      clientId: v.clientId!,
       type: v.type,
       priority: v.priority,
       contractedValue: Number(v.contractedValue),
@@ -176,17 +185,14 @@ export class ProyectoFormPageComponent implements OnInit {
     };
     const desc = this.asText(v.description);
     if (desc) body.description = desc;
-    const oid = Number(v.originOpportunityId);
-    if (this.asText(v.originOpportunityId) !== '' && !Number.isNaN(oid) && oid > 0) {
-      body.originOpportunityId = oid;
+    if (v.originOpportunityId != null && v.originOpportunityId > 0) {
+      body.originOpportunityId = v.originOpportunityId;
     }
-    const pm = Number(v.projectManagerId);
-    if (this.asText(v.projectManagerId) !== '' && !Number.isNaN(pm) && pm > 0) {
-      body.projectManagerId = pm;
+    if (v.projectManagerId != null && v.projectManagerId > 0) {
+      body.projectManagerId = v.projectManagerId;
     }
-    const sales = Number(v.assignedSalesmanId);
-    if (this.asText(v.assignedSalesmanId) !== '' && !Number.isNaN(sales) && sales > 0) {
-      body.assignedSalesmanId = sales;
+    if (v.assignedSalesmanId != null && v.assignedSalesmanId > 0) {
+      body.assignedSalesmanId = v.assignedSalesmanId;
     }
     if (this.asText(v.plannedStartDate)) body.plannedStartDate = this.asText(v.plannedStartDate);
     if (this.asText(v.plannedEndDate)) body.plannedEndDate = this.asText(v.plannedEndDate);
@@ -207,12 +213,8 @@ export class ProyectoFormPageComponent implements OnInit {
     else body.plannedStartDate = null;
     if (this.asText(v.plannedEndDate)) body.plannedEndDate = this.asText(v.plannedEndDate);
     else body.plannedEndDate = null;
-    const pm = Number(v.projectManagerId);
-    body.projectManagerId =
-      this.asText(v.projectManagerId) === '' || Number.isNaN(pm) ? null : pm;
-    const sales = Number(v.assignedSalesmanId);
-    body.assignedSalesmanId =
-      this.asText(v.assignedSalesmanId) === '' || Number.isNaN(sales) ? null : sales;
+    body.projectManagerId = v.projectManagerId;
+    body.assignedSalesmanId = v.assignedSalesmanId;
     const prog = Number(v.progressPercent);
     body.progressPercent =
       this.asText(v.progressPercent) === '' || Number.isNaN(prog)

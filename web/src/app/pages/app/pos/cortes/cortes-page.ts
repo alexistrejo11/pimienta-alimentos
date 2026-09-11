@@ -4,54 +4,50 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
-import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import { todayInstantRange } from '../../../../core/pos/pos-date.util';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import type { HeadQuarterResponse } from '../../../../core/model/headquarter/headquarter.dto';
 import type { PosLedgerEventReportResponse } from '../../../../core/model/pos/pos.dto';
+import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 
 @Component({
   selector: 'app-cortes-page',
-  imports: [PageHeaderComponent, DataStateComponent, FormsModule, DatePipe, JsonPipe],
+  imports: [PageHeaderComponent, DataStateComponent, FormsModule, DatePipe, JsonPipe, HeadquarterSelectComponent],
   templateUrl: './cortes-page.html',
 })
 export class CortesPageComponent implements OnInit {
   private readonly posAdmin = inject(PosAdminService);
   private readonly session = inject(SessionContextService);
-  private readonly hqService = inject(HeadquarterService);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly events = signal<PosLedgerEventReportResponse[]>([]);
-  readonly sedes = signal<HeadQuarterResponse[]>([]);
   readonly isAdmin = this.session.isAdmin;
 
   selectedHeadquarterId: number | null = null;
   dateFrom = '';
   dateTo = '';
+  private initialLoad = true;
 
   ngOnInit(): void {
     const range = todayInstantRange();
     this.dateFrom = range.from.slice(0, 10);
     this.dateTo = range.to.slice(0, 10);
 
-    if (this.session.isAdmin()) {
-      this.hqService.list(0, 100).subscribe({
-        next: (page) => {
-          this.sedes.set(page.content);
-          if (page.content.length > 0) {
-            this.selectedHeadquarterId = page.content[0].id;
-            this.cargar();
-          } else {
-            this.loading.set(false);
-          }
-        },
-      });
-    } else {
+    if (!this.session.isAdmin()) {
       this.selectedHeadquarterId = this.session.managerHeadquarterId();
+      this.cargar();
+    } else {
+      this.loading.set(false);
+    }
+  }
+
+  onHeadquarterChange(value: number | number[] | null): void {
+    this.selectedHeadquarterId = typeof value === 'number' ? value : null;
+    if (this.initialLoad && this.selectedHeadquarterId != null) {
+      this.initialLoad = false;
       this.cargar();
     }
   }

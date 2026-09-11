@@ -2,16 +2,12 @@
   <app-page-header title="Cortes de turno" subtitle="Cierres de caja registrados en POS" />
 
   <div class="flex flex-wrap gap-3">
-    @if (isAdmin()) {
-      <label class="flex flex-col gap-1 text-sm">
-        <span class="font-medium">Sede</span>
-        <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [(ngModel)]="selectedHeadquarterId">
-          @for (sede of sedes(); track sede.id) {
-            <option [ngValue]="sede.id">{{ sede.name }}</option>
-          }
-        </select>
-      </label>
-    }
+    <app-headquarter-select
+      class="min-w-[12rem]"
+      label="Sede"
+      [value]="selectedHeadquarterId"
+      (valueChange)="onHeadquarterChange($event)"
+    />
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-medium">Desde</span>
       <input type="date" class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [(ngModel)]="dateFrom" />
