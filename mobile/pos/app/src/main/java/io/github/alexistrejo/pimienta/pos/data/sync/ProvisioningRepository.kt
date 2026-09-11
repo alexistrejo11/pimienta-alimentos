@@ -15,6 +15,8 @@ import java.util.UUID
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import okhttp3.MediaType.Companion.toMediaType
 
+const val PRODUCTION_API_URL = "https://api.pimienta-alimentos.com"
+
 class ProvisioningRepository(private val context: Context, private val provider: PosDatabaseProvider) {
     private val db get() = provider.database(RuntimeMode.PRODUCTION)
     private val credentials = DeviceCredentials(context)

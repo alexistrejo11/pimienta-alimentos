@@ -49,6 +49,7 @@ import kotlinx.coroutines.withContext
 import androidx.core.content.edit
 import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
+import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
 
 // Identifies the visible panel used by portrait tablets during a draft sale.
 internal enum class PortraitPanel { CATALOG, CART }
@@ -128,17 +129,12 @@ private fun PosApp(repository: PosRepository, dark: Boolean, onTheme: (Boolean) 
             Loading("Cargando base de datos...", ::reload)
         } else {
             when {
-                mode == RuntimeMode.PRODUCTION && syncState?.baseUrl == null -> EnrollmentScreen( busy = enrolling, error = enrollError ) { url, code, name, pin ->
+                mode == RuntimeMode.PRODUCTION && syncState?.baseUrl == null -> EnrollmentScreen( busy = enrolling, error = enrollError ) { code, name ->
                     scope.launch {
                         enrolling = true
                         enrollError = null
                         try {
-                            val managerRepository = PosRepository(app.databaseProvider, RuntimeMode.SANDBOX)
-                            val manager = withContext(Dispatchers.IO) {
-                                managerRepository.users().firstOrNull { it.active && (it.role.equals("MANAGER", true) || it.role.equals("SUPERADMIN", true)) }
-                            }
-                            check(manager != null && withContext(Dispatchers.IO) { managerRepository.authenticate(manager.id, pin) }) { "PIN de Manager/Superadmin invalido" }
-                            withContext(Dispatchers.IO) { ProvisioningRepository(context, app.databaseProvider).enroll(url, code, name) }
+                            withContext(Dispatchers.IO) { ProvisioningRepository(context, app.databaseProvider).enroll(PRODUCTION_API_URL, code, name) }
                             reload()
                         } catch (e: Exception) {
                             enrollError = e.message ?: "No fue posible enrolar el dispositivo"

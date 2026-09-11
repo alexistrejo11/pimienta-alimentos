@@ -17,35 +17,30 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
-// Collects technical enrollment data without putting network work in the checkout flow.
+// Collects the one-time enrollment code without exposing technical configuration.
 @Composable
 internal fun EnrollmentScreen(
     busy: Boolean,
     error: String?,
-    onEnroll: (url: String, code: String, name: String, pin: String) -> Unit,
+    onEnroll: (code: String, name: String) -> Unit,
 ) {
-    var url by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("POS Android") }
-    var pin by remember { mutableStateOf("") }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Enrolar dispositivo", style = MaterialTheme.typography.headlineSmall)
-            Text("Configuraci\u00f3n t\u00e9cnica protegida. El cobro seguir\u00e1 funcionando localmente.")
-            OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text("URL del backend") })
+            Text("Ingresa el c\u00f3digo de un solo uso generado en la Web Central.")
             OutlinedTextField(code, { code = it }, Modifier.fillMaxWidth(), label = { Text("C\u00f3digo de enrolamiento") })
             OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Nombre del dispositivo") })
-            OutlinedTextField(pin, { pin = it }, Modifier.fillMaxWidth(), label = { Text("PIN de Manager/Superadmin") }, visualTransformation = PasswordVisualTransformation())
             if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
             Button(
-                enabled = !busy && url.isNotBlank() && code.isNotBlank() && pin.isNotBlank(),
-                onClick = { onEnroll(url.trim(), code.trim(), name.trim(), pin) },
+                enabled = !busy && code.isNotBlank(),
+                onClick = { onEnroll(code.trim(), name.trim()) },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(if (busy) "Enrolando\u2026" else "Enrolar dispositivo") }
         }
