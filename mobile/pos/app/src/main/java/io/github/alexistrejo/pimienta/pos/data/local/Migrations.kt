@@ -77,4 +77,13 @@ object Migrations {
             database.execSQL("CREATE TABLE IF NOT EXISTS `telemetry_event` (`id` TEXT NOT NULL, `schemaVersion` INTEGER NOT NULL, `eventType` TEXT NOT NULL, `level` TEXT NOT NULL, `message` TEXT NOT NULL, `stack` TEXT, `occurredAtEpochMillis` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
         }
     }
+
+    // Adds durable print-attempt diagnostics without changing historical documents.
+    val V7_TO_V8 = object : Migration(7, 8) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `print_job` ADD COLUMN `attemptCount` INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("ALTER TABLE `print_job` ADD COLUMN `lastAttemptAtEpochMillis` INTEGER")
+            database.execSQL("ALTER TABLE `print_job` ADD COLUMN `lastError` TEXT")
+        }
+    }
 }

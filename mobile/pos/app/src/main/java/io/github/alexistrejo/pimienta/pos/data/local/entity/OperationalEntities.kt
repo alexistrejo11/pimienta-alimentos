@@ -38,8 +38,19 @@ import androidx.room.PrimaryKey
     val createdAtEpochMillis: Long = occurredAtEpochMillis,
 )
 
-// Keeps a durable print request even though no printer adapter exists yet.
-@Entity(tableName = "print_job") data class PrintJobEntity(@PrimaryKey val id: String, val saleId: String, val status: String, val duplicate: Boolean, val createdAtEpochMillis: Long, val documentType: String = "SALE", val templateVersion: Int = 1)
+// Keeps a durable print request and the latest delivery diagnostic.
+@Entity(tableName = "print_job") data class PrintJobEntity(
+    @PrimaryKey val id: String,
+    val saleId: String,
+    val status: String,
+    val duplicate: Boolean,
+    val createdAtEpochMillis: Long,
+    val documentType: String = "SALE",
+    val templateVersion: Int = 1,
+    val attemptCount: Int = 0,
+    val lastAttemptAtEpochMillis: Long? = null,
+    val lastError: String? = null,
+)
 
 // Stores every blind count attempt before a manager seals the shift.
 @Entity(tableName = "cash_count_attempt") data class CashCountAttemptEntity(

@@ -182,15 +182,53 @@ físico siguen siendo fases posteriores.
 - [x] Corte Z con conteo ciego, corrección y aprobación.
 - [ ] Pruebas de reglas, Room y UI para las excepciones de Manager.
 
-## Fase 3: periféricos reales
+## Fase 3A: base de periféricos sin hardware
+
+Objetivo: dejar lista una integración verificable con fakes y protocolos puros,
+sin inventar soporte para una marca o modelo que todavía no fue validado.
+
+Incluye:
+
+- contratos de `BarcodeScanner`, `TicketPrinter`, `CashDrawer` y estado de periféricos;
+- separación entre transporte, protocolo ESC/POS y perfil de capacidades;
+- fakes permanentes para scanner, impresora y cajón;
+- encoder ESC/POS puro con plantilla de 58 mm y code page configurable;
+- `PrintWorker` durable que consume `PrintJob` desde Room;
+- estados de impresión, errores clasificables, reintentos y reimpresión duplicada;
+- pruebas unitarias de renderer, perfiles, fakes y recuperación de `PrintJob`;
+- pantalla de Estado conectada a los estados reales de la cola, aunque el
+  transporte físico todavía no exista.
+
+### Checklist de salida
+
+- [x] Contratos de scanner, impresora, cajón y transporte definidos sin Android.
+- [x] `FakeBarcodeScanner` permite inyectar lecturas completas.
+- [x] `FakeTicketPrinter` simula éxito, desconexión, timeout y falta de papel.
+- [x] Encoder ESC/POS probado para 58 mm, importes, acentos y `ñ`.
+- [x] Perfil genérico declara code page, corte y cajón como capacidades.
+- [x] Worker procesa `PENDING`, `PRINTING`, `PRINTED` y `FAILED` sin perder trabajos.
+- [x] Reimpresión crea un trabajo duplicado sin crear otra venta.
+- [ ] Reinicio de aplicación conserva los trabajos pendientes.
+- [ ] La UI muestra pendientes y errores sin bloquear la venta confirmada.
+
+### Criterio de salida
+
+La aplicación puede demostrar, usando fakes, que una venta confirmada genera un
+ticket, que un fallo se reintenta, que una reimpresión no duplica el cobro y que
+el trabajo sobrevive a un reinicio. Esta fase no declara compatibilidad con un
+hardware concreto.
+
+## Fase 3B: periféricos reales
 
 Objetivo: validar la operación sobre hardware antes de integrar cloud.
 
 Incluye:
 
-- lector real por la conexión/protocolo decidido;
-- integración de periféricos conforme a los modelos reales;
-- impresora USB o TCP/IP real;
+- modelos reales de tablet, hub, cargador, lector e impresora confirmados;
+- lector real por la conexión/protocolo validado;
+- transporte USB o TCP/IP real conectado al encoder ESC/POS;
+- perfiles de capacidades para los dispositivos validados;
+- adapter específico solo si el protocolo común no es suficiente;
 - cola durable de impresión, prueba y reimpresión;
 - pruebas de desconexión/reconexión con hub USB-C y alimentación;
 - validación de orientación horizontal, objetivos táctiles y teclado nativo.
@@ -200,7 +238,9 @@ No se habilita Bluetooth como ruta principal salvo que el hardware validado lo r
 ### Checklist de salida
 
 - [ ] Modelos de tablet, lector, impresora, hub, cables y cargador confirmados.
+- [ ] Transporte y protocolo seleccionados para cada periférico validado.
 - [ ] Lector e impresora integrados contra el hardware validado.
+- [ ] Detección asistida, permisos y selección de perfil verificadas.
 - [ ] Impresión, reimpresión y recuperación de desconexión verificadas.
 - [ ] Prueba física de alimentación y tres periféricos simultáneos.
 - [ ] Validación de orientación, objetivos táctiles y comportamiento de teclado/lector.

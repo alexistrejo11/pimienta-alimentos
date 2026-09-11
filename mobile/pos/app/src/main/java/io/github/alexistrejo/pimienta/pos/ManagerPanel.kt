@@ -33,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEnt
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
+import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
+import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.domain.DashboardSummary
@@ -361,11 +364,12 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
     }
 }
 
-// Presents sync and printer placeholders without pretending hardware is connected.
+// Presents durable queue state and the currently available Phase 3A peripheral runtime.
 @Composable
 private fun StatusPanel(pendingEvents: Int, repository: PosRepository, modifier: Modifier) {
     val printJobs = remember { mutableStateOf(emptyList<PrintJobEntity>()) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
     LaunchedEffect(Unit) { printJobs.value = withContext(Dispatchers.IO) { repository.pendingPrintJobs() } }
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -382,15 +386,25 @@ private fun StatusPanel(pendingEvents: Int, repository: PosRepository, modifier:
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Impresión", style = MaterialTheme.typography.titleMedium)
-                    Text("${printJobs.value.size} trabajos pendientes · hardware fuera de esta fase.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    PosButton("Imprimir ticket de prueba", { }, enabled = false)
+                    val failed = printJobs.value.count { it.status == "FAILED" }
+                    Text("${printJobs.value.size} trabajos pendientes · $failed fallidos", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (repository.mode() == RuntimeMode.SANDBOX) "Impresora fake lista · perfil ESC/POS 58 mm"
+                        else "Sin adapter físico configurado · los trabajos permanecen pendientes",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    PosButton("Procesar cola de impresión", { PrintWorker.enqueue(context) })
                     PosButton("Imprimir y abrir cajón", { }, enabled = false)
                 }
             }
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Lector", style = MaterialTheme.typography.titleMedium)
-                    Text("Hardware pendiente de validación.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (repository.mode() == RuntimeMode.SANDBOX) "Fake scanner disponible para pruebas"
+                        else "Scanner físico pendiente de validación",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     PosButton("Probar lectura", { }, enabled = false)
                 }
             }

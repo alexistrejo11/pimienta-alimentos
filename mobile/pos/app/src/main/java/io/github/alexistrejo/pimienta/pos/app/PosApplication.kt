@@ -6,6 +6,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.seed.DebugBootstrapImporter
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
+import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 
 // Owns the two isolated Room databases and starts only the services for the active mode.
 class PosApplication : Application() {
@@ -22,8 +23,12 @@ class PosApplication : Application() {
             RuntimeMode.SANDBOX -> {
                 SyncWorker.cancel(this)
                 DebugBootstrapImporter(this, databaseProvider.database(RuntimeMode.SANDBOX)).importIfNeeded()
+                PrintWorker.enqueue(this)
             }
-            RuntimeMode.PRODUCTION -> SyncWorker.enqueue(this)
+            RuntimeMode.PRODUCTION -> {
+                SyncWorker.enqueue(this)
+                PrintWorker.enqueue(this)
+            }
         }
     }
 

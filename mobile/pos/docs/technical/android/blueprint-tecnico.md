@@ -102,9 +102,19 @@ Aunque el worker se active después, las tablas `outbox_event` y `print_job` se 
 
 ### Fase de periféricos
 
-- primero APIs Android para USB, red TCP/IP o Bluetooth serial según el modelo real;
-- SDK de fabricante solo si la prueba con hardware demuestra que aporta una integración estable;
-- no se agrega una dependencia Bluetooth genérica sin conocer el lector real.
+- Fase 3A: contratos, fakes, encoder ESC/POS, perfiles, estados y worker de
+  impresión, sin depender de un modelo físico.
+- Fase 3B: APIs Android para USB, red TCP/IP o Bluetooth serial únicamente según
+  el hardware validado.
+- El transporte se implementa separado del protocolo: por ejemplo,
+  `TcpPrintTransport` puede enviar ESC/POS por RAW TCP y un transporte USB puede
+  enviar los mismos bytes por endpoints bulk.
+- La detección USB puede identificar VID/PID e interfaces, pero no garantiza que
+  el equipo entienda ESC/POS. La configuración debe confirmar el perfil mediante
+  una prueba de impresión.
+- SDK de fabricante solo si la prueba con hardware demuestra que aporta una
+  integración estable y el transporte/protocolo común no es suficiente.
+- No se agrega una dependencia Bluetooth genérica sin conocer el lector real.
 
 ## Reglas de construcción
 

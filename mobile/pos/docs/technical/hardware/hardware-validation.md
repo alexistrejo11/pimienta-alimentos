@@ -22,6 +22,37 @@ El hub debe transportar datos USB mientras carga la tablet. El puerto PD es
 entrada de energía; no se debe asumir que todos los puertos USB-A entregan la
 misma potencia ni que cualquier hub soporta tres periféricos simultáneos.
 
+## Alcance de la implementación
+
+La integración se divide en transporte, protocolo y perfil:
+
+```text
+TicketPrinter
+      |
+ESC/POS encoder/protocol
+      |
+USB transport ----- TCP RAW transport
+      |
+Printer profile: 58 mm, code page, corte, cajón y pulso opcionales
+```
+
+El transporte solo envía y recibe bytes. El protocolo genera comandos de
+impresión. El perfil declara capacidades o diferencias del equipo. Por esto no
+se implementará inicialmente una clase por marca o modelo: un equipo ESC/POS
+compatible usará un transporte y un perfil genéricos. Un adapter específico
+solo se justificará si el hardware real requiere comandos propietarios, un SDK o
+un comportamiento que el perfil común no pueda expresar.
+
+La Fase 3A puede implementarse sin periféricos físicos. Incluye los contratos
+internos, fakes permanentes, encoder ESC/POS, perfiles, estados de diagnóstico y
+la cola durable de `PrintJob`. La Fase 3B agrega los transportes Android y los
+adaptadores de scanner después de validar los modelos concretos.
+
+La autodetección será asistida, no universal: Android puede identificar un USB
+por VID/PID, clase e interfaces, pero no puede deducir de forma confiable el
+protocolo de cualquier impresora. La app sugerirá una configuración, solicitará
+permisos y exigirá una impresión de prueba antes de guardarla.
+
 ## Requisitos que quedan fijados
 
 - Un solo hub conectado a la tablet.
@@ -31,6 +62,10 @@ misma potencia ni que cualquier hub soporta tres periféricos simultáneos.
 - No se agregará Bluetooth como ruta principal mientras USB cubra el caso.
 - El POS debe mostrar estado de periféricos y conservar trabajos de impresión
   si la impresora no está disponible.
+- Los fakes de scanner, impresora y cajón permanecen como implementaciones de
+  prueba; no se consideran drivers de producción.
+- La primera compatibilidad de producción se limita a lectores USB serial/CDC o
+  HID controlado y a impresoras ESC/POS de 58 mm por USB o TCP/IP RAW.
 - La impresora objetivo usa rollo térmico de 58 mm.
 - La prueba de periféricos debe validar impresión ESC/POS, caracteres españoles
   (acentos y `ñ`) y, si existe un puerto de apertura compatible, el pulso del
@@ -50,7 +85,7 @@ misma potencia ni que cualquier hub soporta tres periféricos simultáneos.
 - Prueba de los tres periféricos conectados durante carga sostenida.
 - Comportamiento después de desconectar/reconectar el hub y reiniciar la tablet.
 
-## Prueba de aceptación de Phase 0
+## Prueba de aceptación de Fase 3B
 
 1. Conectar el hub sin periféricos y verificar que la tablet carga.
 2. Conectar lector y comprobar que Android recibe una lectura como entrada.
@@ -66,3 +101,7 @@ misma potencia ni que cualquier hub soporta tres periféricos simultáneos.
 
 Esta prueba debe ejecutarse antes de implementar drivers específicos. Si el
 lector es HID, la primera integración puede evitar un SDK de fabricante.
+
+La prueba no bloquea el desarrollo de Fase 3A, pero sí bloquea la selección de
+un adapter específico, el perfil de producción y la publicación del soporte de
+ese conjunto de periféricos.

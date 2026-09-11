@@ -40,6 +40,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.*
     @Query("SELECT * FROM cash_withdrawal WHERE shiftId = :shiftId ORDER BY createdAtEpochMillis DESC") fun withdrawals(shiftId: String): List<CashWithdrawalEntity>
     @Query("SELECT * FROM sale WHERE shiftId = :shiftId ORDER BY confirmedAtEpochMillis DESC") fun salesForShift(shiftId: String): List<SaleEntity>
     @Query("SELECT * FROM sale WHERE id = :saleId LIMIT 1") fun sale(saleId: String): SaleEntity?
+    @Query("SELECT * FROM cash_withdrawal WHERE id = :id LIMIT 1") fun withdrawal(id: String): CashWithdrawalEntity?
+    @Query("SELECT * FROM shift_close WHERE id = :id LIMIT 1") fun shiftClose(id: String): ShiftCloseEntity?
     @Query("SELECT * FROM sale_line WHERE saleId = :saleId ORDER BY id") fun linesForSale(saleId: String): List<SaleLineEntity>
     @Query("SELECT * FROM inventory_movement WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun movementsBetween(from: Long, to: Long): List<InventoryMovementEntity>
     @Query("SELECT * FROM sale WHERE confirmedAtEpochMillis BETWEEN :from AND :to ORDER BY confirmedAtEpochMillis DESC") fun salesBetween(from: Long, to: Long): List<SaleEntity>
@@ -47,6 +49,9 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.*
     @Query("SELECT * FROM cash_withdrawal WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun withdrawalsBetween(from: Long, to: Long): List<CashWithdrawalEntity>
     @Query("SELECT * FROM cash_count_attempt WHERE shiftId = :shiftId ORDER BY createdAtEpochMillis DESC") fun cashCounts(shiftId: String): List<CashCountAttemptEntity>
     @Query("SELECT * FROM print_job WHERE status IN ('PENDING', 'FAILED') ORDER BY createdAtEpochMillis DESC") fun pendingPrintJobs(): List<PrintJobEntity>
+    @Query("SELECT * FROM print_job WHERE status IN ('PENDING', 'FAILED') ORDER BY createdAtEpochMillis ASC LIMIT 1") fun nextPrintJob(): PrintJobEntity?
+    @Query("UPDATE print_job SET status = 'PRINTING', attemptCount = attemptCount + 1, lastAttemptAtEpochMillis = :attemptedAt, lastError = NULL WHERE id = :id AND status IN ('PENDING', 'FAILED')") fun markPrintJobPrinting(id: String, attemptedAt: Long): Int
+    @Query("UPDATE print_job SET status = :status, lastError = :error WHERE id = :id") fun finishPrintJob(id: String, status: String, error: String?)
     @Query("SELECT * FROM inventory_movement WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun inventoryMovementsBetween(from: Long, to: Long): List<InventoryMovementEntity>
     @Query("SELECT * FROM inventory_movement ORDER BY createdAtEpochMillis DESC LIMIT 20") fun recentInventoryMovements(): List<InventoryMovementEntity>
     @Query("SELECT COUNT(*) FROM sale_cancellation WHERE shiftId = :shiftId") fun cancellationCountForShift(shiftId: String): Int

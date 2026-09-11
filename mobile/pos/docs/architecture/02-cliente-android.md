@@ -114,6 +114,9 @@ La cola real vive en Room. WorkManager no es la cola ni la fuente de verdad. Sol
 
 ### Escáner
 
+El contrato pertenece al borde de aplicación de hardware. No conoce catálogo,
+carrito ni reglas de venta; solo normaliza lecturas completas.
+
 Contrato conceptual:
 
 ```text
@@ -122,9 +125,25 @@ BarcodeScanner.events
 BarcodeScanner.stop()
 ```
 
-El adaptador normaliza lecturas USB/serial/SPP y entrega cadenas completas, sin hacer consultas de catálogo ni modificar el carrito. El parser de etiquetas de peso es independiente del transporte físico.
+El adaptador normaliza lecturas USB serial/CDC, HID o SPP y entrega cadenas
+completas, sin hacer consultas de catálogo ni modificar el carrito. El parser de
+etiquetas de peso es independiente del transporte físico. Los `Fake` del scanner
+son implementaciones permanentes para pruebas y sandbox, no reemplazos de un
+driver de producción.
 
 ### Impresora
+
+La impresión se divide en tres responsabilidades para evitar un adapter por
+cada marca:
+
+1. El documento estructurado representa una venta, sangría o Corte Z.
+2. El encoder/protocolo ESC/POS convierte el documento en bytes.
+3. El transporte envía esos bytes por USB o TCP/IP.
+
+Los perfiles describen capacidades y variaciones del equipo: ancho de papel,
+code page, corte, apertura de cajón y pulso. Un modelo compatible con ESC/POS
+usa un perfil genérico; solo se crea un adapter o perfil específico si las
+pruebas demuestran comandos propietarios o comportamiento incompatible.
 
 Contrato conceptual:
 
@@ -136,6 +155,12 @@ CashDrawer.open()
 ```
 
 El POS no genera ni guarda archivos PDF, HTML, imágenes ni documentos de ticket. Un renderizador toma los datos estructurados de una venta, sangría o Corte Z y produce comandos ESC/POS en memoria. El `PrintJob` conserva la referencia al documento, plantilla, estado e intentos, pero no persiste el byte array generado.
+
+Los contratos de `TicketPrinter`, `CashDrawer` y `BarcodeScanner` se mantienen
+independientes de `UsbManager`, sockets, SDKs y fabricantes. Los fakes permiten
+probar estados de éxito, desconexión, timeout y falta de papel sin hardware.
+La aplicación debe tener un worker durable que lea `PrintJob` desde Room,
+genere los bytes y actualice el resultado sin revertir la venta.
 
 La impresora objetivo es térmica de **58 mm**. El renderizador debe limitar columnas, alinear importes y adaptar el texto al ancho real del papel. Los nombres, motivos y leyendas deben imprimirse correctamente en español, incluidos acentos y `ñ`; no se debe asumir que la impresora interpreta UTF-8 sin una configuración de página de caracteres compatible. La codificación y code page exactas quedan pendientes de validar con el modelo físico.
 

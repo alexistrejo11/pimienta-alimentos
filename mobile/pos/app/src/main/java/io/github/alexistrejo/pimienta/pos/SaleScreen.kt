@@ -7,7 +7,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
+import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,6 +45,7 @@ internal fun Sale(
     var discountRequested by remember { mutableStateOf(false) }
     var withdrawalRequested by remember { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
@@ -90,6 +93,7 @@ internal fun Sale(
                 discount = null
                 completedFolio = it.folio
                 pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
+                PrintWorker.enqueue(context)
             }
         }
     }
