@@ -69,8 +69,12 @@ Older modules may use `adapter/` instead of `infrastructure/adapter/`, or `outbo
 
 ## Security
 
-- Default: `/api/v1/**` requires JWT (**authenticated**).
-- Edit **`SecurityConfig`** only for new **public** paths or **role-gated** trees (`hasRole("ADMIN")`, etc.). Ordinary staff CRUD needs no new matcher.
+- Default: `/api/v1/**` requires staff JWT with **`ADMIN`** (`anyRequest().hasRole("ADMIN")`).
+- Exceptions (edit **`SecurityConfig`** only for these):
+  - **Public**: auth, health, swagger, POS device enroll/refresh/APK.
+  - **`/api/v1/users/me/**`**: any staff JWT (`staffJwtOnly`).
+  - **`/api/v1/pos/admin/**`** and HQ **`pos-settings` / `pos-catalog`**: `ADMIN` or `MANAGER` (HQ scope via `HeadquarterAccessService`).
+  - **Device** `/api/v1/pos/**`: `SCOPE_pos:sync`.
 - Unauthenticated secured call → **401**; authenticated without permission → **403**.
 
 ## OpenAPI

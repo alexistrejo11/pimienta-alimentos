@@ -12,9 +12,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRequests;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
+import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
 import io.github.alexistrejo11.pimienta.shared.spreadsheet.XlsxTestFiles;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -56,8 +59,20 @@ class HeadquarterIntegrationTest {
   }
 
   @Test
+  void create_nonAdmin_returns403() throws Exception {
+    String token = obtainAccessToken(Set.of());
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                    "/api/v1/headquarters", createBody("HQ-FORBIDDEN", "addr", "desc"))
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
   void create_validation_blankName_returns400() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     mockMvc
         .perform(
             AccountTestRequests.postJson("/api/v1/headquarters", createBody("   ", null, null))
@@ -68,7 +83,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void create_validation_malformedJson_returns400() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     mockMvc
         .perform(
             post("/api/v1/headquarters")
@@ -81,7 +96,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void createListGetByIdGetByNameUpdateExportStatistics_flow() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     String unique = "IT-HQ-" + UUID.randomUUID();
     String createJson =
         """
@@ -163,7 +178,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void getById_notFound_returns404() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/headquarters/999999999", token))
         .andExpect(status().isNotFound())
@@ -172,7 +187,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void getById_invalidPath_returns400() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/headquarters/not-numeric", token))
         .andExpect(status().isBadRequest())
@@ -181,7 +196,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void getByName_notFound_returns404() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     mockMvc
         .perform(
             AccountTestRequests.getBearer(
@@ -195,7 +210,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void softDelete_getByIdStillReturnsRecord_getByNameReturns404() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     String name = "IT-DEL-" + UUID.randomUUID();
     MvcResult created =
         mockMvc
@@ -228,7 +243,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void importHeadquarters_emptyFile_returns400() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     MockMultipartFile file =
         new MockMultipartFile("file", "empty.xlsx", "application/octet-stream", new byte[0]);
 
@@ -242,7 +257,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void importHeadquarters_dryRun_doesNotPersist() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     String name = "IT-HQ-DRY-" + UUID.randomUUID();
     MockMultipartFile file =
         XlsxTestFiles.multipart(
@@ -273,7 +288,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void importHeadquarters_oneInvalidRow_writesNothing() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     String validName = "IT-HQ-OK-" + UUID.randomUUID();
     MockMultipartFile file =
         XlsxTestFiles.multipart(
@@ -304,7 +319,7 @@ class HeadquarterIntegrationTest {
 
   @Test
   void importHeadquarters_blankAddressOnUpdate_keepsExisting() throws Exception {
-    String token = obtainAccessToken();
+    String token = obtainAdminToken();
     String name = "IT-HQ-PATCH-" + UUID.randomUUID();
     MvcResult created =
         mockMvc
@@ -358,7 +373,11 @@ class HeadquarterIntegrationTest {
     return n.longValue();
   }
 
-  private String obtainAccessToken() throws Exception {
+  private String obtainAdminToken() throws Exception {
+    return obtainAccessToken(Set.of(Role.ADMIN));
+  }
+
+  private String obtainAccessToken(Set<Role> roles) throws Exception {
     String email = "it-hq-" + UUID.randomUUID() + "@mail.com";
     String phone =
         "+52"
@@ -377,6 +396,9 @@ class HeadquarterIntegrationTest {
             .findByEmailAndDeletedAtIsNull(email)
             .orElseThrow(() -> new AssertionError("user missing"));
     u.setAccountStatus(AccountStatus.ACTIVE);
+    if (!roles.isEmpty()) {
+      u.setRoles(new LinkedHashSet<>(roles));
+    }
     userJpaRepository.saveAndFlush(u);
 
     MvcResult login =

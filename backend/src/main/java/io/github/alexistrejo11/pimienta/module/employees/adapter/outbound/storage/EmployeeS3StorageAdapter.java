@@ -145,9 +145,18 @@ public class EmployeeS3StorageAdapter implements EmployeeStorageService {
       throw new IllegalArgumentException("File is empty");
     }
 
+    long maxBytes = 2L * 1024 * 1024;
+    if (file.getSize() > maxBytes) {
+      throw new IllegalArgumentException("Image must be at most 2 MB");
+    }
+
     String contentType = file.getContentType();
-    if (contentType == null || !contentType.startsWith("image/")) {
-      throw new IllegalArgumentException("File is not an image");
+    if (contentType == null) {
+      throw new IllegalArgumentException("File must have a Content-Type");
+    }
+    String ct = contentType.toLowerCase().strip();
+    if (!ct.equals("image/jpeg") && !ct.equals("image/jpg") && !ct.equals("image/png")) {
+      throw new IllegalArgumentException("Only JPEG and PNG images are allowed");
     }
 
     String originalName = file.getOriginalFilename();
@@ -161,7 +170,7 @@ public class EmployeeS3StorageAdapter implements EmployeeStorageService {
     String extension = originalName.substring(dot + 1).toLowerCase();
 
     if (!Arrays.asList("jpg", "jpeg", "png").contains(extension)) {
-      throw new IllegalArgumentException("File is not a supported image format");
+      throw new IllegalArgumentException("Only .jpg, .jpeg and .png extensions are allowed");
     }
   }
 

@@ -27,7 +27,7 @@ import org.springframework.http.MediaType;
         """
         Upload `multipart/form-data` with field **file** (`.xlsx`). Query **dryRun=true** validates \
         without writing. Any row error rejects the whole file. Empty file yields **400**. \
-        Rate limit: **SENSITIVE_OPERATIONS**.""")
+        Requires **ROLE_ADMIN**. Rate limit: **SENSITIVE_OPERATIONS**.""")
 @RequestBody(
     required = true,
     description = "Form part **file**: Excel workbook (.xlsx).",
@@ -54,6 +54,13 @@ import org.springframework.http.MediaType;
 @ApiResponse(
     responseCode = "400",
     description = "Empty file or invalid request.",
+    content =
+        @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ApiErrorResponse.class)))
+@ApiResponse(
+    responseCode = "403",
+    description = "Authenticated but missing **ROLE_ADMIN**.",
     content =
         @Content(
             mediaType = "application/json",

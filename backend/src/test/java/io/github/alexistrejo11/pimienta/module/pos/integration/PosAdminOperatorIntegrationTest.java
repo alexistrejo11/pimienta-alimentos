@@ -1,10 +1,12 @@
-package io.github.alexistrejo11.pimienta.module.account.integration;
+package io.github.alexistrejo11.pimienta.module.pos.integration;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRequests;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
@@ -27,93 +29,103 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-class AccountHeadquarterAccessIntegrationTest {
+class PosAdminOperatorIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private UserJpaRepository userJpaRepository;
 
   @Test
-  void managerForbiddenOnOtherHeadquarterPosCatalog() throws Exception {
+  void managerListsOnlyOperatorsForAssignedHeadquarter() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
-    long hq1 = createHeadquarter(admin.token(), "ACL-HQ1-" + UUID.randomUUID());
-    long hq2 = createHeadquarter(admin.token(), "ACL-HQ2-" + UUID.randomUUID());
+    long hq1 = createHeadquarter(admin.token(), "OP-HQ1-" + UUID.randomUUID());
+    long hq2 = createHeadquarter(admin.token(), "OP-HQ2-" + UUID.randomUUID());
+
+    long op1 = createOperator(admin.token(), hq1, "Cajera HQ1");
+    createOperator(admin.token(), hq2, "Cajera HQ2");
 
     TokenPair manager = obtainToken(Set.of(Role.MANAGER));
     assignHeadquarters(admin.token(), manager.userId(), hq1);
 
     mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hq1 + "/pos-catalog", manager.token()))
-        .andExpect(status().isOk());
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/admin/operators?page=0&size=50", manager.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].id").value((int) op1));
 
     mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hq2 + "/pos-catalog", manager.token()))
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/admin/operators/" + op1, manager.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value((int) op1));
+  }
+
+  @Test
+  void managerForbiddenOnOperatorOutsideAssignedHeadquarter() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq1 = createHeadquarter(admin.token(), "OP-ACL1-" + UUID.randomUUID());
+    long hq2 = createHeadquarter(admin.token(), "OP-ACL2-" + UUID.randomUUID());
+    long otherOp = createOperator(admin.token(), hq2, "Other HQ cashier");
+
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    assignHeadquarters(admin.token(), manager.userId(), hq1);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer("/api/v1/pos/admin/operators/" + otherOp, manager.token()))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
   }
 
   @Test
-  void usersMeIncludesAssignedHeadquarterIds() throws Exception {
+  void createOperator_withoutHeadquarterIds_returns400() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
-    long hq1 = createHeadquarter(admin.token(), "ACL-ME-" + UUID.randomUUID());
-    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
-    assignHeadquarters(admin.token(), manager.userId(), hq1);
-
-    mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/users/me", manager.token()))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.assignedHeadquarterIds[0]").value((int) hq1));
-  }
-
-  @Test
-  void managerForbiddenOnInventoryLocations() throws Exception {
-    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
-    long hq1 = createHeadquarter(admin.token(), "ACL-INV1-" + UUID.randomUUID());
-    putPosSettings(admin.token(), hq1);
-
-    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
-    assignHeadquarters(admin.token(), manager.userId(), hq1);
-
     mockMvc
         .perform(
-            AccountTestRequests.getBearer(
-                "/api/v1/inventory/locations?type=POS&page=0&size=20", manager.token()))
-        .andExpect(status().isForbidden());
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/admin/operators",
+                admin.token(),
+                """
+                {
+                  "displayName": "No HQ",
+                  "posRole": "CASHIER",
+                  "pin": "1234",
+                  "headquarterIds": []
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
   }
 
   @Test
-  void managerForbiddenOnInventoryStock() throws Exception {
+  void managerCannotCreateOperatorForOtherHeadquarter() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
-    long hq1 = createHeadquarter(admin.token(), "ACL-STK1-" + UUID.randomUUID());
-    putPosSettings(admin.token(), hq1);
+    long hq1 = createHeadquarter(admin.token(), "OP-CR1-" + UUID.randomUUID());
+    long hq2 = createHeadquarter(admin.token(), "OP-CR2-" + UUID.randomUUID());
 
     TokenPair manager = obtainToken(Set.of(Role.MANAGER));
     assignHeadquarters(admin.token(), manager.userId(), hq1);
 
     mockMvc
         .perform(
-            AccountTestRequests.getBearer("/api/v1/inventory/stock?page=0&size=20", manager.token()))
-        .andExpect(status().isForbidden());
-  }
-
-  @Test
-  void managerForbiddenOnNonPosStaffApis() throws Exception {
-    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
-
-    mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/employees?page=0&size=10", manager.token()))
-        .andExpect(status().isForbidden());
-
-    mockMvc
-        .perform(
-            AccountTestRequests.getBearer(
-                "/api/v1/users/management?page=0&size=10", manager.token()))
-        .andExpect(status().isForbidden());
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/admin/operators",
+                manager.token(),
+                """
+                {
+                  "displayName": "Foreign HQ",
+                  "posRole": "CASHIER",
+                  "pin": "1234",
+                  "headquarterIds": [%d]
+                }
+                """
+                    .formatted(hq2)))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
   }
 
   private record TokenPair(String token, Long userId) {}
 
   private TokenPair obtainToken(Set<Role> roles) throws Exception {
-    String email = "it-acl-" + UUID.randomUUID() + "@mail.com";
+    String email = "it-pos-op-" + UUID.randomUUID() + "@mail.com";
     String phone =
         "+52"
             + String.format(
@@ -153,7 +165,7 @@ class AccountHeadquarterAccessIntegrationTest {
                     "/api/v1/headquarters",
                     token,
                     """
-                    {"name":"%s","address":"Test 1","description":"ACL IT"}
+                    {"name":"%s","address":"Test 1","description":"OP IT"}
                     """
                         .formatted(name)))
             .andExpect(status().isCreated())
@@ -175,21 +187,25 @@ class AccountHeadquarterAccessIntegrationTest {
         .andExpect(status().isOk());
   }
 
-  private void putPosSettings(String token, long hqId) throws Exception {
-    mockMvc
-        .perform(
-            AccountTestRequests.putJsonBearer(
-                "/api/v1/headquarters/" + hqId + "/pos-settings",
-                token,
-                """
-                {
-                  "currency": "MXN",
-                  "catalogStaleWarnHours": 24,
-                  "catalogStaleBlockHours": 72,
-                  "openAmountCategories": ["MISC"],
-                  "defaultNegativeStockLimit": 10
-                }
-                """))
-        .andExpect(status().isOk());
+  private long createOperator(String staffToken, long hqId, String name) throws Exception {
+    MvcResult r =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJsonBearer(
+                    "/api/v1/pos/admin/operators",
+                    staffToken,
+                    """
+                    {
+                      "displayName": "%s",
+                      "posRole": "CASHIER",
+                      "pin": "1234",
+                      "headquarterIds": [%d]
+                    }
+                    """
+                        .formatted(name, hqId)))
+            .andExpect(status().isOk())
+            .andReturn();
+    Number n = JsonPath.read(r.getResponse().getContentAsString(), "$.id");
+    return n.longValue();
   }
 }

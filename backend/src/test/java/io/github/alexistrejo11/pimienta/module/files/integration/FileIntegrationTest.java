@@ -189,8 +189,20 @@ class FileIntegrationTest {
   }
 
   @Test
-  void resourcesUpload_manager_searchAndDownloadUrl_flow() throws Exception {
+  void resourcesUpload_manager_returns403() throws Exception {
     String token = obtainAccessToken(Set.of(Role.MANAGER));
+    mockMvc
+        .perform(
+            multipart("/api/v1/files/resources/upload")
+                .file(tinyFile("r.txt"))
+                .param("module", "employees")
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void resourcesUpload_admin_searchAndDownloadUrl_flow() throws Exception {
+    String token = obtainAccessToken(Set.of(Role.ADMIN));
     String suffix = UUID.randomUUID().toString().substring(0, 8);
     String filename = "it-resource-" + suffix + ".txt";
 

@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -177,10 +176,6 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
   }
 
   private PlannedEmployeeRow planRow(EmployeeImportRow row) {
-    Optional<String> emailMissing = missingEmailForNewEmployee(row);
-    if (emailMissing.isPresent()) {
-      throw new IllegalArgumentException(emailMissing.get());
-    }
     if (row.id() != null) {
       Employee existing = employeeRepository.findById(row.id()).orElse(null);
       if (existing == null) {
@@ -200,8 +195,9 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
     if (row.lastName() == null || row.lastName().isBlank()) {
       throw new IllegalArgumentException("El apellido es obligatorio para altas");
     }
-    ContractType contractType = parseEnumRequired(ContractType.class, row.contractTypeRaw(), "ContractType");
-    WorkShift workShift = parseEnumRequired(WorkShift.class, row.workShiftRaw(), "WorkShift");
+    ContractType contractType =
+        parseEnum(ContractType.class, row.contractTypeRaw(), ContractType.UNDEFINED);
+    WorkShift workShift = parseEnum(WorkShift.class, row.workShiftRaw(), WorkShift.UNDEFINED);
     EmployeeStatus statusParsed = parseStatus(row.statusRaw());
     RegisterEmployeeParams reg = buildRegisterParamsForBulk(row, contractType, workShift);
     return PlannedEmployeeRow.create(row, reg, statusParsed);
@@ -224,17 +220,6 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
     return row.id() == null && (row.firstName() == null || row.firstName().isBlank());
   }
 
-  /** When there is no employee id, email is required. */
-  private static Optional<String> missingEmailForNewEmployee(EmployeeImportRow row) {
-    if (row.id() != null) {
-      return Optional.empty();
-    }
-    if (row.email() == null || row.email().isBlank()) {
-      return Optional.of("Email obligatorio para altas sin ID");
-    }
-    return Optional.empty();
-  }
-
   private void persistStatusIfChanged(Employee employee, EmployeeStatus desired) {
     if (desired == null || desired.equals(employee.getStatus())) {
       return;
@@ -245,10 +230,11 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
 
   private static RegisterEmployeeParams buildRegisterParamsForBulk(
       EmployeeImportRow row, ContractType contractType, WorkShift workShift) {
+    String email = row.email() != null && !row.email().isBlank() ? row.email().trim() : null;
     return RegisterEmployeeParams.builder()
         .firstName(row.firstName().trim())
         .lastName(row.lastName().trim())
-        .email(row.email().trim())
+        .email(email)
         .phone(nz(row.phone(), ""))
         .address(nz(row.address(), ""))
         .curp(nz(row.curp(), ""))
@@ -309,13 +295,6 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
       return existing != null ? existing : "";
     }
     return fromRow.trim();
-  }
-
-  private static <E extends Enum<E>> E parseEnumRequired(Class<E> type, String raw, String field) {
-    if (raw == null || raw.isBlank()) {
-      throw new IllegalArgumentException(field + " es obligatorio para altas");
-    }
-    return parseEnum(type, raw, null);
   }
 
   private static <E extends Enum<E>> E parseEnum(Class<E> type, String raw, E defaultValue) {

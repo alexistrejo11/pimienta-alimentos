@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/notifications/logs")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocNotificationLogs
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+@PreAuthorize("hasRole('ADMIN')")
 public class NotificationLogController {
 
   private final NotificationQueryUseCases notificationQueryUseCases;

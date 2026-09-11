@@ -16,7 +16,8 @@ import java.lang.annotation.Target;
     description =
         """
         Employee lifecycle: search, registration, updates, contract submission, termination/rehire, \
-        position changes, Excel import/export, and statistics. Requires `Authorization: Bearer \
-        <access_token>`. Typical roles: **MANAGER**, **ADMIN**, **HR** (as configured). Not-found \
-        responses use `EMPLOYEE_NOT_FOUND` in `ApiErrorResponse`.""")
+        Excel import/export, and statistics. Requires `Authorization: Bearer <access_token>`. \
+        Reads are available to authenticated staff; create/update/delete/import and lifecycle \
+        mutations require **ROLE_ADMIN**. Not-found responses use `EMPLOYEE_NOT_FOUND` in \
+        `ApiErrorResponse`.""")
 public @interface DocEmployees {}

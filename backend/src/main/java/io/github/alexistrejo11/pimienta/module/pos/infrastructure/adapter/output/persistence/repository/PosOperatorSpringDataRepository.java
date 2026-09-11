@@ -26,6 +26,15 @@ public interface PosOperatorSpringDataRepository extends JpaRepository<PosOperat
 
   @Query(
       """
+      SELECT DISTINCT o FROM PosOperatorJpaEntity o
+      JOIN o.headquarterIds h
+      WHERE h = :headquarterId AND o.deletedAt IS NULL
+      """)
+  Page<PosOperatorJpaEntity> findByHeadquarterIdAndDeletedAtIsNull(
+      @Param("headquarterId") Long headquarterId, Pageable pageable);
+
+  @Query(
+      """
       SELECT o FROM PosOperatorJpaEntity o
       JOIN o.headquarterIds h
       WHERE h = :headquarterId

@@ -31,6 +31,12 @@ public class PosOperatorRepositoryImpl implements PosOperatorRepository {
   }
 
   @Override
+  public Page<PosOperator> findByHeadquarterId(long headquarterId, Pageable pageable) {
+    return jpa.findByHeadquarterIdAndDeletedAtIsNull(headquarterId, pageable)
+        .map(PosOperatorPersistenceMapper::toDomain);
+  }
+
+  @Override
   public List<PosOperator> findByHeadquarterId(long headquarterId) {
     return jpa.findByHeadquarterIdAndDeletedAtIsNull(headquarterId).stream()
         .map(PosOperatorPersistenceMapper::toDomain)

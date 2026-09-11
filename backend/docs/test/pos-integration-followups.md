@@ -15,3 +15,11 @@ No extra follow-ups blocking B6 merge from this pass.
 - Until the first POS CI publish, the endpoint returns `404` / `POS_APK_NOT_FOUND`; the landing CTA shows a soft error rather than a hard failure of the page.
 
 No extra follow-ups blocking this pass.
+
+## 2026-09-11 — Role hardening (operators)
+
+- `GET /api/v1/pos/admin/operators` now filters by HQ for MANAGER (`enforceHeadquarterFilter` + paged `findByHeadquarterId`). Optional `headquarterId` query for ADMIN.
+- `CreatePosOperatorRequest.headquarterIds` is `@NotEmpty` (400 `VALIDATION_FAILED` when missing/empty).
+- `requireOperatorAccess` denies MANAGER when operator HQs do not contain the manager HQ (previously always allowed).
+
+No extra follow-ups from this pass.

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface OperatorManagementUseCases {
 
-  Page<PosOperator> list(Pageable pageable);
+  Page<PosOperator> list(Long headquarterId, Pageable pageable);
 
   PosOperator get(long id);
 

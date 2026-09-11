@@ -96,7 +96,8 @@ pimienta:
     enabled: true
   cors:
     path-pattern: "/**"
-    allowed-origins: ${PIMIENTA_CORS_ALLOWED_ORIGINS}
+    # Comma-separated env value is split in CorsConfig. Do not use a trailing slash.
+    allowed-origins: ${PIMIENTA_CORS_ALLOWED_ORIGINS:http://localhost:4000,http://localhost:4001,http://localhost:3000,http://127.0.0.1:4000,http://127.0.0.1:4001,http://127.0.0.1:3000}
     allowed-methods:
       - GET
       - POST

@@ -31,6 +31,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -93,6 +94,7 @@ public class HeadQuarterController {
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterImport
   public SpreadsheetBulkImportResult importHeadquarters(
@@ -123,6 +125,7 @@ public class HeadQuarterController {
   }
 
   @PostMapping
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocHeadquarterCreate
@@ -133,6 +136,7 @@ public class HeadQuarterController {
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterUpdate
   public HeadQuarterResponse updateHeadquarter(
@@ -144,6 +148,7 @@ public class HeadQuarterController {
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterDelete
   public ResponseEntity<Void> softDeleteHeadquarter(@PathVariable Long id) {

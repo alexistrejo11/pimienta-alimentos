@@ -5,6 +5,7 @@ import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.pa
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeStatistics;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeSummary;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Employee;
+import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.EmployeePhotoUrlPresenter;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.response.DepartmentHeadcountResponse;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.response.EmployeeListItemResponse;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.response.EmployeeResponse;
@@ -13,21 +14,21 @@ import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.request.RegisterEmployeeRequest;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.request.UpdateEmployeeRequest;
 import java.util.List;
-import java.util.function.Function;
 import org.springframework.web.multipart.MultipartFile;
 
 public final class EmployeeManagerWebMapper {
 
-  private EmployeeManagerWebMapper() {
-  }
+  private EmployeeManagerWebMapper() {}
 
   public static EmployeeListItemResponse toListItem(
-      Employee employee, Function<String, String> mapPhotoUrl) {
+      Employee employee, EmployeePhotoUrlPresenter photoPresenter) {
     String rawPhoto = employee.getPersonal().photoUrl();
     return EmployeeListItemResponse.builder()
         .id(employee.getId())
         .fullName(employee.getPersonal().firstName() + " " + employee.getPersonal().lastName())
-        .photoUrl(mapPhotoUrl.apply(rawPhoto != null ? rawPhoto : ""))
+        .photoUrl(
+            photoPresenter.presentProfile(
+                rawPhoto, employee.getPersonal().firstName(), employee.getPersonal().lastName()))
         .email(employee.getPersonal().email())
         .department(employee.getEmployment().department())
         .position(employee.getEmployment().position())
@@ -36,13 +37,16 @@ public final class EmployeeManagerWebMapper {
         .build();
   }
 
-  public static EmployeeResponse toResponse(Employee employee, Function<String, String> mapPhotoUrl) {
+  public static EmployeeResponse toResponse(
+      Employee employee, EmployeePhotoUrlPresenter photoPresenter) {
     String rawPhoto = employee.getPersonal().photoUrl();
     return EmployeeResponse.builder()
         .id(employee.getId())
         .firstName(employee.getPersonal().firstName())
         .lastName(employee.getPersonal().lastName())
-        .photoUrl(mapPhotoUrl.apply(rawPhoto != null ? rawPhoto : ""))
+        .photoUrl(
+            photoPresenter.presentProfile(
+                rawPhoto, employee.getPersonal().firstName(), employee.getPersonal().lastName()))
         .email(employee.getPersonal().email())
         .phone(employee.getPersonal().phone())
         .address(employee.getPersonal().address())
@@ -83,33 +87,37 @@ public final class EmployeeManagerWebMapper {
   }
 
   public static EmployeeSummaryResponse toSummaryResponse(EmployeeSummary summary) {
-    List<DepartmentHeadcountResponse> rows = summary.headcountByDepartment().stream()
-        .map(
-            row -> DepartmentHeadcountResponse.builder()
-                .department(row.department())
-                .headcount(row.headcount())
-                .build())
-        .toList();
+    List<DepartmentHeadcountResponse> rows =
+        summary.headcountByDepartment().stream()
+            .map(
+                row ->
+                    DepartmentHeadcountResponse.builder()
+                        .department(row.department())
+                        .headcount(row.headcount())
+                        .build())
+            .toList();
     return EmployeeSummaryResponse.builder()
         .totalNotDeleted(summary.totalNotDeleted())
         .headcountByDepartment(rows)
         .build();
   }
 
-  public static RegisterEmployeeParams toRegisterParams(RegisterEmployeeRequest request, MultipartFile photo) {
+  public static RegisterEmployeeParams toRegisterParams(
+      RegisterEmployeeRequest request, MultipartFile photo) {
+    String email = blankToNull(request.email());
     return RegisterEmployeeParams.builder()
-        .firstName(request.firstName())
-        .lastName(request.lastName())
-        .email(request.email().trim().toLowerCase())
-        .phone(request.phone())
-        .address(request.address())
-        .curp(request.curp())
-        .rfc(request.rfc())
-        .nss(request.nss())
-        .clabe(request.clabe())
-        .employeeNumber(request.employeeNumber())
-        .position(request.position())
-        .department(request.department())
+        .firstName(request.firstName().trim())
+        .lastName(request.lastName().trim())
+        .email(email != null ? email.toLowerCase() : null)
+        .phone(blankToNull(request.phone()))
+        .address(blankToNull(request.address()))
+        .curp(blankToNull(request.curp()))
+        .rfc(blankToNull(request.rfc()))
+        .nss(blankToNull(request.nss()))
+        .clabe(blankToNull(request.clabe()))
+        .employeeNumber(blankToNull(request.employeeNumber()))
+        .position(blankToNull(request.position()))
+        .department(blankToNull(request.department()))
         .contractType(request.contractType())
         .workShift(request.workShift())
         .salaryPerWeek(request.salaryPerWeek())
@@ -119,21 +127,23 @@ public final class EmployeeManagerWebMapper {
         .build();
   }
 
-  public static UpdateEmployeeParams toUpdateParams(Long id, UpdateEmployeeRequest request, MultipartFile photo) {
+  public static UpdateEmployeeParams toUpdateParams(
+      Long id, UpdateEmployeeRequest request, MultipartFile photo) {
+    String email = blankToNull(request.email());
     return UpdateEmployeeParams.builder()
         .id(id)
-        .firstName(request.firstName())
-        .lastName(request.lastName())
+        .firstName(request.firstName().trim())
+        .lastName(request.lastName().trim())
         .photo(photo)
-        .email(request.email().trim().toLowerCase())
-        .phone(request.phone())
-        .address(request.address())
-        .curp(request.curp())
-        .rfc(request.rfc())
-        .nss(request.nss())
-        .clabe(request.clabe())
-        .position(request.position())
-        .department(request.department())
+        .email(email != null ? email.toLowerCase() : null)
+        .phone(blankToNull(request.phone()))
+        .address(blankToNull(request.address()))
+        .curp(blankToNull(request.curp()))
+        .rfc(blankToNull(request.rfc()))
+        .nss(blankToNull(request.nss()))
+        .clabe(blankToNull(request.clabe()))
+        .position(blankToNull(request.position()))
+        .department(blankToNull(request.department()))
         .contractType(request.contractType())
         .workShift(request.workShift())
         .salaryPerWeek(request.salaryPerWeek())
@@ -141,5 +151,13 @@ public final class EmployeeManagerWebMapper {
         .foodVouchers(request.foodVouchers())
         .integrationFactor(request.integrationFactor())
         .build();
+  }
+
+  private static String blankToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String t = value.trim();
+    return t.isEmpty() ? null : t;
   }
 }

@@ -101,23 +101,21 @@ public class SecurityConfig {
                                                                  .requestMatchers(HEALTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(AUTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(POS_DEVICE_PUBLIC_PATHS).permitAll()
-                                                                .requestMatchers("/actuator/**").hasRole("ADMIN")
-                                                                .requestMatchers("/api/v1/notifications/management/**")
-                                                                .hasRole("ADMIN")
-                                                                .requestMatchers("/api/v1/notifications/logs/**")
-                                                                .hasAnyRole("ADMIN", "MANAGER")
-                                                                .requestMatchers("/api/v1/files/management/**")
-                                                                .hasRole("ADMIN")
-                                                                .requestMatchers("/api/v1/files/resources/**")
-                                                                .hasAnyRole("ADMIN", "MANAGER")
-                                                                .requestMatchers("/api/v1/pos/admin/**")
+                                                                .requestMatchers("/api/v1/users/me", "/api/v1/users/me/**")
                                                                 .access(staffJwtOnly())
+                                                                .requestMatchers("/api/v1/pos/admin/**")
+                                                                .hasAnyRole("ADMIN", "MANAGER")
+                                                                .requestMatchers(
+                                                                                "/api/v1/headquarters/*/pos-settings",
+                                                                                "/api/v1/headquarters/*/pos-settings/**",
+                                                                                "/api/v1/headquarters/*/pos-catalog",
+                                                                                "/api/v1/headquarters/*/pos-catalog/**")
+                                                                .hasAnyRole("ADMIN", "MANAGER")
                                                                 .requestMatchers("/api/v1/pos/**")
                                                                 .hasAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC)
-                                                                .requestMatchers("/api/v1/employees/**")
-                                                                .access(staffJwtOnly())
+                                                                .requestMatchers("/actuator/**").hasRole("ADMIN")
                                                                 .anyRequest()
-                                                                .access(staffJwtOnly()))
+                                                                .hasRole("ADMIN"))
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
                 return http.build();
         }

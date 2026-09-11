@@ -13,6 +13,8 @@ public interface PosOperatorRepository {
 
   Page<PosOperator> findAll(Pageable pageable);
 
+  Page<PosOperator> findByHeadquarterId(long headquarterId, Pageable pageable);
+
   List<PosOperator> findByHeadquarterId(long headquarterId);
 
   /** Soft-deleted operators that still list the headquarter (for deactivate deltas). */

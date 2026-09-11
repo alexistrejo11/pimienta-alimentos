@@ -16,11 +16,14 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inboun
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.PosOperatorResponse;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.UpdatePosOperatorRequest;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.mapper.PosWebMapper;
+import io.github.alexistrejo11.pimienta.shared.exception.ForbiddenException;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
 import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import jakarta.validation.Valid;
+import java.util.Map;
+import java.util.Set;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -53,12 +57,14 @@ public class PosAdminOperatorController {
   @DocPosOperatorList
   public PagedResponse<PosOperatorResponse> list(
       @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @RequestParam(value = "headquarterId", required = false) Long headquarterId,
       @ModelAttribute PageableRequest pageable) {
-    if (headquarterAccessService.isManager(principal) && !headquarterAccessService.isAdmin(principal)) {
-      headquarterAccessService.resolveManagerHeadquarter(principal);
+    Long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
+    if (!headquarterAccessService.isAdmin(principal) && hq == null) {
+      hq = headquarterAccessService.resolveManagerHeadquarter(principal);
     }
     return PagedResponse.map(
-        operatorManagementUseCases.list(pageable.toPageable()), PosWebMapper::toOperatorResponse);
+        operatorManagementUseCases.list(hq, pageable.toPageable()), PosWebMapper::toOperatorResponse);
   }
 
   @GetMapping("/{id}")
@@ -77,10 +83,9 @@ public class PosAdminOperatorController {
   public PosOperatorResponse create(
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @Valid @RequestBody CreatePosOperatorRequest request) {
-    if (request.headquarterIds() != null) {
-      for (Long hqId : request.headquarterIds()) {
-        headquarterAccessService.requireHeadquarterAccess(principal, hqId);
-      }
+    Set<Long> headquarterIds = request.headquarterIds();
+    for (Long hqId : headquarterIds) {
+      headquarterAccessService.requireHeadquarterAccess(principal, hqId);
     }
     PosOperator created =
         operatorManagementUseCases.create(PosWebMapper.toCreateOperatorCommand(request));
@@ -130,7 +135,10 @@ public class PosAdminOperatorController {
     }
     Long managerHq = headquarterAccessService.resolveManagerHeadquarter(principal);
     if (!operator.getHeadquarterIds().contains(managerHq)) {
-      headquarterAccessService.requireHeadquarterAccess(principal, managerHq);
+      throw new ForbiddenException(
+          "Access denied for this operator",
+          Map.of("operatorId", operator.getId(), "headquarterId", managerHq),
+          "manager HQ not assigned to operator");
     }
   }
 }

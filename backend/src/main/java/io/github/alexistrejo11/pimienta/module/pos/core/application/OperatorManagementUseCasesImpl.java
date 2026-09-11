@@ -41,8 +41,11 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
 
   @Override
   @Transactional(readOnly = true)
-  public Page<PosOperator> list(Pageable pageable) {
-    return operatorRepository.findAll(pageable);
+  public Page<PosOperator> list(Long headquarterId, Pageable pageable) {
+    if (headquarterId == null) {
+      return operatorRepository.findAll(pageable);
+    }
+    return operatorRepository.findByHeadquarterId(headquarterId, pageable);
   }
 
   @Override

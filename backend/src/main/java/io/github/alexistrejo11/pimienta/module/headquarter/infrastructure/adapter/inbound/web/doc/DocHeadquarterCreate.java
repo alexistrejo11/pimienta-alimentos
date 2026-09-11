@@ -25,7 +25,8 @@ import java.lang.annotation.Target;
     summary = "Create headquarter",
     description =
         """
-        Registers a new site from **HeadQuarterRequest** (Jakarta format validation on the body).""")
+        Registers a new site from **HeadQuarterRequest** (Jakarta format validation on the body). \
+        Requires **ROLE_ADMIN**.""")
 @RequestBody(
     required = true,
     description = "JSON body; **name** is required. **address** and **description** are optional.",
@@ -65,6 +66,13 @@ import java.lang.annotation.Target;
 @ApiResponse(
     responseCode = "400",
     description = "Validation failed (e.g. blank name) or other bad request.",
+    content =
+        @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ApiErrorResponse.class)))
+@ApiResponse(
+    responseCode = "403",
+    description = "Authenticated but missing **ROLE_ADMIN**.",
     content =
         @Content(
             mediaType = "application/json",

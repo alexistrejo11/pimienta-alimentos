@@ -6,3 +6,7 @@
 - Full lifecycle test exercises: **register** (pending) → **approve** → **login** → management **GET** paths → **roles** → **ban** → blocked login → **unban** → login again → **`GET /api/v1/users/me`** with the target JWT.
 - **`GET /by-email`** with invalid `email` query param is validated via **`HandlerMethodValidationException`** → **`INVALID_ARGUMENT`** (not `VALIDATION_FAILED` on the request body). Tests assert the real behavior.
 - Prefer **`.param("email", value)`** in MockMvc for `by-email`; encoding `@` into the path manually can double-encode (`%2540`).
+
+## 2026-09-11 — Role hardening
+
+- Default secured API is now **`hasRole("ADMIN")`**. `/api/v1/users/management/**` requires ADMIN; `/api/v1/users/me/**` remains any staff JWT. The earlier “any authenticated user” gap above is closed.

@@ -36,7 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/files/resources")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocFileResources
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+@PreAuthorize("hasRole('ADMIN')")
 public class FileResourcesController {
 
   private final FileAssetManagementUseCases managementUseCases;
