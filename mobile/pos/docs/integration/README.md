@@ -10,7 +10,9 @@ decisiones nuevas.
 El backend ya implementa B1–B6: catálogo POS por sede, operadores y
 dispositivos, enrolamiento y refresh, bootstrap, eventos idempotentes, deltas,
 incidencias y reportes. Android mantiene dos espacios Room aislados: `SANDBOX`
-para capacitación sin red y `PRODUCTION` para enrolamiento y sincronización.
+(capacitación / playground) clonado desde `pos-training-bootstrap.json` sin red,
+y `PRODUCTION` para enrolamiento y sincronización. La plantilla de capacitación
+es inmutable; la base scratch se borra y se reimporta al entrar.
 El cliente ya incluye `DeviceApi`, pantalla de enrolamiento, bootstrap/deltas
 y `SyncWorker`; falta el cierre E2E formal del Corte IV / Fase 4.
 

@@ -63,8 +63,10 @@ de cambiar variables de entorno.
 
 ## Nota sobre el backend
 
-En `SANDBOX` el POS usa el contrato local `pos-bootstrap` (seed debug) sin
-red. En `PRODUCTION` el cliente ya habla Device API (enrolamiento,
+En `SANDBOX` el POS clona la plantilla `pos-training-bootstrap.json` en una base
+scratch desechable (`pimienta-pos-training.db`) sin red. El build debug arranca
+en playground pinless con botón para reiniciar datos demo. En `PRODUCTION` el
+cliente ya habla Device API (enrolamiento,
 bootstrap/deltas y eventos). El mapeo histórico en
 [../backend/backend-pos-mapping.md](../backend/backend-pos-mapping.md) es
 referencia; el contrato canónico está en

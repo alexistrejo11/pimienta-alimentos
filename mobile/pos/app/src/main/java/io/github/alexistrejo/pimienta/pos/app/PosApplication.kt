@@ -4,7 +4,7 @@ import android.app.Application
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
-import io.github.alexistrejo.pimienta.pos.data.seed.DebugBootstrapImporter
+import io.github.alexistrejo.pimienta.pos.data.seed.TrainingBootstrapImporter
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 
@@ -22,7 +22,7 @@ class PosApplication : Application() {
         when (databaseProvider.modes.mode()) {
             RuntimeMode.SANDBOX -> {
                 SyncWorker.cancel(this)
-                DebugBootstrapImporter(this, databaseProvider.database(RuntimeMode.SANDBOX)).importIfNeeded()
+                resetTrainingScratch()
                 PrintWorker.enqueue(this)
             }
             RuntimeMode.PRODUCTION -> {
@@ -32,10 +32,31 @@ class PosApplication : Application() {
         }
     }
 
-    fun switchMode(mode: RuntimeMode) {
-        databaseProvider.modes.setMode(mode)
-        if (mode == RuntimeMode.PRODUCTION) SyncWorker.enqueue(this) else SyncWorker.cancel(this)
-        databaseProvider.close()
-        if (mode == RuntimeMode.SANDBOX) DebugBootstrapImporter(this, databaseProvider.database(RuntimeMode.SANDBOX)).importIfNeeded()
+    fun enterTrainingMode() {
+        databaseProvider.modes.setMode(RuntimeMode.SANDBOX)
+        SyncWorker.cancel(this)
+        resetTrainingScratch()
+        PrintWorker.enqueue(this)
+    }
+
+    fun exitTrainingMode() {
+        databaseProvider.modes.setMode(RuntimeMode.PRODUCTION)
+        wipeTrainingScratch()
+        SyncWorker.enqueue(this)
+        PrintWorker.enqueue(this)
+    }
+
+    fun resetTrainingPlayground() {
+        if (databaseProvider.modes.mode() != RuntimeMode.SANDBOX) return
+        resetTrainingScratch()
+    }
+
+    private fun resetTrainingScratch() {
+        val database = databaseProvider.resetTrainingDatabase()
+        TrainingBootstrapImporter(this).resetFromTemplate(database)
+    }
+
+    private fun wipeTrainingScratch() {
+        databaseProvider.resetTrainingDatabase()
     }
 }

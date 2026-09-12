@@ -1,7 +1,7 @@
 # Convert the real deprecated catalog into the local POS bootstrap contract.
 param(
     [string]$Source = "docs\technical\data\deprecated_product_data.json",
-    [string]$Destination = "app\src\debug\assets\pos-bootstrap.json"
+    [string]$Destination = "app\src\main\assets\pos-training-bootstrap.json"
 )
 
 $ErrorActionPreference = "Stop"

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "kind": "pos-bootstrap",
-  "environment": "debug",
-  "snapshotId": "real-catalog-debug-001",
+  "environment": "training",
+  "snapshotId": "training-catalog-001",
   "generatedAt": "2026-09-05T20:45:50.4757505Z",
   "site": {
     "id": "site-debug-001",

@@ -39,10 +39,13 @@ si no se puede reconstruir alguno, queda bloqueado y nunca se elimina.
    instalación sin bootstrap válido. Un POS ya enrolado puede iniciar offline.
 3. Guardar identidad y tokens de forma atómica, descargar bootstrap y aplicar
    su proyección a Room en una transacción.
-4. Mantener el seed en `SANDBOX` como espacio de capacitación: convierte sus
-   campos decimales/`users` al modelo Room, nunca agenda sincronización ni envía
-   eventos. Producción usa una base Room separada y el contrato remoto canónico
-   usa centavos/`operators`.
+4. Mantener la plantilla `pos-training-bootstrap.json` (en `main/assets`) como
+   fuente inmutable de capacitación: al entrar a `SANDBOX` se borra
+   `pimienta-pos-training.db` y se clona la plantilla; nunca agenda
+   sincronización ni envía eventos. Producción usa una base Room separada y el
+   contrato remoto canónico usa centavos/`operators`. En release enrolado, el
+   cambio a capacitación exige PIN de Manager/Superadmin de producción; en debug
+   el playground es pinless y puede reiniciar la plantilla.
 5. Ante 401/403, detener worker y pedir reenrolamiento; ante 409 del cursor,
    conservar hechos y ejecutar bootstrap de maestros.
 

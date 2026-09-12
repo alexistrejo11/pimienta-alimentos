@@ -22,11 +22,12 @@ en [02-fases-y-checklists.md](02-fases-y-checklists.md).
 ### Caja local (núcleo Fase 1)
 
 - Proyecto Android nativo con Kotlin, Compose y un único módulo `:app`.
-- Modos `SANDBOX` (seed debug, sin red) y `PRODUCTION` (enrolamiento + sync).
-- Catálogo real convertido a seed debug en `app/src/debug/assets/pos-bootstrap.json`.
+- Modos `SANDBOX` (capacitación/playground, sin red) y `PRODUCTION` (enrolamiento + sync).
+- Plantilla de capacitación en `app/src/main/assets/pos-training-bootstrap.json`
+  (empaquetada en debug y release); la DB scratch se resetea al entrar.
 - Room/SQLite con entidades de sede, catálogo, usuarios, dispositivo, turno,
   venta, líneas, pagos, descuentos, movimientos, sangrías, Outbox y PrintJob.
-- Importación atómica e idempotente del bootstrap debug.
+- Importación atómica de la plantilla de capacitación (`TrainingBootstrapImporter`).
 - Apertura de turno, autenticación local por PIN y venta por unidad.
 - Efectivo con cambio, tarjeta externa registrada manualmente y confirmación
   atómica (venta, snapshots, pago, inventario controlado, Outbox, PrintJob).

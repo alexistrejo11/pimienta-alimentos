@@ -13,8 +13,11 @@ modelo local ni la experiencia de venta.
 - `available` indica si puede venderse; `stock` no decide por sí solo la
   disponibilidad de productos `NOT_CONTROLLED`.
 - En esta versión todas las ventas usan unidad `PIECE`.
-- Los PIN incluidos son exclusivamente de debug y no son credenciales reales.
-- El snapshot debug vive en `src/debug/assets` y nunca se empaqueta en release.
+- Los PIN incluidos son exclusivamente de capacitación y no son credenciales reales.
+- La plantilla de capacitación vive en `app/src/main/assets/pos-training-bootstrap.json`
+  y se empaqueta en debug y release. La base scratch (`pimienta-pos-training.db`) se
+  borra y se clona desde esa plantilla al entrar a capacitación; la plantilla nunca se
+  escribe.
 
 ## Forma mínima
 

@@ -30,8 +30,8 @@ Una tablet enrolada obtiene el bootstrap desde el backend y aplica el snapshot e
 ```text
 Modelo/datos existentes del backend
             ↓ exportación sanitizada y revisable
-pos-bootstrap.json para debug
-            ↓ importador Room de debug
+pos-training-bootstrap.json (main/assets)
+            ↓ TrainingBootstrapImporter (reset al entrar)
 Base local de emulador/tablet de desarrollo
 ```
 

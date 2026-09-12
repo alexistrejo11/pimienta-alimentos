@@ -25,7 +25,7 @@ No se construye UI de negocio todavía. Esta fase evita que Room, DTOs o drivers
 - [x] Identificar módulos backend relacionados con sede, inventario y usuarios.
 - [x] Registrar el mapeo preliminar y sus incompatibilidades.
 - [x] Definir el contrato local debug para categorías de venta, precio efectivo y disponibilidad por unidad.
-- [x] Definir un snapshot `pos-bootstrap` versionado y mantenerlo fuera de producción mediante `src/debug/assets`.
+- [x] Definir un snapshot `pos-training-bootstrap` versionado en `src/main/assets` para capacitación en debug y release.
 - [x] Convertir el catálogo legacy a un seed reproducible con escenarios de stock normal, bajo, cero, negativo y no controlado.
 - [x] Añadir usuarios de demostración con roles POS separados de datos reales.
 - [x] Añadir importador debug y Room sobre el contrato local.

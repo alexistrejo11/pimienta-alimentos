@@ -11,7 +11,7 @@ La conversión reproducible está en:
 .\scripts\convert-legacy-products.ps1
 ```
 
-Su salida es `app/src/debug/assets/pos-bootstrap.json`.
+Su salida es `app/src/main/assets/pos-training-bootstrap.json`.
 
 La conversión actual:
 

@@ -43,6 +43,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
+import io.github.alexistrejo.pimienta.pos.domain.TrainingModePolicy
 import io.github.alexistrejo.pimienta.pos.ui.theme.PosTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -125,17 +126,46 @@ private fun PosApp(repository: PosRepository, scanner: BarcodeScanner, dark: Boo
         }
     }
 
-    fun switchMode(target: RuntimeMode, pin: String) {
+    val enrolled = TrainingModePolicy.isEnrolled(app.databaseProvider)
+    val requiresPinForSwitch = TrainingModePolicy.requiresPinForModeSwitch(isEnrolled = enrolled)
+
+    fun switchMode(target: RuntimeMode, pin: String?) {
         scope.launch {
-            val managerRepository = if (users.isNotEmpty()) repository else PosRepository(app.databaseProvider, RuntimeMode.SANDBOX)
-            val manager = withContext(Dispatchers.IO) {
-                managerRepository.users().firstOrNull { it.active && (it.role.equals("MANAGER", true) || it.role.equals("SUPERADMIN", true)) }
+            if (shift != null) {
+                notice = "Cierra el turno antes de cambiar de modo"
+                return@launch
             }
-            val valid = withContext(Dispatchers.IO) { manager != null && managerRepository.authenticate(manager.id, pin) }
-            if (!valid) { notice = "PIN de Manager/Superadmin invalido"; return@launch }
-            if (shift != null) { notice = "Cierra el turno antes de cambiar de modo"; return@launch }
-            app.switchMode(target)
+            if (requiresPinForSwitch) {
+                val productionRepository = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION)
+                val manager = withContext(Dispatchers.IO) {
+                    productionRepository.users().firstOrNull {
+                        it.active && (it.role.equals("MANAGER", true) || it.role.equals("SUPERADMIN", true))
+                    }
+                }
+                val valid = withContext(Dispatchers.IO) {
+                    manager != null && productionRepository.authenticate(manager.id, pin ?: "")
+                }
+                if (!valid) {
+                    notice = "PIN de Manager/Superadmin invalido"
+                    return@launch
+                }
+            }
+            withContext(Dispatchers.IO) {
+                if (target == RuntimeMode.SANDBOX) app.enterTrainingMode() else app.exitTrainingMode()
+            }
             (context as? ComponentActivity)?.recreate()
+        }
+    }
+
+    fun resetTrainingDemo() {
+        scope.launch {
+            if (shift != null) {
+                notice = "Cierra el turno antes de reiniciar los datos demo"
+                return@launch
+            }
+            withContext(Dispatchers.IO) { app.resetTrainingPlayground() }
+            initialized = false
+            reload()
         }
     }
 
@@ -147,9 +177,15 @@ private fun PosApp(repository: PosRepository, scanner: BarcodeScanner, dark: Boo
     }
 
     Column {
-        RuntimeModeBanner(mode, ::switchMode)
+        RuntimeModeBanner(
+            mode = mode,
+            isDebug = BuildConfig.DEBUG,
+            requiresPinForSwitch = requiresPinForSwitch,
+            onSwitchRequested = ::switchMode,
+            onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
+        )
         if (!initialized) {
-            Loading("Cargando base de datos...", ::reload)
+            Loading(loadingMessage(mode, null), ::reload)
         } else {
             when {
                 mode == RuntimeMode.PRODUCTION && syncState?.baseUrl == null -> EnrollmentScreen( busy = enrolling, error = enrollError ) { code, name ->
@@ -164,7 +200,7 @@ private fun PosApp(repository: PosRepository, scanner: BarcodeScanner, dark: Boo
                         } finally { enrolling = false }
                     }
                 }
-                users.isEmpty() || products.isEmpty() -> Loading(notice, ::reload)
+                users.isEmpty() || products.isEmpty() -> Loading(loadingMessage(mode, notice), ::reload)
                 shift == null && managerReadOnly != null -> ManagerReadOnlyPanel(managerReadOnly!!, repository) { managerReadOnly = null }
                 shift == null -> Access(users, repository, notice, { shift = it }, { notice = it }) { managerReadOnly = it }
                 else -> Sale(
@@ -186,9 +222,15 @@ private fun PosApp(repository: PosRepository, scanner: BarcodeScanner, dark: Boo
 // Small immutable tuple used to load the active database state together.
 private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
-// Waits for the debug bootstrap without blocking the Compose UI thread.
+private fun loadingMessage(mode: RuntimeMode, notice: String?): String = notice ?: when (mode) {
+    RuntimeMode.SANDBOX ->
+        if (BuildConfig.DEBUG) "Preparando playground de desarrollo…" else "Preparando plantilla de capacitación…"
+    RuntimeMode.PRODUCTION -> "Cargando datos de producción…"
+}
+
+// Waits for the training template import without blocking the Compose UI thread.
 @Composable
-private fun Loading(notice: String?, reload: () -> Unit) {
+private fun Loading(message: String?, reload: () -> Unit) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -203,7 +245,7 @@ private fun Loading(notice: String?, reload: () -> Unit) {
             Text("Pimienta POS", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(12.dp))
             Text(
-                notice ?: "Preparando datos locales de demostración…",
+                message ?: "Preparando datos locales…",
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -263,7 +305,7 @@ private fun Access(
                             busy = true
                             val result = withContext(Dispatchers.IO) {
                                 val cash = Money.fromInput(opening) ?: -1
-    when {
+                                when {
                                     cash < 0 -> Result.failure<ShiftEntity>(IllegalArgumentException("Ingresa un fondo inicial válido."))
                                     !repository.authenticate(user.id, pin) -> Result.failure<ShiftEntity>(IllegalArgumentException("El PIN no corresponde al perfil seleccionado."))
                                     else -> repository.openShift(user.id, cash)?.let { Result.success(it) }

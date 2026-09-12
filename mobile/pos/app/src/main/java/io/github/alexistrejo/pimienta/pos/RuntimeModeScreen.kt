@@ -19,22 +19,62 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 
-// Shows the active data space and protects mode changes with a manager PIN.
+// Shows the active data space and gates mode changes according to build and enrollment.
 @Composable
-internal fun RuntimeModeBanner(mode: RuntimeMode, onSwitchRequested: (RuntimeMode, String) -> Unit) {
+internal fun RuntimeModeBanner(
+    mode: RuntimeMode,
+    isDebug: Boolean,
+    requiresPinForSwitch: Boolean,
+    onSwitchRequested: (RuntimeMode, String?) -> Unit,
+    onResetDemo: (() -> Unit)? = null,
+) {
     var open by remember { mutableStateOf(false) }
     var pin by remember { mutableStateOf("") }
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(if (mode == RuntimeMode.SANDBOX) "Modo capacitaci\u00f3n" else "Modo producci\u00f3n", color = MaterialTheme.colorScheme.primary)
-        Button(onClick = { open = true }) { Text("Cambiar modo") }
+    val label = when {
+        mode == RuntimeMode.SANDBOX && isDebug -> "Playground desarrollo"
+        mode == RuntimeMode.SANDBOX -> "Modo capacitaci\u00f3n"
+        else -> "Modo producci\u00f3n"
+    }
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.primary)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (mode == RuntimeMode.SANDBOX && isDebug && onResetDemo != null) {
+                Button(onClick = onResetDemo) { Text("Reiniciar datos demo") }
+            }
+            Button(onClick = { pin = ""; open = true }) { Text("Cambiar modo") }
+        }
     }
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
             title = { Text("Cambiar espacio de datos") },
-            text = { OutlinedTextField(pin, { pin = it }, label = { Text("PIN de Manager/Superadmin") }, visualTransformation = PasswordVisualTransformation()) },
+            text = {
+                if (requiresPinForSwitch) {
+                    OutlinedTextField(
+                        pin,
+                        { pin = it },
+                        label = { Text("PIN de Manager/Superadmin") },
+                        visualTransformation = PasswordVisualTransformation(),
+                    )
+                } else {
+                    Text(
+                        if (mode == RuntimeMode.SANDBOX) {
+                            "Volver a modo producci\u00f3n."
+                        } else {
+                            "Entrar a capacitaci\u00f3n con datos de plantilla. La base de producci\u00f3n no se modifica."
+                        },
+                    )
+                }
+            },
             confirmButton = {
-                Button(onClick = { onSwitchRequested(if (mode == RuntimeMode.SANDBOX) RuntimeMode.PRODUCTION else RuntimeMode.SANDBOX, pin); open = false }) {
+                Button(onClick = {
+                    val target = if (mode == RuntimeMode.SANDBOX) RuntimeMode.PRODUCTION else RuntimeMode.SANDBOX
+                    onSwitchRequested(target, if (requiresPinForSwitch) pin else null)
+                    open = false
+                }) {
                     Text("Continuar")
                 }
             },
