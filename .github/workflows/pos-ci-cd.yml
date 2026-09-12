@@ -154,14 +154,17 @@ jobs:
             exit 1
           fi
 
-          cat > current.json <<EOF
-{
-  "versionName": "${VERSION_NAME}",
-  "versionCode": ${VERSION_CODE},
-  "s3Key": "${POS_APK_KEY}",
-  "uploadedAt": "${UPLOADED_AT}"
-}
-EOF
+          jq -n \
+            --arg versionName "$VERSION_NAME" \
+            --argjson versionCode "$VERSION_CODE" \
+            --arg s3Key "$POS_APK_KEY" \
+            --arg uploadedAt "$UPLOADED_AT" \
+            '{
+              versionName: $versionName,
+              versionCode: $versionCode,
+              s3Key: $s3Key,
+              uploadedAt: $uploadedAt
+            }' > current.json
 
           aws s3 cp "$APK_PATH" "s3://${AWS_S3_BUCKET_NAME}/${POS_APK_KEY}" \
             --content-type application/vnd.android.package-archive
