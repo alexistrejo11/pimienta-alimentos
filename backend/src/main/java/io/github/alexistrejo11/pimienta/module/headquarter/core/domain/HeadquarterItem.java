@@ -14,6 +14,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
 
   private Long headquarterId;
   private Long itemId;
+  private Long posSaleCategoryId;
   private String saleCategory;
   private BigDecimal salePrice;
   private boolean available;
@@ -24,6 +25,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
     this.id = 0L;
     this.headquarterId = 0L;
     this.itemId = 0L;
+    this.posSaleCategoryId = 0L;
     this.saleCategory = "";
     this.salePrice = BigDecimal.ZERO;
     this.available = true;
@@ -39,6 +41,10 @@ public class HeadquarterItem extends BaseDomain<Long> {
 
   public Long getItemId() {
     return itemId;
+  }
+
+  public Long getPosSaleCategoryId() {
+    return posSaleCategoryId;
   }
 
   public String getSaleCategory() {
@@ -78,6 +84,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
     private Long id;
     private Long headquarterId;
     private Long itemId;
+    private Long posSaleCategoryId;
     private String saleCategory;
     private BigDecimal salePrice;
     private Boolean available;
@@ -100,6 +107,11 @@ public class HeadquarterItem extends BaseDomain<Long> {
 
     public SafeBuilder withItemId(Long itemId) {
       this.itemId = itemId;
+      return this;
+    }
+
+    public SafeBuilder withPosSaleCategoryId(Long posSaleCategoryId) {
+      this.posSaleCategoryId = posSaleCategoryId;
       return this;
     }
 
@@ -153,6 +165,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
       h.id = id != null ? id : 0L;
       h.headquarterId = headquarterId != null ? headquarterId : 0L;
       h.itemId = itemId != null ? itemId : 0L;
+      h.posSaleCategoryId = posSaleCategoryId != null ? posSaleCategoryId : 0L;
       h.saleCategory = saleCategory != null ? saleCategory.strip() : "";
       h.salePrice = salePrice != null ? salePrice : BigDecimal.ZERO;
       h.available = available == null || available;

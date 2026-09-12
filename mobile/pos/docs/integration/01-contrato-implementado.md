@@ -1,6 +1,8 @@
 # Contrato implementado de Device API
 
-Estado: **implementado en Spring Boot; pendiente de cliente Android**.
+Estado: **implementado en Spring Boot y en el cliente Android
+(`PRODUCTION`)**. El cierre formal E2E y el checklist de Fase 4 siguen
+abiertos; ver [../implementation/00-estado-actual.md](../implementation/00-estado-actual.md).
 
 ## Autoridad y formatos
 

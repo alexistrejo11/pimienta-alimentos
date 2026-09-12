@@ -34,6 +34,9 @@ public class HeadquarterItemJpaEntity {
   @Column(name = "item_id", nullable = false)
   private Long itemId;
 
+  @Column(name = "pos_sale_category_id", nullable = false)
+  private Long posSaleCategoryId;
+
   @Column(name = "sale_category", nullable = false, length = 64)
   private String saleCategory;
 
@@ -89,6 +92,14 @@ public class HeadquarterItemJpaEntity {
 
   public String getSaleCategory() {
     return saleCategory;
+  }
+
+  public Long getPosSaleCategoryId() {
+    return posSaleCategoryId;
+  }
+
+  public void setPosSaleCategoryId(Long posSaleCategoryId) {
+    this.posSaleCategoryId = posSaleCategoryId;
   }
 
   public void setSaleCategory(String saleCategory) {

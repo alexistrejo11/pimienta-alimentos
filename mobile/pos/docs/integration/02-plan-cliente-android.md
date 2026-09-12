@@ -3,6 +3,12 @@
 Objetivo: conectar el POS local-first al Device API sin introducir una ruta de
 cobro dependiente de red ni tocar hardware.
 
+**Estado (2026-09-11):** los cortes I–III están sustancialmente implementados
+en código (`DeviceCredentials`, envelope de Outbox, enrolamiento,
+`SyncWorker`, bootstrap/deltas). El Corte IV (validación E2E y recuperación)
+sigue abierto. Este documento conserva el plan original; el tracking de
+avance vive en [../implementation/](../implementation/).
+
 ## Corte I — contrato local durable
 
 Migrar Room antes de cualquier llamada HTTP.

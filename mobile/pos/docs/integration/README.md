@@ -5,12 +5,14 @@ de implementación de la integración. La documentación histórica de backend e
 `backend/docs/v2/pos_integration/` no debe actualizarse ni usarse para tomar
 decisiones nuevas.
 
-## Estado comprobado — 2026-09-08
+## Estado comprobado — 2026-09-11
 
 El backend ya implementa B1–B6: catálogo POS por sede, operadores y
 dispositivos, enrolamiento y refresh, bootstrap, eventos idempotentes, deltas,
 incidencias y reportes. Android mantiene dos espacios Room aislados: `SANDBOX`
 para capacitación sin red y `PRODUCTION` para enrolamiento y sincronización.
+El cliente ya incluye `DeviceApi`, pantalla de enrolamiento, bootstrap/deltas
+y `SyncWorker`; falta el cierre E2E formal del Corte IV / Fase 4.
 
 ## Documentos
 

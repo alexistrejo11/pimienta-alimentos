@@ -1,4 +1,46 @@
 import type { PosDeviceStatus, PosRole, StockPolicy } from './pos.enums';
+import type { ItemCategory, ItemUnit } from '../inventory/inventory.enums';
+
+export interface PosSaleCategoryResponse {
+  id: number;
+  headquarterId: number;
+  name: string;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface CreatePosProductRequest {
+  name: string;
+  description?: string;
+  costPrice: number;
+  salePrice: number;
+  category?: ItemCategory;
+  unit: ItemUnit;
+  brand?: string;
+  barcode?: string;
+  reorderPoint: number;
+  reorderQuantity: number;
+  posSaleCategoryId: number;
+  available?: boolean;
+  stockPolicy?: StockPolicy;
+  negativeStockLimit?: number | null;
+}
+
+export interface CreatedPosProductResponse {
+  id: number;
+  sku: string;
+  name: string;
+  barcode: string | null;
+  category: ItemCategory;
+  unit: ItemUnit;
+  costPrice: number;
+  salePrice: number;
+  headquarterId: number;
+  posSaleCategoryId: number;
+  saleCategory: string;
+  available: boolean;
+  stockPolicy: StockPolicy;
+}
 
 /** GET/PUT /api/v1/headquarters/{id}/pos-settings */
 export interface PosSettingsResponse {

@@ -63,5 +63,9 @@ de cambiar variables de entorno.
 
 ## Nota sobre el backend
 
-El POS puede continuar con su contrato local `pos-bootstrap`; el mapeo del
-backend actual queda como referencia futura y no bloquea Phase 1.
+En `SANDBOX` el POS usa el contrato local `pos-bootstrap` (seed debug) sin
+red. En `PRODUCTION` el cliente ya habla Device API (enrolamiento,
+bootstrap/deltas y eventos). El mapeo histórico en
+[../backend/backend-pos-mapping.md](../backend/backend-pos-mapping.md) es
+referencia; el contrato canónico está en
+[../../integration/01-contrato-implementado.md](../../integration/01-contrato-implementado.md).

@@ -72,6 +72,7 @@ class DebugBootstrapImporter(private val context: Context, private val database:
         stock = getString("stock"),
         stockMin = getString("stockMin"),
         stockPolicy = getString("stockPolicy"),
+        negativeStockLimit = null,
         legacyUpdatedAt = if (has("legacyUpdatedAt")) getLong("legacyUpdatedAt") else null
     )
 

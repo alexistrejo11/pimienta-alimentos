@@ -50,6 +50,8 @@ import androidx.core.content.edit
 import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
+import io.github.alexistrejo.pimienta.pos.hardware.FakeBarcodeScanner
+import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
 
 // Identifies the visible panel used by portrait tablets during a draft sale.
 internal enum class PortraitPanel { CATALOG, CART }
@@ -84,6 +86,7 @@ private fun PosApp(repository: PosRepository, dark: Boolean, onTheme: (Boolean) 
     val context = LocalContext.current
     val app = context.applicationContext as PosApplication
     val mode = repository.mode()
+    val scanner: BarcodeScanner? = remember { if (BuildConfig.DEBUG) FakeBarcodeScanner() else null }
     var users by remember { mutableStateOf<List<LocalUserEntity>>(emptyList()) }
     var products by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
     var shift by remember { mutableStateOf<ShiftEntity?>(null) }
@@ -153,6 +156,7 @@ private fun PosApp(repository: PosRepository, dark: Boolean, onTheme: (Boolean) 
                     dark = dark,
                     onTheme = onTheme,
                     onShiftClosed = { shift = null },
+                    scanner = scanner,
                 )
             }
         }

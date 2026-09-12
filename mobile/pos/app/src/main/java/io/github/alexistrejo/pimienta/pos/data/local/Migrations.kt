@@ -86,4 +86,14 @@ object Migrations {
             database.execSQL("ALTER TABLE `print_job` ADD COLUMN `lastError` TEXT")
         }
     }
+
+    // Makes supplier barcodes optional and stores the effective negative-stock limit.
+    val V8_TO_V9 = object : Migration(8, 9) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `product_new` (`id` TEXT NOT NULL, `legacyId` TEXT, `sku` TEXT NOT NULL, `barcode` TEXT, `legacyBarcode` TEXT, `name` TEXT NOT NULL, `saleCategory` TEXT NOT NULL, `unit` TEXT NOT NULL, `price` TEXT NOT NULL, `cost` TEXT NOT NULL, `available` INTEGER NOT NULL, `stock` TEXT NOT NULL, `stockMin` TEXT NOT NULL, `stockPolicy` TEXT NOT NULL, `negativeStockLimit` INTEGER, `legacyUpdatedAt` INTEGER, PRIMARY KEY(`id`))")
+            database.execSQL("INSERT INTO `product_new` (`id`, `legacyId`, `sku`, `barcode`, `legacyBarcode`, `name`, `saleCategory`, `unit`, `price`, `cost`, `available`, `stock`, `stockMin`, `stockPolicy`, `negativeStockLimit`, `legacyUpdatedAt`) SELECT `id`, `legacyId`, `sku`, NULLIF(`barcode`, ''), `legacyBarcode`, `name`, `saleCategory`, `unit`, `price`, `cost`, `available`, `stock`, `stockMin`, `stockPolicy`, NULL, `legacyUpdatedAt` FROM `product`")
+            database.execSQL("DROP TABLE `product`")
+            database.execSQL("ALTER TABLE `product_new` RENAME TO `product`")
+        }
+    }
 }

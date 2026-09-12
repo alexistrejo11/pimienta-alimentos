@@ -69,7 +69,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
             db.syncDao().saveState(current.copy(changesCursor = changes.nextCursor, lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
         }
     }
-    private fun ProductDto.toProduct() = ProductEntity(id, null, sku, barcode ?: "", null, name, saleCategory, unit, BigDecimal.valueOf(priceCentavos, 2).toPlainString(), BigDecimal.valueOf(costCentavos, 2).toPlainString(), available, stockQuantity, stockMinQuantity, stockPolicy, null)
+    private fun ProductDto.toProduct() = ProductEntity(id, null, sku, barcode, null, name, saleCategory, unit, BigDecimal.valueOf(priceCentavos, 2).toPlainString(), BigDecimal.valueOf(costCentavos, 2).toPlainString(), available, stockQuantity, stockMinQuantity, stockPolicy, negativeStockLimit, null)
     private fun OperatorDto.toUser() = LocalUserEntity(id, displayName, role, pinHash, active)
     private fun SiteDto.toSite() = SiteEntity(id, name, address, currency)
 
@@ -86,7 +86,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
             db.userDao().clear()
             db.siteDao().insert(SiteEntity(snapshot.site.id, snapshot.site.name, snapshot.site.address, snapshot.site.currency))
             db.productDao().insertAll(snapshot.products.map { p ->
-                ProductEntity(p.id, null, p.sku, p.barcode ?: "", null, p.name, p.saleCategory, p.unit, BigDecimal.valueOf(p.priceCentavos, 2).toPlainString(), BigDecimal.valueOf(p.costCentavos, 2).toPlainString(), p.available, p.stockQuantity, p.stockMinQuantity, p.stockPolicy, null)
+                ProductEntity(p.id, null, p.sku, p.barcode, null, p.name, p.saleCategory, p.unit, BigDecimal.valueOf(p.priceCentavos, 2).toPlainString(), BigDecimal.valueOf(p.costCentavos, 2).toPlainString(), p.available, p.stockQuantity, p.stockMinQuantity, p.stockPolicy, p.negativeStockLimit, null)
             })
             db.userDao().insertAll(snapshot.operators.map { LocalUserEntity(it.id, it.displayName, it.role, it.pinHash, it.active) })
             db.bootstrapDao().insert(BootstrapEntity(snapshot.snapshotId, snapshot.schemaVersion, System.currentTimeMillis()))

@@ -9,7 +9,7 @@ data class ProductEntity(
     @PrimaryKey val id: String,
     val legacyId: String?,
     val sku: String,
-    val barcode: String,
+    val barcode: String?,
     val legacyBarcode: String?,
     val name: String,
     val saleCategory: String,
@@ -20,5 +20,6 @@ data class ProductEntity(
     val stock: String,
     val stockMin: String,
     val stockPolicy: String,
+    val negativeStockLimit: Int?,
     val legacyUpdatedAt: Long?
 )

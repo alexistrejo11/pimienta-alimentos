@@ -8,6 +8,9 @@ import type {
   HeadquarterPosCatalogItemResponse,
   PosSettingsRequest,
   PosSettingsResponse,
+  PosSaleCategoryResponse,
+  CreatePosProductRequest,
+  CreatedPosProductResponse,
 } from '../model/pos/pos.dto';
 import type { PagedResponse } from '../model/common/pagination';
 
@@ -48,5 +51,18 @@ export class PosCatalogService {
       `${this.hqBase}/${headquarterId}/pos-catalog/${itemId}`,
       body,
     );
+  }
+
+  listCategories(headquarterId: number, includeInactive = false): Observable<PosSaleCategoryResponse[]> {
+    const params = new HttpParams().set('includeInactive', includeInactive);
+    return this.http.get<PosSaleCategoryResponse[]>(`${this.hqBase}/${headquarterId}/pos-categories`, { params });
+  }
+
+  createCategory(headquarterId: number, name: string, displayOrder = 0): Observable<PosSaleCategoryResponse> {
+    return this.http.post<PosSaleCategoryResponse>(`${this.hqBase}/${headquarterId}/pos-categories`, { name, displayOrder });
+  }
+
+  createPosProduct(headquarterId: number, body: CreatePosProductRequest): Observable<CreatedPosProductResponse> {
+    return this.http.post<CreatedPosProductResponse>(`${this.hqBase}/${headquarterId}/pos-products`, body);
   }
 }

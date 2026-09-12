@@ -58,6 +58,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun syncState() = database.syncDao().state()
     fun users() = database.userDao().activeUsers()
     fun products() = database.productDao().getAll()
+    fun findProductByCode(code: String): ProductEntity? = database.productDao().findByCode(code.trim())
     fun activeShift() = database.operationsDao().activeShift()
     fun pendingEvents() = database.operationsDao().pendingEventCount()
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }

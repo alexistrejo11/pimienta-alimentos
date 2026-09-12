@@ -51,6 +51,11 @@ public class ItemRepositoryImpl implements ItemRepository {
   }
 
   @Override
+  public String nextInternalSku() {
+    return jpaRepository.nextInternalSku();
+  }
+
+  @Override
   public boolean existsBySkuIgnoreCaseExcludingId(String sku, Long excludeId) {
     if (sku == null || sku.isBlank()) {
       return false;

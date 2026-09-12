@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
+import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
 import io.github.alexistrejo.pimienta.pos.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,6 +27,7 @@ internal fun Sale(
     dark: Boolean,
     onTheme: (Boolean) -> Unit,
     onShiftClosed: () -> Unit,
+    scanner: BarcodeScanner? = null,
 ) {
     val scope = rememberCoroutineScope()
     var cart by remember { mutableStateOf<List<CartLine>>(emptyList()) }
@@ -54,7 +56,7 @@ internal fun Sale(
     val categories = listOf("Todos") + products.map { it.saleCategory }.distinct()
     val filtered = products.filter {
         (category == "Todos" || it.saleCategory == category) &&
-            (it.name.contains(search, true) || it.barcode.contains(search, true))
+            (it.name.contains(search, true) || it.sku.contains(search, true) || it.barcode?.contains(search, true) == true)
     }
 
     fun add(product: ProductEntity) {
@@ -76,6 +78,19 @@ internal fun Sale(
             checkout = false
             portraitPanel = PortraitPanel.CART
             scope.launch { feedbackHost.showSnackbar("Se agregó ${product.name}. Total actualizado.") }
+        }
+    }
+
+    fun addFromScanner(product: ProductEntity) { add(product) }
+
+    // Starts the scanner and sends exact reads through the same catalog resolver as search.
+    LaunchedEffect(scanner) {
+        scanner ?: return@LaunchedEffect
+        scanner.start()
+        scanner.events.collect { read ->
+            val code = read.rawValue.trim()
+            val product = withContext(Dispatchers.IO) { repository.findProductByCode(code) }
+            if (product != null) addFromScanner(product) else feedbackHost.showSnackbar("Código no encontrado: $code")
         }
     }
 

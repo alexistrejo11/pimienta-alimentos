@@ -22,6 +22,9 @@ public interface ItemJpaRepository
 
   boolean existsBySkuIgnoreCaseAndIdNot(String sku, Long id);
 
+  @Query(value = "select next_internal_item_sku()", nativeQuery = true)
+  String nextInternalSku();
+
   @Query("""
       select case when count(e) > 0 then true else false end from ItemJpaEntity e
       where e.barcode is not null

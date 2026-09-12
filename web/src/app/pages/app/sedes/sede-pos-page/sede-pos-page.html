@@ -42,7 +42,14 @@
       </section>
 
       <section class="mt-6 ui-panel p-6">
-        <h2 class="font-headline text-lg font-bold text-on-surface">Catálogo surtido</h2>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="font-headline text-lg font-bold text-on-surface">Catálogo surtido</h2>
+            <p class="mt-1 text-sm text-on-surface-variant">Los productos nuevos reciben un SKU interno automáticamente.</p>
+          </div>
+          <a [routerLink]="['/app/sedes', headquarterId(), 'pos', 'nuevo']" class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary">Nuevo producto POS</a>
+          <button type="button" class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold" (click)="printCatalogLabels()">Imprimir etiquetas</button>
+        </div>
         <div class="mt-4 flex flex-wrap gap-2">
           <input
             class="rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"
@@ -54,13 +61,19 @@
             Agregar producto
           </button>
         </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" placeholder="Nueva categoría de venta" [(ngModel)]="newCategoryName" [ngModelOptions]="{ standalone: true }" />
+          <button type="button" class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold" (click)="createCategory()" [disabled]="creatingCategory()">{{ creatingCategory() ? 'Creando…' : 'Crear categoría' }}</button>
+        </div>
 
         @if (editingItemId(); as editId) {
           <form class="mt-4 grid gap-3 rounded-lg border border-stone-200 p-4 sm:grid-cols-2 dark:border-stone-700" [formGroup]="catalogForm" (ngSubmit)="saveCatalogItem(editId)">
             <p class="sm:col-span-2 text-sm font-semibold">Configurar: {{ itemName(editId) }}</p>
             <label class="flex flex-col gap-1 text-sm">
               <span>Categoría venta</span>
-              <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="saleCategory" />
+              <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="saleCategory">
+                @for (category of saleCategories(); track category.id) { <option [value]="category.name">{{ category.name }}</option> }
+              </select>
             </label>
             <label class="flex flex-col gap-1 text-sm">
               <span>Precio venta sede</span>
@@ -89,9 +102,10 @@
         <div class="mt-4 overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="border-b border-outline-variant/20 bg-surface-container-low">
-              <tr>
-                <th class="px-3 py-2 text-left">Producto</th>
-                <th class="px-3 py-2 text-left">Categoría</th>
+                <tr>
+                  <th class="px-3 py-2 text-left">Producto</th>
+                 <th class="px-3 py-2 text-left">SKU</th>
+                 <th class="px-3 py-2 text-left">Categoría</th>
                 <th class="px-3 py-2 text-left">Precio</th>
                 <th class="px-3 py-2 text-left">Disponible</th>
                 <th class="px-3 py-2"></th>
@@ -101,11 +115,12 @@
               @for (row of catalog(); track row.id) {
                 <tr>
                   <td class="px-3 py-2">{{ itemName(row.itemId) }}</td>
+                  <td class="px-3 py-2 font-mono text-xs">{{ itemSku(row.itemId) }}</td>
                   <td class="px-3 py-2">{{ row.saleCategory }}</td>
                   <td class="px-3 py-2 tabular-nums">${{ row.salePrice }}</td>
                   <td class="px-3 py-2">{{ row.available ? 'Sí' : 'No' }}</td>
-                  <td class="px-3 py-2 text-right">
-                    <button type="button" class="text-sm font-semibold text-primary" (click)="startEditCatalog(row)">Editar</button>
+                   <td class="px-3 py-2 text-right">
+                     <button type="button" class="mr-3 text-sm font-semibold text-primary" (click)="printItemLabel(row)">Etiqueta</button><button type="button" class="text-sm font-semibold text-primary" (click)="startEditCatalog(row)">Editar</button>
                   </td>
                 </tr>
               }

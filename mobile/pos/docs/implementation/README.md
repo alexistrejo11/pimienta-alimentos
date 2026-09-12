@@ -7,10 +7,13 @@ para cerrar cada fase.
 ## Punto de entrada
 
 - [Estado actual](00-estado-actual.md): qué está implementado, qué está en
-  curso y cuál es el siguiente corte.
+  curso y cuál es el siguiente corte (revisión 2026-09-11).
 - [Alcance y entregables](01-alcance-y-entregables.md)
 - [Fases y checklists](02-fases-y-checklists.md)
 - [Validación y pruebas](03-validacion-y-pruebas.md)
+
+La integración Device API tiene tracking propio en
+[../integration/](../integration/), alineado con este tablero.
 
 ## Documentos
 

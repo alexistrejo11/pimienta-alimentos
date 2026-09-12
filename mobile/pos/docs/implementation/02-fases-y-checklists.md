@@ -39,7 +39,10 @@ No se construye UI de negocio todavía. Esta fase evita que Room, DTOs o drivers
 
 Objetivo: una cajera puede abrir turno, vender y confirmar efectivo sin red usando datos reales/sanitizados.
 
-**Estado:** en curso. El flujo principal demostrable existe localmente; faltan pruebas automatizadas de Room/UI, historial y validación manual en tablet.
+**Estado:** núcleo operativo listo; cierre formal pendiente. El historial y la
+reimpresión viven en el panel Manager (Fase 2) y ya funcionan sobre Room.
+Faltan folio previo al cobro, guardias de carrito, pruebas Room/Compose y
+guion manual.
 
 ### Alcance y trabajo realizado
 
@@ -48,6 +51,8 @@ Objetivo: una cajera puede abrir turno, vender y confirmar efectivo sin red usan
 - Se construyó la vista de venta en español: catálogo filtrable, carrito editable, cobro de efectivo con numpad/billetes/cambio y registro manual de tarjeta externa.
 - La vista se adapta a orientación horizontal y vertical, y ofrece comparación persistente de tema claro/oscuro solo en `debug`.
 - La confirmación crea de manera atómica venta, snapshots de líneas/precios, pago, movimientos de inventario controlado, Outbox y trabajo de impresión pendiente.
+- El folio se asigna y persiste al confirmar; la etiqueta de carrito aún no muestra el próximo número.
+- Historial del turno y reimpresión de venta están disponibles desde Manager (no como pantalla aislada de Fase 1).
 - Se añadió cobertura unitaria para conversión y formato de importes exactos; la compilación `:app:compileDebugKotlin` fue verificada.
 
 ### Checklist de salida
@@ -61,8 +66,11 @@ Objetivo: una cajera puede abrir turno, vender y confirmar efectivo sin red usan
 - [x] Folio, venta, pagos, movimientos, Outbox y PrintJob creados atómicamente al confirmar.
 - [x] Estado visible de operación pendiente y tema claro/oscuro de demostración.
 - [x] Prueba unitaria de importes exactos y compilación de la aplicación.
-- [ ] Mostrar el próximo folio antes de confirmar y cubrir la advertencia de producto que se deshabilita durante un carrito activo.
-- [ ] Historial local básico y reimpresión pendiente.
+- [x] Historial local básico del turno (vía panel Manager).
+- [x] Reimpresión pendiente sin modificar venta, pago ni folio.
+- [ ] Mostrar el próximo folio antes de confirmar.
+- [ ] Cubrir la advertencia/guardia de producto que se deshabilita durante un carrito activo (línea cobrable; no aumentar cantidad).
+- [ ] Mostrar en historial el estado local de impresión y sincronización por venta.
 - [ ] Pruebas instrumentadas Room para transacción, unicidad, migración y persistencia tras reinicio.
 - [ ] Pruebas de interfaz Compose para el happy path y cancelación de intento de pago.
 - [ ] Guion manual en emulador y tablet para orientación, objetivos táctiles y recuperación tras reinicio.
@@ -76,15 +84,13 @@ Fase 1 no se considera terminada hasta completar estos puntos:
 2. **Carrito ante cambios de catálogo:** si un producto se deshabilita después
    de entrar al carrito, la línea existente puede cobrarse, pero no puede
    aumentarse ni agregarse a otro carrito sin autorización.
-3. **Historial local:** consultar ventas del dispositivo/turno y mostrar su
-   estado local de impresión y sincronización.
-4. **Reimpresión pendiente:** crear y reintentar un trabajo de impresión sin
-   modificar la venta, el pago ni el folio original.
-5. **Persistencia Room:** probar transacción de venta, unicidad de folio y
+3. **Historial enriquecido:** mostrar en cada venta del turno su estado local
+   de impresión y sincronización.
+4. **Persistencia Room:** probar transacción de venta, unicidad de folio y
    eventos, migración y recuperación después de reiniciar la aplicación.
-6. **Pruebas Compose:** cubrir agregar producto, editar carrito, cobro en
+5. **Pruebas Compose:** cubrir agregar producto, editar carrito, cobro en
    efectivo, cambio y cancelación de intento de pago.
-7. **Validación manual:** ejecutar el flujo en emulador y tablet, incluyendo
+6. **Validación manual:** ejecutar el flujo en emulador y tablet, incluyendo
    orientación, objetivos táctiles, reinicio y recuperación de estado pendiente.
 
 ### Criterio de salida de Fase 1
@@ -106,6 +112,10 @@ el comprobante y el arqueo nunca queden desalineados.
 ## Fase 2: operación local de Manager
 
 Objetivo: completar la operación de turno y excepciones que no dependen del backend.
+
+**Estado:** núcleo persistente implementado (panel, Corte Z, inventario,
+historial, descuentos, sangrías). Faltan monto abierto, producto pendiente de
+catálogo, reimpresión de sangría en UI, autorización PIN genérica y pruebas.
 
 Incluye:
 
@@ -137,20 +147,17 @@ persistente e inmutable, no como un contador editable.
   autorización, trabajo de impresión y evento de outbox. El total se deriva
   de los registros confirmados y resta del efectivo esperado del Corte Z.
 
-### Subcorte en curso: operación parcial de Manager
+### Estado del panel Manager
 
-Este subcorte permite evaluar la UX antes de implementar las transacciones de
-Fase 2. Desde Caja se solicita PIN de Manager/Superadmin para abrir el panel
-local sin cambiar el cajero ni perder el carrito. El panel presenta Caja y
-Corte Z (incluye la consulta de sangrías), Inventario, Historial y Estado, con navegación lateral en horizontal
-y selector compacto en vertical.
+Desde Caja se solicita PIN de Manager/Superadmin para abrir el panel local sin
+cambiar el cajero ni perder el carrito. El panel presenta Dashboard, Corte Z
+(incluye la consulta de sangrías), Inventario, Historial y Estado, con
+navegación lateral en horizontal y selector compacto en vertical.
 
-**Estado actual:** el panel consulta Room y persiste sus operaciones locales.
-El Corte Z crea intentos de conteo, permite corrección con motivo y aprobación
-por PIN; inventario registra reposiciones/mermas; historial permite
-reimpresión y cancelación de efectivo; y los trabajos de impresión quedan en
-cola durable. La generación ESC/POS, el worker de sincronización y el hardware
-físico siguen siendo fases posteriores.
+**Estado actual:** el panel consulta Room y **persiste** sus operaciones
+locales. Corte Z, inventario, historial (reimpresión/cancelación), sangrías y
+descuentos ya escriben hechos, Outbox y PrintJob. ESC/POS + PrintWorker
+(Fase 3A) y SyncWorker (Fase 4) ya existen; el hardware físico (3B) no.
 
 #### Checklist del panel operativo
 
@@ -168,17 +175,17 @@ físico siguen siendo fases posteriores.
 
 ### Checklist de salida
 
-- [ ] Autorización genérica por PIN y evidencia de autorizador.
+- [ ] Autorización genérica por PIN y evidencia de autorizador (hoy hay diálogos PIN repetidos por flujo).
 - [ ] Monto abierto con categoría, importe y autorización por línea.
 - [ ] Producto pendiente de catálogo con barcode crudo, importe y ausencia de movimiento de inventario.
 - [x] Descuento único parcial o total autorizado y persistido con la venta.
-- [x] Reposición, merma, historial, reimpresión y cancelación de efectivo.
-- [ ] Sangría de resguardo persistente, auditable y con outbox/PrintJob pendiente; falta reimpresión operativa y sincronización real.
+- [x] Reposición, merma, historial, reimpresión de venta y cancelación de efectivo.
+- [x] Sangría de resguardo persistente, auditable y con outbox/PrintJob pendiente.
 - [x] Modal de sangría en Modo Venta: importe positivo, motivo fijo y PIN de
   Manager/Superadmin, sin exponer total ni historial al cajero.
 - [x] Consulta de sangrías en Modo Manager/Admin: cantidad, total y detalle
   por turno, sin acciones de creación o edición.
-- [ ] Reimpresión operativa de comprobantes de sangría.
+- [ ] Reimpresión operativa de comprobantes de sangría desde la UI de Manager.
 - [x] Corte Z con conteo ciego, corrección y aprobación.
 - [ ] Pruebas de reglas, Room y UI para las excepciones de Manager.
 
@@ -186,6 +193,10 @@ físico siguen siendo fases posteriores.
 
 Objetivo: dejar lista una integración verificable con fakes y protocolos puros,
 sin inventar soporte para una marca o modelo que todavía no fue validado.
+
+**Estado:** pipeline core listo (contratos, fakes, ESC/POS, PrintWorker).
+Pendiente cablear scanner a la venta, endurecer UI de Estado y pruebas de
+reinicio; PRODUCTION sigue sin impresora real.
 
 Incluye:
 
@@ -208,8 +219,9 @@ Incluye:
 - [x] Perfil genérico declara code page, corte y cajón como capacidades.
 - [x] Worker procesa `PENDING`, `PRINTING`, `PRINTED` y `FAILED` sin perder trabajos.
 - [x] Reimpresión crea un trabajo duplicado sin crear otra venta.
-- [ ] Reinicio de aplicación conserva los trabajos pendientes.
-- [ ] La UI muestra pendientes y errores sin bloquear la venta confirmada.
+- [ ] Reinicio de aplicación conserva los trabajos pendientes (Room los guarda; falta prueba automatizada/manual explícita).
+- [ ] La UI de Estado muestra pendientes y errores accionables; el scanner fake aún no está cableado a la venta.
+- [ ] En PRODUCTION no se declara impresora real: `UnavailableTicketPrinter` hasta Fase 3B.
 
 ### Criterio de salida
 
@@ -249,6 +261,13 @@ No se habilita Bluetooth como ruta principal salvo que el hardware validado lo r
 
 Objetivo: convertir la cola existente en integración cloud idempotente.
 
+**Estado:** cliente Android sustancialmente implementado en modo
+`PRODUCTION` (`DeviceApi`, enrolamiento, bootstrap/deltas, `SyncWorker` y
+outbox). El contrato backend está documentado en
+[../integration/01-contrato-implementado.md](../integration/01-contrato-implementado.md).
+Falta cierre formal: E2E contra Spring Boot local, UX de sync confiable y
+proyección central completa de eventos no-venta (lado servidor).
+
 Incluye:
 
 - enrolamiento de dispositivo y credenciales;
@@ -261,11 +280,13 @@ Incluye:
 
 ### Checklist de salida
 
-- [ ] Contrato remoto de bootstrap y eventos aprobado.
-- [ ] Enrolamiento, credenciales y bootstrap/deltas implementados.
-- [ ] Drenado idempotente de Outbox con reintentos y orden por dispositivo.
-- [ ] Manejo de `ACCEPTED`, `DUPLICATE`, `REQUIRES_REVIEW` y bloqueo técnico.
-- [ ] Pruebas de contrato Android ↔ Spring Boot y reportes web con datos sincronizados.
+- [x] Contrato remoto de bootstrap y eventos documentado e implementado en Spring Boot.
+- [x] Enrolamiento, credenciales y bootstrap/deltas implementados en el cliente Android.
+- [x] Drenado idempotente de Outbox con reintentos y orden por `deviceSequence` (`SyncWorker`).
+- [x] Manejo local de `ACCEPTED`, `DUPLICATE`, `REQUIRES_REVIEW` y `REJECTED`/bloqueo técnico.
+- [ ] Acción de UI que encole sync de forma confiable (hoy el arranque PRODUCTION sí encola; el panel Estado es parcial).
+- [ ] Pruebas de contrato E2E Android ↔ Spring Boot local y guion de recuperación.
+- [ ] Reportes web consumiendo datos ya sincronizados validados en piloto.
 
 ## Fase 5: endurecimiento y piloto
 

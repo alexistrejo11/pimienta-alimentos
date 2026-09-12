@@ -22,4 +22,4 @@ el POS. No es el tracking de avance; ese vive en
 ## Backend y hardware
 
 - [Mapeo backend-POS](backend/backend-pos-mapping.md)
-- [Validación de hardware](hardware/hardware-validation.md)
+- [Hardware y validación](hardware/hardware-validation.md) — inventario del kit + arquitectura USB-C PD
