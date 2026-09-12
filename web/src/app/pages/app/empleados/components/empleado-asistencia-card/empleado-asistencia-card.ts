@@ -4,17 +4,11 @@ import { finalize } from 'rxjs';
 
 import { EmployeeService } from '../../../../../core/employees/employee.service';
 import { parseApiError, type ParsedApiError } from '../../../../../core/http/parse-api-error';
+import { attendanceStatusLabel } from '../../../../../core/i18n/enum-labels';
 import type { AttendanceResponse, AttendanceStatus } from '../../../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../../../core/model/common/pagination';
 import { DataStateComponent } from '../../../../../shared/ui/data-state/data-state';
-
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  UNDEFINED: 'Indefinido',
-  CHECKED_IN: 'Entrada registrada',
-  CHECKED_OUT: 'Salida registrada',
-  AUTO_CLOSED_EXCEEDED_MAX_SHIFT_HOURS: 'Cierre automático (excedió horas)',
-  AUTO_CLOSED_ASSUMED_CONTRACT_DAY: 'Cierre automático (jornada contractual)',
-};
+import { HeadquarterSelectComponent } from '../../../../../shared/ui/headquarter-select/headquarter-select';
 
 /**
  * Tarjeta de historial de asistencias de un empleado.
@@ -23,7 +17,7 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
 @Component({
   selector: 'app-empleado-asistencia-card',
   
-  imports: [FormsModule, DataStateComponent],
+  imports: [FormsModule, DataStateComponent, HeadquarterSelectComponent],
   templateUrl: './empleado-asistencia-card.html',
 })
 export class EmpleadoAsistenciaCardComponent implements OnInit {
@@ -47,8 +41,7 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
   readonly actionError = signal<ParsedApiError | null>(null);
   readonly actionSuccess = signal('');
 
-  /** headquarterId default (sin selector de sede en esta tarjeta). */
-  headquarterId = 1;
+  headquarterId: number | null = null;
   checkinPhoto: File | null = null;
   checkoutPhoto: File | null = null;
 
@@ -76,12 +69,12 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
   }
 
   statusLabel(s: AttendanceStatus): string {
-    return STATUS_LABELS[s] ?? s;
+    return attendanceStatusLabel(s);
   }
 
   statusClasses(s: AttendanceStatus): string {
-    if (s === 'CHECKED_IN') return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-    if (s === 'CHECKED_OUT') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+    if (s === 'CHECKED_IN') return 'ui-badge-success';
+    if (s === 'CHECKED_OUT') return 'ui-badge-info';
     return 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300';
   }
 
@@ -112,7 +105,23 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
     this.checkoutPhoto = input.files?.[0] ?? null;
   }
 
+  onHeadquarterChange(value: number | number[] | null): void {
+    this.headquarterId = Array.isArray(value) ? value[0] ?? null : value;
+  }
+
   registrarEntrada(): void {
+    if (this.headquarterId == null || this.headquarterId <= 0) {
+      this.actionError.set({
+        message: 'Selecciona la sede donde registras la entrada.',
+        httpStatus: 0,
+        traceId: null,
+        errorCode: null,
+        fieldErrors: [],
+        context: null,
+        rawBody: null,
+      });
+      return;
+    }
     this.actionLoading.set(true);
     this.actionError.set(null);
     this.service

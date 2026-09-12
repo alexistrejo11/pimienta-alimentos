@@ -12,6 +12,7 @@ import type {
   UpdateOpportunityRequest,
 } from '../../../../../core/model/crm/opportunity.dto';
 import { PageHeaderComponent } from '../../../../../shared/ui/page-header/page-header';
+import { EmployeeSelectComponent } from '../../../../../shared/ui/employee-select/employee-select';
 
 const SOURCES: OpportunitySource[] = [
   'INBOUND',
@@ -26,7 +27,7 @@ const SOURCES: OpportunitySource[] = [
 @Component({
   selector: 'app-oportunidad-form-page',
   
-  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent],
+  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent, EmployeeSelectComponent],
   templateUrl: './oportunidad-form-page.html',
 })
 export class OportunidadFormPageComponent implements OnInit {
@@ -64,7 +65,7 @@ export class OportunidadFormPageComponent implements OnInit {
     probabilityPercent: ['25'],
     source: this.fb.nonNullable.control<OpportunitySource>('INBOUND', [Validators.required]),
     expectedCloseDate: [''],
-    assignedSalesmanId: [''],
+    assignedSalesmanId: this.fb.control<number | null>(null),
   });
 
   ngOnInit(): void {
@@ -110,7 +111,7 @@ export class OportunidadFormPageComponent implements OnInit {
       probabilityPercent: String(op.probabilityPercent ?? ''),
       source: op.source,
       expectedCloseDate: op.expectedCloseDate ? op.expectedCloseDate.slice(0, 10) : '',
-      assignedSalesmanId: op.assignedSalesmanId != null ? String(op.assignedSalesmanId) : '',
+      assignedSalesmanId: op.assignedSalesmanId,
     });
   }
 
@@ -169,9 +170,8 @@ export class OportunidadFormPageComponent implements OnInit {
     if (v.probabilityPercent.trim() !== '' && !Number.isNaN(prob)) {
       body.probabilityPercent = Math.min(100, Math.max(0, Math.round(prob)));
     }
-    const sid = Number(v.assignedSalesmanId);
-    if (v.assignedSalesmanId.trim() !== '' && !Number.isNaN(sid) && sid > 0) {
-      body.assignedSalesmanId = sid;
+    if (v.assignedSalesmanId != null && v.assignedSalesmanId > 0) {
+      body.assignedSalesmanId = v.assignedSalesmanId;
     }
     return body;
   }
@@ -195,9 +195,7 @@ export class OportunidadFormPageComponent implements OnInit {
     body.companyLocation = v.companyLocation.trim() || null;
     body.industry = v.industry.trim() || null;
     body.expectedCloseDate = v.expectedCloseDate.trim() || null;
-    const sid = Number(v.assignedSalesmanId);
-    body.assignedSalesmanId =
-      v.assignedSalesmanId.trim() === '' || Number.isNaN(sid) ? null : sid;
+    body.assignedSalesmanId = v.assignedSalesmanId;
     return body;
   }
 

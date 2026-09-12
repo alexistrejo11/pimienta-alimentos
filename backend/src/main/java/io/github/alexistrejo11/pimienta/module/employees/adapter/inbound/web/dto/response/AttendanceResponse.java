@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 public record AttendanceResponse(
     @Schema(description = "Primary key.", example = "42") Long id,
     @Schema(description = "Employee id.", example = "7") Long employeeId,
+    @Schema(description = "Employee full name for display.", example = "María López")
+        String employeeFullName,
     @Schema(description = "Headquarter id.", example = "3") Long headquarterId,
     @Schema(description = "Calendar work date.", example = "2026-05-14") LocalDate workDate,
     @Schema(description = "Check-in timestamp.") LocalDateTime checkInTime,

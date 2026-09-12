@@ -21,6 +21,7 @@ public final class StorageLocationPersistenceMapper {
     e.setMaxCapacity(domain.getMaxCapacity());
     e.setOccupiedCapacity(domain.getOccupiedCapacity());
     e.setStatus(domain.getStatus());
+    e.setHeadquarterId(domain.getHeadquarterId());
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
@@ -39,6 +40,7 @@ public final class StorageLocationPersistenceMapper {
     loc.setMaxCapacity(e.getMaxCapacity());
     loc.setOccupiedCapacity(e.getOccupiedCapacity());
     loc.setStatus(e.getStatus());
+    loc.setHeadquarterId(e.getHeadquarterId());
     loc.setCreatedAt(e.getCreatedAt());
     loc.setUpdatedAt(e.getUpdatedAt());
     loc.setDeletedAt(e.getDeletedAt());

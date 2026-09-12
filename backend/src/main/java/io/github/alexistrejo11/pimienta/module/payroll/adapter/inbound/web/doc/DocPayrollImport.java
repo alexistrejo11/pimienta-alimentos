@@ -39,9 +39,14 @@ import org.springframework.http.MediaType;
   @Parameter(name = "employeeId", in = ParameterIn.QUERY, description = "Restrict import to employee id.", example = "101"),
   @Parameter(name = "periodId", in = ParameterIn.QUERY, description = "Restrict import to period id.", example = "22"),
   @Parameter(name = "from", in = ParameterIn.QUERY, description = "Worked start date (inclusive).", example = "2026-04-01"),
-  @Parameter(name = "to", in = ParameterIn.QUERY, description = "Worked end date (inclusive).", example = "2026-04-30")
+  @Parameter(name = "to", in = ParameterIn.QUERY, description = "Worked end date (inclusive).", example = "2026-04-30"),
+  @Parameter(
+      name = "dryRun",
+      in = ParameterIn.QUERY,
+      description = "If true, validate only; do not persist. Any row error rejects the whole file.",
+      schema = @Schema(type = "boolean", defaultValue = "false"))
 })
-@Operation(summary = "Import payroll records", description = "Bulk create/update payroll records from .xlsx using optional scope filters.")
+@Operation(summary = "Import payroll records", description = "Bulk create/update payroll records from .xlsx. dryRun=true previews without writes; any row error rejects the whole file.")
 @RequestBody(
     required = true,
     description = "Multipart: required part **file** (`.xlsx`). Optional query-style fields `page`, `size`, `employeeId`, `periodId`, `from`, `to` scope the import (same as export).",

@@ -11,6 +11,6 @@ public interface PayrollBulkSyncUseCases {
   byte[] exportPayrollRecords(PayrollBulkScopeQuery scope, Pageable pageable) throws IOException;
 
   SpreadsheetBulkImportResult importPayrollRecords(
-      InputStream file, String originalFilename, PayrollBulkScopeQuery scope)
+      InputStream file, String originalFilename, PayrollBulkScopeQuery scope, boolean dryRun)
       throws IOException;
 }

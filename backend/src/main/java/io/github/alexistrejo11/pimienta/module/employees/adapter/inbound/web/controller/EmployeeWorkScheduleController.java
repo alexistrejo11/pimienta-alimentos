@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.controller;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeWorkScheduleGet;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeWorkSchedulePut;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeWorkSchedules;
@@ -19,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/employees")
+@RequestMapping(BASE + "/employees")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocEmployeeWorkSchedules
 public class EmployeeWorkScheduleController {

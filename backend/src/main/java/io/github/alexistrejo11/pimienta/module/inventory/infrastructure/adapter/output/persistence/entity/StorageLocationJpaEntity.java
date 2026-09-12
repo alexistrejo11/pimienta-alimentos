@@ -53,6 +53,9 @@ public class StorageLocationJpaEntity {
   @Column(nullable = false, length = 32)
   private LocationStatus status;
 
+  @Column(name = "headquarter_id")
+  private Long headquarterId;
+
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
@@ -135,6 +138,14 @@ public class StorageLocationJpaEntity {
 
   public void setStatus(LocationStatus status) {
     this.status = status;
+  }
+
+  public Long getHeadquarterId() {
+    return headquarterId;
+  }
+
+  public void setHeadquarterId(Long headquarterId) {
+    this.headquarterId = headquarterId;
   }
 
   public LocalDateTime getCreatedAt() {

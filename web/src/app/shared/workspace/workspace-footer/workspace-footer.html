@@ -1,20 +1,21 @@
 <footer
-  class="flex w-full items-center justify-between border-t border-stone-200/15 bg-stone-100 px-8 py-4 dark:border-stone-800/15 dark:bg-stone-900"
+  class="ui-chrome flex w-full items-center justify-between border-t px-8 py-4"
 >
   <div class="flex items-center gap-6">
-    <span class="text-sm font-bold text-stone-900 dark:text-stone-100"
+    <span class="text-sm font-bold text-on-surface"
       >Pimienta Alimentos</span
     >
-    <span class="font-body text-xs text-stone-500 dark:text-stone-400"
+    <span class="font-body text-xs text-on-surface-variant"
       >© 2026 Pimienta Alimentos. Internal Systems.</span
     >
   </div>
-  <div class="flex items-center gap-6">
+  <div class="flex items-center gap-4">
+    <app-theme-toggle />
     <a
       routerLink="/aviso-privacidad"
-      class="font-body text-xs text-stone-500 opacity-80 transition-all hover:text-stone-900 hover:underline hover:opacity-100 dark:text-stone-400 dark:hover:text-stone-100"
+      class="font-body text-xs text-on-surface-variant opacity-80 transition-all hover:text-on-surface hover:underline hover:opacity-100"
       >Privacy Policy</a
     >
-    <span class="font-body text-xs text-stone-500 dark:text-stone-400">System Status</span>
+    <span class="font-body text-xs text-on-surface-variant">System Status</span>
   </div>
 </footer>

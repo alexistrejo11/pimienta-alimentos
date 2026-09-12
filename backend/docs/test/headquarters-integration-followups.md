@@ -23,3 +23,8 @@ Non-fatal behaviors, consistency gaps, and product decisions to revisit. **Resol
 ## Tests
 
 - **`HeadquarterIntegrationTest`** uses `$.content` for Spring `Page` JSON. If you switch to a custom `PagedResponse` wrapper, update assertions accordingly.
+
+## POS B1 (2026-09-08)
+
+- No extra follow-ups from this pass for headquarters POS settings/catalog endpoints.
+- GET `pos-settings` returns `HEADQUARTER_POS_SETTINGS_NOT_FOUND` until the first PUT (by design: settings are created on upsert, not on HQ create).

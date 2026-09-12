@@ -12,4 +12,9 @@ import { EmployeeResponse } from '../../../../../core/model';
 })
 export class EmpleadoInfoCardComponent {
   readonly empleado = input.required<EmployeeResponse>();
+
+  onPhotoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.style.visibility = 'hidden';
+  }
 }

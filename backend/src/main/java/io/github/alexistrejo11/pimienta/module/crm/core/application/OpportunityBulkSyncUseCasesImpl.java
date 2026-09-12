@@ -25,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OpportunityBulkSyncUseCasesImpl implements OpportunityBulkSyncUseCases {
@@ -107,19 +108,21 @@ public class OpportunityBulkSyncUseCasesImpl implements OpportunityBulkSyncUseCa
   }
 
   @Override
-  public SpreadsheetBulkImportResult importOpportunities(InputStream file, String originalFilename)
+  @Transactional
+  public SpreadsheetBulkImportResult importOpportunities(
+      InputStream file, String originalFilename, boolean dryRun)
       throws IOException {
     log.info(
-        "import opportunities start originalFilename={} filenameLen={}",
-        originalFilename != null ? originalFilename : "null",
-        originalFilename != null ? originalFilename.length() : 0);
+        "import opportunities start dryRun={} originalFilename={}",
+        dryRun,
+        originalFilename != null ? originalFilename : "null");
 
     List<OpportunityImportRow> parsed = spreadsheetParser.parse(file, originalFilename);
-
+    List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
+    List<Runnable> applies = new ArrayList<>();
+    int skipped = 0;
     int updated = 0;
     int created = 0;
-    int skipped = 0;
-    List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
 
     for (OpportunityImportRow row : parsed) {
       try {
@@ -128,18 +131,18 @@ public class OpportunityBulkSyncUseCasesImpl implements OpportunityBulkSyncUseCa
           continue;
         }
         if (row.id() != null) {
-          Opportunity existing =
-              opportunityRepository.findById(row.id()).orElse(null);
+          Opportunity existing = opportunityRepository.findById(row.id()).orElse(null);
           if (existing == null) {
-            errors.add(
-                new SpreadsheetBulkImportRowError(
-                    row.excelRowNumber(), "No existe oportunidad con ID " + row.id()));
-            continue;
+            throw new IllegalArgumentException("No existe oportunidad con ID " + row.id());
           }
           UpdateOpportunityParams merged = merge(row, existing);
-          opportunityUseCases.update(row.id(), merged);
+          Long id = row.id();
+          applies.add(() -> opportunityUseCases.update(id, merged));
           updated++;
         } else {
+          if (row.title() == null || row.title().isBlank()) {
+            throw new IllegalArgumentException("El título es obligatorio para altas");
+          }
           CreateOpportunityParams cp =
               new CreateOpportunityParams(
                   row.title().trim(),
@@ -155,7 +158,7 @@ public class OpportunityBulkSyncUseCasesImpl implements OpportunityBulkSyncUseCa
                   parseSourceSafe(row.sourceRaw()),
                   row.expectedCloseDate(),
                   row.assignedSalesmanId());
-          opportunityUseCases.create(cp);
+          applies.add(() -> opportunityUseCases.create(cp));
           created++;
         }
       } catch (Exception ex) {
@@ -166,17 +169,15 @@ public class OpportunityBulkSyncUseCasesImpl implements OpportunityBulkSyncUseCa
       }
     }
 
-    SpreadsheetBulkImportResult result =
-        new SpreadsheetBulkImportResult(updated, created, skipped, List.copyOf(errors));
-
-    log.info(
-        "import opportunities complete rowCount={} updated={} created={} skipped={} errorCount={}",
-        parsed.size(),
-        updated,
-        created,
-        skipped,
-        errors.size());
-    return result;
+    if (!errors.isEmpty()) {
+      return new SpreadsheetBulkImportResult(0, 0, skipped, List.copyOf(errors), dryRun);
+    }
+    if (!dryRun) {
+      for (Runnable apply : applies) {
+        apply.run();
+      }
+    }
+    return new SpreadsheetBulkImportResult(updated, created, skipped, List.of(), dryRun);
   }
 
   private static UpdateOpportunityParams merge(OpportunityImportRow row, Opportunity o) {

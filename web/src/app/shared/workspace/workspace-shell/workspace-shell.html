@@ -2,6 +2,7 @@
   <app-workspace-sidebar
     (abrirAsistenciaHoy)="mostrarAsistenciaHoy.set(true)"
     (abrirAsistenciaBusqueda)="mostrarAsistenciaBusqueda.set(true)"
+    (abrirPerfil)="mostrarPerfil.set(true)"
   />
   <div class="ml-64 flex min-h-screen flex-1 flex-col">
     <div class="flex flex-1 flex-col">
@@ -19,4 +20,9 @@
 <!-- Modal: búsqueda libre de asistencias -->
 @if (mostrarAsistenciaBusqueda()) {
   <app-asistencia-busqueda-modal (cerrar)="mostrarAsistenciaBusqueda.set(false)" />
+}
+
+<!-- Modal: perfil / logout -->
+@if (mostrarPerfil()) {
+  <app-user-profile-modal (cerrar)="mostrarPerfil.set(false)" />
 }

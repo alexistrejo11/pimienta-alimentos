@@ -4,16 +4,10 @@ import { finalize } from 'rxjs';
 
 import { AttendanceService } from '../../../core/employees/attendance.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
+import { attendanceStatusLabel } from '../../../core/i18n/enum-labels';
 import type { AttendanceResponse, AttendanceStatus } from '../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../core/model/common/pagination';
-
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  UNDEFINED: 'Indefinido',
-  CHECKED_IN: 'En turno',
-  CHECKED_OUT: 'Salió',
-  AUTO_CLOSED_EXCEEDED_MAX_SHIFT_HOURS: 'Cierre auto (horas)',
-  AUTO_CLOSED_ASSUMED_CONTRACT_DAY: 'Cierre auto (jornada)',
-};
+import { EmployeeSelectComponent } from '../employee-select/employee-select';
 
 const ALL_STATUSES: AttendanceStatus[] = [
   'CHECKED_IN',
@@ -28,7 +22,7 @@ const ALL_STATUSES: AttendanceStatus[] = [
 @Component({
   selector: 'app-asistencia-busqueda-modal',
   
-  imports: [FormsModule],
+  imports: [FormsModule, EmployeeSelectComponent],
   templateUrl: './asistencia-busqueda-modal.html',
 })
 export class AsistenciaBusquedaModalComponent {
@@ -37,7 +31,7 @@ export class AsistenciaBusquedaModalComponent {
   private readonly service = inject(AttendanceService);
 
   // Filtros
-  empleadoId = '';
+  empleadoId: number | null = null;
   fechaExacta = '';
   fechaDesde = '';
   fechaHasta = '';
@@ -62,7 +56,7 @@ export class AsistenciaBusquedaModalComponent {
 
     this.service
       .search({
-        employeeId: this.empleadoId ? Number(this.empleadoId) : undefined,
+        employeeId: this.empleadoId ?? undefined,
         workDate: this.fechaExacta || undefined,
         workDateFrom: this.fechaDesde || undefined,
         workDateTo: this.fechaHasta || undefined,
@@ -78,7 +72,7 @@ export class AsistenciaBusquedaModalComponent {
   }
 
   limpiar(): void {
-    this.empleadoId = '';
+    this.empleadoId = null;
     this.fechaExacta = '';
     this.fechaDesde = '';
     this.fechaHasta = '';
@@ -89,13 +83,13 @@ export class AsistenciaBusquedaModalComponent {
   }
 
   statusLabel(s: AttendanceStatus): string {
-    return STATUS_LABELS[s] ?? s;
+    return attendanceStatusLabel(s);
   }
 
   statusClasses(s: AttendanceStatus): string {
-    if (s === 'CHECKED_IN') return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-    if (s === 'CHECKED_OUT') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-    return 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400';
+    if (s === 'CHECKED_IN') return 'ui-badge-success';
+    if (s === 'CHECKED_OUT') return 'ui-badge-info';
+    return 'bg-surface-container text-on-surface-variant';
   }
 
   formatDateTime(iso: string | null): string {

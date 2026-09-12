@@ -1,0 +1,10 @@
+<button
+  type="button"
+  class="inline-flex items-center justify-center rounded-lg p-2 text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
+  [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+  (click)="toggle()"
+>
+  <span class="material-symbols-outlined text-xl" aria-hidden="true">
+    {{ theme.isDark() ? 'light_mode' : 'dark_mode' }}
+  </span>
+</button>

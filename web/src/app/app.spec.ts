@@ -26,6 +26,7 @@ describe('App', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Excelencia en');
+    expect(compiled.textContent).toContain('Pimienta Alimentos');
+    expect(compiled.textContent).toContain('Un toque de placer a tus sentidos');
   });
 });

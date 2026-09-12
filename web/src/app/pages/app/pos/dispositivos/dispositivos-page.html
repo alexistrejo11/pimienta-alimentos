@@ -1,0 +1,59 @@
+<div class="flex flex-col gap-6 p-8">
+  <app-page-header title="Dispositivos POS" subtitle="Tablets enroladas por sede" />
+
+  @if (isAdmin()) {
+    <app-headquarter-select
+      class="max-w-xs"
+      label="Filtrar por sede"
+      [allowAll]="true"
+      [value]="filterHeadquarterId"
+      (valueChange)="onFilterChange($event)"
+    />
+  }
+
+  <app-data-state
+    [loading]="loading()"
+    [error]="error()"
+    [empty]="devices().length === 0"
+    emptyMessage="No hay dispositivos registrados."
+    (retry)="cargar()"
+  >
+    <div class="overflow-x-auto rounded-xl border ui-panel">
+      <table class="w-full text-sm">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+          <tr>
+            <th class="px-4 py-3 text-left">Código</th>
+            <th class="px-4 py-3 text-left">Nombre</th>
+            <th class="px-4 py-3 text-left">Sede</th>
+            <th class="px-4 py-3 text-left">Versión</th>
+            <th class="px-4 py-3 text-left">Estado</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/15">
+          @for (d of devices(); track d.id) {
+            <tr>
+              <td class="px-4 py-3 font-mono">{{ d.visibleCode }}</td>
+              <td class="px-4 py-3">{{ d.deviceName || '—' }}</td>
+              <td class="px-4 py-3">{{ hqName(d.headquarterId) }}</td>
+              <td class="px-4 py-3">{{ d.appVersion || '—' }}</td>
+              <td class="px-4 py-3">{{ d.status }}</td>
+              <td class="px-4 py-3 text-right">
+                @if (d.status !== 'REVOKED') {
+                  <button
+                    type="button"
+                    class="text-sm font-semibold text-red-700 disabled:opacity-50"
+                    [disabled]="revokingId() === d.id"
+                    (click)="revoke(d)"
+                  >
+                    Revocar
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </app-data-state>
+</div>

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "pos-bootstrap",
+  "snapshotId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "generatedAt": "2026-09-08T20:00:00Z",
+  "site": {
+    "id": "42",
+    "name": "Cafetería Norte",
+    "address": "Av. Ejemplo 100",
+    "currency": "MXN"
+  },
+  "device": {
+    "id": "8f3c1a2e-9b4d-4e6a-a1c0-2d5e8f7a9b01",
+    "name": "Caja 1 · Cafetería Norte",
+    "visibleCode": "T1",
+    "status": "AUTHORIZED"
+  },
+  "operators": [
+    {
+      "id": "101",
+      "displayName": "Cajera demostración",
+      "role": "CASHIER",
+      "pinHash": "argon2id$v=19$m=65536,t=3,p=1$example$hash",
+      "active": true
+    },
+    {
+      "id": "102",
+      "displayName": "Manager demostración",
+      "role": "MANAGER",
+      "pinHash": "argon2id$v=19$m=65536,t=3,p=1$example$hash",
+      "active": true
+    }
+  ],
+  "products": [
+    {
+      "id": "1001",
+      "sku": "CAF-0001",
+      "barcode": "7501234567890",
+      "name": "Hot Cakes con Avena y Plátano",
+      "saleCategory": "Deli",
+      "unit": "PIECE",
+      "priceCentavos": 4000,
+      "costCentavos": 2200,
+      "available": true,
+      "stockQuantity": 0,
+      "stockMinQuantity": 0,
+      "stockPolicy": "NOT_CONTROLLED"
+    },
+    {
+      "id": "1002",
+      "sku": "BEB-0010",
+      "barcode": "7509876543210",
+      "name": "Refresco 600 ml",
+      "saleCategory": "Bebidas",
+      "unit": "PIECE",
+      "priceCentavos": 2500,
+      "costCentavos": 1200,
+      "available": true,
+      "stockQuantity": 12,
+      "stockMinQuantity": 5,
+      "stockPolicy": "CONTROLLED",
+      "negativeStockLimit": -20
+    }
+  ],
+  "openAmountCategories": ["Bebidas", "Alimentos", "Otros"],
+  "policies": {
+    "allowNegativeStock": true,
+    "defaultNegativeStockLimit": -50,
+    "staleCatalogWarnHours": 24,
+    "staleCatalogBlockHours": 72
+  },
+  "cursors": {
+    "changes": "cursor-hq-42-v0"
+  }
+}

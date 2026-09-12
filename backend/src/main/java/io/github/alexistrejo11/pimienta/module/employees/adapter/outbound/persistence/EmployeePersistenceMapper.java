@@ -29,23 +29,23 @@ public class EmployeePersistenceMapper {
     EmployeePersonalEmbeddable p = e.getPersonal();
     p.setFirstName(domain.getPersonal().firstName());
     p.setLastName(domain.getPersonal().lastName());
-    p.setPhotoUrl(domain.getPersonal().photoUrl());
-    p.setEmail(domain.getPersonal().email());
-    p.setPhone(domain.getPersonal().phone());
-    p.setAddress(domain.getPersonal().address());
+    p.setPhotoUrl(blankToNull(domain.getPersonal().photoUrl()));
+    p.setEmail(blankToNull(domain.getPersonal().email()));
+    p.setPhone(blankToNull(domain.getPersonal().phone()));
+    p.setAddress(blankToNull(domain.getPersonal().address()));
     p.setBirthDate(domain.getPersonal().birthDate());
-    p.setNationality(domain.getPersonal().nationality());
+    p.setNationality(blankToNull(domain.getPersonal().nationality()));
 
     EmployeeOfficialIdsEmbeddable o = e.getOfficialIds();
-    o.setCurp(domain.getOfficialIds().curp());
-    o.setRfc(domain.getOfficialIds().rfc());
-    o.setNss(domain.getOfficialIds().nss());
-    o.setClabe(domain.getOfficialIds().clabe());
-    o.setEmployeeNumber(domain.getOfficialIds().employeeNumber());
+    o.setCurp(blankToNull(domain.getOfficialIds().curp()));
+    o.setRfc(blankToNull(domain.getOfficialIds().rfc()));
+    o.setNss(blankToNull(domain.getOfficialIds().nss()));
+    o.setClabe(blankToNull(domain.getOfficialIds().clabe()));
+    o.setEmployeeNumber(blankToNull(domain.getOfficialIds().employeeNumber()));
 
     EmployeeEmploymentEmbeddable em = e.getEmployment();
-    em.setPosition(domain.getEmployment().position());
-    em.setDepartment(domain.getEmployment().department());
+    em.setPosition(blankToNull(domain.getEmployment().position()));
+    em.setDepartment(blankToNull(domain.getEmployment().department()));
     em.setContractType(domain.getEmployment().contractType());
     em.setWorkShift(domain.getEmployment().workShift());
     em.setHireDate(domain.getEmployment().hireDate());
@@ -155,5 +155,13 @@ public class EmployeePersistenceMapper {
         row.getChristmasBonusDays(),
         row.getVacationDays(),
         row.getVacationPremiumPercent());
+  }
+
+  private static String blankToNull(String s) {
+    if (s == null) {
+      return null;
+    }
+    String t = s.trim();
+    return t.isEmpty() ? null : t;
   }
 }

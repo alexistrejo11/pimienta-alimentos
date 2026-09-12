@@ -9,10 +9,10 @@
   <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="cerrar.emit()"></div>
 
   <!-- Panel lateral amplio -->
-  <div class="relative z-10 flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl dark:bg-stone-950">
+  <div class="relative z-10 flex h-full w-full max-w-2xl flex-col bg-surface-container-lowest shadow-2xl">
 
     <!-- Cabecera -->
-    <div class="flex items-center justify-between border-b border-stone-100 px-6 py-4 dark:border-stone-800">
+    <div class="flex items-center justify-between border-b border-outline-variant/20 px-6 py-4">
       <div class="flex items-center gap-2">
         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary)]/10">
           <span class="material-symbols-outlined text-[var(--color-primary)] text-base" aria-hidden="true">search</span>
@@ -25,7 +25,7 @@
       <button
         type="button"
         (click)="cerrar.emit()"
-        class="rounded-lg p-1.5 text-on-surface-variant transition hover:bg-stone-100 dark:hover:bg-stone-800"
+        class="rounded-lg p-1.5 text-on-surface-variant transition hover:bg-surface-container"
         aria-label="Cerrar"
       >
         <span class="material-symbols-outlined text-xl" aria-hidden="true">close</span>
@@ -33,21 +33,15 @@
     </div>
 
     <!-- Filtros -->
-    <div class="border-b border-stone-100 px-6 py-4 dark:border-stone-800">
+    <div class="border-b border-outline-variant/20 px-6 py-4">
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 
-        <!-- Empleado ID -->
-        <div class="flex flex-col gap-1">
-          <label for="bs-emp" class="text-xs font-medium text-on-surface-variant">ID Empleado</label>
-          <input
-            id="bs-emp"
-            type="number"
-            [(ngModel)]="empleadoId"
-            placeholder="p. ej. 7"
-            min="1"
-            class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:border-stone-700 dark:bg-stone-900"
-          />
-        </div>
+        <app-employee-select
+          label="Empleado"
+          nullLabel="Todos"
+          [value]="empleadoId"
+          (valueChange)="empleadoId = $event"
+        />
 
         <!-- Fecha exacta -->
         <div class="flex flex-col gap-1">
@@ -56,7 +50,7 @@
             id="bs-fecha"
             type="date"
             [(ngModel)]="fechaExacta"
-            class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:border-stone-700 dark:bg-stone-900"
+            class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
           />
         </div>
 
@@ -66,7 +60,7 @@
           <select
             id="bs-status"
             [(ngModel)]="statusFilter"
-            class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:border-stone-700 dark:bg-stone-900"
+            class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
           >
             <option value="">Todos</option>
             @for (s of allStatuses; track s) {
@@ -82,7 +76,7 @@
             id="bs-desde"
             type="date"
             [(ngModel)]="fechaDesde"
-            class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:border-stone-700 dark:bg-stone-900"
+            class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
           />
         </div>
 
@@ -93,7 +87,7 @@
             id="bs-hasta"
             type="date"
             [(ngModel)]="fechaHasta"
-            class="rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:border-stone-700 dark:bg-stone-900"
+            class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
           />
         </div>
 
@@ -125,7 +119,7 @@
         <button
           type="button"
           (click)="limpiar()"
-          class="rounded-lg border border-stone-200 px-4 py-2 text-sm font-semibold text-on-surface transition hover:bg-stone-50 dark:border-stone-700 dark:hover:bg-stone-900"
+          class="rounded-lg border border-outline-variant/20 px-4 py-2 text-sm font-semibold text-on-surface transition hover:bg-surface-container"
         >
           Limpiar
         </button>
@@ -167,9 +161,9 @@
         <div class="mb-2 text-xs text-on-surface-variant">
           {{ page()?.metadata?.totalElements ?? 0 }} resultado(s) encontrados
         </div>
-        <div class="overflow-x-auto rounded-xl border border-stone-100 dark:border-stone-800">
+        <div class="overflow-x-auto rounded-xl border border-outline-variant/20">
           <table class="w-full text-sm" aria-label="Resultados de búsqueda">
-            <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+            <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-2.5 text-left text-xs font-semibold text-on-surface-variant">ID Emp.</th>
                 <th class="px-3 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Fecha</th>
@@ -179,10 +173,10 @@
                 <th class="px-3 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Estado</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody class="divide-y divide-outline-variant/15">
               @for (r of records; track r.id) {
-                <tr class="hover:bg-stone-50/50 dark:hover:bg-stone-900/30">
-                  <td class="px-3 py-2.5 font-mono text-xs text-on-surface-variant">{{ r.employeeId }}</td>
+                <tr class="hover:bg-surface-container/50">
+                  <td class="px-3 py-2.5 text-sm text-on-surface">{{ r.employeeFullName || ('#' + r.employeeId) }}</td>
                   <td class="px-3 py-2.5 font-mono text-xs text-on-surface">{{ r.workDate }}</td>
                   <td class="px-3 py-2.5 text-xs text-on-surface">{{ formatDateTime(r.checkInTime) }}</td>
                   <td class="px-3 py-2.5 text-xs text-on-surface">{{ formatDateTime(r.checkOutTime) }}</td>

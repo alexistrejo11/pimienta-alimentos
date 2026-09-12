@@ -1,56 +1,57 @@
-# Front ↔ API (`docs/api-docs.yaml`): auditoría y pendientes
+# Front ↔ API: auditoría y pendientes
 
-Referencia: [api-docs.yaml](./api-docs.yaml) (OpenAPI 3.1) y código en `src/app/core/**`.
+Referencia: [api-docs.yaml](./api-docs.yaml) (OpenAPI 3.1, regenerar con backend en marcha) y código en `src/app/core/**`.
 
-## Llamadas HTTP que usa el front hoy
+## Regenerar OpenAPI
 
-| Servicio | Método | Ruta | ¿En OpenAPI? |
-|----------|--------|------|--------------|
-| `AuthService` | POST | `/api/v1/auth/register` | Sí |
-| `AuthService` | POST | `/api/v1/auth/login` | Sí |
-| `UserProfileService` | GET, PATCH | `/api/v1/users/me` | Sí |
-| `UserProfileService` | GET | `/api/v1/users/me/dashboard` | Sí |
-| `EmployeeService` | GET | `/api/v1/employees`, `.../{id}`, `.../statistics`, `.../summary` | Sí |
-| `HeadquarterService` | GET | `/api/v1/headquarters`, `.../{id}`, `.../statistics` | Sí |
-| `TaskService` | GET | `/api/v1/tasks`, `.../{id}` | Sí |
-| `CrmService` | GET | `/api/v1/opportunities`, `.../{id}`, `.../{id}/summary` | Sí |
-| `CrmService` | GET | `/api/v1/projects`, `.../{id}`, `.../{id}/summary`, `.../{id}/milestones` | Sí |
-| `ContractService` | GET, POST | `/api/v1/contracts` | Sí |
-| `HomeLanding` | POST | `CONTACT_ENDPOINT` (ver abajo) | No es Pimienta |
+Con el backend corriendo en `localhost:8080`:
 
-Todas las rutas anteriores existen en la spec; métodos y prefijos (`/api/v1`) coinciden con `API_BASE_URL`.
+```bash
+curl -s http://localhost:8080/v3/api-docs -o web/docs/api-docs.yaml
+```
 
-## Desajustes que afectan comportamiento
+## Matriz create/update (formularios web vs backend)
 
-### 1. Registro (`POST /api/v1/auth/register`)
+Estado tras auditoría 2026-09-11:
 
-- **Resuelto en el front:** `AuthService` y la pantalla de registro usan `RegisterResponse`; se muestra el mensaje del servidor y no se guardan tokens. Tras aprobación administrativa, el usuario usa **Iniciar sesión**.
+| Módulo | Request backend | Campos @NotNull backend | Front (antes) | Estado |
+|--------|-----------------|-------------------------|---------------|--------|
+| POS operadores | `CreatePosOperatorRequest` | `headquarterIds` @NotEmpty | Input manual / omitido | **Fixed** (plan POS) |
+| Tareas create | `TaskRequest` | solo `title` | IDs sede/proyecto/opp/creador | **Fixed** — selectores |
+| Tareas assign | `AssignTaskRequest` | `employeeId` | Input número | **Fixed** — `app-employee-select` |
+| Proyectos create | `CreateProjectRequest` | `clientId`, valores, código | `clientId` sin API | **Fixed** — `GET/POST /clients` + selector |
+| Oportunidades | `CreateOpportunityRequest` | contacto, empresa, valor | OK en validación | **Fixed** — vendedor con selector |
+| Nómina registro | `RegisterPayrollRecordRequest` | `employeeId`, fechas, bruto | IDs manuales | **Fixed** — selectores |
+| Asistencia check-in | `StartWorkdayRequest` | `headquarterId` | Default `1` | **Fixed** — `app-headquarter-select` |
+| Contratos | `CreateContractRequest` | dominio EMPLOYEE/FIXED_TERM | Selectores ya OK | OK |
+| Auth register | `RegisterResponse` | — | Tokens no guardados | OK (resuelto antes) |
 
-### 2. Formulario de contacto (landing)
+### Paginación (`PagedResponse` vs Spring `Page`)
 
-- `src/app/pages/home/contact-endpoint.ts` apunta por defecto a `https://httpbin.org/post`.
-- No hay endpoint de contacto en `api-docs.yaml` para Pimienta. **Pendiente:** definir backend o servicio externo y sustituir `CONTACT_ENDPOINT`.
+- `GET /headquarters` → `content` (`SpringDataPage`)
+- Resto de listados → `items` + `metadata` (`PagedResponse`)
 
-### 3. OpenAPI y parámetros `filter` / `pageable` “required”
+## Nuevos endpoints backend (esta iteración)
 
-En varios `GET` la spec declara parámetros compuestos `filter` u objetos `pageable` como obligatorios. En Spring suelen resolverse con `@ModelAttribute` y valores por defecto para `page`/`size`. Si aparecieran **400** en listados, revisar binding real vs documentación generada.
+| Método | Ruta | Uso en web |
+|--------|------|------------|
+| GET | `/api/v1/clients` | `ClientService.list`, `app-client-select` |
+| POST | `/api/v1/clients` | Alta de clientes CRM (futuro) |
+| — | `AttendanceResponse.employeeFullName` | Modales y búsqueda de asistencia |
 
-## Cobertura de API: cosas documentadas que el front aún no usa
+## Servicios web añadidos/extendidos
 
-Útil para priorizar producto (el workspace ya tiene rutas placeholder: `clients`, `inventory`, `tasks` antiguas, etc.):
+- `EmployeeService.listActive()` → `/employees/active`
+- `ClientService`, `EmployeeLookupService`, `CrmLookupService`, `ClientLookupService`, `PayrollLookupService`
+- Componentes: `app-employee-select`, `app-client-select`, `app-opportunity-select`, `app-project-select`, `app-payroll-period-select`
 
-- **Auth:** `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` — los DTOs existen en `auth.dto.ts`, pero no hay métodos en `AuthService` ni flujo de renovación de token / cierre de sesión contra API.
-- **Contratos:** muchas rutas bajo `/api/v1/contracts/{id}` (renovar, extender, etc.) — el front solo lista y crea.
-- **CRM:** creación/actualización de oportunidades y proyectos, transiciones de pipeline, import/export, tareas anidadas, etc.
-- **Tareas:** creación, PATCH estado/asignación/checklist, export/import — el front solo lista y detalle.
-- **Empleados:** alta, baja, import, etc. — el front solo lectura + estadísticas.
-- **Sedes:** POST/PATCH/DELETE, import/export — el front solo lectura.
-- **Inventario, payroll, usuarios admin:** módulos en OpenAPI sin integración en este Angular.
+## Pendientes conocidos
 
-## Cambio aplicado en código (hitos de proyecto)
-
-`GET /api/v1/projects/{projectId}/milestones` devuelve **`PagedResponse`** (`items` + `metadata`), no un array. `CrmService.listMilestones` ahora interpreta `items` para mantener el resto de la UI igual.
+- Formulario de contacto landing (`CONTACT_ENDPOINT` → httpbin) — sin API Pimienta.
+- `EmployeeListItemResponse` sin `photoUrl` (api-gaps §3).
+- Auth refresh/logout no integrados en `AuthService`.
+- Win opportunity (`POST …/win`) sin UI.
 
 ---
 
-*Generado como seguimiento de alineación front/API; actualizar cuando cambie la spec o los servicios.*
+*Actualizar cuando cambie la spec o los servicios.*

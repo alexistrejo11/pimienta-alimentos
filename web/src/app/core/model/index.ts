@@ -21,3 +21,9 @@ export * from './crm/project-milestone.dto';
 
 export * from './payroll/payroll.enums';
 export * from './payroll/payroll.dto';
+
+export * from './inventory/inventory.enums';
+export * from './inventory/inventory.dto';
+
+export * from './pos/pos.enums';
+export * from './pos/pos.dto';

@@ -27,7 +27,7 @@
       }
 
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Identificación del proyecto"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Identificación</h2>
@@ -61,50 +61,39 @@
               id="pr-name"
               formControlName="projectName"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
             @if (form.controls.projectName.touched && form.controls.projectName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
           </div>
 
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-client"
-              >ID cliente</label
-            >
-            <input
-              id="pr-client"
-              formControlName="clientId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-stone-900"
-            />
-            @if (isEdit) {
-              <p class="ml-1 text-xs text-on-surface-variant">El cliente no se modifica por API de actualización.</p>
-            }
-            @if (!isEdit && form.controls.clientId.touched && form.controls.clientId.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
-            @if (apiFieldMessage('clientId'); as m) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
-            }
-          </div>
+          <app-client-select
+            label="Cliente"
+            [allowNull]="false"
+            [disabled]="isEdit"
+            [value]="form.controls.clientId.value"
+            (valueChange)="form.controls.clientId.setValue($event)"
+          />
+          @if (isEdit) {
+            <p class="text-xs text-on-surface-variant sm:col-span-2">El cliente no se modifica por API de actualización.</p>
+          }
+          @if (!isEdit && form.controls.clientId.touched && form.controls.clientId.hasError('required')) {
+            <p class="text-xs text-[var(--color-error)] sm:col-span-2">Selecciona un cliente.</p>
+          }
+          @if (apiFieldMessage('clientId'); as m) {
+            <p class="text-xs text-[var(--color-error)] sm:col-span-2">{{ m }}</p>
+          }
 
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-opp"
-              >ID oportunidad origen (opcional)</label
-            >
-            <input
-              id="pr-opp"
-              formControlName="originOpportunityId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-stone-900"
-            />
-            @if (isEdit) {
-              <p class="ml-1 text-xs text-on-surface-variant">Solo aplica al crear.</p>
-            }
-          </div>
+          <app-opportunity-select
+            label="Oportunidad origen (opcional)"
+            [disabled]="isEdit"
+            [value]="form.controls.originOpportunityId.value"
+            (valueChange)="form.controls.originOpportunityId.setValue($event)"
+          />
+          @if (isEdit) {
+            <p class="text-xs text-on-surface-variant">Solo aplica al crear.</p>
+          }
 
           <div class="sm:col-span-2 space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-desc"
@@ -114,14 +103,14 @@
               id="pr-desc"
               formControlName="description"
               rows="3"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             ></textarea>
           </div>
         </div>
       </section>
 
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Clasificación y fechas"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Clasificación y fechas</h2>
@@ -133,7 +122,7 @@
             <select
               id="pr-type"
               formControlName="type"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
               @for (t of types; track t) {
                 <option [value]="t">{{ typeLabel[t] }}</option>
@@ -148,7 +137,7 @@
             <select
               id="pr-prio"
               formControlName="priority"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
               @for (p of priorities; track p) {
                 <option [value]="p">{{ priorityLabel[p] }}</option>
@@ -156,31 +145,16 @@
             </select>
           </div>
 
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-pm"
-              >ID director de proyecto (empleado)</label
-            >
-            <input
-              id="pr-pm"
-              formControlName="projectManagerId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
-            />
-          </div>
-
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-sales"
-              >ID vendedor asignado (empleado)</label
-            >
-            <input
-              id="pr-sales"
-              formControlName="assignedSalesmanId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
-            />
-          </div>
+          <app-employee-select
+            label="Director de proyecto"
+            [value]="form.controls.projectManagerId.value"
+            (valueChange)="form.controls.projectManagerId.setValue($event)"
+          />
+          <app-employee-select
+            label="Vendedor asignado"
+            [value]="form.controls.assignedSalesmanId.value"
+            (valueChange)="form.controls.assignedSalesmanId.setValue($event)"
+          />
 
           <div class="space-y-1.5">
             <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-ps"
@@ -190,7 +164,7 @@
               id="pr-ps"
               formControlName="plannedStartDate"
               type="date"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -202,14 +176,14 @@
               id="pr-pe"
               formControlName="plannedEndDate"
               type="date"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
       </section>
 
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Financiero"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Financiero</h2>
@@ -224,7 +198,7 @@
               type="number"
               step="0.01"
               min="0"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -238,7 +212,7 @@
               type="number"
               step="0.01"
               min="0"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -253,7 +227,7 @@
                 type="number"
                 min="0"
                 max="100"
-                class="w-full max-w-xs rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+                class="w-full max-w-xs rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
               />
             </div>
           }
@@ -276,7 +250,7 @@
         </button>
         <a
           routerLink="/app/crm/proyectos"
-          class="rounded-lg border border-stone-300 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-900"
+          class="rounded-lg border border-outline-variant/30 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-surface-container"
         >
           Cancelar
         </a>

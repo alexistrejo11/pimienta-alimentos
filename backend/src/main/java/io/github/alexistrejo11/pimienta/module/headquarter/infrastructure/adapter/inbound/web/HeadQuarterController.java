@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.input.HeadquarterUseCases;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.command.CreateHeadquarterCommand;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.command.UpdateHeadquarterCommand;
@@ -31,6 +33,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -46,7 +49,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/headquarters")
+@RequestMapping(BASE + "/headquarters")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocHeadquarters
 public class HeadQuarterController {
@@ -93,15 +96,18 @@ public class HeadQuarterController {
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterImport
-  public SpreadsheetBulkImportResult importHeadquarters(@RequestParam("file") MultipartFile file)
+  public SpreadsheetBulkImportResult importHeadquarters(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun)
       throws IOException {
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo vacío");
     }
     return headquarterBulkSyncUseCases.importHeadquarters(
-        file.getInputStream(), file.getOriginalFilename());
+        file.getInputStream(), file.getOriginalFilename(), dryRun);
   }
 
   @GetMapping("/{id}")
@@ -121,6 +127,7 @@ public class HeadQuarterController {
   }
 
   @PostMapping
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocHeadquarterCreate
@@ -131,6 +138,7 @@ public class HeadQuarterController {
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterUpdate
   public HeadQuarterResponse updateHeadquarter(
@@ -142,6 +150,7 @@ public class HeadQuarterController {
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocHeadquarterDelete
   public ResponseEntity<Void> softDeleteHeadquarter(@PathVariable Long id) {

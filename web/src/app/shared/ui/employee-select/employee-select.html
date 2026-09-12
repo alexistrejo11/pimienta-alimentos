@@ -1,0 +1,20 @@
+@if (loading()) {
+  <p class="text-sm text-on-surface-variant">Cargando colaboradores…</p>
+} @else {
+  <label class="flex flex-col gap-1 text-sm">
+    <span class="font-medium">{{ label() }}</span>
+    <select
+      class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+      [disabled]="disabled()"
+      [ngModel]="value()"
+      (ngModelChange)="onChange($event)"
+    >
+      @if (allowNull()) {
+        <option [ngValue]="null">{{ nullLabel() }}</option>
+      }
+      @for (e of options(); track e.id) {
+        <option [ngValue]="e.id">{{ e.fullName }} — {{ e.department }}</option>
+      }
+    </select>
+  </label>
+}

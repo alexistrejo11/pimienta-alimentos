@@ -1,4 +1,4 @@
-import type { Gender } from './enums';
+import type { AccountStatus, Gender } from './enums';
 
 /** GET /api/v1/users/me — perfil del usuario autenticado (JWT). */
 export interface UserResponse {
@@ -10,11 +10,12 @@ export interface UserResponse {
   phone: string;
   /** ISO date (yyyy-MM-dd). */
   dateOfBirth: string;
-  banned: boolean;
+  accountStatus: AccountStatus;
   bannedReason: string | null;
   bannedAt: string | null;
   roles: string[];
   permissions: string[];
+  assignedHeadquarterIds: number[];
   createdAt: string;
   updatedAt: string;
 }

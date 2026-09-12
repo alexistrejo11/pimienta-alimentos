@@ -6,12 +6,12 @@ import { Home } from './pages/home/home/home';
 import { TerminosServicioPage } from './pages/home/terminos-servicio-page/terminos-servicio-page';
 import { ClientsPageComponent } from './pages/clients/clients-page';
 import { DashboardPageComponent } from './pages/dashboard/dashboard-page';
-import { InventoryPageComponent } from './pages/app/inventory/inventory-page';
 import { TasksPageComponent } from './pages/app/tasks/tasks-page';
 import { WorkspaceShellComponent } from './shared/workspace/workspace-shell/workspace-shell';
 import { Login } from './pages/auth/login/login';
 import { Register } from './pages/auth/register/register';
 import { workspaceAuthGuard } from './core/auth/workspace-auth.guard';
+import { roleGuard } from './core/auth/role.guard';
 
 // ── Módulos nuevos ──────────────────────────────────────────────────────────
 import { EmpleadosPageComponent } from './pages/app/empleados/empleados-page';
@@ -28,9 +28,26 @@ import { TareaDetailPageComponent } from './pages/app/tareas/tarea-detail/tarea-
 import { TareaFormPageComponent } from './pages/app/tareas/tarea-form/tarea-form-page';
 import { SedesPageComponent } from './pages/app/sedes/sedes-page';
 import { SedeDetailPageComponent } from './pages/app/sedes/sede-detail/sede-detail-page';
+import { SedeFormPageComponent } from './pages/app/sedes/sede-form-page/sede-form-page';
+import { SedePosPageComponent } from './pages/app/sedes/sede-pos-page/sede-pos-page';
+import { PosProductFormPageComponent } from './pages/app/sedes/pos-product-form-page/pos-product-form-page';
 import { ContratosPageComponent } from './pages/app/contratos/contratos-page';
 import { NominaPageComponent } from './pages/app/nomina/nomina-page';
 import { ArchivosPageComponent } from './pages/app/archivos/archivos-page';
+import { CatalogoPageComponent } from './pages/app/catalogo/catalogo-page';
+import { CatalogoFormPageComponent } from './pages/app/catalogo/catalogo-form-page/catalogo-form-page';
+import { InventarioPageComponent } from './pages/app/inventario/inventario-page';
+import { DispositivosPageComponent } from './pages/app/pos/dispositivos/dispositivos-page';
+import { EnrolamientoPageComponent } from './pages/app/pos/enrolamiento/enrolamiento-page';
+import { OperadoresPageComponent } from './pages/app/pos/operadores/operadores-page';
+import { VentasPageComponent } from './pages/app/pos/ventas/ventas-page';
+import { MermasPageComponent } from './pages/app/pos/mermas/mermas-page';
+import { CortesPageComponent } from './pages/app/pos/cortes/cortes-page';
+import { IncidenciasPageComponent } from './pages/app/pos/incidencias/incidencias-page';
+
+const ROLE_ADMIN = 'ROLE_ADMIN';
+const ROLE_MANAGER = 'ROLE_MANAGER';
+const POS_STAFF = [ROLE_ADMIN, ROLE_MANAGER];
 
 export const routes: Routes = [
   {
@@ -51,12 +68,12 @@ export const routes: Routes = [
 
       // Módulos originales (se mantienen para no romper referencias existentes)
       { path: 'clients', component: ClientsPageComponent },
-      { path: 'inventory', component: InventoryPageComponent },
+      { path: 'inventory', redirectTo: 'inventario', pathMatch: 'full' },
       { path: 'tasks', component: TasksPageComponent },
 
       // ── Empleados ────────────────────────────────────────────────────────
-      { path: 'empleados/nuevo', component: EmpleadoFormPageComponent },
-      { path: 'empleados/:id/editar', component: EmpleadoFormPageComponent },
+      { path: 'empleados/nuevo', component: EmpleadoFormPageComponent, canActivate: [roleGuard], data: { roles: [ROLE_ADMIN] } },
+      { path: 'empleados/:id/editar', component: EmpleadoFormPageComponent, canActivate: [roleGuard], data: { roles: [ROLE_ADMIN] } },
       { path: 'empleados/:id', component: EmpleadoDetailPageComponent },
       { path: 'empleados', component: EmpleadosPageComponent },
 
@@ -79,6 +96,30 @@ export const routes: Routes = [
 
       // ── Sedes ────────────────────────────────────────────────────────────
       { path: 'sedes', component: SedesPageComponent },
+      {
+        path: 'sedes/nueva',
+        component: SedeFormPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
+      {
+        path: 'sedes/:id/editar',
+        component: SedeFormPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
+      {
+        path: 'sedes/:id/pos',
+        component: SedePosPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+      {
+        path: 'sedes/:id/pos/nuevo',
+        component: PosProductFormPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
       { path: 'sedes/:id', component: SedeDetailPageComponent },
 
       // ── Contratos ─────────────────────────────────────────────────────────
@@ -89,6 +130,78 @@ export const routes: Routes = [
 
       // ── Nómina ────────────────────────────────────────────────────────────
       { path: 'nomina', component: NominaPageComponent },
+
+      // ── POS: Catálogo maestro (admin) ─────────────────────────────────────
+      {
+        path: 'catalogo/nuevo',
+        component: CatalogoFormPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
+      {
+        path: 'catalogo/:id/editar',
+        component: CatalogoFormPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
+      {
+        path: 'catalogo',
+        component: CatalogoPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
+
+      // ── POS: Inventario por sede ──────────────────────────────────────────
+      {
+        path: 'inventario',
+        component: InventarioPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+
+      // ── POS: Dispositivos y operación ─────────────────────────────────────
+      {
+        path: 'pos/dispositivos',
+        component: DispositivosPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+      {
+        path: 'pos/enrolamiento',
+        component: EnrolamientoPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+      {
+        path: 'pos/operadores',
+        component: OperadoresPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+      {
+        path: 'pos/ventas',
+        component: VentasPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+      {
+        path: 'pos/mermas',
+        component: MermasPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+      {
+        path: 'pos/cortes',
+        component: CortesPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: POS_STAFF },
+      },
+      {
+        path: 'pos/incidencias',
+        component: IncidenciasPageComponent,
+        canActivate: [roleGuard],
+        data: { roles: [ROLE_ADMIN] },
+      },
     ],
   },
   { path: '', component: Home },

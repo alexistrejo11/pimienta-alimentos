@@ -34,8 +34,8 @@ import java.lang.annotation.Target;
     summary = "Update headquarter",
     description =
         """
-        Replaces headquarter fields from **HeadQuarterRequest**. **404** if not found \
-        (`HEADQUARTER_NOT_FOUND`).""")
+        Replaces headquarter fields from **HeadQuarterRequest**. Requires **ROLE_ADMIN**. **404** if \
+        not found (`HEADQUARTER_NOT_FOUND`).""")
 @RequestBody(
     required = true,
     description = "Same JSON schema as create.",
@@ -73,6 +73,13 @@ import java.lang.annotation.Target;
 @ApiResponse(
     responseCode = "404",
     description = "Not found.",
+    content =
+        @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ApiErrorResponse.class)))
+@ApiResponse(
+    responseCode = "403",
+    description = "Authenticated but missing **ROLE_ADMIN**.",
     content =
         @Content(
             mediaType = "application/json",

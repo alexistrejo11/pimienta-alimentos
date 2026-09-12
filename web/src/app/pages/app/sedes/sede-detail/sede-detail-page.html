@@ -1,10 +1,34 @@
 <div class="flex flex-col gap-6 p-8">
 
-  <app-page-header
-    [title]="sede()?.name ?? 'Detalle de sede'"
-    backLink="/app/sedes"
-    backLabel="Sedes"
-  />
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header
+      [title]="sede()?.name ?? 'Detalle de sede'"
+      backLink="/app/sedes"
+      backLabel="Sedes"
+    />
+    <div class="flex flex-wrap gap-2">
+      @if (session.isAdmin()) {
+        @if (sede(); as s) {
+          <a
+            [routerLink]="['/app/sedes', s.id, 'editar']"
+            class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
+          >
+            <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">edit</span>
+            Editar
+          </a>
+        }
+      }
+      @if (session.canAccessPos()) {
+        <a
+          [routerLink]="['/app/sedes', sede()?.id, 'pos']"
+          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-surface-container"
+        >
+          <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">point_of_sale</span>
+          Configuración POS
+        </a>
+      }
+    </div>
+  </div>
 
   <app-data-state
     [loading]="loading()"
@@ -13,16 +37,16 @@
     emptyMessage="No se encontró la sede."
   >
     @if (sede(); as s) {
-      <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+      <section class="ui-panel p-6">
 
         <!-- Badge de estado en la parte superior -->
         <div class="mb-4">
           @if (activa) {
-            <span class="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
+            <span class="rounded-full ui-badge-success px-3 py-1 text-sm font-semibold">
               Sede activa
             </span>
           } @else {
-            <span class="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-600">
+            <span class="rounded-full bg-surface-container px-3 py-1 text-sm font-semibold text-on-surface-variant">
               Dada de baja
             </span>
           }

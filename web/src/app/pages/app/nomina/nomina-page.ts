@@ -2,8 +2,14 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
+import { EmployeeLookupService } from '../../../core/employees/employee-lookup.service';
+import { PayrollLookupService } from '../../../core/payroll/payroll-lookup.service';
 import { PayrollService } from '../../../core/payroll/payroll.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
+import {
+  payrollFrequencyLabel,
+  payrollRecordStatusLabel,
+} from '../../../core/i18n/enum-labels';
 import type { PageMetadata } from '../../../core/model/common/pagination';
 import type {
   PayrollDebtResponse,
@@ -19,17 +25,28 @@ import type {
 } from '../../../core/model/payroll/payroll.enums';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
+import { EmployeeSelectComponent } from '../../../shared/ui/employee-select/employee-select';
+import { PayrollPeriodSelectComponent } from '../../../shared/ui/payroll-period-select/payroll-period-select';
 
 type NominaTab = 'registros' | 'periodos' | 'pagos' | 'adeudos';
 
 @Component({
   selector: 'app-nomina-page',
   
-  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, FormsModule],
+  imports: [
+    PageHeaderComponent,
+    DataStateComponent,
+    ReactiveFormsModule,
+    FormsModule,
+    EmployeeSelectComponent,
+    PayrollPeriodSelectComponent,
+  ],
   templateUrl: './nomina-page.html',
 })
 export class NominaPageComponent implements OnInit {
   private readonly payroll = inject(PayrollService);
+  private readonly employeeLookup = inject(EmployeeLookupService);
+  private readonly periodLookup = inject(PayrollLookupService);
   private readonly fb = inject(FormBuilder);
 
   readonly activeTab = signal<NominaTab>('registros');
@@ -47,8 +64,8 @@ export class NominaPageComponent implements OnInit {
   readonly records = signal<PayrollRecordResponse[]>([]);
   readonly recordsMeta = signal<PageMetadata | null>(null);
   readonly recordsPage = signal(0);
-  filterEmployeeId = '';
-  filterPeriodId = '';
+  filterEmployeeId: number | null = null;
+  filterPeriodId: number | null = null;
 
   readonly recordSaving = signal(false);
   readonly recordFormError = signal<ParsedApiError | null>(null);
@@ -88,7 +105,7 @@ export class NominaPageComponent implements OnInit {
   readonly payments = signal<PayrollPaymentResponse[]>([]);
   readonly paymentsMeta = signal<PageMetadata | null>(null);
   readonly paymentsPage = signal(0);
-  filterPaymentEmployeeId = '';
+  filterPaymentEmployeeId: number | null = null;
 
   /** Adeudos */
   readonly debtsLoading = signal(false);
@@ -101,15 +118,12 @@ export class NominaPageComponent implements OnInit {
   readonly importMessage = signal<string | null>(null);
   readonly importError = signal<ParsedApiError | null>(null);
 
-  readonly frequencyOptions: { value: PayrollFrequency; label: string }[] = [
-    { value: 'WEEKLY', label: 'Semanal' },
-    { value: 'BIWEEKLY', label: 'Quincenal' },
-    { value: 'MONTHLY', label: 'Mensual' },
-    { value: 'CUSTOM', label: 'Personalizado' },
-  ];
+  readonly frequencyOptions: { value: PayrollFrequency; label: string }[] = (
+    ['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM'] as PayrollFrequency[]
+  ).map((value) => ({ value, label: payrollFrequencyLabel(value) }));
 
   readonly tabButtonInactive =
-    'rounded-lg px-4 py-2 text-sm font-semibold text-stone-600 transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900';
+    'rounded-lg px-4 py-2 text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container';
   readonly tabButtonActive =
     'rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)] shadow-sm';
 
@@ -118,8 +132,19 @@ export class NominaPageComponent implements OnInit {
     const first = new Date(now.getFullYear(), now.getMonth(), 1);
     this.summaryFrom = first.toISOString().slice(0, 10);
     this.summaryTo = now.toISOString().slice(0, 10);
+    void this.employeeLookup.ensureLoaded();
+    void this.periodLookup.ensureLoaded();
     this.loadSummary();
     this.loadRecords();
+  }
+
+  empName(id: number): string {
+    return this.employeeLookup.name(id);
+  }
+
+  periodName(id: number | null): string {
+    if (id == null) return '—';
+    return this.periodLookup.periodLabel(id);
   }
 
   setTab(tab: NominaTab): void {
@@ -150,14 +175,12 @@ export class NominaPageComponent implements OnInit {
   loadRecords(): void {
     this.recordsError.set(null);
     this.recordsLoading.set(true);
-    const employeeId = this.filterEmployeeId.trim() ? Number(this.filterEmployeeId) : undefined;
-    const periodId = this.filterPeriodId.trim() ? Number(this.filterPeriodId) : undefined;
     this.payroll
       .listRecords({
         page: this.recordsPage(),
         size: 20,
-        employeeId: Number.isFinite(employeeId as number) ? employeeId : undefined,
-        periodId: Number.isFinite(periodId as number) ? periodId : undefined,
+        employeeId: this.filterEmployeeId ?? undefined,
+        periodId: this.filterPeriodId ?? undefined,
       })
       .pipe(finalize(() => this.recordsLoading.set(false)))
       .subscribe({
@@ -301,13 +324,8 @@ export class NominaPageComponent implements OnInit {
   loadPayments(): void {
     this.paymentsError.set(null);
     this.paymentsLoading.set(true);
-    const eid = this.filterPaymentEmployeeId.trim() ? Number(this.filterPaymentEmployeeId) : undefined;
     this.payroll
-      .listPayments(
-        this.paymentsPage(),
-        20,
-        Number.isFinite(eid as number) ? eid : undefined,
-      )
+      .listPayments(this.paymentsPage(), 20, this.filterPaymentEmployeeId ?? undefined)
       .pipe(finalize(() => this.paymentsLoading.set(false)))
       .subscribe({
         next: (page) => {
@@ -373,16 +391,14 @@ export class NominaPageComponent implements OnInit {
   exportExcel(): void {
     this.importError.set(null);
     this.importExporting.set(true);
-    const employeeId = this.filterEmployeeId.trim() ? Number(this.filterEmployeeId) : undefined;
-    const periodId = this.filterPeriodId.trim() ? Number(this.filterPeriodId) : undefined;
     this.payroll
       .exportRecords({
         page: 0,
         size: 1000,
         from: this.summaryFrom || undefined,
         to: this.summaryTo || undefined,
-        employeeId: Number.isFinite(employeeId as number) ? employeeId : undefined,
-        periodId: Number.isFinite(periodId as number) ? periodId : undefined,
+        employeeId: this.filterEmployeeId ?? undefined,
+        periodId: this.filterPeriodId ?? undefined,
       })
       .pipe(finalize(() => this.importExporting.set(false)))
       .subscribe({
@@ -405,14 +421,12 @@ export class NominaPageComponent implements OnInit {
     this.importMessage.set(null);
     this.importError.set(null);
     this.importExporting.set(true);
-    const employeeId = this.filterEmployeeId.trim() ? Number(this.filterEmployeeId) : undefined;
-    const periodId = this.filterPeriodId.trim() ? Number(this.filterPeriodId) : undefined;
     this.payroll
       .importRecords(file, {
         from: this.summaryFrom || undefined,
         to: this.summaryTo || undefined,
-        employeeId: Number.isFinite(employeeId as number) ? employeeId : undefined,
-        periodId: Number.isFinite(periodId as number) ? periodId : undefined,
+        employeeId: this.filterEmployeeId ?? undefined,
+        periodId: this.filterPeriodId ?? undefined,
       })
       .pipe(finalize(() => {
         this.importExporting.set(false);
@@ -444,26 +458,14 @@ export class NominaPageComponent implements OnInit {
   }
 
   statusLabel(status: PayrollRecordStatus): string {
-    const map: Record<PayrollRecordStatus, string> = {
-      PENDING: 'Pendiente',
-      PAID: 'Pagado',
-      PARTIAL: 'Parcial',
-      DEFERRED: 'Diferido',
-    };
-    return map[status] ?? status;
+    return payrollRecordStatusLabel(status);
   }
 
   paymentStatusLabel(status: string): string {
-    const map: Record<string, string> = {
-      PENDING: 'Pendiente',
-      PAID: 'Pagado',
-      PARTIAL: 'Parcial',
-      DEFERRED: 'Diferido',
-    };
-    return map[status] ?? status;
+    return payrollRecordStatusLabel(status);
   }
 
   frequencyLabel(f: PayrollFrequency): string {
-    return this.frequencyOptions.find((o) => o.value === f)?.label ?? f;
+    return payrollFrequencyLabel(f);
   }
 }

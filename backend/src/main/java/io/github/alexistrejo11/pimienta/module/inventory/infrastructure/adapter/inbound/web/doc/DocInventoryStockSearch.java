@@ -40,7 +40,12 @@ import java.lang.annotation.Target;
       name = "status",
       in = ParameterIn.QUERY,
       description = "Estado del registro de inventario.",
-      schema = @Schema(implementation = Inventory.InventoryStatus.class))
+      schema = @Schema(implementation = Inventory.InventoryStatus.class)),
+  @Parameter(
+      name = "headquarterId",
+      in = ParameterIn.QUERY,
+      description = "Filtrar por sede (MANAGER: sede asignada; ADMIN: opcional).",
+      example = "1")
 })
 @Operation(
     summary = "Search stock rows",

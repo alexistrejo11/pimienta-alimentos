@@ -1,0 +1,15 @@
+# Local development: Maven + spring-boot:run so DevTools can restart on bind-mounted sources.
+# Build context: backend/
+FROM maven:3.9-eclipse-temurin-26-alpine
+WORKDIR /workspace
+
+RUN apk add --no-cache inotify-tools
+
+COPY pom.xml .
+COPY src ./src
+COPY docker/dev-run.sh /usr/local/bin/dev-run.sh
+RUN chmod +x /usr/local/bin/dev-run.sh
+
+EXPOSE 8080
+
+CMD ["dev-run.sh"]

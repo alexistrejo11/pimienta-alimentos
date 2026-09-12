@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.controller;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.RegisterEmployeeMultipartPayloadReader;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.UpdateEmployeeMultipartPayloadReader;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.RegisterEmployeeParams;
@@ -47,6 +49,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,7 +67,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/employees")
+@RequestMapping(BASE + "/employees")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocEmployees
 public class EmployeeManagerController {
@@ -115,7 +118,7 @@ public class EmployeeManagerController {
     EmployeeSearchCriteria criteria = new EmployeeSearchCriteria(status, blankToNull(department), blankToNull(q));
     Page<Employee> employees = employeeManagementUseCases.search(criteria, pageable.toPageable());
     return PagedResponse.map(
-        employees, e -> EmployeeManagerWebMapper.toListItem(e, employeePhotoUrlPresenter::present));
+        employees, e -> EmployeeManagerWebMapper.toListItem(e, employeePhotoUrlPresenter));
   }
 
   @GetMapping("/active")
@@ -125,7 +128,7 @@ public class EmployeeManagerController {
     Page<Employee> employees = employeeManagementUseCases.search(
         EmployeeSearchCriteria.onlyActive(), pageable.toPageable());
     return PagedResponse.map(
-        employees, e -> EmployeeManagerWebMapper.toListItem(e, employeePhotoUrlPresenter::present));
+        employees, e -> EmployeeManagerWebMapper.toListItem(e, employeePhotoUrlPresenter));
   }
 
   @GetMapping("/export")
@@ -148,18 +151,22 @@ public class EmployeeManagerController {
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeImport
-  public SpreadsheetBulkImportResult importEmployees(@RequestParam("file") MultipartFile file)
+  public SpreadsheetBulkImportResult importEmployees(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun)
       throws IOException {
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo vacío");
     }
     return employeeBulkSyncUseCases.importEmployees(
-        file.getInputStream(), file.getOriginalFilename());
+        file.getInputStream(), file.getOriginalFilename(), dryRun);
   }
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocEmployeeRegister
@@ -171,6 +178,7 @@ public class EmployeeManagerController {
   }
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocEmployeeRegisterJsonHidden
@@ -179,11 +187,12 @@ public class EmployeeManagerController {
   }
 
   @PutMapping("/{id}/submit-for-contract")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeSubmitForContract
   public EmployeeResponse submitEmployeeForContract(@PathVariable Long id) {
     Employee employee = employeeManagementUseCases.submitForContract(id);
-    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter::present);
+    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter);
   }
 
   @GetMapping("/{id}")
@@ -191,10 +200,11 @@ public class EmployeeManagerController {
   @DocEmployeeGetById
   public EmployeeResponse getEmployeeDetailById(@PathVariable Long id) {
     Employee employee = employeeManagementUseCases.getById(id);
-    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter::present);
+    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter);
   }
 
   @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeUpdate
   public EmployeeResponse updateEmployeeMultipart(
@@ -207,6 +217,7 @@ public class EmployeeManagerController {
   }
 
   @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeUpdateJsonHidden
   public EmployeeResponse updateEmployeeJsonOnly(@PathVariable Long id, @Valid @RequestBody UpdateEmployeeRequest request) {
@@ -217,26 +228,29 @@ public class EmployeeManagerController {
       Long id, UpdateEmployeeRequest request, MultipartFile photo) {
     Employee updated =
         employeeManagementUseCases.update(id, EmployeeManagerWebMapper.toUpdateParams(id, request, photo));
-    return EmployeeManagerWebMapper.toResponse(updated, employeePhotoUrlPresenter::present);
+    return EmployeeManagerWebMapper.toResponse(updated, employeePhotoUrlPresenter);
   }
 
   @PutMapping("/{id}/terminate")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeTerminate
   public EmployeeResponse terminateEmployee(@PathVariable Long id) {
     Employee employee = employeeManagementUseCases.terminate(id);
-    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter::present);
+    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter);
   }
 
   @PutMapping("/{id}/rehire")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeRehire
   public EmployeeResponse rehireEmployee(@PathVariable Long id) {
     Employee employee = employeeManagementUseCases.rehire(id);
-    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter::present);
+    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter);
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeDelete
   public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
@@ -248,7 +262,7 @@ public class EmployeeManagerController {
       RegisterEmployeeRequest employeeRequest, MultipartFile photo) {
     RegisterEmployeeParams params = EmployeeManagerWebMapper.toRegisterParams(employeeRequest, photo);
     Employee registered = employeeManagementUseCases.register(params);
-    return EmployeeManagerWebMapper.toResponse(registered, employeePhotoUrlPresenter::present);
+    return EmployeeManagerWebMapper.toResponse(registered, employeePhotoUrlPresenter);
   }
 
   private static String blankToNull(String value) {

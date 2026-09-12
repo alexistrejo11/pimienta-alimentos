@@ -15,7 +15,6 @@ import java.util.Map;
 
 public class Employee extends BaseDomain<Long> {
 
-  private static final String DEFAULT_PHOTO_URL = "https://ui-avatars.com/api/?name=";
   private PersonalProfile personal;
   private OfficialIdentifiers officialIds;
   private Employment employment;
@@ -33,15 +32,6 @@ public class Employee extends BaseDomain<Long> {
     this.updatedAt = LocalDateTime.now();
     this.deletedAt = null;
     this.version = 1L;
-  }
-
-  private void setDeafultPhotoUrl(PersonalProfile personal) {
-    String fullName = personal.firstName() != null ? personal.firstName() : "";
-    fullName += personal.lastName() != null ? "" + "_" + personal.lastName() : "";
-
-    if (personal.photoUrl() == null) {
-      this.personal = this.personal.setPhotoUrl(DEFAULT_PHOTO_URL + fullName);
-    }
   }
 
   // ─── Status Transitions ───
@@ -269,11 +259,6 @@ public class Employee extends BaseDomain<Long> {
       e.employment = employment != null ? employment : Employment.empty();
       e.compensation = compensation != null ? compensation : Compensation.baseline(BigDecimal.ZERO);
       e.benefits = benefits != null ? benefits : BenefitsProfile.legalDefaults();
-
-      // Set default photo url if not set
-      if (personal != null && personal.photoUrl() == null) {
-        e.setDeafultPhotoUrl(personal);
-      }
 
       return e;
     }

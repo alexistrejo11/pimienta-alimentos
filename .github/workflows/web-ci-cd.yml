@@ -1,7 +1,7 @@
 # CI/CD for the Angular web app (image behind Cloudflare TLS).
 #
 # Flow:
-#   1) test     — install + production build (PRs and main).
+#   1) test     — install + unit tests + production build (PRs and main).
 #   2) publish  — build & push image to GHCR (main only, after test passes).
 #   3) deploy   — SSH through Cloudflare Access (cloudflared) → pull THIS image,
 #                 recreate the container, remove ONLY unused images for this project.
@@ -42,7 +42,7 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Build Web project (compile check)
+  # Unit tests + production build (must pass before publish/deploy)
   # ---------------------------------------------------------------------------
   test:
     runs-on: ubuntu-latest
@@ -61,6 +61,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run unit tests
+        run: npm test -- --watch=false
 
       - name: Build Angular project
         run: npm run build

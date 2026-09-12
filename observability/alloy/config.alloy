@@ -1,0 +1,49 @@
+// Discovers local Docker containers and forwards their stdout logs to Loki.
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = { job = "docker" }
+  forward_to = [loki.process.application.receiver]
+}
+
+// Extracts stable fields from Spring and SSR JSON without turning IDs into labels.
+loki.process "application" {
+  stage.json {
+    expressions = {
+      level     = "level",
+      service   = "service",
+      source    = "source",
+      trace_id  = "traceId",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level   = "level",
+      service = "service",
+      source  = "source",
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

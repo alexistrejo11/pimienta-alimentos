@@ -1,22 +1,33 @@
 <div class="flex flex-col gap-6 p-8">
 
-  <app-page-header
-    title="Sedes"
-    subtitle="Ubicaciones físicas de la empresa"
-  />
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header
+      title="Sedes"
+      subtitle="Ubicaciones físicas de la empresa"
+    />
+    @if (isAdmin()) {
+      <a
+        routerLink="/app/sedes/nueva"
+        class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
+      >
+        <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">add</span>
+        Nueva sede
+      </a>
+    }
+  </div>
 
   <!-- Estadísticas de sedes -->
   @if (stats(); as s) {
     <div class="grid grid-cols-3 gap-4">
-      <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+      <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Total</p>
         <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">{{ s.total }}</p>
       </div>
       <div class="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/30">
         <p class="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-400">Activas</p>
-        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-green-800 dark:text-green-300">{{ s.active }}</p>
+        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">{{ s.active }}</p>
       </div>
-      <div class="rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900">
+      <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Dadas de baja</p>
         <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">{{ s.softDeleted }}</p>
       </div>

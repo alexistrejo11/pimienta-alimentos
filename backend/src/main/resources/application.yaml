@@ -1,7 +1,6 @@
 spring:
   application:
     name: pimienta
-  # PostgreSQL (override via .env or OS env; see docker-compose.yml)
   datasource:
     url: ${POSTGRES_URL}
     username: ${POSTGRES_USER}
@@ -11,16 +10,13 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
-    # RDS setup uses schema pimienta (not public); keep Flyway history + DDL there too.
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-        # Dialect omitted: pick from JDBC URL/driver (PostgreSQL in prod, H2 in tests).
-  # Redis — set REDIS_URL only (local, Docker, Upstash, etc.)
+        format_sql: false
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
@@ -35,14 +31,13 @@ spring:
 server:
   port: ${API_PORT:8080}
 
-# Actuator — only health, info, and metrics are enabled; everything else stays off.
 management:
   endpoints:
     enabled-by-default: false
     web:
       base-path: /actuator
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       enabled: true
@@ -53,6 +48,15 @@ management:
       enabled: true
     metrics:
       enabled: true
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
   info:
     env:
       enabled: false
@@ -68,7 +72,6 @@ info:
     name: ${spring.application.name}
     description: Pimienta Alimentos backend API
 
-# OpenAPI / Swagger UI (springdoc)
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -78,10 +81,6 @@ springdoc:
     operations-sorter: alpha
     default-model-expand-depth: 3
     default-models-expand-depth: 3
-  # Logging
-  logging:
-    level:
-      org.springframework.web: DEBUG
 
 pimienta:
   redis:
@@ -93,13 +92,12 @@ pimienta:
     max-height: 600
     quality: 0.8
     allowed-formats: jpg, jpeg, png
-  # Redis-backed token bucket: global filter on /api/** + @RateLimit on controllers.
   rate-limiting:
     enabled: true
-  # CORS — edit allowed-origins per environment (SPA dev servers, production web origin).
   cors:
     path-pattern: "/**"
-    allowed-origins: ${PIMIENTA_CORS_ALLOWED_ORIGINS}
+    # Comma-separated env value is split in CorsConfig. Do not use a trailing slash.
+    allowed-origins: ${PIMIENTA_CORS_ALLOWED_ORIGINS:http://localhost:4000,http://localhost:4001,http://localhost:3000,http://127.0.0.1:4000,http://127.0.0.1:4001,http://127.0.0.1:3000}
     allowed-methods:
       - GET
       - POST
@@ -126,6 +124,10 @@ pimienta:
       secret: ${PIMIENTA_SECURITY_JWT_SECRET:change-me-use-at-least-256-bits-for-hs256-secret-key-pimienta}
       access-token-ttl-minutes: 15
       refresh-token-ttl-days: 7
+    device-jwt:
+      access-token-ttl-minutes: 15
+      refresh-token-ttl-days: 90
+      refresh-token-max-ttl-days: 365
 
 aws:
   region: ${AWS_REGION:us-east-1}
@@ -133,10 +135,15 @@ aws:
     bucket: ${AWS_S3_BUCKET_NAME}
     folder: ${AWS_S3_FOLDER:employees}
     sources-root: ${AWS_S3_SOURCES_ROOT:pimienta/sources}
+    pos-apk-key: ${AWS_S3_POS_APK_KEY:pimienta/releases/pos/android/latest.apk}
+    pos-apk-manifest-key: ${AWS_S3_POS_APK_MANIFEST_KEY:pimienta/releases/pos/android/current.json}
+    endpoint: "${AWS_S3_ENDPOINT:}"
+    public-endpoint: "${AWS_S3_PUBLIC_ENDPOINT:}"
 
 logging:
+  structured:
+    format:
+      console: logstash
+      file: logstash
   level:
-    org.springframework.web: DEBUG
-    org.springframework.web.servlet.mvc: DEBUG
-    org.springframework.web.multipart: DEBUG
-    org.apache.coyote: DEBUG
+    org.springframework.web: INFO

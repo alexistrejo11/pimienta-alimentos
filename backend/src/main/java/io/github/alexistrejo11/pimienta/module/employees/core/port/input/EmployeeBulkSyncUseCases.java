@@ -10,6 +10,7 @@ public interface EmployeeBulkSyncUseCases {
 
   byte[] exportEmployees(EmployeeSearchCriteria criteria, Pageable pageable) throws IOException;
 
-  SpreadsheetBulkImportResult importEmployees(InputStream file, String originalFilename)
+  SpreadsheetBulkImportResult importEmployees(
+      InputStream file, String originalFilename, boolean dryRun)
       throws IOException;
 }

@@ -1,6 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { forkJoin, finalize } from 'rxjs';
 
+import { SessionContextService } from '../../../core/auth/session-context.service';
 import { HeadquarterService } from '../../../core/headquarters/headquarter.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
 import type { HeadQuarterResponse, HeadquarterStatisticsResponse } from '../../../core/model/headquarter/headquarter.dto';
@@ -12,12 +14,14 @@ import { SedeCardComponent } from './components/sede-card/sede-card';
 @Component({
   selector: 'app-sedes-page',
   
-  imports: [PageHeaderComponent, DataStateComponent, SedeCardComponent],
+  imports: [PageHeaderComponent, DataStateComponent, SedeCardComponent, RouterLink],
   templateUrl: './sedes-page.html',
 })
 export class SedesPageComponent implements OnInit {
   private readonly service = inject(HeadquarterService);
+  private readonly session = inject(SessionContextService);
 
+  readonly isAdmin = this.session.isAdmin;
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly sedes = signal<HeadQuarterResponse[]>([]);

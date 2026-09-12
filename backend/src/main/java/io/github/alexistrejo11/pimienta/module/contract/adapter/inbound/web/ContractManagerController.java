@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.contract.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.contract.adapter.inbound.web.doc.DocContracts;
 import io.github.alexistrejo11.pimienta.module.contract.adapter.inbound.web.doc.DocContractsCreate;
 import io.github.alexistrejo11.pimienta.module.contract.adapter.inbound.web.doc.DocContractsDelete;
@@ -37,7 +39,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/contracts")
+@RequestMapping(BASE + "/contracts")
 @DocContracts
 @RateLimit(profile = RateLimitProfile.STANDARD)
 public class ContractManagerController {

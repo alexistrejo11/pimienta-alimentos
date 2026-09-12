@@ -1,0 +1,12 @@
+{
+  "eventId": "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f70819",
+  "eventType": "SALE_CONFIRMED",
+  "schemaVersion": 1,
+  "deviceId": "8f3c1a2e-9b4d-4e6a-a1c0-2d5e8f7a9b01",
+  "siteId": "42",
+  "deviceSequence": 1842,
+  "aggregateId": "c0ffee00-1234-5678-9abc-def012345678",
+  "shiftId": "b1b2b3b4-c5c6-4789-a012-3456789abcde",
+  "occurredAt": "2026-09-08T15:23:12Z",
+  "payload": {}
+}

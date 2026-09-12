@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.account.auth.core.application;
 
+import io.github.alexistrejo11.pimienta.module.account.auth.core.application.RegisterResult;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LoginCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LogoutCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.RefreshSessionCommand;
@@ -50,7 +51,7 @@ public class AuthUseCasesImpl implements AuthUseCases {
 
   @Override
   @Transactional
-  public String register(RegisterCommand command) {
+  public RegisterResult register(RegisterCommand command) {
     log.info("register start {}", command.toStringMasked());
 
     if (userRepository.findByEmail(command.email()).isPresent()) {
@@ -91,7 +92,7 @@ public class AuthUseCasesImpl implements AuthUseCases {
         saved.getPhone(),
         Instant.now()));
 
-    return "Registration successful. Your account is pending approval by an administrator.";
+    return new RegisterResult(true);
   }
 
   @Override

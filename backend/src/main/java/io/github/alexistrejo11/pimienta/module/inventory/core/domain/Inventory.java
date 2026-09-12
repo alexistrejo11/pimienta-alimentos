@@ -151,8 +151,25 @@ public class Inventory extends BaseDomain<Long> {
     return item != null && availableQuantity <= item.getReorderPoint();
   }
 
+  /**
+   * Apply a POS sale (or inverse) quantity change. Decreases stock when {@code quantityOut} &gt; 0.
+   * Allows negative available quantity. Only valid for {@link StorageLocation.LocationType#POS}.
+   */
+  public void applyPosSaleDelta(int quantityOut) {
+    if (quantityOut == 0) {
+      return;
+    }
+    if (location == null || !location.isPos()) {
+      throw new IllegalStateException("POS stock delta is only allowed on LocationType.POS");
+    }
+    this.availableQuantity -= quantityOut;
+    location.adjustOccupiedSoft(-quantityOut);
+    recalculateStatus();
+    this.updatedAt = LocalDateTime.now();
+  }
+
   private void recalculateStatus() {
-    if (availableQuantity == 0) {
+    if (availableQuantity <= 0) {
       this.status = InventoryStatus.OUT_OF_STOCK;
     } else if (item != null && availableQuantity <= item.getReorderPoint()) {
       this.status = InventoryStatus.LOW_STOCK;

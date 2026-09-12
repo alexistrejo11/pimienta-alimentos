@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
     description =
         """
         Company sites / branches: CRUD, lookup by id or name, statistics, and Excel import/export. \
-        Requires `Authorization: Bearer <access_token>`. Typical roles: **ADMIN**, **MANAGER**, \
-        **OPERATIONS** (as configured). Not-found responses use `HEADQUARTER_NOT_FOUND` in \
-        `ApiErrorResponse`.""")
+        Requires `Authorization: Bearer <access_token>`. Reads are available to authenticated staff; \
+        create, update, soft-delete, and import require **ROLE_ADMIN**. Not-found responses use \
+        `HEADQUARTER_NOT_FOUND` in `ApiErrorResponse`.""")
 public @interface DocHeadquarters {}

@@ -27,7 +27,7 @@
       }
 
       <section
-        class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950"
+        class="ui-panel p-6"
         aria-label="Datos de la oportunidad"
       >
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Oportunidad</h2>
@@ -40,7 +40,7 @@
               id="op-title"
               formControlName="title"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
             @if (form.controls.title.touched && form.controls.title.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -58,7 +58,7 @@
               id="op-desc"
               formControlName="description"
               rows="3"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             ></textarea>
           </div>
 
@@ -70,7 +70,7 @@
               id="op-company"
               formControlName="companyName"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
             @if (form.controls.companyName.touched && form.controls.companyName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -88,7 +88,7 @@
               id="op-industry"
               formControlName="industry"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -100,7 +100,7 @@
               id="op-contact"
               formControlName="contactName"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
             @if (form.controls.contactName.touched && form.controls.contactName.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -115,7 +115,7 @@
               id="op-email"
               formControlName="contactEmail"
               type="email"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
             @if (form.controls.contactEmail.touched && form.controls.contactEmail.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -133,7 +133,7 @@
               id="op-phone"
               formControlName="contactPhone"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -145,7 +145,7 @@
               id="op-loc"
               formControlName="companyLocation"
               type="text"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -159,7 +159,7 @@
               type="number"
               step="0.01"
               min="0"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
             @if (form.controls.estimatedValue.touched && form.controls.estimatedValue.hasError('required')) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -176,7 +176,7 @@
               type="number"
               min="0"
               max="100"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -187,7 +187,7 @@
             <select
               id="op-source"
               formControlName="source"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
               @for (s of sources; track s) {
                 <option [value]="s">{{ sourceLabel[s] }}</option>
@@ -203,22 +203,15 @@
               id="op-close"
               formControlName="expectedCloseDate"
               type="date"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
-          <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-sales"
-              >ID vendedor asignado (empleado)</label
-            >
-            <input
-              id="op-sales"
-              formControlName="assignedSalesmanId"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
-            />
-          </div>
+          <app-employee-select
+            label="Vendedor asignado"
+            [value]="form.controls.assignedSalesmanId.value"
+            (valueChange)="form.controls.assignedSalesmanId.setValue($event)"
+          />
         </div>
       </section>
 
@@ -238,7 +231,7 @@
         </button>
         <a
           routerLink="/app/crm/oportunidades"
-          class="rounded-lg border border-stone-300 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-900"
+          class="rounded-lg border border-outline-variant/30 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-surface-container"
         >
           Cancelar
         </a>

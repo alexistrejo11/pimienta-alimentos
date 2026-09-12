@@ -2,7 +2,10 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.InventorySearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.InventoryJpaEntity;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.StorageLocationJpaEntity;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,6 +28,16 @@ public final class InventorySpecifications {
         }
         if (criteria.status() != null) {
           parts.add(cb.equal(root.get("status"), criteria.status()));
+        }
+        if (criteria.headquarterId() != null) {
+          Subquery<Long> locationIds = query.subquery(Long.class);
+          Root<StorageLocationJpaEntity> locationRoot = locationIds.from(StorageLocationJpaEntity.class);
+          locationIds.select(locationRoot.get("id"));
+          locationIds.where(
+              cb.and(
+                  cb.isNull(locationRoot.get("deletedAt")),
+                  cb.equal(locationRoot.get("headquarterId"), criteria.headquarterId())));
+          parts.add(root.get("locationId").in(locationIds));
         }
       }
       return cb.and(parts.toArray(Predicate[]::new));

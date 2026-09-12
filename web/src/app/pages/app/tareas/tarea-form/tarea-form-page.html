@@ -7,16 +7,9 @@
   />
 
   <form class="space-y-6" [formGroup]="form" (ngSubmit)="submit()">
-    @if (apiError(); as err) {
-      <div
-        role="alert"
-        class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
-      >
-        <p class="font-semibold">{{ err.message }}</p>
-      </div>
-    }
+    <app-api-form-error [error]="apiError()" />
 
-    <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+    <section class="ui-panel p-6">
       <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Datos principales</h2>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="sm:col-span-2 space-y-1.5">
@@ -25,7 +18,7 @@
             id="task-title"
             formControlName="title"
             type="text"
-            class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+            class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           />
           @if (form.controls.title.touched && form.controls.title.hasError('required')) {
             <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -41,7 +34,7 @@
             id="task-desc"
             formControlName="description"
             rows="3"
-            class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+            class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           ></textarea>
         </div>
 
@@ -50,7 +43,7 @@
           <select
             id="task-priority"
             formControlName="priority"
-            class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+            class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           >
             @for (p of priorities; track p) {
               <option [value]="p">{{ priorityLabel[p] }}</option>
@@ -64,31 +57,37 @@
             id="task-due"
             formControlName="dueDate"
             type="datetime-local"
-            class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+            class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           />
         </div>
       </div>
     </section>
 
-    <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+    <section class="ui-panel p-6">
       <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Relacion y checklist</h2>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div class="space-y-1.5">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="task-hq">ID sede</label>
-          <input id="task-hq" formControlName="headquarterId" type="number" min="1" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="task-project">ID proyecto</label>
-          <input id="task-project" formControlName="projectId" type="number" min="1" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="task-opportunity">ID oportunidad</label>
-          <input id="task-opportunity" formControlName="opportunityId" type="number" min="1" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="task-created-by">ID creador</label>
-          <input id="task-created-by" formControlName="createdById" type="number" min="1" class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900" />
-        </div>
+        <app-headquarter-select
+          label="Sede (opcional)"
+          [allowAll]="true"
+          [value]="form.controls.headquarterId.value"
+          (valueChange)="onHeadquarterChange($event)"
+        />
+        <app-project-select
+          label="Proyecto (opcional)"
+          [value]="form.controls.projectId.value"
+          (valueChange)="form.controls.projectId.setValue($event)"
+        />
+        <app-opportunity-select
+          label="Oportunidad (opcional)"
+          [value]="form.controls.opportunityId.value"
+          (valueChange)="form.controls.opportunityId.setValue($event)"
+        />
+        <app-employee-select
+          label="Creador (opcional)"
+          nullLabel="Sin asignar"
+          [value]="form.controls.createdById.value"
+          (valueChange)="form.controls.createdById.setValue($event)"
+        />
         <div class="sm:col-span-2 space-y-1.5">
           <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="task-checklist">Checklist (una linea por item)</label>
           <textarea
@@ -96,7 +95,7 @@
             formControlName="checklistText"
             rows="5"
             placeholder="Llamar proveedor&#10;Confirmar costo&#10;Enviar resumen"
-            class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 dark:bg-stone-900"
+            class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
           ></textarea>
         </div>
       </div>
@@ -116,7 +115,7 @@
       </button>
       <a
         routerLink="/app/tareas"
-        class="rounded-lg border border-stone-300 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-stone-100 dark:border-stone-600 dark:hover:bg-stone-900"
+        class="rounded-lg border border-outline-variant/30 px-5 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-surface-container"
       >
         Cancelar
       </a>

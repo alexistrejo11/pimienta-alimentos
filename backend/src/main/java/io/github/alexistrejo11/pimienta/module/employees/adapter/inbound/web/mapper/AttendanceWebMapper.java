@@ -9,10 +9,12 @@ public class AttendanceWebMapper {
   private AttendanceWebMapper() {
   }
 
-  public static AttendanceResponse toResponse(Attendance a, UnaryOperator<String> evidenceUrlPresenter) {
+  public static AttendanceResponse toResponse(
+      Attendance a, UnaryOperator<String> evidenceUrlPresenter, String employeeFullName) {
     return new AttendanceResponse(
         a.getId(),
         a.getEmployeeId(),
+        employeeFullName != null ? employeeFullName : "",
         a.getHeadquarterId(),
         a.getWorkDate(),
         a.getCheckInTime(),

@@ -37,6 +37,7 @@ public record UserReconstructParams(
     String bannedReason,
     LocalDateTime bannedAt,
     List<Role> roles,
+    List<Long> assignedHeadquarterIds,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime deletedAt,
@@ -60,6 +61,7 @@ public record UserReconstructParams(
     private String bannedReason;
     private LocalDateTime bannedAt;
     private List<Role> roles;
+    private List<Long> assignedHeadquarterIds;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
@@ -128,6 +130,11 @@ public record UserReconstructParams(
       return this;
     }
 
+    public Builder assignedHeadquarterIds(List<Long> assignedHeadquarterIds) {
+      this.assignedHeadquarterIds = assignedHeadquarterIds;
+      return this;
+    }
+
     public Builder createdAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -150,8 +157,23 @@ public record UserReconstructParams(
 
     public UserReconstructParams build() {
       return new UserReconstructParams(
-          id, email, passwordHash, firstName, lastName, gender, phone, dateOfBirth,
-          accountStatus, bannedReason, bannedAt, roles, createdAt, updatedAt, deletedAt, version);
+          id,
+          email,
+          passwordHash,
+          firstName,
+          lastName,
+          gender,
+          phone,
+          dateOfBirth,
+          accountStatus,
+          bannedReason,
+          bannedAt,
+          roles,
+          assignedHeadquarterIds,
+          createdAt,
+          updatedAt,
+          deletedAt,
+          version);
     }
   }
 }

@@ -4,8 +4,16 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { EmployeeService } from '../../../../core/employees/employee.service';
-import { fieldMessage, parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import type { ContractType, EmployeeOnboardingPhase, WorkShift } from '../../../../core/model/employee/employee.enums';
+import {
+  fieldMessage,
+  parseApiError,
+  type ParsedApiError,
+} from '../../../../core/http/parse-api-error';
+import type {
+  ContractType,
+  EmployeeOnboardingPhase,
+  WorkShift,
+} from '../../../../core/model/employee/employee.enums';
 import type {
   EmployeeResponse,
   RegisterEmployeeRequest,
@@ -19,11 +27,22 @@ const CONTRACT_TYPES: ContractType[] = [
   'PROJECT_BASED',
   'TEMPORARY',
   'FREELANCE',
+  'UNDEFINED',
 ];
 
-const WORK_SHIFTS: WorkShift[] = ['MORNING', 'AFTERNOON', 'NIGHT', 'MIXED', 'REMOTE'];
+const WORK_SHIFTS: WorkShift[] = [
+  'MORNING',
+  'AFTERNOON',
+  'NIGHT',
+  'MIXED',
+  'REMOTE',
+  'UNDEFINED',
+];
 
 const ONBOARDING_PHASES: EmployeeOnboardingPhase[] = ['DRAFT', 'PENDING_CONTRACT'];
+
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png']);
 
 @Component({
   selector: 'app-empleado-form-page',
@@ -39,8 +58,11 @@ export class EmpleadoFormPageComponent implements OnInit {
   readonly loading = signal(false);
   readonly loadingExisting = signal(false);
   readonly apiError = signal<ParsedApiError | null>(null);
+  readonly photoError = signal<string | null>(null);
   readonly employeeId = signal<number | null>(null);
   readonly photoFile = signal<File | null>(null);
+  readonly existingPhotoUrl = signal<string | null>(null);
+  readonly photoPreviewUrl = signal<string | null>(null);
 
   readonly contractTypes = CONTRACT_TYPES;
   readonly workShifts = WORK_SHIFTS;
@@ -52,6 +74,7 @@ export class EmpleadoFormPageComponent implements OnInit {
     PROJECT_BASED: 'Por proyecto',
     TEMPORARY: 'Temporal',
     FREELANCE: 'Freelance',
+    UNDEFINED: 'Sin definir',
   };
 
   readonly workShiftLabel: Record<WorkShift, string> = {
@@ -60,6 +83,7 @@ export class EmpleadoFormPageComponent implements OnInit {
     NIGHT: 'Nocturno',
     MIXED: 'Mixto',
     REMOTE: 'Remoto',
+    UNDEFINED: 'Sin definir',
   };
 
   readonly onboardingPhaseLabel: Record<EmployeeOnboardingPhase, string> = {
@@ -67,27 +91,27 @@ export class EmpleadoFormPageComponent implements OnInit {
     PENDING_CONTRACT: 'Pendiente de contrato',
   };
 
-  readonly form = this.fb.nonNullable.group({
-    firstName: ['', [Validators.required]],
-    lastName: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.required]],
-    address: ['', [Validators.required]],
-    curp: ['', [Validators.required, Validators.minLength(18), Validators.maxLength(18)]],
-    rfc: ['', [Validators.required, Validators.minLength(12), Validators.maxLength(13)]],
-    nss: ['', [Validators.required]],
-    clabe: ['', [Validators.required, Validators.minLength(18), Validators.maxLength(18)]],
-    employeeNumber: ['', [Validators.required]],
-    position: ['', [Validators.required]],
-    department: ['', [Validators.required]],
-    contractType: this.fb.nonNullable.control<ContractType>('INDEFINITE', [Validators.required]),
-    workShift: this.fb.nonNullable.control<WorkShift>('MORNING', [Validators.required]),
-    salaryPerWeek: ['', [Validators.required, Validators.min(0)]],
-    birthDate: ['', [Validators.required]],
-    onboardingPhase: this.fb.nonNullable.control<EmployeeOnboardingPhase>('DRAFT', [Validators.required]),
-    bonuses: ['0', [Validators.required, Validators.min(0)]],
-    foodVouchers: ['0', [Validators.required, Validators.min(0)]],
-    integrationFactor: ['1', [Validators.required, Validators.min(0)]],
+  readonly form = this.fb.group({
+    firstName: ['', [Validators.required, Validators.maxLength(100)]],
+    lastName: ['', [Validators.required, Validators.maxLength(100)]],
+    email: ['', [Validators.email, Validators.maxLength(320)]],
+    phone: ['', [Validators.maxLength(40)]],
+    address: ['', [Validators.maxLength(500)]],
+    curp: ['', [Validators.maxLength(18)]],
+    rfc: ['', [Validators.maxLength(13)]],
+    nss: ['', [Validators.maxLength(11)]],
+    clabe: ['', [Validators.maxLength(18)]],
+    employeeNumber: ['', [Validators.maxLength(32)]],
+    position: ['', [Validators.maxLength(120)]],
+    department: ['', [Validators.maxLength(120)]],
+    contractType: this.fb.control<ContractType | ''>(''),
+    workShift: this.fb.control<WorkShift | ''>(''),
+    salaryPerWeek: [''],
+    birthDate: [''],
+    onboardingPhase: this.fb.control<EmployeeOnboardingPhase | ''>('DRAFT'),
+    bonuses: [''],
+    foodVouchers: [''],
+    integrationFactor: [''],
   });
 
   ngOnInit(): void {
@@ -100,7 +124,6 @@ export class EmpleadoFormPageComponent implements OnInit {
         return;
       }
       this.employeeId.set(id);
-      this.clearCreateOnlyValidators();
       this.loadEmployee(id);
     }
   }
@@ -109,13 +132,37 @@ export class EmpleadoFormPageComponent implements OnInit {
     return this.employeeId() != null;
   }
 
+  displayPhotoUrl(): string | null {
+    return this.photoPreviewUrl() ?? this.existingPhotoUrl();
+  }
+
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.photoFile.set(input.files?.[0] ?? null);
+    const file = input.files?.[0] ?? null;
+    this.photoError.set(null);
+    this.photoFile.set(null);
+    this.photoPreviewUrl.set(null);
+
+    if (!file) return;
+
+    if (!ALLOWED_PHOTO_TYPES.has(file.type)) {
+      this.photoError.set('Solo se permiten imágenes JPEG o PNG.');
+      input.value = '';
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      this.photoError.set('La imagen no debe superar 2 MB.');
+      input.value = '';
+      return;
+    }
+
+    this.photoFile.set(file);
+    this.photoPreviewUrl.set(URL.createObjectURL(file));
   }
 
   submit(): void {
     this.apiError.set(null);
+    if (this.photoError()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -149,21 +196,13 @@ export class EmpleadoFormPageComponent implements OnInit {
     return fieldMessage(p, field);
   }
 
-  private clearCreateOnlyValidators(): void {
-    this.form.controls.employeeNumber.clearValidators();
-    this.form.controls.birthDate.clearValidators();
-    this.form.controls.onboardingPhase.clearValidators();
-    this.form.controls.employeeNumber.updateValueAndValidity();
-    this.form.controls.birthDate.updateValueAndValidity();
-    this.form.controls.onboardingPhase.updateValueAndValidity();
-  }
-
   private loadEmployee(id: number): void {
     this.loadingExisting.set(true);
     this.apiError.set(null);
     this.service.getById(id).subscribe({
       next: (e: EmployeeResponse) => {
         this.patchFromEmployee(e);
+        this.existingPhotoUrl.set(e.photoUrl || null);
         this.loadingExisting.set(false);
       },
       error: (err: unknown) => {
@@ -175,69 +214,82 @@ export class EmpleadoFormPageComponent implements OnInit {
 
   private patchFromEmployee(e: EmployeeResponse): void {
     this.form.patchValue({
-      firstName: e.firstName,
-      lastName: e.lastName,
-      email: e.email,
-      phone: e.phone,
-      address: e.address,
-      curp: e.curp,
-      rfc: e.rfc,
-      nss: e.nss,
-      clabe: e.clabe,
-      position: e.position,
-      department: e.department,
-      contractType: e.contractType,
-      workShift: e.workShift,
-      salaryPerWeek: String(e.salaryPerWeek),
-      bonuses: String(e.bonuses),
-      foodVouchers: String(e.foodVouchers),
-      integrationFactor: String(e.integrationFactor),
+      firstName: e.firstName ?? '',
+      lastName: e.lastName ?? '',
+      email: e.email ?? '',
+      phone: e.phone ?? '',
+      address: e.address ?? '',
+      curp: e.curp ?? '',
+      rfc: e.rfc ?? '',
+      nss: e.nss ?? '',
+      clabe: e.clabe ?? '',
+      position: e.position ?? '',
+      department: e.department ?? '',
+      contractType: e.contractType ?? '',
+      workShift: e.workShift ?? '',
+      salaryPerWeek: e.salaryPerWeek != null ? String(e.salaryPerWeek) : '',
+      bonuses: e.bonuses != null ? String(e.bonuses) : '',
+      foodVouchers: e.foodVouchers != null ? String(e.foodVouchers) : '',
+      integrationFactor: e.integrationFactor != null ? String(e.integrationFactor) : '',
+      birthDate: e.birthDate ?? '',
     });
+  }
+
+  private optionalString(value: string | null | undefined): string | null {
+    if (value == null) return null;
+    const t = value.trim();
+    return t.length === 0 ? null : t;
+  }
+
+  private optionalNumber(value: string | null | undefined): number | null {
+    if (value == null || String(value).trim() === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   }
 
   private buildRegisterBody(): RegisterEmployeeRequest {
     const v = this.form.getRawValue();
     return {
-      firstName: v.firstName.trim(),
-      lastName: v.lastName.trim(),
-      email: v.email.trim(),
-      phone: v.phone.trim(),
-      address: v.address.trim(),
-      curp: v.curp.trim(),
-      rfc: v.rfc.trim(),
-      nss: v.nss.trim(),
-      clabe: v.clabe.trim(),
-      employeeNumber: v.employeeNumber.trim(),
-      position: v.position.trim(),
-      department: v.department.trim(),
-      contractType: v.contractType,
-      workShift: v.workShift,
-      salaryPerWeek: Number(v.salaryPerWeek),
-      birthDate: v.birthDate,
-      onboardingPhase: v.onboardingPhase,
+      firstName: (v.firstName ?? '').trim(),
+      lastName: (v.lastName ?? '').trim(),
+      email: this.optionalString(v.email),
+      phone: this.optionalString(v.phone),
+      address: this.optionalString(v.address),
+      curp: this.optionalString(v.curp),
+      rfc: this.optionalString(v.rfc),
+      nss: this.optionalString(v.nss),
+      clabe: this.optionalString(v.clabe),
+      employeeNumber: this.optionalString(v.employeeNumber),
+      position: this.optionalString(v.position),
+      department: this.optionalString(v.department),
+      contractType: v.contractType || null,
+      workShift: v.workShift || null,
+      salaryPerWeek: this.optionalNumber(v.salaryPerWeek),
+      birthDate: this.optionalString(v.birthDate),
+      onboardingPhase: v.onboardingPhase || null,
     };
   }
 
   private buildUpdateBody(): UpdateEmployeeRequest {
     const v = this.form.getRawValue();
     return {
-      firstName: v.firstName.trim(),
-      lastName: v.lastName.trim(),
-      email: v.email.trim(),
-      phone: v.phone.trim(),
-      address: v.address.trim(),
-      curp: v.curp.trim(),
-      rfc: v.rfc.trim(),
-      nss: v.nss.trim(),
-      clabe: v.clabe.trim(),
-      position: v.position.trim(),
-      department: v.department.trim(),
-      contractType: v.contractType,
-      workShift: v.workShift,
-      salaryPerWeek: Number(v.salaryPerWeek),
-      bonuses: Number(v.bonuses),
-      foodVouchers: Number(v.foodVouchers),
-      integrationFactor: Number(v.integrationFactor),
+      firstName: (v.firstName ?? '').trim(),
+      lastName: (v.lastName ?? '').trim(),
+      email: this.optionalString(v.email),
+      phone: this.optionalString(v.phone),
+      address: this.optionalString(v.address),
+      curp: this.optionalString(v.curp),
+      rfc: this.optionalString(v.rfc),
+      nss: this.optionalString(v.nss),
+      clabe: this.optionalString(v.clabe),
+      position: this.optionalString(v.position),
+      department: this.optionalString(v.department),
+      contractType: v.contractType || null,
+      workShift: v.workShift || null,
+      salaryPerWeek: this.optionalNumber(v.salaryPerWeek),
+      bonuses: this.optionalNumber(v.bonuses),
+      foodVouchers: this.optionalNumber(v.foodVouchers),
+      integrationFactor: this.optionalNumber(v.integrationFactor),
     };
   }
 }

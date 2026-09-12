@@ -8,13 +8,27 @@ import type { TaskPriority } from '../../../../core/model/task/task.enums';
 import type { ChecklistLineRequest, TaskRequest } from '../../../../core/model/task/task.dto';
 import { TaskService } from '../../../../core/tasks/task.service';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
+import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
+import { EmployeeSelectComponent } from '../../../../shared/ui/employee-select/employee-select';
+import { OpportunitySelectComponent } from '../../../../shared/ui/opportunity-select/opportunity-select';
+import { ProjectSelectComponent } from '../../../../shared/ui/project-select/project-select';
+import { ApiFormErrorComponent } from '../../../../shared/ui/api-form-error/api-form-error';
 
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT', 'UNDEFINED'];
 
 @Component({
   selector: 'app-tarea-form-page',
   
-  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    PageHeaderComponent,
+    HeadquarterSelectComponent,
+    EmployeeSelectComponent,
+    OpportunitySelectComponent,
+    ProjectSelectComponent,
+    ApiFormErrorComponent,
+  ],
   templateUrl: './tarea-form-page.html',
 })
 export class TareaFormPageComponent {
@@ -38,10 +52,10 @@ export class TareaFormPageComponent {
     description: [''],
     priority: this.fb.nonNullable.control<TaskPriority>('MEDIUM'),
     dueDate: [''],
-    headquarterId: [''],
-    projectId: [''],
-    opportunityId: [''],
-    createdById: [''],
+    headquarterId: this.fb.control<number | null>(null),
+    projectId: this.fb.control<number | null>(null),
+    opportunityId: this.fb.control<number | null>(null),
+    createdById: this.fb.control<number | null>(null),
     checklistText: [''],
   });
 
@@ -90,30 +104,28 @@ export class TareaFormPageComponent {
       body.dueDate = new Date(dueDate).toISOString();
     }
 
-    const headquarterId = Number(v.headquarterId);
-    if (this.asText(v.headquarterId) && Number.isFinite(headquarterId) && headquarterId > 0) {
-      body.headquarterId = headquarterId;
+    if (v.headquarterId != null && v.headquarterId > 0) {
+      body.headquarterId = v.headquarterId;
     }
-
-    const projectId = Number(v.projectId);
-    if (this.asText(v.projectId) && Number.isFinite(projectId) && projectId > 0) {
-      body.projectId = projectId;
+    if (v.projectId != null && v.projectId > 0) {
+      body.projectId = v.projectId;
     }
-
-    const opportunityId = Number(v.opportunityId);
-    if (this.asText(v.opportunityId) && Number.isFinite(opportunityId) && opportunityId > 0) {
-      body.opportunityId = opportunityId;
+    if (v.opportunityId != null && v.opportunityId > 0) {
+      body.opportunityId = v.opportunityId;
     }
-
-    const createdById = Number(v.createdById);
-    if (this.asText(v.createdById) && Number.isFinite(createdById) && createdById > 0) {
-      body.createdById = createdById;
+    if (v.createdById != null && v.createdById > 0) {
+      body.createdById = v.createdById;
     }
 
     const checklist = this.parseChecklist(this.asText(v.checklistText));
     if (checklist.length > 0) body.checklist = checklist;
 
     return body;
+  }
+
+  onHeadquarterChange(value: number | number[] | null): void {
+    const id = Array.isArray(value) ? value[0] ?? null : value;
+    this.form.controls.headquarterId.setValue(id);
   }
 
   apiFieldMessage(field: string): string | undefined {

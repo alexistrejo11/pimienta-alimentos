@@ -135,8 +135,16 @@ class NotificationIntegrationTest {
   }
 
   @Test
-  void logsSearch_manager_seesTodayLogChannelOnly() throws Exception {
+  void logsSearch_manager_returns403() throws Exception {
     String token = obtainAccessToken(Set.of(Role.MANAGER));
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/notifications/logs?page=0&size=10", token))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void logsSearch_admin_seesTodayLogChannelOnly() throws Exception {
+    String token = obtainAccessToken(Set.of(Role.ADMIN));
     String suffix = UUID.randomUUID().toString().substring(0, 8);
     String correlationId = "it-log-" + suffix;
     LocalDateTime today = LocalDateTime.now();

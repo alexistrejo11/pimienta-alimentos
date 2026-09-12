@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class HeadquarterBulkSyncUseCasesImpl implements HeadquarterBulkSyncUseCases {
@@ -62,48 +63,74 @@ public class HeadquarterBulkSyncUseCasesImpl implements HeadquarterBulkSyncUseCa
   }
 
   @Override
-  public SpreadsheetBulkImportResult importHeadquarters(InputStream file, String originalFilename)
+  @Transactional
+  public SpreadsheetBulkImportResult importHeadquarters(
+      InputStream file, String originalFilename, boolean dryRun)
       throws IOException {
     List<HeadquarterImportRow> parsed = spreadsheetParser.parse(file, originalFilename);
+    List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
+    List<Runnable> applies = new ArrayList<>();
+    int skipped = 0;
     int updated = 0;
     int created = 0;
-    int skipped = 0;
-    List<SpreadsheetBulkImportRowError> errors = new ArrayList<>();
+
     for (HeadquarterImportRow row : parsed) {
-      if (row.name() == null || row.name().isBlank()) {
-        if (row.id() == null) {
+      try {
+        if (row.id() == null && (row.name() == null || row.name().isBlank())) {
           skipped++;
-        } else {
-          errors.add(
-              new SpreadsheetBulkImportRowError(row.excelRowNumber(), "El nombre es obligatorio"));
+          continue;
         }
-        continue;
-      }
-      String address = row.address() != null ? row.address() : "";
-      String description = row.description() != null ? row.description() : "";
-      if (row.id() != null) {
-        try {
-          headquarterUseCases.update(
-              row.id(),
-              new UpdateHeadquarterCommand(row.name().trim(), address, description));
+        if (row.id() != null) {
+          Headquarter existing = headquarterUseCases.getById(row.id());
+          String name =
+              row.name() == null || row.name().isBlank() ? existing.getName() : row.name().trim();
+          String address =
+              row.address() == null || row.address().isBlank()
+                  ? existing.getAddress()
+                  : row.address().trim();
+          String description =
+              row.description() == null || row.description().isBlank()
+                  ? existing.getDescription()
+                  : row.description().trim();
+          Long id = row.id();
+          applies.add(
+              () ->
+                  headquarterUseCases.update(
+                      id, new UpdateHeadquarterCommand(name, address, description)));
           updated++;
-        } catch (Exception ex) {
-          errors.add(
-              new SpreadsheetBulkImportRowError(
-                  row.excelRowNumber(), ex.getMessage() != null ? ex.getMessage() : "Error al actualizar"));
-        }
-      } else {
-        try {
-          headquarterUseCases.create(
-              new CreateHeadquarterCommand(row.name().trim(), address, description));
+        } else {
+          if (row.name() == null || row.name().isBlank()) {
+            throw new IllegalArgumentException("El nombre es obligatorio para altas");
+          }
+          if (row.address() == null || row.address().isBlank()) {
+            throw new IllegalArgumentException("La dirección es obligatoria para altas");
+          }
+          if (row.description() == null || row.description().isBlank()) {
+            throw new IllegalArgumentException("La descripción es obligatoria para altas");
+          }
+          applies.add(
+              () ->
+                  headquarterUseCases.create(
+                      new CreateHeadquarterCommand(
+                          row.name().trim(), row.address().trim(), row.description().trim())));
           created++;
-        } catch (Exception ex) {
-          errors.add(
-              new SpreadsheetBulkImportRowError(
-                  row.excelRowNumber(), ex.getMessage() != null ? ex.getMessage() : "Error al crear"));
         }
+      } catch (Exception ex) {
+        errors.add(
+            new SpreadsheetBulkImportRowError(
+                row.excelRowNumber(),
+                ex.getMessage() != null ? ex.getMessage() : "Error al procesar fila"));
       }
     }
-    return new SpreadsheetBulkImportResult(updated, created, skipped, List.copyOf(errors));
+
+    if (!errors.isEmpty()) {
+      return new SpreadsheetBulkImportResult(0, 0, skipped, List.copyOf(errors), dryRun);
+    }
+    if (!dryRun) {
+      for (Runnable apply : applies) {
+        apply.run();
+      }
+    }
+    return new SpreadsheetBulkImportResult(updated, created, skipped, List.of(), dryRun);
   }
 }

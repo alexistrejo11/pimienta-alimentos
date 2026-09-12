@@ -1,5 +1,8 @@
 package io.github.alexistrejo11.pimienta.module.account.auth.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
+import io.github.alexistrejo11.pimienta.module.account.auth.core.application.RegisterResult;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LoginCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.LogoutCommand;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.application.command.RefreshSessionCommand;
@@ -29,7 +32,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping(BASE + "/auth")
 @DocAuth
 public class AuthController {
 
@@ -45,10 +48,12 @@ public class AuthController {
   @DocAuthRegister
   public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
     RegisterCommand command = AuthWebMapper.toRegisterCommand(request);
-    authUseCases.register(command);
-    return new RegisterResponse(
-        "Registration successful. Your account is pending approval by an administrator.",
-        "PENDING_APPROVAL");
+    RegisterResult result = authUseCases.register(command);
+    String message =
+        result.requireAdminActivation()
+            ? "Registro exitoso. Tu cuenta está pendiente de aprobación por un administrador."
+            : "Registro exitoso.";
+    return new RegisterResponse(message, "PENDING_APPROVAL");
   }
 
   @PostMapping("/login")

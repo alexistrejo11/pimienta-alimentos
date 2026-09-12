@@ -16,24 +16,26 @@ export class EmpleadoEmpleoCardComponent {
   /** Traduce el tipo de contrato al español. */
   get contrato(): string {
     const map: Record<string, string> = {
+      UNDEFINED: 'Sin definir',
       INDEFINITE: 'Indefinido',
       FIXED_TERM: 'Plazo fijo',
       PROJECT_BASED: 'Por proyecto',
       TEMPORARY: 'Temporal',
       FREELANCE: 'Freelance',
     };
-    return map[this.empleado().contractType] ?? this.empleado().contractType;
+    return map[this.empleado().contractType ?? ''] ?? this.empleado().contractType ?? '—';
   }
 
   /** Traduce el turno de trabajo al español. */
   get turno(): string {
     const map: Record<string, string> = {
+      UNDEFINED: 'Sin definir',
       MORNING: 'Matutino',
       AFTERNOON: 'Vespertino',
       NIGHT: 'Nocturno',
       MIXED: 'Mixto',
       REMOTE: 'Remoto',
     };
-    return map[this.empleado().workShift] ?? this.empleado().workShift;
+    return map[this.empleado().workShift ?? ''] ?? this.empleado().workShift ?? '—';
   }
 }

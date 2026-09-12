@@ -1,0 +1,84 @@
+<div class="flex flex-col gap-6 p-8">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header title="Operadores POS" subtitle="Personal de caja con PIN en tablets" />
+    <button
+      type="button"
+      class="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+      (click)="toggleForm()"
+    >
+      Nuevo operador
+    </button>
+  </div>
+
+  @if (showForm()) {
+    <form class="max-w-md ui-panel p-4" [formGroup]="form" (ngSubmit)="crear()">
+      <h2 class="font-semibold text-on-surface">Alta de operador</h2>
+
+      <app-api-form-error class="mt-3 block" [error]="submitError()" />
+
+      <div class="mt-3 flex flex-col gap-3">
+        <label class="flex flex-col gap-1 text-sm">
+          <span>Nombre visible</span>
+          <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="displayName" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span>Rol POS</span>
+          <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="posRole">
+            @for (r of posRoles; track r) {
+              <option [value]="r">{{ posRoleLabel(r) }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span>PIN (solo escritura)</span>
+          <input type="password" class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="pin" />
+        </label>
+
+        <app-headquarter-select
+          [mode]="isAdmin() ? 'multi' : 'single'"
+          label="Sedes asignadas"
+          [value]="form.controls.headquarterIds.value"
+          (valueChange)="onHeadquartersChange($event)"
+        />
+        @if (form.controls.headquarterIds.touched && form.controls.headquarterIds.invalid) {
+          <p class="text-xs text-red-700 dark:text-red-300">Selecciona al menos una sede.</p>
+        }
+
+        <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" [disabled]="creating()">
+          {{ creating() ? 'Creando…' : 'Crear operador' }}
+        </button>
+      </div>
+    </form>
+  }
+
+  <app-data-state
+    [loading]="loading()"
+    [error]="loadError()"
+    [empty]="operators().length === 0"
+    emptyMessage="No hay operadores POS."
+    (retry)="cargar()"
+  >
+    <div class="overflow-x-auto rounded-xl border ui-panel">
+      <table class="w-full text-sm">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+          <tr>
+            <th class="px-4 py-3 text-left">Nombre</th>
+            <th class="px-4 py-3 text-left">Rol</th>
+            <th class="px-4 py-3 text-left">Sedes</th>
+            <th class="px-4 py-3 text-left">Activo</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/15">
+          @for (op of operators(); track op.id) {
+            <tr>
+              <td class="px-4 py-3">{{ op.displayName }}</td>
+              <td class="px-4 py-3">{{ posRoleLabel(op.posRole) }}</td>
+              <td class="px-4 py-3">{{ hqNames(op.headquarterIds) }}</td>
+              <td class="px-4 py-3">{{ op.active ? 'Sí' : 'No' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </app-data-state>
+</div>

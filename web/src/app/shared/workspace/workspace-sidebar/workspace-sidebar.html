@@ -1,5 +1,5 @@
 <aside
-  class="fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r border-stone-200/15 bg-stone-50 px-4 py-6 shadow-xl shadow-stone-900/5 dark:border-stone-800/15 dark:bg-stone-950"
+  class="ui-chrome fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r px-4 py-6 shadow-xl shadow-black/5"
   aria-label="Panel de navegación"
 >
   <!-- Logo y nombre de la empresa -->
@@ -12,10 +12,10 @@
       alt="Pimienta Alimentos"
     />
     <div>
-      <p class="font-headline text-xl font-extrabold leading-tight tracking-tighter text-red-700 dark:text-red-500">
+      <p class="font-headline text-xl font-extrabold leading-tight tracking-tighter text-primary">
         Pimienta Alimentos
       </p>
-      <p class="font-headline text-[10px] font-bold uppercase tracking-tight text-stone-600 dark:text-stone-400">
+      <p class="font-headline text-[10px] font-bold uppercase tracking-tight text-on-surface-variant">
         Precision Kitchen Management
       </p>
     </div>
@@ -27,7 +27,7 @@
     <!-- Dashboard -->
     <a
       routerLink="/app/dashboard"
-      routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+      routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
       [routerLinkActiveOptions]="{ exact: true }"
       [class]="navLinkInactive"
     >
@@ -37,13 +37,13 @@
 
     <!-- ── Sección CRM ─────────────────────────────────────── -->
     <div class="pt-4">
-      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-600">
+      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
         CRM
       </p>
 
       <a
         routerLink="/app/crm/oportunidades"
-        routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+        routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
         [class]="navLinkInactive"
       >
         <span class="material-symbols-outlined" aria-hidden="true">trending_up</span>
@@ -52,7 +52,7 @@
 
       <a
         routerLink="/app/crm/proyectos"
-        routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+        routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
         [class]="navLinkInactive"
       >
         <span class="material-symbols-outlined" aria-hidden="true">folder_open</span>
@@ -62,13 +62,13 @@
 
     <!-- ── Módulos operativos ──────────────────────────────── -->
     <div class="pt-4">
-      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-600">
+      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
         Operaciones
       </p>
 
       <a
         routerLink="/app/empleados"
-        routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+        routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
         [class]="navLinkInactive"
       >
         <span class="material-symbols-outlined" aria-hidden="true">badge</span>
@@ -77,7 +77,7 @@
 
       <a
         routerLink="/app/nomina"
-        routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+        routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
         [class]="navLinkInactive"
       >
         <span class="material-symbols-outlined" aria-hidden="true">payments</span>
@@ -86,7 +86,7 @@
 
       <a
         routerLink="/app/tareas"
-        routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+        routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
         [class]="navLinkInactive"
       >
         <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
@@ -95,7 +95,7 @@
 
       <a
         routerLink="/app/sedes"
-        routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+        routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
         [class]="navLinkInactive"
       >
         <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
@@ -103,9 +103,103 @@
       </a>
     </div>
 
+    <!-- ── POS (admin / manager) ───────────────────────────── -->
+    @if (canAccessPos()) {
+      <div class="pt-4">
+        <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
+          Punto de venta
+        </p>
+
+        @if (isAdmin()) {
+          <a
+            routerLink="/app/catalogo"
+            routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+            [class]="navLinkInactive"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+            <span class="font-headline font-bold tracking-tight">Catálogo maestro</span>
+          </a>
+        }
+
+        <a
+          routerLink="/app/inventario"
+          routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">warehouse</span>
+          <span class="font-headline font-bold tracking-tight">Inventario POS</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/dispositivos"
+          routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">tablet_android</span>
+          <span class="font-headline font-bold tracking-tight">Dispositivos</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/enrolamiento"
+          routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">qr_code_2</span>
+          <span class="font-headline font-bold tracking-tight">Enrolamiento</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/operadores"
+          routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">group</span>
+          <span class="font-headline font-bold tracking-tight">Operadores</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/ventas"
+          routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+          <span class="font-headline font-bold tracking-tight">Ventas</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/mermas"
+          routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
+          <span class="font-headline font-bold tracking-tight">Mermas</span>
+        </a>
+
+        <a
+          routerLink="/app/pos/cortes"
+          routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+          [class]="navLinkInactive"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">point_of_sale</span>
+          <span class="font-headline font-bold tracking-tight">Cortes</span>
+        </a>
+
+        @if (isAdmin()) {
+          <a
+            routerLink="/app/pos/incidencias"
+            routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+            [class]="navLinkInactive"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">sync_problem</span>
+            <span class="font-headline font-bold tracking-tight">Incidencias</span>
+          </a>
+        }
+      </div>
+    }
+
     <!-- ── Asistencia (acceso rápido global) ──────────────── -->
     <div class="pt-4">
-      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-600">
+      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
         Asistencia
       </p>
 
@@ -113,7 +207,7 @@
       <button
         type="button"
         (click)="abrirAsistenciaHoy.emit()"
-        class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900"
+        class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-bold tracking-tight text-on-surface-variant transition-colors hover:bg-surface-container"
       >
         <span class="material-symbols-outlined" aria-hidden="true">today</span>
         <span class="font-headline font-bold tracking-tight">Hoy</span>
@@ -126,7 +220,7 @@
       <button
         type="button"
         (click)="abrirAsistenciaBusqueda.emit()"
-        class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-bold tracking-tight text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900"
+        class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-bold tracking-tight text-on-surface-variant transition-colors hover:bg-surface-container"
       >
         <span class="material-symbols-outlined" aria-hidden="true">manage_search</span>
         <span class="font-headline font-bold tracking-tight">Buscar registros</span>
@@ -135,13 +229,13 @@
   </nav>
 
   <!-- Acciones y utilidades al fondo -->
-  <div class="mt-auto space-y-1 border-t border-stone-200/10 pt-6">
-    <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-600">
+  <div class="mt-auto space-y-1 border-t border-outline-variant/10 pt-6">
+    <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
       Acciones
     </p>
     <a
       routerLink="/app/contratos"
-      routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+      routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
       [class]="navLinkInactive"
     >
       <span class="material-symbols-outlined" aria-hidden="true">contract</span>
@@ -149,15 +243,15 @@
     </a>
     <a
       routerLink="/app/archivos"
-      routerLinkActive="bg-red-50 font-semibold text-red-700 border-r-4 border-red-700 dark:bg-red-950/30 dark:text-red-500 dark:border-red-500"
+      routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
       [class]="navLinkInactive"
     >
       <span class="material-symbols-outlined" aria-hidden="true">folder</span>
       <span class="font-headline font-bold tracking-tight">Archivos</span>
     </a>
-    <a [class]="navLinkInactive" routerLink="/app/dashboard">
-      <span class="material-symbols-outlined" aria-hidden="true">settings</span>
-      <span class="font-headline font-bold tracking-tight">Configuración</span>
-    </a>
+    <button type="button" [class]="navLinkInactive + ' w-full text-left'" (click)="abrirPerfil.emit()">
+      <span class="material-symbols-outlined" aria-hidden="true">person</span>
+      <span class="font-headline font-bold tracking-tight">Mi perfil</span>
+    </button>
   </div>
 </aside>

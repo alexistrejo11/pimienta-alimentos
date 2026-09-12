@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "nextCursor": "cursor-hq-42-v1847",
+  "operations": [
+    {
+      "op": "upsert",
+      "entity": "product",
+      "id": "1002",
+      "data": {
+        "id": "1002",
+        "sku": "BEB-0010",
+        "barcode": "7509876543210",
+        "name": "Refresco 600 ml",
+        "saleCategory": "Bebidas",
+        "unit": "PIECE",
+        "priceCentavos": 2800,
+        "costCentavos": 1200,
+        "available": true,
+        "stockQuantity": 8,
+        "stockMinQuantity": 5,
+        "stockPolicy": "CONTROLLED",
+        "negativeStockLimit": -20
+      }
+    },
+    {
+      "op": "deactivate",
+      "entity": "product",
+      "id": "1001"
+    },
+    {
+      "op": "upsert",
+      "entity": "operator",
+      "id": "101",
+      "data": {
+        "id": "101",
+        "displayName": "Cajera demostración",
+        "role": "CASHIER",
+        "pinHash": "argon2id$v=19$m=65536,t=3,p=1$example$rotated",
+        "active": true
+      }
+    },
+    {
+      "op": "upsert",
+      "entity": "policies",
+      "id": "42",
+      "data": {
+        "allowNegativeStock": true,
+        "defaultNegativeStockLimit": -50,
+        "staleCatalogWarnHours": 24,
+        "staleCatalogBlockHours": 72,
+        "openAmountCategories": ["Bebidas", "Alimentos", "Otros"]
+      }
+    }
+  ]
+}

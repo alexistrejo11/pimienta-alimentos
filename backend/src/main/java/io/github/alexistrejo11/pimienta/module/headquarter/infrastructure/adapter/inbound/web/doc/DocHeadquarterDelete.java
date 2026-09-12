@@ -30,9 +30,16 @@ import java.lang.annotation.Target;
     summary = "Soft-delete headquarter",
     description =
         """
-        Soft-deletes the site. **204** on success. Rate limit: **SENSITIVE_OPERATIONS**. **404** if \
-        not found.""")
+        Soft-deletes the site. Requires **ROLE_ADMIN**. **204** on success. Rate limit: \
+        **SENSITIVE_OPERATIONS**. **404** if not found.""")
 @ApiResponse(responseCode = "204", description = "No content; headquarter soft-deleted.")
+@ApiResponse(
+    responseCode = "403",
+    description = "Authenticated but missing **ROLE_ADMIN**.",
+    content =
+        @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ApiErrorResponse.class)))
 @ApiResponse(
     responseCode = "404",
     description = "Not found (`HEADQUARTER_NOT_FOUND`).",

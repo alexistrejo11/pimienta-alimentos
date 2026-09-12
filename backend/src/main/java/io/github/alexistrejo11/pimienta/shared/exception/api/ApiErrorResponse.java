@@ -15,9 +15,13 @@ public record ApiErrorResponse(
     List<FieldError> fieldErrors) {
 
   public static ApiErrorResponse from(PimientaException ex, String traceId) {
+    return from(ex, traceId, ex.getMessage());
+  }
+
+  /** Prefer a localized {@code clientMessage} from the presentation layer. */
+  public static ApiErrorResponse from(PimientaException ex, String traceId, String clientMessage) {
     Map<String, Object> ctx = ex.context().isEmpty() ? null : ex.context();
-    return new ApiErrorResponse(
-        ex.errorCode().code(), ex.getMessage(), traceId, ctx, null);
+    return new ApiErrorResponse(ex.errorCode().code(), clientMessage, traceId, ctx, null);
   }
 
   public static ApiErrorResponse of(

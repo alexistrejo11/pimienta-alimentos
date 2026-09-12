@@ -1,0 +1,44 @@
+@if (loading()) {
+  <p class="text-sm text-on-surface-variant">Cargando sedes…</p>
+} @else if (!isAdmin()) {
+  <div class="flex flex-col gap-1 text-sm">
+    <span class="font-medium">{{ label() }}</span>
+    <p class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-on-surface">
+      {{ managerSedeName() }}
+    </p>
+  </div>
+} @else if (mode() === 'multi') {
+  <fieldset class="flex flex-col gap-2 text-sm" [disabled]="disabled()">
+    <legend class="mb-1 font-medium">{{ label() }}</legend>
+    @for (sede of sedes(); track sede.id) {
+      <label class="inline-flex items-center gap-2">
+        <input
+          type="checkbox"
+          [checked]="isMultiSelected(sede.id)"
+          (change)="onMultiToggle(sede.id, $any($event.target).checked)"
+        />
+        <span>{{ sede.name }}</span>
+      </label>
+    }
+    @if (sedes().length === 0) {
+      <p class="text-on-surface-variant">No hay sedes disponibles.</p>
+    }
+  </fieldset>
+} @else {
+  <label class="flex flex-col gap-1 text-sm">
+    <span class="font-medium">{{ label() }}</span>
+    <select
+      class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+      [disabled]="disabled()"
+      [ngModel]="value()"
+      (ngModelChange)="onSingleChange($event)"
+    >
+      @if (allowAll()) {
+        <option [ngValue]="null">Todas las sedes</option>
+      }
+      @for (sede of sedes(); track sede.id) {
+        <option [ngValue]="sede.id">{{ sede.name }}</option>
+      }
+    </select>
+  </label>
+}

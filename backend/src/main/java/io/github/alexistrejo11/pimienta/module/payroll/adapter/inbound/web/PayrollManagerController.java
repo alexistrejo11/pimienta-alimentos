@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web.doc.DocPayroll;
 import io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web.doc.DocPayrollCreatePeriod;
 import io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web.doc.DocPayrollCreateRecord;
@@ -63,7 +65,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/payroll")
+@RequestMapping(BASE + "/payroll")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocPayroll
 public class PayrollManagerController {
@@ -141,6 +143,7 @@ public class PayrollManagerController {
   @DocPayrollImport
   public SpreadsheetBulkImportResult importPayrollRecords(
       @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun,
       @ModelAttribute PayrollBulkScopeRequest request)
       throws IOException {
     if (file.isEmpty()) {
@@ -152,7 +155,8 @@ public class PayrollManagerController {
             request.getPeriodId(),
             request.getFrom(),
             request.getTo());
-    return payrollBulkSyncUseCases.importPayrollRecords(file.getInputStream(), file.getOriginalFilename(), scope);
+    return payrollBulkSyncUseCases.importPayrollRecords(
+        file.getInputStream(), file.getOriginalFilename(), scope, dryRun);
   }
 
   @PostMapping("/records")

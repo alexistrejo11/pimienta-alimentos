@@ -33,6 +33,12 @@ public class GlobalExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+  private final ClientErrorMessages clientErrorMessages;
+
+  public GlobalExceptionHandler(ClientErrorMessages clientErrorMessages) {
+    this.clientErrorMessages = clientErrorMessages;
+  }
+
   @ExceptionHandler(S3Exception.class)
   public ResponseEntity<ApiErrorResponse> handleS3Exception(
       S3Exception e, HttpServletRequest request) {
@@ -49,22 +55,17 @@ public class GlobalExceptionHandler {
           .body(
               ApiErrorResponse.of(
                   ErrorCode.FORBIDDEN,
-                  "Object storage access denied.",
+                  clientErrorMessages.resolve("OBJECT_STORAGE_ACCESS_DENIED", null),
                   traceId,
-                  awsCode != null
-                      ? Map.of("awsErrorCode",
-                      awsCode)
-                      : null));
+                  awsCode != null ? Map.of("awsErrorCode", awsCode) : null));
     }
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(
             ApiErrorResponse.of(
                 ErrorCode.OBJECT_STORAGE_ERROR,
-                "Object storage operation failed.",
+                clientErrorMessages.resolve(ErrorCode.OBJECT_STORAGE_ERROR),
                 traceId,
-                awsCode != null
-                    ? Map.of("awsErrorCode", awsCode)
-                    : null));
+                awsCode != null ? Map.of("awsErrorCode", awsCode) : null));
   }
 
   @ExceptionHandler(PimientaException.class)
@@ -77,8 +78,9 @@ public class GlobalExceptionHandler {
         ex.errorCode().code(),
         ex.httpStatus().value(),
         ex.logDetails());
+    String message = clientErrorMessages.resolve(ex.errorCode(), ex.getMessage());
     return ResponseEntity.status(ex.httpStatus())
-        .body(ApiErrorResponse.from(ex, traceId));
+        .body(ApiErrorResponse.from(ex, traceId, message));
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -97,7 +99,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.ofValidation(
                 ErrorCode.VALIDATION_FAILED,
-                "Request validation failed.",
+                clientErrorMessages.resolve(ErrorCode.VALIDATION_FAILED),
                 traceId,
                 fields));
   }
@@ -114,7 +116,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.ofValidation(
                 ErrorCode.CONSTRAINT_VIOLATION,
-                "Constraint validation failed.",
+                clientErrorMessages.resolve(ErrorCode.CONSTRAINT_VIOLATION),
                 traceId,
                 fields));
   }
@@ -137,7 +139,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.MALFORMED_PAYLOAD,
-                "The request body could not be read.",
+                clientErrorMessages.resolve(ErrorCode.MALFORMED_PAYLOAD),
                 traceId,
                 null));
   }
@@ -155,10 +157,9 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.UNSUPPORTED_MEDIA_TYPE,
-                "Unsupported media type.",
+                clientErrorMessages.resolve(ErrorCode.UNSUPPORTED_MEDIA_TYPE),
                 traceId,
-                Map.of("supportedTypes", ex.getSupportedMediaTypes()
-                    .toString())));
+                Map.of("supportedTypes", ex.getSupportedMediaTypes().toString())));
   }
 
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -174,10 +175,9 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.METHOD_NOT_ALLOWED,
-                "HTTP method not allowed for this path.",
+                clientErrorMessages.resolve(ErrorCode.METHOD_NOT_ALLOWED),
                 traceId,
-                Map.of("supportedMethods", String.valueOf(
-                    ex.getSupportedHttpMethods()))));
+                Map.of("supportedMethods", String.valueOf(ex.getSupportedHttpMethods()))));
   }
 
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -195,10 +195,9 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.TYPE_MISMATCH,
-                "Invalid value for request parameter.",
+                clientErrorMessages.resolve(ErrorCode.TYPE_MISMATCH),
                 traceId,
-                Map.of("parameter", ex.getName(), "expectedType",
-                    expected)));
+                Map.of("parameter", ex.getName(), "expectedType", expected)));
   }
 
   @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -214,7 +213,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.MISSING_PARAMETER,
-                "Required request parameter is missing.",
+                clientErrorMessages.resolve(ErrorCode.MISSING_PARAMETER),
                 traceId,
                 Map.of("parameter", ex.getParameterName())));
   }
@@ -228,7 +227,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.INVALID_ARGUMENT,
-                "Invalid request.",
+                clientErrorMessages.resolve(ErrorCode.INVALID_ARGUMENT),
                 traceId,
                 null));
   }
@@ -242,7 +241,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.INVALID_ARGUMENT,
-                "The request could not be processed.",
+                clientErrorMessages.resolve("REQUEST_COULD_NOT_BE_PROCESSED", null),
                 traceId,
                 null));
   }
@@ -256,7 +255,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.RESOURCE_NOT_FOUND,
-                "Resource not found.",
+                clientErrorMessages.resolve(ErrorCode.RESOURCE_NOT_FOUND),
                 traceId,
                 null));
   }
@@ -286,18 +285,35 @@ public class GlobalExceptionHandler {
       default -> status.is5xxServerError() ? ErrorCode.INTERNAL_ERROR : ErrorCode.INVALID_ARGUMENT;
     };
     String safeMessage = switch (statusValue) {
-      case 400 -> "Bad request.";
-      case 401 -> "Unauthorized.";
-      case 403 -> "Forbidden.";
-      case 404 -> "Resource not found.";
-      case 405 -> "Method not allowed.";
-      case 409 -> "Conflict.";
-      case 415 -> "Unsupported media type.";
+      case 400 -> clientErrorMessages.resolve(ErrorCode.INVALID_ARGUMENT);
+      case 401 -> clientErrorMessages.resolve(ErrorCode.UNAUTHORIZED);
+      case 403 -> clientErrorMessages.resolve(ErrorCode.FORBIDDEN);
+      case 404 -> clientErrorMessages.resolve(ErrorCode.RESOURCE_NOT_FOUND);
+      case 405 -> clientErrorMessages.resolve(ErrorCode.METHOD_NOT_ALLOWED);
+      case 409 -> clientErrorMessages.resolve(ErrorCode.CONFLICT);
+      case 415 -> clientErrorMessages.resolve(ErrorCode.UNSUPPORTED_MEDIA_TYPE);
       default -> status.is5xxServerError()
-          ? "An unexpected error occurred."
-          : "The request could not be processed.";
+          ? clientErrorMessages.resolve(ErrorCode.INTERNAL_ERROR)
+          : clientErrorMessages.resolve("REQUEST_COULD_NOT_BE_PROCESSED", null);
     };
     return ResponseEntity.status(status).body(ApiErrorResponse.of(code, safeMessage, traceId, null));
+  }
+
+  @ExceptionHandler({
+    org.springframework.security.access.AccessDeniedException.class,
+    org.springframework.security.authorization.AuthorizationDeniedException.class
+  })
+  public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+      Exception ex, HttpServletRequest request) {
+    String traceId = traceId(request);
+    log.warn("Forbidden traceId={} message={}", traceId, ex.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .body(
+            ApiErrorResponse.of(
+                ErrorCode.FORBIDDEN,
+                clientErrorMessages.resolve(ErrorCode.FORBIDDEN),
+                traceId,
+                null));
   }
 
   @ExceptionHandler(Exception.class)
@@ -309,7 +325,7 @@ public class GlobalExceptionHandler {
         .body(
             ApiErrorResponse.of(
                 ErrorCode.INTERNAL_ERROR,
-                "An unexpected error occurred.",
+                clientErrorMessages.resolve(ErrorCode.INTERNAL_ERROR),
                 traceId,
                 null));
   }

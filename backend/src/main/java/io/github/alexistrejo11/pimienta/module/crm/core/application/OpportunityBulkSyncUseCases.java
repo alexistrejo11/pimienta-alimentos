@@ -10,6 +10,7 @@ public interface OpportunityBulkSyncUseCases {
 
   byte[] exportOpportunities(OpportunitySearchCriteria criteria, Pageable pageable) throws IOException;
 
-  SpreadsheetBulkImportResult importOpportunities(InputStream file, String originalFilename)
+  SpreadsheetBulkImportResult importOpportunities(
+      InputStream file, String originalFilename, boolean dryRun)
       throws IOException;
 }

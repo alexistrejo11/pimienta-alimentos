@@ -3,16 +3,9 @@ import { finalize } from 'rxjs';
 
 import { AttendanceService } from '../../../core/employees/attendance.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
+import { attendanceStatusLabel } from '../../../core/i18n/enum-labels';
 import type { AttendanceResponse, AttendanceStatus } from '../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../core/model/common/pagination';
-
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  UNDEFINED: 'Indefinido',
-  CHECKED_IN: 'En turno',
-  CHECKED_OUT: 'Salió',
-  AUTO_CLOSED_EXCEEDED_MAX_SHIFT_HOURS: 'Cierre auto (horas)',
-  AUTO_CLOSED_ASSUMED_CONTRACT_DAY: 'Cierre auto (jornada)',
-};
 
 /**
  * Panel modal global que muestra las asistencias del día en curso
@@ -62,13 +55,13 @@ export class AsistenciaHoyModalComponent {
   }
 
   statusLabel(s: AttendanceStatus): string {
-    return STATUS_LABELS[s] ?? s;
+    return attendanceStatusLabel(s);
   }
 
   statusClasses(s: AttendanceStatus): string {
-    if (s === 'CHECKED_IN') return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-    if (s === 'CHECKED_OUT') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-    return 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400';
+    if (s === 'CHECKED_IN') return 'ui-badge-success';
+    if (s === 'CHECKED_OUT') return 'ui-badge-info';
+    return 'bg-surface-container text-on-surface-variant';
   }
 
   formatTime(iso: string | null): string {

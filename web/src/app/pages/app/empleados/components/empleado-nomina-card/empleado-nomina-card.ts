@@ -12,7 +12,8 @@ export class EmpleadoNominaCardComponent {
   readonly empleado = input.required<EmployeeResponse>();
 
   /** Formatea un número como pesos mexicanos con dos decimales. */
-  formatMXN(value: number): string {
+  formatMXN(value: number | null | undefined): string {
+    if (value == null) return '—';
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
   }
 
@@ -23,7 +24,7 @@ export class EmpleadoNominaCardComponent {
       PERMANENT_RURAL: 'Permanente rural',
       EVENTUAL_RURAL: 'Eventual rural',
     };
-    return map[this.empleado().imssWorkerType] ?? this.empleado().imssWorkerType;
+    return map[this.empleado().imssWorkerType ?? ''] ?? this.empleado().imssWorkerType ?? '—';
   }
 
   get tipoSalarioImss(): string {
@@ -32,6 +33,6 @@ export class EmpleadoNominaCardComponent {
       VARIABLE: 'Variable',
       MIXED: 'Mixto',
     };
-    return map[this.empleado().imssSalaryType] ?? this.empleado().imssSalaryType;
+    return map[this.empleado().imssSalaryType ?? ''] ?? this.empleado().imssSalaryType ?? '—';
   }
 }

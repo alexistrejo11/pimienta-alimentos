@@ -49,23 +49,23 @@ public record RegisterEmployeeParams(
                                 ? onboardingPhase.toEmploymentStatus()
                                 : EmployeeStatus.DRAFT;
 
-                String safeEmail = email != null ? email.strip() : "";
+                String safeEmail = email != null ? email.strip() : null;
                 PersonalProfile personal = PersonalProfile.builder()
                                 .firstName(firstName)
                                 .lastName(lastName)
                                 .photoUrl(photoUrl)
-                                .email(safeEmail)
-                                .phone(phone)
-                                .address(address)
+                                .email(safeEmail != null ? safeEmail : "")
+                                .phone(phone != null ? phone : "")
+                                .address(address != null ? address : "")
                                 .birthDate(birthDate)
                                 .nationality("Mexicana")
                                 .build();
 
                 OfficialIdentifiers officialIds = OfficialIdentifiers.builder()
-                                .curp(curp)
-                                .rfc(rfc)
-                                .nss(nss)
-                                .clabe(clabe)
+                                .curp(curp != null ? curp : "")
+                                .rfc(rfc != null ? rfc : "")
+                                .nss(nss != null ? nss : "")
+                                .clabe(clabe != null ? clabe : "")
                                 .employeeNumber(employeeNumber != null ? employeeNumber : "")
                                 .build();
 

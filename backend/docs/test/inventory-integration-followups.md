@@ -8,3 +8,9 @@
 - **Stock in blocked locations:** Creating initial stock in a **blocked** location surfaces **`BusinessValidationException`** → **`VALIDATION_FAILED`** (HTTP 400), not a storage-specific code; worth a product pass if APIs should distinguish “blocked location” from generic validation.
 
 No extra blockers from this pass.
+
+## POS B1 (2026-09-08)
+
+- Barcode uniqueness now returns `ITEM_BARCODE_ALREADY_EXISTS` (409), including soft-deleted rows (D5). Covered by `HeadquarterPosCatalogIntegrationTest`.
+- `StorageLocationResponse` gained optional `headquarterId` for `LocationType.POS` rows.
+- No extra follow-ups from this pass.

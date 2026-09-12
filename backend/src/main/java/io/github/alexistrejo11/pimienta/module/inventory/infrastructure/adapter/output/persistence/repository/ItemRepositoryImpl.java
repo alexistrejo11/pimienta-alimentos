@@ -51,11 +51,25 @@ public class ItemRepositoryImpl implements ItemRepository {
   }
 
   @Override
+  public String nextInternalSku() {
+    return jpaRepository.nextInternalSku();
+  }
+
+  @Override
   public boolean existsBySkuIgnoreCaseExcludingId(String sku, Long excludeId) {
     if (sku == null || sku.isBlank()) {
       return false;
     }
     Long ex = excludeId != null && excludeId > 0 ? excludeId : 0L;
     return jpaRepository.existsBySkuIgnoreCaseAndIdNot(sku.trim(), ex);
+  }
+
+  @Override
+  public boolean existsByBarcodeIgnoreCaseExcludingId(String barcode, Long excludeId) {
+    if (barcode == null || barcode.isBlank()) {
+      return false;
+    }
+    Long ex = excludeId != null && excludeId > 0 ? excludeId : 0L;
+    return jpaRepository.existsByBarcodeIgnoreCaseAndIdNot(barcode.trim(), ex);
   }
 }

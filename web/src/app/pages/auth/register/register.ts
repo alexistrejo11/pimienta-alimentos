@@ -11,6 +11,7 @@ import {
 } from '../../../core/http/parse-api-error';
 import type { RegisterRequest, RegisterResponse } from '../../../core/model/account/auth.dto';
 import type { Gender } from '../../../core/model/account/enums';
+import { accountStatusLabel, genderLabel } from '../../../core/i18n/enum-labels';
 
 @Component({
   selector: 'app-register',
@@ -22,13 +23,9 @@ export class Register {
   private readonly auth = inject(AuthService);
 
   /** Options for {@link RegisterRequest.gender}; labels are UI-only. */
-  readonly genderOptions: { value: Gender; label: string }[] = [
-    { value: 'MALE', label: 'Masculino' },
-    { value: 'FEMALE', label: 'Femenino' },
-    { value: 'NON_BINARY', label: 'No binario' },
-    { value: 'OTHER', label: 'Otro' },
-    { value: 'PREFER_NOT_TO_SAY', label: 'Prefiero no decir' },
-  ];
+  readonly genderOptions: { value: Gender; label: string }[] = (
+    ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER', 'PREFER_NOT_TO_SAY'] as Gender[]
+  ).map((value) => ({ value, label: genderLabel(value) }));
 
   readonly submitting = signal(false);
   /** Set when the API returns an error (parsed {@link ParsedApiError} for template + logging). */
@@ -99,6 +96,8 @@ export class Register {
   clearSuccess(): void {
     this.registerSuccess.set(null);
   }
+
+  readonly accountStatusLabel = accountStatusLabel;
 
   /** Validation message from the last API response for a specific field (e.g. `email`). */
   apiFieldMessage(field: string): string | undefined {

@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Pimienta local
+    orgId: 1
+    folder: Pimienta
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

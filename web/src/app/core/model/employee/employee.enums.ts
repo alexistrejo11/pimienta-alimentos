@@ -4,7 +4,8 @@ export type ContractType =
   | 'FIXED_TERM'
   | 'PROJECT_BASED'
   | 'TEMPORARY'
-  | 'FREELANCE';
+  | 'FREELANCE'
+  | 'UNDEFINED';
 
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.employees.core.domain.WorkShift}. */
 export type WorkShift =
@@ -12,7 +13,8 @@ export type WorkShift =
   | 'AFTERNOON'
   | 'NIGHT'
   | 'MIXED'
-  | 'REMOTE';
+  | 'REMOTE'
+  | 'UNDEFINED';
 
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeStatus}. */
 export type EmployeeStatus =

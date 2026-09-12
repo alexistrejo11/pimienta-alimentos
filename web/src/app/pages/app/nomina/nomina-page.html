@@ -6,7 +6,7 @@
 
   <!-- Rango del resumen -->
   <section
-    class="rounded-xl border border-stone-200 bg-[var(--color-surface-container-lowest)] p-4 dark:border-stone-800"
+    class="ui-panel p-4"
     aria-label="Filtros de resumen"
   >
     <div class="flex flex-wrap items-end gap-4">
@@ -17,7 +17,7 @@
           type="date"
           [(ngModel)]="summaryFrom"
           [ngModelOptions]="{ standalone: true }"
-          class="rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+          class="rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
         />
       </div>
       <div class="space-y-1">
@@ -27,7 +27,7 @@
           type="date"
           [(ngModel)]="summaryTo"
           [ngModelOptions]="{ standalone: true }"
-          class="rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:bg-stone-900"
+          class="rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
         />
       </div>
       <button
@@ -51,23 +51,23 @@
   <!-- Tarjetas de resumen -->
   @if (summary(); as s) {
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+      <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Empleados pagados</p>
         <p class="font-headline mt-1 text-2xl font-bold tabular-nums text-on-surface">{{ s.employeesPaid }}</p>
       </div>
-      <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+      <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Total bruto</p>
         <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalGross) }}</p>
       </div>
-      <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+      <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Total neto</p>
-        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-green-800 dark:text-green-300">{{ formatMXN(s.totalNet) }}</p>
+        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalNet) }}</p>
       </div>
-      <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+      <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Descuentos</p>
         <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalDiscounts) }}</p>
       </div>
-      <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+      <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Bonos</p>
         <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalBonuses) }}</p>
       </div>
@@ -79,7 +79,7 @@
   }
 
   <!-- Pestañas -->
-  <div class="flex flex-wrap gap-2 border-b border-stone-200 pb-1 dark:border-stone-800" role="tablist" aria-label="Secciones de nómina">
+  <div class="flex flex-wrap gap-2 border-b border-outline-variant/20 pb-1" role="tablist" aria-label="Secciones de nómina">
     <button
       type="button"
       role="tab"
@@ -124,7 +124,7 @@
       <div class="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-stone-50 disabled:opacity-60 dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
+          class="rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-surface-container disabled:opacity-60"
           [disabled]="importExporting()"
           (click)="exportExcel()"
         >
@@ -132,7 +132,7 @@
           Exportar Excel
         </button>
         <label
-          class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-on-surface shadow-sm hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
+          class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface shadow-sm hover:bg-surface-container"
         >
           <span class="material-symbols-outlined text-lg" aria-hidden="true">upload_file</span>
           Importar Excel
@@ -140,35 +140,25 @@
         </label>
       </div>
       @if (importMessage(); as msg) {
-        <p class="text-sm text-green-800 dark:text-green-300" role="status">{{ msg }}</p>
+        <p class="text-sm text-on-surface" role="status">{{ msg }}</p>
       }
       @if (importError(); as impErr) {
         <p class="text-sm text-[var(--color-error)]" role="alert">{{ impErr.message }}</p>
       }
 
-      <div class="flex flex-wrap items-end gap-4 rounded-xl border border-stone-200 bg-stone-50/50 p-4 dark:border-stone-800 dark:bg-stone-900/40">
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-on-surface-variant" for="f-emp">ID empleado</label>
-          <input
-            id="f-emp"
-            type="number"
-            [(ngModel)]="filterEmployeeId"
-            [ngModelOptions]="{ standalone: true }"
-            class="w-36 rounded-lg border border-transparent bg-white px-3 py-2 text-sm dark:bg-stone-950"
-            placeholder="Opcional"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-on-surface-variant" for="f-per">ID período</label>
-          <input
-            id="f-per"
-            type="number"
-            [(ngModel)]="filterPeriodId"
-            [ngModelOptions]="{ standalone: true }"
-            class="w-36 rounded-lg border border-transparent bg-white px-3 py-2 text-sm dark:bg-stone-950"
-            placeholder="Opcional"
-          />
-        </div>
+      <div class="flex flex-wrap items-end gap-4 ui-panel p-4">
+        <app-employee-select
+          label="Empleado"
+          nullLabel="Todos"
+          [value]="filterEmployeeId"
+          (valueChange)="filterEmployeeId = $event"
+        />
+        <app-payroll-period-select
+          label="Período"
+          nullLabel="Todos"
+          [value]="filterPeriodId"
+          (valueChange)="filterPeriodId = $event"
+        />
         <button
           type="button"
           class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]"
@@ -178,31 +168,34 @@
         </button>
       </div>
 
-      <div class="rounded-xl border border-stone-200 bg-[var(--color-surface-container-lowest)] p-4 dark:border-stone-800">
+      <div class="ui-panel p-4">
         <h2 class="font-headline mb-3 text-lg font-bold text-on-surface">Nuevo registro</h2>
         @if (recordFormError(); as fe) {
           <p class="mb-2 text-sm text-[var(--color-error)]">{{ fe.message }}</p>
         }
         <form [formGroup]="recordForm" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" (ngSubmit)="submitRecord()">
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-on-surface-variant" for="nr-emp">Empleado (ID)</label>
-            <input id="nr-emp" type="number" formControlName="employeeId" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900" />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-on-surface-variant" for="nr-per">Período (ID)</label>
-            <input id="nr-per" type="number" formControlName="periodId" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900" placeholder="Opcional" />
-          </div>
+          <app-employee-select
+            label="Empleado"
+            [allowNull]="false"
+            [value]="recordForm.controls.employeeId.value"
+            (valueChange)="recordForm.controls.employeeId.setValue($event)"
+          />
+          <app-payroll-period-select
+            label="Período"
+            [value]="recordForm.controls.periodId.value"
+            (valueChange)="recordForm.controls.periodId.setValue($event)"
+          />
           <div class="space-y-1">
             <label class="text-xs font-medium text-on-surface-variant" for="nr-start">Inicio labores</label>
-            <input id="nr-start" type="date" formControlName="workedDaysStart" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900" />
+            <input id="nr-start" type="date" formControlName="workedDaysStart" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
           </div>
           <div class="space-y-1">
             <label class="text-xs font-medium text-on-surface-variant" for="nr-end">Fin labores</label>
-            <input id="nr-end" type="date" formControlName="workedDaysEnd" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900" />
+            <input id="nr-end" type="date" formControlName="workedDaysEnd" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
           </div>
           <div class="space-y-1">
             <label class="text-xs font-medium text-on-surface-variant" for="nr-gross">Importe bruto</label>
-            <input id="nr-gross" type="number" step="0.01" formControlName="grossAmount" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900" />
+            <input id="nr-gross" type="number" step="0.01" formControlName="grossAmount" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
           </div>
           <div class="flex items-end sm:col-span-2 lg:col-span-1">
             <button
@@ -223,9 +216,9 @@
         emptyMessage="No hay registros de nómina con los filtros actuales."
         (retry)="loadRecords()"
       >
-        <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+        <div class="overflow-x-auto rounded-xl border ui-panel">
           <table class="w-full min-w-[720px] text-sm" aria-label="Registros de nómina">
-            <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+            <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">ID</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Empleado</th>
@@ -237,17 +230,17 @@
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody class="divide-y divide-outline-variant/15">
               @for (r of records(); track r.id) {
                 <tr>
                   <td class="px-3 py-3 tabular-nums text-on-surface">{{ r.id }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ r.employeeId }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ r.periodId ?? '—' }}</td>
+                  <td class="px-3 py-3">{{ empName(r.employeeId) }}</td>
+                  <td class="px-3 py-3">{{ periodName(r.periodId) }}</td>
                   <td class="px-3 py-3 text-on-surface-variant">{{ formatDate(r.workedDaysStart) }} – {{ formatDate(r.workedDaysEnd) }}</td>
                   <td class="px-3 py-3 text-right tabular-nums">{{ formatMXN(r.grossAmount) }}</td>
                   <td class="px-3 py-3 text-right font-medium tabular-nums">{{ formatMXN(r.netAmount) }}</td>
                   <td class="px-3 py-3">
-                    <span class="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium dark:bg-stone-800">{{ statusLabel(r.status) }}</span>
+                    <span class="rounded-md bg-surface-container px-2 py-0.5 text-xs font-medium">{{ statusLabel(r.status) }}</span>
                   </td>
                   <td class="px-3 py-3">
                     <button
@@ -260,7 +253,7 @@
                   </td>
                 </tr>
                 @if (adjustingRecordId() === r.id) {
-                  <tr class="bg-stone-50/80 dark:bg-stone-900/50">
+                  <tr class="bg-surface-container-low/80">
                     <td colspan="8" class="px-3 py-4">
                       @if (adjustmentError(); as adjErr) {
                         <p class="mb-2 text-sm text-[var(--color-error)]">{{ adjErr.message }}</p>
@@ -268,18 +261,18 @@
                       <form [formGroup]="adjustmentForm" class="flex flex-wrap items-end gap-3" (ngSubmit)="submitAdjustment(r.id)">
                         <div class="space-y-1">
                           <label class="text-xs font-medium" for="adj-type">Tipo</label>
-                          <select id="adj-type" formControlName="type" class="rounded-lg bg-white px-2 py-2 text-sm dark:bg-stone-950">
+                          <select id="adj-type" formControlName="type" class="rounded-lg bg-surface-container px-2 py-2 text-sm">
                             <option value="DISCOUNT">Descuento</option>
                             <option value="BONUS">Bono</option>
                           </select>
                         </div>
                         <div class="space-y-1">
                           <label class="text-xs font-medium" for="adj-amt">Importe</label>
-                          <input id="adj-amt" type="number" step="0.01" formControlName="amount" class="w-32 rounded-lg bg-white px-2 py-2 text-sm dark:bg-stone-950" />
+                          <input id="adj-amt" type="number" step="0.01" formControlName="amount" class="w-32 rounded-lg bg-surface-container px-2 py-2 text-sm" />
                         </div>
                         <div class="min-w-[200px] flex-1 space-y-1">
                           <label class="text-xs font-medium" for="adj-reason">Motivo</label>
-                          <input id="adj-reason" type="text" formControlName="reason" class="w-full rounded-lg bg-white px-2 py-2 text-sm dark:bg-stone-950" />
+                          <input id="adj-reason" type="text" formControlName="reason" class="w-full rounded-lg bg-surface-container px-2 py-2 text-sm" />
                         </div>
                         <button type="submit" class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]" [disabled]="adjustmentSaving()">
                           {{ adjustmentSaving() ? 'Aplicando…' : 'Aplicar' }}
@@ -298,7 +291,7 @@
             <div class="flex gap-2">
               <button
                 type="button"
-                class="rounded-lg border border-stone-200 px-3 py-1.5 font-medium disabled:opacity-40 dark:border-stone-700"
+                class="rounded-lg border border-outline-variant/20 px-3 py-1.5 font-medium disabled:opacity-40"
                 [disabled]="!meta.hasPrevious"
                 (click)="recordsPrev()"
               >
@@ -306,7 +299,7 @@
               </button>
               <button
                 type="button"
-                class="rounded-lg border border-stone-200 px-3 py-1.5 font-medium disabled:opacity-40 dark:border-stone-700"
+                class="rounded-lg border border-outline-variant/20 px-3 py-1.5 font-medium disabled:opacity-40"
                 [disabled]="!meta.hasNext"
                 (click)="recordsNext()"
               >
@@ -322,7 +315,7 @@
   <!-- Períodos -->
   @if (activeTab() === 'periodos') {
     <section class="space-y-4" aria-label="Períodos de nómina">
-      <div class="rounded-xl border border-stone-200 bg-[var(--color-surface-container-lowest)] p-4 dark:border-stone-800">
+      <div class="ui-panel p-4">
         <h2 class="font-headline mb-3 text-lg font-bold text-on-surface">Nuevo período</h2>
         @if (periodFormError(); as pe) {
           <p class="mb-2 text-sm text-[var(--color-error)]">{{ pe.message }}</p>
@@ -330,7 +323,7 @@
         <form [formGroup]="periodForm" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" (ngSubmit)="submitPeriod()">
           <div class="space-y-1">
             <label class="text-xs font-medium" for="pf-freq">Frecuencia</label>
-            <select id="pf-freq" formControlName="frequency" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900">
+            <select id="pf-freq" formControlName="frequency" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm">
               @for (opt of frequencyOptions; track opt.value) {
                 <option [value]="opt.value">{{ opt.label }}</option>
               }
@@ -338,11 +331,11 @@
           </div>
           <div class="space-y-1">
             <label class="text-xs font-medium" for="pf-start">Inicio</label>
-            <input id="pf-start" type="date" formControlName="startDate" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900" />
+            <input id="pf-start" type="date" formControlName="startDate" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
           </div>
           <div class="space-y-1">
             <label class="text-xs font-medium" for="pf-end">Fin</label>
-            <input id="pf-end" type="date" formControlName="endDate" class="w-full rounded-lg bg-stone-100 px-3 py-2 text-sm dark:bg-stone-900" />
+            <input id="pf-end" type="date" formControlName="endDate" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
           </div>
           <div class="flex items-end">
             <button type="submit" class="w-full rounded-lg bg-[var(--color-primary)] py-2.5 text-sm font-bold text-[var(--color-on-primary)]" [disabled]="periodSaving()">
@@ -359,9 +352,9 @@
         emptyMessage="No hay períodos registrados."
         (retry)="loadPeriods()"
       >
-        <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+        <div class="overflow-x-auto rounded-xl border ui-panel">
           <table class="w-full text-sm" aria-label="Períodos">
-            <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+            <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">ID</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Frecuencia</th>
@@ -370,7 +363,7 @@
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody class="divide-y divide-outline-variant/15">
               @for (p of periods(); track p.id) {
                 <tr>
                   <td class="px-3 py-3 tabular-nums">{{ p.id }}</td>
@@ -390,18 +383,13 @@
   <!-- Pagos -->
   @if (activeTab() === 'pagos') {
     <section class="space-y-4" aria-label="Pagos de nómina">
-      <div class="flex flex-wrap items-end gap-4 rounded-xl border border-stone-200 bg-stone-50/50 p-4 dark:border-stone-800 dark:bg-stone-900/40">
-        <div class="space-y-1">
-          <label class="text-xs font-medium" for="pay-emp">ID empleado</label>
-          <input
-            id="pay-emp"
-            type="number"
-            [(ngModel)]="filterPaymentEmployeeId"
-            [ngModelOptions]="{ standalone: true }"
-            class="w-40 rounded-lg bg-white px-3 py-2 text-sm dark:bg-stone-950"
-            placeholder="Todos"
-          />
-        </div>
+      <div class="flex flex-wrap items-end gap-4 ui-panel p-4">
+        <app-employee-select
+          label="Empleado"
+          nullLabel="Todos"
+          [value]="filterPaymentEmployeeId"
+          (valueChange)="filterPaymentEmployeeId = $event"
+        />
         <button type="button" class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]" (click)="applyPaymentFilters()">
           Filtrar
         </button>
@@ -413,9 +401,9 @@
         emptyMessage="No hay pagos registrados."
         (retry)="loadPayments()"
       >
-        <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+        <div class="overflow-x-auto rounded-xl border ui-panel">
           <table class="w-full min-w-[640px] text-sm" aria-label="Pagos">
-            <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+            <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">ID</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Empleado</th>
@@ -424,11 +412,11 @@
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody class="divide-y divide-outline-variant/15">
               @for (p of payments(); track p.id) {
                 <tr>
                   <td class="px-3 py-3 tabular-nums">{{ p.id }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ p.employeeId }}</td>
+                  <td class="px-3 py-3">{{ empName(p.employeeId) }}</td>
                   <td class="px-3 py-3 text-on-surface-variant">{{ formatDate(p.workedDaysStart) }} – {{ formatDate(p.workedDaysEnd) }}</td>
                   <td class="px-3 py-3 text-right font-medium">{{ formatMXN(p.netAmount) }}</td>
                   <td class="px-3 py-3">{{ paymentStatusLabel(p.status) }}</td>
@@ -441,8 +429,8 @@
           <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant">
             <span>Página {{ pm.pageNumber + 1 }} de {{ pm.totalPages || 1 }}</span>
             <div class="flex gap-2">
-              <button type="button" class="rounded-lg border border-stone-200 px-3 py-1.5 disabled:opacity-40 dark:border-stone-700" [disabled]="!pm.hasPrevious" (click)="paymentsPrev()">Anterior</button>
-              <button type="button" class="rounded-lg border border-stone-200 px-3 py-1.5 disabled:opacity-40 dark:border-stone-700" [disabled]="!pm.hasNext" (click)="paymentsNext()">Siguiente</button>
+              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!pm.hasPrevious" (click)="paymentsPrev()">Anterior</button>
+              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!pm.hasNext" (click)="paymentsNext()">Siguiente</button>
             </div>
           </div>
         }
@@ -460,9 +448,9 @@
         emptyMessage="No hay adeudos registrados."
         (retry)="loadDebts()"
       >
-        <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
+        <div class="overflow-x-auto rounded-xl border ui-panel">
           <table class="w-full text-sm" aria-label="Adeudos">
-            <thead class="border-b border-stone-100 bg-stone-50 dark:border-stone-800 dark:bg-stone-900">
+            <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">ID</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Empleado</th>
@@ -471,11 +459,11 @@
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Liquidado</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody class="divide-y divide-outline-variant/15">
               @for (d of debts(); track d.id) {
                 <tr>
                   <td class="px-3 py-3 tabular-nums">{{ d.id }}</td>
-                  <td class="px-3 py-3 tabular-nums">{{ d.employeeId }}</td>
+                  <td class="px-3 py-3">{{ empName(d.employeeId) }}</td>
                   <td class="px-3 py-3 text-right tabular-nums">{{ formatMXN(d.amountOwed) }}</td>
                   <td class="px-3 py-3 text-on-surface-variant">{{ d.reason ?? '—' }}</td>
                   <td class="px-3 py-3">{{ d.settled ? 'Sí' : 'No' }}</td>
@@ -488,8 +476,8 @@
           <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant">
             <span>Página {{ dm.pageNumber + 1 }} de {{ dm.totalPages || 1 }}</span>
             <div class="flex gap-2">
-              <button type="button" class="rounded-lg border border-stone-200 px-3 py-1.5 disabled:opacity-40 dark:border-stone-700" [disabled]="!dm.hasPrevious" (click)="debtsPrev()">Anterior</button>
-              <button type="button" class="rounded-lg border border-stone-200 px-3 py-1.5 disabled:opacity-40 dark:border-stone-700" [disabled]="!dm.hasNext" (click)="debtsNext()">Siguiente</button>
+              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!dm.hasPrevious" (click)="debtsPrev()">Anterior</button>
+              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!dm.hasNext" (click)="debtsNext()">Siguiente</button>
             </div>
           </div>
         }

@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocOpportunities;
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocOpportunityAbandon;
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocOpportunityCreate;
@@ -68,7 +70,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/opportunities")
+@RequestMapping(BASE + "/opportunities")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocOpportunities
 public class OpportunityController {
@@ -117,13 +119,15 @@ public class OpportunityController {
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocOpportunityImport
-  public SpreadsheetBulkImportResult importOpportunities(@RequestParam("file") MultipartFile file)
+  public SpreadsheetBulkImportResult importOpportunities(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "dryRun", defaultValue = "false") boolean dryRun)
       throws IOException {
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo vacío");
     }
     return opportunityBulkSyncUseCases.importOpportunities(
-        file.getInputStream(), file.getOriginalFilename());
+        file.getInputStream(), file.getOriginalFilename(), dryRun);
   }
 
   @GetMapping("/{id}")

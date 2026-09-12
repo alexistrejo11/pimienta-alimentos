@@ -48,11 +48,11 @@
         <!-- Resumen con contadores clave -->
         @if (summary(); as s) {
           <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+            <div class="ui-panel p-4">
               <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Hitos</p>
               <p class="font-headline mt-1 text-2xl font-bold tabular-nums text-on-surface">{{ s.milestoneCompletedCount }}/{{ s.milestoneCount }}</p>
             </div>
-            <div class="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950">
+            <div class="ui-panel p-4">
               <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Tareas</p>
               <p class="font-headline mt-1 text-2xl font-bold tabular-nums text-on-surface">{{ s.taskCount }}</p>
             </div>
@@ -70,7 +70,7 @@
         }
 
         <!-- Información del proyecto -->
-        <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+        <section class="ui-panel p-6">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="font-headline text-base font-bold text-on-surface">Información general</h2>
             <app-status-badge [status]="p.status" kind="project" />
@@ -108,7 +108,7 @@
         </section>
 
         <!-- Información financiera -->
-        <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+        <section class="ui-panel p-6">
           <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Financiero</h2>
           <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
@@ -130,14 +130,14 @@
               <span>Avance del proyecto</span>
               <span class="tabular-nums">{{ p.progressPercent }}%</span>
             </div>
-            <div class="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+            <div class="h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
               <div class="h-full rounded-full bg-primary transition-all" [style.width.%]="p.progressPercent"></div>
             </div>
           </div>
         </section>
 
         <!-- Lista de hitos -->
-        <section class="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+        <section class="ui-panel p-6">
           <h2 class="font-headline mb-4 text-base font-bold text-on-surface">
             Hitos
             <span class="ml-2 text-sm font-normal text-on-surface-variant">({{ hitos().length }})</span>

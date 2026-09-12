@@ -15,6 +15,10 @@ public interface StorageLocationRepository {
 
   List<StorageLocation> findByParentId(Long parentId);
 
+  Optional<StorageLocation> findPosByHeadquarterId(long headquarterId);
+
+  Optional<StorageLocation> findByCode(String code);
+
   Page<StorageLocation> search(StorageLocationSearchCriteria criteria, Pageable pageable);
 
   long countInventoryRowsByLocationId(long locationId);

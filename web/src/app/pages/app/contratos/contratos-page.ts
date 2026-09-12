@@ -3,7 +3,9 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { finalize } from 'rxjs';
 
 import { ContractService } from '../../../core/contracts/contract.service';
+import { CrmLookupService } from '../../../core/crm/crm-lookup.service';
 import { CrmService } from '../../../core/crm/crm.service';
+import { EmployeeLookupService } from '../../../core/employees/employee-lookup.service';
 import { EmployeeService } from '../../../core/employees/employee.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
 import type { ContractCategory, ContractTermKind } from '../../../core/model/contract/contract.enums';
@@ -27,6 +29,8 @@ export class ContratosPageComponent implements OnInit {
   private readonly contracts = inject(ContractService);
   private readonly employees = inject(EmployeeService);
   private readonly crm = inject(CrmService);
+  private readonly employeeLookup = inject(EmployeeLookupService);
+  private readonly crmLookup = inject(CrmLookupService);
   private readonly fb = inject(FormBuilder);
 
   readonly loading = signal(true);
@@ -59,8 +63,23 @@ export class ContratosPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    void this.employeeLookup.ensureLoaded();
+    void this.crmLookup.ensureOpportunitiesLoaded();
+    void this.crmLookup.ensureProjectsLoaded();
     this.loadRelationOptions();
     this.reloadList();
+  }
+
+  employeeName(id: number): string {
+    return this.employeeLookup.name(id);
+  }
+
+  opportunityName(id: number): string {
+    return this.crmLookup.opportunityName(id);
+  }
+
+  projectName(id: number): string {
+    return this.crmLookup.projectName(id);
   }
 
   toggleCreate(): void {

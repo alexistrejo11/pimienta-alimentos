@@ -13,7 +13,7 @@
 	<!-- Group ID, Artifact ID, Version -->
 	<groupId>io.github.alexistrejo11</groupId>
 	<artifactId>pimienta</artifactId>
-	<version>1.0.0</version>
+	<version>2.1.0</version>
 	
 	<!-- Name, description, url, licenses, developers, scm -->
 	<name>Pimienta Alimentos</name>
@@ -45,9 +45,9 @@
 	
 	<!-- Properties -->
 	<properties>
-		<java.version>25</java.version>
+		<java.version>26</java.version>
 		<poi.version>5.4.1</poi.version>
-		<!-- JDK 25 needs Lombok >= 1.18.40; also register Lombok as compiler APT explicitly -->
+		<!-- JDK 26 needs Lombok >= 1.18.40; also register Lombok as compiler APT explicitly -->
 		<lombok.version>1.18.42</lombok.version>
 	</properties>
 
@@ -65,10 +65,14 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
-		<!-- Actuator: health/info probes; metrics and other endpoints secured in SecurityConfig -->
+		<!-- Actuator: health/info probes; Prometheus scrape at /actuator/prometheus -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
 
 		<!-- Jackson (ObjectMapper, JSON) — explicit so compile scope resolves com.fasterxml.jackson.databind -->
@@ -125,6 +129,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+		<!-- Argon2id for POS operator PIN hashes (Spring Security Argon2PasswordEncoder) -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.80</version>
+		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -157,7 +167,7 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Lombok: version from spring-boot-dependencies (1.18.x, JDK 25–compatible with Boot 4.0.5) -->
+		<!-- Lombok: version from spring-boot-dependencies (1.18.x, JDK 26–compatible with Boot 4.0.5) -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

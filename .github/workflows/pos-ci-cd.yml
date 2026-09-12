@@ -1,0 +1,171 @@
+# CI/CD for the Android POS APK (artifact on shared S3, not a Docker deploy).
+#
+# Flow:
+#   1) test     — JVM unit tests (PRs and main).
+#   2) publish  — signed release APK + current.json → S3 (main only, after test).
+#
+# S3 keys (shared multi-app bucket, unique POS prefix):
+#   pimienta/releases/pos/android/latest.apk
+#   pimienta/releases/pos/android/current.json
+#
+# Required GitHub secrets:
+#   AWS_ACCESS_KEY_ID       — IAM with s3:PutObject on the POS releases prefix
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_REGION               — e.g. us-east-1
+#   AWS_S3_BUCKET_NAME      — shared bucket (same as backend)
+#   POS_KEYSTORE_BASE64     — base64-encoded .jks / .keystore
+#   POS_STORE_PASSWORD
+#   POS_KEY_ALIAS
+#   POS_KEY_PASSWORD
+
+name: POS CI-CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/pos/**"
+      - ".github/workflows/pos-ci-cd.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/pos/**"
+      - ".github/workflows/pos-ci-cd.yml"
+
+permissions:
+  contents: read
+
+env:
+  POS_APK_KEY: pimienta/releases/pos/android/latest.apk
+  POS_MANIFEST_KEY: pimienta/releases/pos/android/current.json
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Unit tests
+  # ---------------------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/pos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: mobile/pos/**/*.gradle*
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        run: ./gradlew :app:test --no-daemon
+
+  # ---------------------------------------------------------------------------
+  # Signed release APK → S3
+  # ---------------------------------------------------------------------------
+  publish:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/pos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: mobile/pos/**/*.gradle*
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Decode release keystore
+        env:
+          POS_KEYSTORE_BASE64: ${{ secrets.POS_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${POS_KEYSTORE_BASE64}" ]; then
+            echo "Missing secret: POS_KEYSTORE_BASE64" >&2
+            exit 1
+          fi
+          echo "$POS_KEYSTORE_BASE64" | base64 -d > "${GITHUB_WORKSPACE}/mobile/pos/release.keystore"
+
+      - name: Build signed release APK
+        env:
+          POS_STORE_FILE: ${{ github.workspace }}/mobile/pos/release.keystore
+          POS_STORE_PASSWORD: ${{ secrets.POS_STORE_PASSWORD }}
+          POS_KEY_ALIAS: ${{ secrets.POS_KEY_ALIAS }}
+          POS_KEY_PASSWORD: ${{ secrets.POS_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${POS_STORE_PASSWORD}" ] || [ -z "${POS_KEY_ALIAS}" ] || [ -z "${POS_KEY_PASSWORD}" ]; then
+            echo "Missing secrets: POS_STORE_PASSWORD, POS_KEY_ALIAS, and/or POS_KEY_PASSWORD" >&2
+            exit 1
+          fi
+          ./gradlew :app:assembleRelease --no-daemon
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload APK and manifest to S3
+        env:
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${AWS_S3_BUCKET_NAME}" ]; then
+            echo "Missing secret: AWS_S3_BUCKET_NAME" >&2
+            exit 1
+          fi
+
+          APK_PATH="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Release APK not found at $APK_PATH" >&2
+            ls -la app/build/outputs/apk/release/ || true
+            exit 1
+          fi
+
+          VERSION_NAME="$(sed -n 's/.*versionName *= *"\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n1)"
+          VERSION_CODE="$(sed -n 's/.*versionCode *= *\([0-9][0-9]*\).*/\1/p' app/build.gradle.kts | head -n1)"
+          UPLOADED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          if [ -z "$VERSION_NAME" ] || [ -z "$VERSION_CODE" ]; then
+            echo "Could not parse versionName/versionCode from app/build.gradle.kts" >&2
+            exit 1
+          fi
+
+          cat > current.json <<EOF
+{
+  "versionName": "${VERSION_NAME}",
+  "versionCode": ${VERSION_CODE},
+  "s3Key": "${POS_APK_KEY}",
+  "uploadedAt": "${UPLOADED_AT}"
+}
+EOF
+
+          aws s3 cp "$APK_PATH" "s3://${AWS_S3_BUCKET_NAME}/${POS_APK_KEY}" \
+            --content-type application/vnd.android.package-archive
+          aws s3 cp current.json "s3://${AWS_S3_BUCKET_NAME}/${POS_MANIFEST_KEY}" \
+            --content-type application/json
+
+          echo "Published ${POS_APK_KEY} (v${VERSION_NAME} / ${VERSION_CODE})"

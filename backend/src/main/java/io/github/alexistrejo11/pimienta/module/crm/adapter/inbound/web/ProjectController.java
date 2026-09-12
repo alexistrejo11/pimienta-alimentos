@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocProjectActivate;
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocProjectArchive;
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocProjectCancel;
@@ -49,7 +51,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/projects")
+@RequestMapping(BASE + "/projects")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocProjects
 public class ProjectController {

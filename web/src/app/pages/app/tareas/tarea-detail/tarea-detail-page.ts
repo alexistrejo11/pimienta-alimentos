@@ -10,12 +10,20 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 import { StatusBadgeComponent } from '../../../../shared/ui/status-badge/status-badge';
 import { ChecklistSectionComponent } from '../components/checklist-section/checklist-section';
+import { EmployeeSelectComponent } from '../../../../shared/ui/employee-select/employee-select';
 
 /** Detalle completo de una tarea, incluyendo checklist. */
 @Component({
   selector: 'app-tarea-detail-page',
   
-  imports: [PageHeaderComponent, DataStateComponent, StatusBadgeComponent, ChecklistSectionComponent, FormsModule],
+  imports: [
+    PageHeaderComponent,
+    DataStateComponent,
+    StatusBadgeComponent,
+    ChecklistSectionComponent,
+    FormsModule,
+    EmployeeSelectComponent,
+  ],
   templateUrl: './tarea-detail-page.html',
 })
 export class TareaDetailPageComponent implements OnInit {
@@ -27,7 +35,7 @@ export class TareaDetailPageComponent implements OnInit {
   readonly error = signal<ParsedApiError | null>(null);
   readonly tarea = signal<TaskResponse | null>(null);
   readonly updateStatus = signal('PENDING');
-  readonly assigneeId = signal('');
+  readonly assigneeId = signal<number | null>(null);
   readonly saving = signal(false);
   readonly deleting = signal(false);
   readonly actionError = signal<ParsedApiError | null>(null);
@@ -47,7 +55,7 @@ export class TareaDetailPageComponent implements OnInit {
         next: (t) => {
           this.tarea.set(t);
           this.updateStatus.set(t.status);
-          this.assigneeId.set(t.assignedToId == null ? '' : String(t.assignedToId));
+          this.assigneeId.set(t.assignedToId);
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
@@ -60,16 +68,10 @@ export class TareaDetailPageComponent implements OnInit {
     this.saving.set(true);
 
     const targetStatus = this.updateStatus();
-    const targetAssigneeRaw = this.assigneeId().trim();
-    const targetAssignee = targetAssigneeRaw === '' ? null : Number(targetAssigneeRaw);
+    const targetAssignee = this.assigneeId();
 
     const runAssign = (latest: TaskResponse): void => {
-      if (
-        targetAssignee == null ||
-        Number.isNaN(targetAssignee) ||
-        targetAssignee <= 0 ||
-        latest.assignedToId === targetAssignee
-      ) {
+      if (targetAssignee == null || targetAssignee <= 0 || latest.assignedToId === targetAssignee) {
         this.tarea.set(latest);
         this.saving.set(false);
         return;
@@ -78,7 +80,7 @@ export class TareaDetailPageComponent implements OnInit {
         next: (updated) => {
           this.tarea.set(updated);
           this.updateStatus.set(updated.status);
-          this.assigneeId.set(updated.assignedToId == null ? '' : String(updated.assignedToId));
+          this.assigneeId.set(updated.assignedToId);
           this.saving.set(false);
         },
         error: (err: unknown) => {
@@ -110,7 +112,7 @@ export class TareaDetailPageComponent implements OnInit {
       next: (updated) => {
         this.tarea.set(updated);
         this.updateStatus.set(updated.status);
-        this.assigneeId.set(updated.assignedToId == null ? '' : String(updated.assignedToId));
+        this.assigneeId.set(updated.assignedToId);
       },
       error: (err: unknown) => this.actionError.set(parseApiError(err)),
     });

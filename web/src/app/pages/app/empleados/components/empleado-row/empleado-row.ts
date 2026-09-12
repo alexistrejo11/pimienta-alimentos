@@ -19,18 +19,15 @@ export class EmpleadoRowComponent {
   /** Datos resumidos del empleado que provienen de la lista paginada. */
   readonly empleado = input.required<EmployeeListItemResponse>();
 
-  /** Iniciales a partir del nombre completo (p. ej. "María González" → "MG"). */
-  initials(fullName: string): string {
-    const parts = fullName.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return '?';
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-  }
-
   /** Formatea la fecha ISO a formato legible en español (dd/mm/aaaa). */
   formatDate(iso: string): string {
     if (!iso) return '—';
     const [year, month, day] = iso.split('-');
     return `${day}/${month}/${year}`;
+  }
+
+  onPhotoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.style.visibility = 'hidden';
   }
 }
