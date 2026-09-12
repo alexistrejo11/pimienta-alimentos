@@ -96,4 +96,38 @@ object Migrations {
             database.execSQL("ALTER TABLE `product_new` RENAME TO `product`")
         }
     }
+
+    // Allows pending-catalog sale lines without a product id and stores their source barcode.
+    val V9_TO_V10 = object : Migration(9, 10) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `sale_line_new` (
+                    `id` TEXT NOT NULL,
+                    `saleId` TEXT NOT NULL,
+                    `productId` TEXT,
+                    `productName` TEXT NOT NULL,
+                    `categoryName` TEXT NOT NULL,
+                    `quantity` INTEGER NOT NULL,
+                    `unitPriceCentavos` INTEGER NOT NULL,
+                    `subtotalCentavos` INTEGER NOT NULL,
+                    `stockPolicy` TEXT NOT NULL,
+                    `lineType` TEXT NOT NULL,
+                    `sourceBarcode` TEXT,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            database.execSQL(
+                """
+                INSERT INTO `sale_line_new`
+                (`id`, `saleId`, `productId`, `productName`, `categoryName`, `quantity`, `unitPriceCentavos`, `subtotalCentavos`, `stockPolicy`, `lineType`, `sourceBarcode`)
+                SELECT `id`, `saleId`, `productId`, `productName`, `categoryName`, `quantity`, `unitPriceCentavos`, `subtotalCentavos`, `stockPolicy`, 'CATALOG', NULL
+                FROM `sale_line`
+                """.trimIndent()
+            )
+            database.execSQL("DROP TABLE `sale_line`")
+            database.execSQL("ALTER TABLE `sale_line_new` RENAME TO `sale_line`")
+        }
+    }
 }

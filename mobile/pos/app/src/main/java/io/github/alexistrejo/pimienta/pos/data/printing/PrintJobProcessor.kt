@@ -33,6 +33,10 @@ class PrintJobProcessor(
     // Builds the current sale snapshot and sends it through the configured printer.
     private suspend fun print(job: PrintJobEntity): PrintResult {
         val dao = database.operationsDao()
+        val openDrawer = when (job.documentType) {
+            "SALE" -> dao.sale(job.saleId)?.paymentMethod == "CASH"
+            else -> false
+        }
         val document = when (job.documentType) {
             "SALE" -> {
                 val sale = dao.sale(job.saleId) ?: return PrintResult.Failed(PrintFailure.UNSUPPORTED)
@@ -60,6 +64,6 @@ class PrintJobProcessor(
             }
             else -> return PrintResult.Failed(PrintFailure.UNSUPPORTED)
         }
-        return printer.print(encoder.encode(document))
+        return printer.print(encoder.encode(document, openDrawer = openDrawer))
     }
 }

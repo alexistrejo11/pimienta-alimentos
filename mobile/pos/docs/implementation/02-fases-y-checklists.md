@@ -114,8 +114,9 @@ el comprobante y el arqueo nunca queden desalineados.
 Objetivo: completar la operación de turno y excepciones que no dependen del backend.
 
 **Estado:** núcleo persistente implementado (panel, Corte Z, inventario,
-historial, descuentos, sangrías). Faltan monto abierto, producto pendiente de
-catálogo, reimpresión de sangría en UI, autorización PIN genérica y pruebas.
+historial, descuentos, sangrías). **Producto pendiente de catálogo** ya está
+en venta (modal + línea `PENDING_CATALOG`). Faltan monto abierto, reimpresión
+de sangría en UI, autorización PIN genérica y pruebas.
 
 Incluye:
 
@@ -177,7 +178,7 @@ descuentos ya escriben hechos, Outbox y PrintJob. ESC/POS + PrintWorker
 
 - [ ] Autorización genérica por PIN y evidencia de autorizador (hoy hay diálogos PIN repetidos por flujo).
 - [ ] Monto abierto con categoría, importe y autorización por línea.
-- [ ] Producto pendiente de catálogo con barcode crudo, importe y ausencia de movimiento de inventario.
+- [x] Producto pendiente de catálogo con barcode crudo, importe y ausencia de movimiento de inventario.
 - [x] Descuento único parcial o total autorizado y persistido con la venta.
 - [x] Reposición, merma, historial, reimpresión de venta y cancelación de efectivo.
 - [x] Sangría de resguardo persistente, auditable y con outbox/PrintJob pendiente.
@@ -194,9 +195,9 @@ descuentos ya escriben hechos, Outbox y PrintJob. ESC/POS + PrintWorker
 Objetivo: dejar lista una integración verificable con fakes y protocolos puros,
 sin inventar soporte para una marca o modelo que todavía no fue validado.
 
-**Estado:** pipeline core listo (contratos, fakes, ESC/POS, PrintWorker).
-Pendiente cablear scanner a la venta, endurecer UI de Estado y pruebas de
-reinicio; PRODUCTION sigue sin impresora real.
+**Estado:** pipeline listo y cableado a venta/Estado. SANDBOX usa fakes;
+PRODUCTION usa `UsbTicketPrinter` + perfil POS-5890A. Falta prueba de reinicio
+y validación física en tablet (Fase 3B).
 
 Incluye:
 
@@ -220,8 +221,8 @@ Incluye:
 - [x] Worker procesa `PENDING`, `PRINTING`, `PRINTED` y `FAILED` sin perder trabajos.
 - [x] Reimpresión crea un trabajo duplicado sin crear otra venta.
 - [ ] Reinicio de aplicación conserva los trabajos pendientes (Room los guarda; falta prueba automatizada/manual explícita).
-- [ ] La UI de Estado muestra pendientes y errores accionables; el scanner fake aún no está cableado a la venta.
-- [ ] En PRODUCTION no se declara impresora real: `UnavailableTicketPrinter` hasta Fase 3B.
+- [x] La UI de Estado muestra pendientes/fallidos, encola impresión/sync y permite prueba de scanner fake.
+- [x] Scanner HID + fake multiplexados hacia la venta; barcode desconocido abre modal de producto pendiente.
 
 ### Criterio de salida
 
@@ -233,6 +234,10 @@ hardware concreto.
 ## Fase 3B: periféricos reales
 
 Objetivo: validar la operación sobre hardware antes de integrar cloud.
+
+**Estado:** código USB/HID implementado (`UsbPrintTransport`, `HidKeyboardBarcodeScanner`,
+perfil POS-5890A, cajón ESC/POS). Falta validación física en la Rikkai S25 con
+hub + Shawty S0024 + POS-5890A.
 
 Incluye:
 
@@ -249,10 +254,10 @@ No se habilita Bluetooth como ruta principal salvo que el hardware validado lo r
 
 ### Checklist de salida
 
-- [ ] Modelos de tablet, lector, impresora, hub, cables y cargador confirmados.
-- [ ] Transporte y protocolo seleccionados para cada periférico validado.
-- [ ] Lector e impresora integrados contra el hardware validado.
-- [ ] Detección asistida, permisos y selección de perfil verificadas.
+- [x] Modelos de tablet, lector, impresora, hub, cables y cargador confirmados (documentados; falta mesa).
+- [x] Transporte USB y protocolo ESC/POS seleccionados para el kit documentado.
+- [x] Lector HID y adapter USB de impresora integrados en código.
+- [ ] Detección asistida, permisos y selección de perfil verificadas en hardware real.
 - [ ] Impresión, reimpresión y recuperación de desconexión verificadas.
 - [ ] Prueba física de alimentación y tres periféricos simultáneos.
 - [ ] Validación de orientación, objetivos táctiles y comportamiento de teclado/lector.

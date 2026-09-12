@@ -46,6 +46,15 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
+import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
+import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
+import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
+import io.github.alexistrejo.pimienta.pos.hardware.PeripheralStatus
+import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
+import io.github.alexistrejo.pimienta.pos.hardware.PrintableLine
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterFactory
+import io.github.alexistrejo.pimienta.pos.hardware.PrintResult
+import java.time.Instant
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.domain.DashboardSummary
@@ -171,7 +180,7 @@ private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity, m
         ManagerSection.Z_CLOSE -> ZClosePanel(shift, manager, summary, repository, refresh, onShiftClosed, modifier)
         ManagerSection.INVENTORY -> InventoryPanel(shift, manager, products, repository, refresh, modifier)
         ManagerSection.HISTORY -> HistoryPanel(shift, manager, repository, refresh, modifier)
-        ManagerSection.STATUS -> StatusPanel(pendingEvents, repository, modifier)
+        ManagerSection.STATUS -> StatusPanel(pendingEvents, products, repository, modifier)
     }
 }
 
@@ -364,13 +373,30 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
     }
 }
 
-// Presents durable queue state and the currently available Phase 3A peripheral runtime.
+// Presents durable queue state and the currently available peripheral runtime.
 @Composable
-private fun StatusPanel(pendingEvents: Int, repository: PosRepository, modifier: Modifier) {
+private fun StatusPanel(
+    pendingEvents: Int,
+    products: List<ProductEntity>,
+    repository: PosRepository,
+    modifier: Modifier,
+) {
     val printJobs = remember { mutableStateOf(emptyList<PrintJobEntity>()) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
+    var peripheralMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    LaunchedEffect(Unit) { printJobs.value = withContext(Dispatchers.IO) { repository.pendingPrintJobs() } }
+    val mode = repository.mode()
+    val printerStatus = remember(mode) { PrinterFactory.printerStatus(context, mode) }
+
+    fun refreshPrintJobs() {
+        scope.launch {
+            printJobs.value = withContext(Dispatchers.IO) { repository.pendingPrintJobs() }
+        }
+    }
+
+    LaunchedEffect(Unit) { refreshPrintJobs() }
+
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("Estado y periféricos", style = MaterialTheme.typography.headlineSmall)
@@ -379,7 +405,14 @@ private fun StatusPanel(pendingEvents: Int, repository: PosRepository, modifier:
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Sincronización", style = MaterialTheme.typography.titleMedium)
                     Text("Offline-first · los eventos permanecen en Room hasta sincronizar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    PosButton("Intentar sincronizar ahora", { syncMessage = "La cola local está lista; el worker sincronizará al recuperar conexión." })
+                    PosButton("Intentar sincronizar ahora", {
+                        if (mode == RuntimeMode.PRODUCTION) {
+                            SyncWorker.enqueue(context)
+                            syncMessage = "Sincronización encolada."
+                        } else {
+                            syncMessage = "Sandbox no envía eventos al backend."
+                        }
+                    })
                     syncMessage?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
@@ -389,23 +422,66 @@ private fun StatusPanel(pendingEvents: Int, repository: PosRepository, modifier:
                     val failed = printJobs.value.count { it.status == "FAILED" }
                     Text("${printJobs.value.size} trabajos pendientes · $failed fallidos", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        if (repository.mode() == RuntimeMode.SANDBOX) "Impresora fake lista · perfil ESC/POS 58 mm"
-                        else "Sin adapter físico configurado · los trabajos permanecen pendientes",
+                        when (mode) {
+                            RuntimeMode.SANDBOX -> "Impresora fake · perfil POS-5890A 58 mm"
+                            RuntimeMode.PRODUCTION -> when (printerStatus) {
+                                PeripheralStatus.READY -> "Impresora USB lista · POS-5890A"
+                                PeripheralStatus.PERMISSION_REQUIRED -> "Impresora detectada · concede permiso USB"
+                                PeripheralStatus.DISCONNECTED -> "Sin impresora USB conectada"
+                                else -> printerStatus.name
+                            }
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    PosButton("Procesar cola de impresión", { PrintWorker.enqueue(context) })
-                    PosButton("Imprimir y abrir cajón", { }, enabled = false)
+                    PosButton("Procesar cola de impresión", {
+                        PrintWorker.enqueue(context)
+                        refreshPrintJobs()
+                        peripheralMessage = "Cola de impresión encolada."
+                    })
+                    PosButton("Imprimir y abrir cajón", {
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                val printer = PrinterFactory.create(context, mode)
+                                val encoder = EscPosEncoder(printer.profile)
+                                val document = OperationalDocument(
+                                    title = "Prueba de impresión",
+                                    folio = "TEST",
+                                    occurredAt = Instant.now(),
+                                    lines = listOf(PrintableLine("POS-5890A", "1", 0)),
+                                    totalCentavos = 0,
+                                )
+                                printer.print(encoder.encode(document, openDrawer = true))
+                            }
+                            peripheralMessage = when (result) {
+                                PrintResult.Printed -> "Prueba enviada a la impresora."
+                                is PrintResult.Failed -> "Impresión fallida: ${result.reason.name}"
+                            }
+                        }
+                    })
+                    peripheralMessage?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Lector", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        if (repository.mode() == RuntimeMode.SANDBOX) "Fake scanner disponible para pruebas"
-                        else "Scanner físico pendiente de validación",
+                        when {
+                            PosScannerRegistry.fake != null -> "Fake scanner + HID USB activos"
+                            else -> "Scanner HID pendiente"
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    PosButton("Probar lectura", { }, enabled = false)
+                    PosButton("Probar lectura conocida", {
+                        val code = products.firstNotNullOfOrNull { it.barcode?.takeIf(String::isNotBlank) }
+                            ?: products.firstOrNull()?.sku
+                            ?: "7501234567890"
+                        PosScannerRegistry.fake?.emit(code)
+                        peripheralMessage = "Lectura fake enviada: $code"
+                    })
+                    PosButton("Probar código desconocido", {
+                        PosScannerRegistry.fake?.emit("9999999999999")
+                        peripheralMessage = "Lectura fake desconocida enviada."
+                    })
                 }
             }
         }

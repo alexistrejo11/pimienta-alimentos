@@ -17,7 +17,19 @@ import androidx.room.PrimaryKey
 // Stores an immutable cash safeguard withdrawal made during an open shift.
 @Entity(tableName = "cash_withdrawal", indices = [Index(value = ["folio"], unique = true)]) data class CashWithdrawalEntity(@PrimaryKey val id: String, val folio: String, val shiftId: String, val cashierId: String, val amountCentavos: Long, val reason: String, val authorizedByUserId: String, val authorizedByRole: String, val createdAtEpochMillis: Long)
 // Stores the catalog information exactly as it was sold.
-@Entity(tableName = "sale_line") data class SaleLineEntity(@PrimaryKey val id: String, val saleId: String, val productId: String, val productName: String, val categoryName: String, val quantity: Int, val unitPriceCentavos: Long, val subtotalCentavos: Long, val stockPolicy: String)
+@Entity(tableName = "sale_line") data class SaleLineEntity(
+    @PrimaryKey val id: String,
+    val saleId: String,
+    val productId: String?,
+    val productName: String,
+    val categoryName: String,
+    val quantity: Int,
+    val unitPriceCentavos: Long,
+    val subtotalCentavos: Long,
+    val stockPolicy: String,
+    val lineType: String = "CATALOG",
+    val sourceBarcode: String? = null,
+)
 // Stores the selected payment type and its applied amount.
 @Entity(tableName = "payment") data class PaymentEntity(@PrimaryKey val id: String, val saleId: String, val method: String, val amountCentavos: Long)
 // Records only controlled-stock deductions created by a sale.

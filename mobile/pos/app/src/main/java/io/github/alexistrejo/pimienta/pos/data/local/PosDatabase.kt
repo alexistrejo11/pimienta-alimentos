@@ -38,7 +38,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.TelemetryEventEntity
         PaymentEntity::class, SaleDiscountEntity::class, CashWithdrawalEntity::class, InventoryMovementEntity::class, OutboxEventEntity::class, PrintJobEntity::class,
         CashCountAttemptEntity::class, ShiftCloseEntity::class, SaleCancellationEntity::class, SyncStateEntity::class, TelemetryEventEntity::class
     ],
-     version = 9,
+     version = 10,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {
@@ -55,6 +55,10 @@ abstract class PosDatabase : RoomDatabase() {
             context,
             PosDatabase::class.java,
             databaseName
-         ).addMigrations(Migrations.V1_TO_V2, Migrations.V2_TO_V3, Migrations.V3_TO_V4, Migrations.V4_TO_V5, Migrations.V5_TO_V6, Migrations.V6_TO_V7, Migrations.V7_TO_V8, Migrations.V8_TO_V9).build()
+         ).addMigrations(
+            Migrations.V1_TO_V2, Migrations.V2_TO_V3, Migrations.V3_TO_V4, Migrations.V4_TO_V5,
+            Migrations.V5_TO_V6, Migrations.V6_TO_V7, Migrations.V7_TO_V8, Migrations.V8_TO_V9,
+            Migrations.V9_TO_V10,
+        ).build()
     }
 }

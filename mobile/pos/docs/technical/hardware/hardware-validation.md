@@ -63,10 +63,11 @@ Bluetooth queda como contingencia de cable, no del camino feliz inicial.
 
 #### Decisión de implementación (provisional)
 
-- Perfil de producción sobre el genérico 58 mm ya modelado (`PrinterProfiles.genericEscPos58`).
+- Perfil de producción: `PrinterProfiles.pos5890A` + `UsbPrintTransport` / `UsbTicketPrinter`.
 - Code page inicial: **CP850 / PC850**, alineada con el encoder actual y el español (`ñ`, acentos).
-- Corte y cajón: habilitar en el perfil tras prueba física (`supportsCut`, `supportsCashDrawer` + `DrawerPulse`).
-- No se implementa transporte de red para este kit. Bluetooth queda fuera del camino feliz.
+- Scanner: `HidKeyboardBarcodeScanner` (USB-HID) + `FakeBarcodeScanner` vía `MultiplexBarcodeScanner`.
+- Corte y cajón: habilitados en perfil; pulso ESC/POS en ventas en efectivo y prueba desde Estado.
+- Bluetooth queda fuera del camino feliz.
 - Adapter propietario solo si la unidad real falla con ESC/POS genérico (poco probable en esta familia OEM).
 
 #### Pendiente de validación física (esta impresora)

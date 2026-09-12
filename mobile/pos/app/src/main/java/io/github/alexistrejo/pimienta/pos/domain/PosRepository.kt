@@ -13,8 +13,27 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 
+// Distinguishes catalog lines from unknown-barcode exceptions captured at the register.
+enum class SaleLineType { CATALOG, PENDING_CATALOG }
+
 // Represents an editable sale line before it becomes an immutable database snapshot.
-data class CartLine(val productId: String, val name: String, val category: String, val unitPriceCentavos: Long, val stockPolicy: String, val quantity: Int)
+data class CartLine(
+    val productId: String?,
+    val name: String,
+    val category: String,
+    val unitPriceCentavos: Long,
+    val stockPolicy: String,
+    val quantity: Int,
+    val lineType: SaleLineType = SaleLineType.CATALOG,
+    val sourceBarcode: String? = null,
+) {
+    // Stable cart identity for catalog ids or pending barcodes.
+    val lineKey: String
+        get() = when (lineType) {
+            SaleLineType.CATALOG -> productId.orEmpty()
+            SaleLineType.PENDING_CATALOG -> "pending:${sourceBarcode.orEmpty()}:${unitPriceCentavos}"
+        }
+}
 
 // Represents the payment choice exposed by the first local checkout.
 enum class PaymentMethod { CASH, EXTERNAL_CARD_MP, CORTESIA }
@@ -216,8 +235,12 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             operations.markSaleCancelled(sale.id)
             val cancellation = SaleCancellationEntity(UUID.randomUUID().toString(), sale.id, sale.shiftId, reason.trim(), manager.id, manager.role, cancelledAt)
             operations.insertCancellation(cancellation)
-            operations.insertMovements(lines.filter { it.stockPolicy == "CONTROLLED" }.map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId, line.quantity, cancelledAt, "SALE_CANCELLATION") })
-            lines.filter { it.stockPolicy == "CONTROLLED" }.forEach { line -> adjustStock(line.productId, line.quantity) }
+            operations.insertMovements(
+                lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
+                    .map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId!!, line.quantity, cancelledAt, "SALE_CANCELLATION") }
+            )
+            lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
+                .forEach { line -> adjustStock(line.productId!!, line.quantity) }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CANCELLED", sale.id,
                 OutboxPayloadBuilder.saleCancelled(sale, cancellation), cancelledAt
@@ -249,13 +272,32 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                 SaleDiscountEntity(UUID.randomUUID().toString(), saleId, it.amountCentavos, it.reason.trim(), it.authorizedBy.id, it.authorizedBy.role, confirmedAt)
             }
             discountEntity?.let { operations.insertDiscount(it) }
-            val saleLines = lines.map { line -> SaleLineEntity(UUID.randomUUID().toString(), saleId, line.productId, line.name, line.category, line.quantity, line.unitPriceCentavos, line.unitPriceCentavos * line.quantity, line.stockPolicy) }
+            val saleLines = lines.map { line ->
+                SaleLineEntity(
+                    UUID.randomUUID().toString(),
+                    saleId,
+                    line.productId,
+                    line.name,
+                    line.category,
+                    line.quantity,
+                    line.unitPriceCentavos,
+                    line.unitPriceCentavos * line.quantity,
+                    line.stockPolicy,
+                    line.lineType.name,
+                    line.sourceBarcode,
+                )
+            }
             operations.insertLines(saleLines)
             val payment = PaymentEntity(UUID.randomUUID().toString(), saleId, method.name, total)
             operations.insertPayment(payment)
-            operations.insertMovements(lines.filter { it.stockPolicy == "CONTROLLED" }.map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId, -line.quantity, confirmedAt) })
-            lines.filter { it.stockPolicy == "CONTROLLED" }.forEach { line -> adjustStock(line.productId, -line.quantity) }
-            val products = lines.mapNotNull { database.productDao().findById(it.productId) }.associateBy { it.id }
+            val controlledLines = lines.filter { it.lineType == SaleLineType.CATALOG && it.stockPolicy == "CONTROLLED" && it.productId != null }
+            operations.insertMovements(
+                controlledLines.map { line ->
+                    InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId!!, -line.quantity, confirmedAt)
+                }
+            )
+            controlledLines.forEach { line -> adjustStock(line.productId!!, -line.quantity) }
+            val products = lines.mapNotNull { line -> line.productId?.let { database.productDao().findById(it) } }.associateBy { it.id }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CONFIRMED", saleId,
                 OutboxPayloadBuilder.saleConfirmed(sale, saleLines, payment, discountEntity, products), confirmedAt

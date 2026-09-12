@@ -69,4 +69,12 @@ object PrinterProfiles {
         displayName = "ESC/POS genérica · 58 mm",
         supportsCut = true,
     )
+
+    val pos5890A = PrinterProfile(
+        id = "pos-5890a",
+        displayName = "POS-5890A / ZJ-5890A · 58 mm",
+        supportsCut = true,
+        supportsCashDrawer = true,
+        drawerPulse = DrawerPulse(onTime = 25, offTime = 250),
+    )
 }

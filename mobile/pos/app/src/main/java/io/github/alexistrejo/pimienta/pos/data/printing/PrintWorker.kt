@@ -9,15 +9,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
-import io.github.alexistrejo.pimienta.pos.hardware.FakeTicketPrinter
-import io.github.alexistrejo.pimienta.pos.hardware.PeripheralStatus
-import io.github.alexistrejo.pimienta.pos.hardware.PrintFailure
-import io.github.alexistrejo.pimienta.pos.hardware.PrintResult
-import io.github.alexistrejo.pimienta.pos.hardware.PrinterProfile
-import io.github.alexistrejo.pimienta.pos.hardware.PrinterProfiles
-import io.github.alexistrejo.pimienta.pos.hardware.TicketPrinter
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterFactory
 import java.util.concurrent.TimeUnit
 
 private const val UNIQUE_PRINT = "pos-print"
@@ -29,7 +21,7 @@ class PrintWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result {
         val mode = provider.modes.mode()
         val database = provider.database(mode)
-        val printer = if (mode == RuntimeMode.SANDBOX) FakeTicketPrinter() else UnavailableTicketPrinter
+        val printer = PrinterFactory.create(applicationContext, mode)
         val processor = PrintJobProcessor(database, printer)
         repeat(50) {
             if (!processor.processNext()) return@repeat
@@ -49,11 +41,4 @@ class PrintWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
             )
         }
     }
-}
-
-// Makes production failures explicit until a physical printer adapter is installed.
-private object UnavailableTicketPrinter : TicketPrinter {
-    override val profile: PrinterProfile = PrinterProfiles.genericEscPos58
-    override val status: Flow<PeripheralStatus> = MutableStateFlow(PeripheralStatus.DISCONNECTED)
-    override suspend fun print(bytes: ByteArray): PrintResult = PrintResult.Failed(PrintFailure.NO_PRINTER)
 }

@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos
 
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -50,17 +51,27 @@ import androidx.core.content.edit
 import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
-import io.github.alexistrejo.pimienta.pos.hardware.FakeBarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
+import io.github.alexistrejo.pimienta.pos.hardware.FakeBarcodeScanner
+import io.github.alexistrejo.pimienta.pos.hardware.HidKeyboardBarcodeScanner
+import io.github.alexistrejo.pimienta.pos.hardware.MultiplexBarcodeScanner
+import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 
 // Identifies the visible panel used by portrait tablets during a draft sale.
 internal enum class PortraitPanel { CATALOG, CART }
 
 // Hosts the offline POS and restores the persisted local state on launch.
 class MainActivity : ComponentActivity() {
+    private val hidScanner = HidKeyboardBarcodeScanner()
+    private val fakeScanner = FakeBarcodeScanner()
+    private val barcodeScanner = MultiplexBarcodeScanner(listOf(hidScanner, fakeScanner))
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        PosScannerRegistry.hid = hidScanner
+        PosScannerRegistry.fake = fakeScanner
+        PosScannerRegistry.primary = barcodeScanner
 
         val preferences = getSharedPreferences("pos-demo", MODE_PRIVATE)
         val repository = PosRepository((application as PosApplication).databaseProvider)
@@ -70,23 +81,27 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(if (BuildConfig.DEBUG) preferences.getBoolean("dark-theme", true) else true)
             }
             PosTheme(dark) {
-                PosApp(repository, dark) { enabled ->
+                PosApp(repository, barcodeScanner, dark) { enabled ->
                     dark = enabled
                     preferences.edit { putBoolean("dark-theme", enabled) }
                 }
             }
         }
     }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (hidScanner.onKeyEvent(event)) return true
+        return super.dispatchKeyEvent(event)
+    }
 }
 
 // Selects the active data space and keeps sandbox isolated from backend services.
 @Composable
-private fun PosApp(repository: PosRepository, dark: Boolean, onTheme: (Boolean) -> Unit) {
+private fun PosApp(repository: PosRepository, scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val app = context.applicationContext as PosApplication
     val mode = repository.mode()
-    val scanner: BarcodeScanner? = remember { if (BuildConfig.DEBUG) FakeBarcodeScanner() else null }
     var users by remember { mutableStateOf<List<LocalUserEntity>>(emptyList()) }
     var products by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
     var shift by remember { mutableStateOf<ShiftEntity?>(null) }
@@ -125,6 +140,11 @@ private fun PosApp(repository: PosRepository, dark: Boolean, onTheme: (Boolean) 
     }
 
     LaunchedEffect(Unit) { reload() }
+
+    LaunchedEffect(scanner) {
+        (scanner as? MultiplexBarcodeScanner)?.attach(this)
+        scanner.start()
+    }
 
     Column {
         RuntimeModeBanner(mode, ::switchMode)

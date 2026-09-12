@@ -42,15 +42,17 @@ en [02-fases-y-checklists.md](02-fases-y-checklists.md).
 - Sangrías de resguardo desde Modo Venta (creación) y consulta en Manager.
 - Corte Z con conteo ciego, corrección y aprobación por PIN.
 - Historial del turno con reimpresión de venta y cancelación de efectivo.
+- **Producto pendiente de catálogo:** modal con barcode + importe, línea
+  `PENDING_CATALOG` sin inventario.
 
-### Periféricos fake y cola de impresión (Fase 3A)
+### Periféricos USB (Fases 3A/3B)
 
 - Contratos de scanner, impresora, cajón y transporte.
-- `FakeBarcodeScanner`, `FakeTicketPrinter`, encoder ESC/POS 58 mm.
-- `PrintWorker` (WorkManager) que consume `PrintJob` desde Room.
-- En SANDBOX imprime con fake; en PRODUCTION la impresora real aún no existe
-  (`UnavailableTicketPrinter`).
-- Scanner fake presente pero no cableado al flujo de venta.
+- `FakeBarcodeScanner`, `HidKeyboardBarcodeScanner`, `MultiplexBarcodeScanner`.
+- `UsbPrintTransport`, `UsbTicketPrinter`, perfil `POS-5890A` / CP850 / cajón.
+- `PrintWorker` + `PrinterFactory` (fake en SANDBOX, USB en PRODUCTION).
+- Scanner cableado a venta; barcode desconocido abre modal de producto pendiente.
+- Panel Estado: cola de impresión, sync, prueba fake/HID e impresión de prueba.
 
 ### Sincronización cloud (Fase 4 parcial)
 
@@ -74,20 +76,19 @@ en [02-fases-y-checklists.md](02-fases-y-checklists.md).
 ### Completar Fase 2
 
 - Monto abierto con categoría e importe.
-- Producto pendiente de catálogo (barcode desconocido).
-- Autorización genérica reutilizable (hoy hay diálogos PIN repetidos).
+- Autorización genérica reutilizable (hoy hay diálogos PIN repetidos por flujo).
 - Reimpresión operativa de comprobantes de sangría desde Manager.
 - Pruebas de reglas, Room y UI para excepciones de Manager.
 
-### Completar Fase 3A y abrir 3B
+### Validar Fase 3B en mesa
 
-- Integrar scanner fake/real en venta; UI de Estado con errores claros.
-- Validar supervivencia de PrintJob tras reinicio (código Room; falta prueba).
-- Fase 3B: transportes USB/TCP reales y validación física del hub.
+- Prueba física Rikkai + hub + Shawty S0024 + POS-5890A (30 min, acentos, cajón).
+- Registrar VID/PID USB reales tras la mesa.
+- Validar supervivencia de PrintJob tras reinicio (falta prueba explícita).
 
 ### Endurecer Fase 4
 
-- Botón/acción de sync en UI que encole `SyncWorker` de forma confiable.
+- Botón/acción de sync en UI que encole `SyncWorker` (implementado en PRODUCTION).
 - Pruebas de contrato Android ↔ Spring Boot y guion de recuperación.
 - Proyección central completa de eventos no-venta (lado backend, no móvil).
 
@@ -95,8 +96,8 @@ en [02-fases-y-checklists.md](02-fases-y-checklists.md).
 
 - Venta por peso.
 - SDK/API de Mercado Pago (solo registro manual de terminal externa).
-- Drivers reales de lector, impresora y cajón (Fase 3B).
-- Validación física de hub, alimentación y tres periféricos simultáneos.
+- Bluetooth como ruta principal de periféricos.
+- Validación física de hub, alimentación y tres periféricos simultáneos (código listo; falta mesa).
 - Piloto endurecido (Fase 5).
 
 ## Cómo leer el resto de `docs/`

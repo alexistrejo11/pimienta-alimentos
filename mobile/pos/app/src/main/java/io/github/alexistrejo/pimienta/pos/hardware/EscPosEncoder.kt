@@ -8,7 +8,7 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
     private val charset = Charset.forName(profile.codePage.charsetName)
 
     // Produces one complete ticket suitable for a configured ESC/POS transport.
-    fun encode(document: PrintableDocument): ByteArray {
+    fun encode(document: PrintableDocument, openDrawer: Boolean = false): ByteArray {
         val output = ByteArrayOutputStream()
         output.write(byteArrayOf(0x1B, 0x40))
         output.write(byteArrayOf(0x1B, 0x74, profile.codePage.escPosValue.toByte()))
@@ -29,6 +29,10 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         document.paymentLabel?.let { writeLine(output, "Pago: $it") }
         writeLine(output, "Si no te entregamos tu ticket, tu consumo es GRATIS", centered = true)
         output.write(byteArrayOf(0x1B, 0x64, 0x03))
+        if (openDrawer && profile.supportsCashDrawer) {
+            val pulse = profile.drawerPulse ?: DrawerPulse()
+            output.write(byteArrayOf(0x1B, 0x70, 0x00, pulse.onTime.toByte(), pulse.offTime.toByte()))
+        }
         if (profile.supportsCut) output.write(byteArrayOf(0x1D, 0x56, 0x00))
         return output.toByteArray()
     }

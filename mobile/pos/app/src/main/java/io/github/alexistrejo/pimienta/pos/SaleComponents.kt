@@ -77,6 +77,48 @@ internal fun StatusBar(
     }
 }
 
+// Captures price for an unknown barcode without creating a catalog product.
+@Composable
+internal fun PendingCatalogDialog(
+    barcode: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit,
+) {
+    var amount by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    fun submit() {
+        val cents = Money.fromInput(amount)
+        if (cents == null || cents <= 0) {
+            error = "Captura un importe válido."
+            return
+        }
+        onConfirm(cents)
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Producto pendiente de catálogo", style = MaterialTheme.typography.titleLarge)
+                Text("Código escaneado", style = MaterialTheme.typography.labelLarge)
+                Text(barcode, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Producto pendiente de catálogo · $barcode",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text("Importe", style = MaterialTheme.typography.labelLarge)
+                Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
+                Numpad(amount, { amount = it }, onSubmit = ::submit)
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
+                    PosButton("Agregar al carrito", ::submit, primary = true, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
 // Captures a fixed safeguard withdrawal and requires an in-person manager signature.
 @Composable
 internal fun CashWithdrawalAuthorization(
@@ -388,19 +430,19 @@ internal fun CartPanel(
                 }
             } else {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
-                    items(cart, key = { it.productId }) { line ->
+                    items(cart, key = { it.lineKey }) { line ->
                         CartLineRow(
                             line,
                             decrease = {
                                 onChange(cart.mapNotNull { current ->
-                                    if (current.productId != line.productId) current
+                                    if (current.lineKey != line.lineKey) current
                                     else if (current.quantity == 1) null
                                     else current.copy(quantity = current.quantity - 1)
                                 })
                             },
                             increase = {
                                 onChange(cart.map { current ->
-                                    if (current.productId == line.productId) current.copy(quantity = current.quantity + 1) else current
+                                    if (current.lineKey == line.lineKey) current.copy(quantity = current.quantity + 1) else current
                                 })
                             },
                         )

@@ -105,7 +105,8 @@ object OutboxPayloadBuilder {
 
     private fun linePayload(line: SaleLineEntity, product: ProductEntity?): JsonObject = buildJsonObject {
         put("lineId", line.id)
-        put("productId", line.productId)
+        put("lineType", line.lineType)
+        if (line.productId != null) put("productId", line.productId) else put("productId", JsonNull)
         put("productName", line.productName)
         put("saleCategory", line.categoryName)
         put("quantity", line.quantity)
@@ -115,7 +116,11 @@ object OutboxPayloadBuilder {
         put("stockPolicy", line.stockPolicy)
         put("soldWithNegativeStock", false)
         put("soldWhileUnavailable", product?.available == false)
-        if (product?.barcode?.isNotBlank() == true) put("rawBarcode", product.barcode) else put("rawBarcode", JsonNull)
+        when {
+            !line.sourceBarcode.isNullOrBlank() -> put("rawBarcode", line.sourceBarcode)
+            product?.barcode?.isNotBlank() == true -> put("rawBarcode", product.barcode)
+            else -> put("rawBarcode", JsonNull)
+        }
     }
 
     private fun paymentPayload(sale: SaleEntity, payment: PaymentEntity): JsonObject = buildJsonObject {

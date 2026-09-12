@@ -46,6 +46,7 @@ internal fun Sale(
     var discount by remember { mutableStateOf<SaleDiscountDraft?>(null) }
     var discountRequested by remember { mutableStateOf(false) }
     var withdrawalRequested by remember { mutableStateOf(false) }
+    var pendingCatalogBarcode by remember { mutableStateOf<String?>(null) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -69,9 +70,14 @@ internal fun Sale(
             unitPriceCentavos = Money.fromCatalog(product.price),
             stockPolicy = product.stockPolicy,
             quantity = 1,
+            lineType = SaleLineType.CATALOG,
         )
-        cart = if (cart.none { it.productId == product.id }) cart + line else cart.map {
-            if (it.productId == product.id) it.copy(quantity = it.quantity + 1) else it
+        cart = if (cart.none { it.lineType == SaleLineType.CATALOG && it.productId == product.id }) {
+            cart + line
+        } else {
+            cart.map {
+                if (it.lineType == SaleLineType.CATALOG && it.productId == product.id) it.copy(quantity = it.quantity + 1) else it
+            }
         }
         discount = null
         if (wasCheckout) {
@@ -81,16 +87,48 @@ internal fun Sale(
         }
     }
 
-    fun addFromScanner(product: ProductEntity) { add(product) }
+    fun addPendingCatalogLine(barcode: String, centavos: Long) {
+        if (busy || centavos <= 0) return
+        val wasCheckout = checkout
+        val lineKey = "pending:$barcode:$centavos"
+        val line = CartLine(
+            productId = null,
+            name = "Producto pendiente de catálogo · $barcode",
+            category = "Pendiente de catálogo",
+            unitPriceCentavos = centavos,
+            stockPolicy = "UNLIMITED",
+            quantity = 1,
+            lineType = SaleLineType.PENDING_CATALOG,
+            sourceBarcode = barcode,
+        )
+        cart = if (cart.any { it.lineKey == lineKey }) {
+            cart.map { if (it.lineKey == lineKey) it.copy(quantity = it.quantity + 1) else it }
+        } else {
+            cart + line
+        }
+        discount = null
+        pendingCatalogBarcode = null
+        if (wasCheckout) {
+            checkout = false
+            portraitPanel = PortraitPanel.CART
+            scope.launch { feedbackHost.showSnackbar("Se agregó producto pendiente. Total actualizado.") }
+        }
+    }
 
-    // Starts the scanner and sends exact reads through the same catalog resolver as search.
+    // Starts the scanner and routes reads through the same catalog resolver as search.
     LaunchedEffect(scanner) {
         scanner ?: return@LaunchedEffect
         scanner.start()
         scanner.events.collect { read ->
+            if (busy || checkout) return@collect
             val code = read.rawValue.trim()
+            if (code.isBlank()) return@collect
             val product = withContext(Dispatchers.IO) { repository.findProductByCode(code) }
-            if (product != null) addFromScanner(product) else feedbackHost.showSnackbar("Código no encontrado: $code")
+            when {
+                product == null -> pendingCatalogBarcode = code
+                !product.available -> scope.launch { feedbackHost.showSnackbar("${product.name} no está disponible.") }
+                else -> add(product)
+            }
         }
     }
 
@@ -169,6 +207,13 @@ internal fun Sale(
                     shift = shift,
                     onDismiss = { withdrawalRequested = false },
                     onRecorded = { withdrawalRequested = false; scope.launch { feedbackHost.showSnackbar("Sangría ${it.folio} registrada; comprobante en cola.") } },
+                )
+            }
+            pendingCatalogBarcode?.let { barcode ->
+                PendingCatalogDialog(
+                    barcode = barcode,
+                    onDismiss = { pendingCatalogBarcode = null },
+                    onConfirm = { addPendingCatalogLine(barcode, it) },
                 )
             }
 
