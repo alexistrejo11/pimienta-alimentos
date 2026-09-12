@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
@@ -21,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/headquarters/{id}/pos-settings")
+@RequestMapping(BASE + "/headquarters/{id}/pos-settings")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocHeadquarterPosSettings
 public class HeadquarterPosSettingsController {

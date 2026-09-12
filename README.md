@@ -1,76 +1,80 @@
 # Pimienta Alimentos
 
-Software suite for **Pimienta Alimentos**, a food-services company in Mexico. Created and maintained by Alexis Trejo, this monorepo combines the public company site, a private operations workspace, the central API, and an Android point of sale for school cafeterias.
+Operations software for Pimienta Alimentos, a food-services company in Mexico.
+This repository contains the public website, authenticated operations workspace,
+central REST API, and Android point of sale for school cafeterias.
 
-## Platforms
+## Projects
 
-| Platform | Purpose | Status | Production link |
-|---|---|---|---|
-| [Web](web/) | Public company site, legal pages, staff workspace, and central POS administration | Production | [pimienta-alimentos.com](https://pimienta-alimentos.com) |
-| [Backend](backend/) | Operations API for staff, HR, CRM, inventory, payroll, files, notifications, and POS synchronization | Production | [api.pimienta-alimentos.com](https://api.pimienta-alimentos.com) |
-| [Android POS](mobile/pos/) | Local-first point of sale for school cafeterias | Development | Signed APK published through CI |
+| Project | Purpose | Status |
+| --- | --- | --- |
+| `web/` | Public website, staff workspace, and POS administration | Production-ready |
+| `backend/` | Spring Boot API for company operations and POS synchronization | Production-ready |
+| `mobile/pos/` | Local-first Android POS application | Release candidate |
 
-`pre/` is excluded from the product suite and its documentation. It contains preparatory material, not a deployed platform.
+The production domains are acquired and configured for the platform. Production
+releases are delivered through GitHub Actions after changes are merged into
+`main`. The Android application is delivered as a signed APK through S3 rather
+than as a Docker service.
 
-## How It Works
+## Architecture
 
-```mermaid
-flowchart LR
-  Visitor[Visitors] --> Web[Web application]
-  Staff[Staff and administrators] --> Web
-  Web --> API[Operations API]
-  Operator[Cafeteria operator] --> POS[Android POS]
-  POS --> Local[(Local device data)]
-  Local --> Sync[Background synchronization]
-  Sync --> API
-  API --> Data[(Operational data and file storage)]
+```text
+Visitors and staff -> Angular web application -> Spring Boot API
+Cafeteria operators -> Android POS -> local storage -> API synchronization
+Spring Boot API -> PostgreSQL, Redis, and S3
 ```
 
-The web application provides public information and the internal workspace. It calls the API for shared operational records and authorization. The POS records cafeteria activity locally first, then synchronizes approved data and event batches with the API when connectivity is available. The API is the source of truth for central operations and controls access to company locations.
-
-## Technologies
+## Technology Stack
 
 | Area | Technologies |
-|---|---|
-| Web | Angular, TypeScript, SSR, Express, Tailwind CSS, Docker |
-| API | Java, Spring Boot, PostgreSQL, Flyway, Redis, S3, JWT, Docker |
-| Android POS | Kotlin, Jetpack Compose, Room, WorkManager, Retrofit |
-| Delivery | GitHub Actions, GitHub Container Registry, Docker Compose, Cloudflare Access, S3 |
+| --- | --- |
+| Web | Angular 21, TypeScript, SSR, Express, Tailwind CSS |
+| API | Java 26, Spring Boot 4, PostgreSQL, Flyway, Redis, JWT |
+| Mobile | Kotlin, Jetpack Compose, Room, WorkManager, Retrofit |
+| Delivery | GitHub Actions, GHCR, Docker Compose, Cloudflare Access, S3 |
+
+## Local Development
+
+### Web
+
+```bash
+cd web
+npm ci
+npm start
+```
+
+### Backend
+
+```bash
+cd backend
+cp .env.example .env
+docker compose up --build
+```
+
+### Android POS
+
+```bash
+cd mobile/pos
+./gradlew :app:assembleDebug
+./gradlew :app:test
+```
 
 ## Delivery
 
-Changes to `web/` and `backend/` are built and tested by GitHub Actions. Successful changes to `main` publish Docker images to GHCR, then deploy the matching service on the remote server through SSH protected by Cloudflare Access.
-
-The Android POS workflow runs unit tests, builds a signed release APK, and publishes the APK plus its version manifest to S3. It is not deployed as a Docker service.
+- Changes under `web/` publish and deploy the web container from `main`.
+- Changes under `backend/` publish and deploy the API container from `main`.
+- Changes under `mobile/pos/` run Android tests, build a signed release APK,
+  and publish `latest.apk` plus its manifest to S3 from `main`.
+- Required production credentials are stored in GitHub Actions and deployment
+  environments, never in this repository.
 
 ## Documentation
 
-The project reference documents are in [`docs/project/`](docs/project/):
+Project navigation and detailed product, architecture, integration, workflow,
+and implementation notes are organized under `docs/`. The documentation
+structure is intentionally maintained separately from this project overview.
 
-| Document | Description |
-|---|---|
-| [Suite product](docs/project/pimienta-alimentos/product.md) | Company-level purpose, users, scope, and platform map |
-| [Project registry](docs/project/projects.ts) | Typed project metadata, status, metrics, and documentation flags |
-| [Web docs](docs/project/pimienta-web/) | Product, architecture, features, and deployment flow for the web app |
-| [Backend docs](docs/project/pimienta-backend/) | Product, architecture, features, infrastructure, and API contract |
-| [POS docs](docs/project/pimienta-pos/) | Product, local-first architecture, features, and APK delivery flow |
-| [Observability architecture](docs/project/pimienta-alimentos/observability.md) | Target logs, metrics, dashboards, alerting, and client telemetry design |
-| [Observability plan](docs/project/pimienta-alimentos/observability-plan.md) | Phased implementation checklist for the observability target |
-| [POS business docs](mobile/pos/docs/) | Detailed Spanish product, UX, workflow, integration, and technical documentation |
+## License
 
-The live backend contract is available through [Swagger UI](https://api.pimienta-alimentos.com/swagger-ui) and [OpenAPI JSON](https://api.pimienta-alimentos.com/v3/api-docs).
-
-## Local Entry Points
-
-```sh
-# Web
-cd web && npm ci && npm start
-
-# API
-cd backend && cp .env.example .env && docker compose up --build
-
-# Android POS
-cd mobile/pos && ./gradlew :app:assembleDebug
-```
-
-Refer to each platform document for environment requirements and its full local workflow.
+Apache License 2.0.

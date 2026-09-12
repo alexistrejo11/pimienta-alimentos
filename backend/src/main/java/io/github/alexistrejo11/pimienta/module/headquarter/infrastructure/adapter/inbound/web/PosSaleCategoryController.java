@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.PosSaleCategoryManagementUseCases;
@@ -15,7 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/headquarters/{id}/pos-categories")
+@RequestMapping(BASE + "/headquarters/{id}/pos-categories")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 public class PosSaleCategoryController {
   private final PosSaleCategoryManagementUseCases useCases;

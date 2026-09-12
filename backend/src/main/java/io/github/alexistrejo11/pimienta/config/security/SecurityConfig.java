@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.config.security;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,13 +41,13 @@ public class SecurityConfig {
         };
 
         private static final String[] AUTH_PUBLIC_PATHS = {
-                        "/api/v1/auth/**"
+                        BASE + "/auth/**"
         };
 
         private static final String[] POS_DEVICE_PUBLIC_PATHS = {
-                        "/api/v1/pos/devices/enroll",
-                        "/api/v1/pos/devices/refresh",
-                        "/api/v1/pos/releases/android/latest"
+                        BASE + "/pos/devices/enroll",
+                        BASE + "/pos/devices/refresh",
+                        BASE + "/pos/releases/android/latest"
         };
 
         private static final String[] HEALTH_PUBLIC_PATHS = {
@@ -101,17 +103,17 @@ public class SecurityConfig {
                                                                  .requestMatchers(HEALTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(AUTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(POS_DEVICE_PUBLIC_PATHS).permitAll()
-                                                                .requestMatchers("/api/v1/users/me", "/api/v1/users/me/**")
+                                                                 .requestMatchers(BASE + "/users/me", BASE + "/users/me/**")
                                                                 .access(staffJwtOnly())
-                                                                .requestMatchers("/api/v1/pos/admin/**")
+                                                                 .requestMatchers(BASE + "/pos/admin/**")
                                                                 .hasAnyRole("ADMIN", "MANAGER")
                                                                 .requestMatchers(
-                                                                                "/api/v1/headquarters/*/pos-settings",
-                                                                                "/api/v1/headquarters/*/pos-settings/**",
-                                                                                "/api/v1/headquarters/*/pos-catalog",
-                                                                                "/api/v1/headquarters/*/pos-catalog/**")
+                                                                                 BASE + "/headquarters/*/pos-settings",
+                                                                                 BASE + "/headquarters/*/pos-settings/**",
+                                                                                 BASE + "/headquarters/*/pos-catalog",
+                                                                                 BASE + "/headquarters/*/pos-catalog/**")
                                                                 .hasAnyRole("ADMIN", "MANAGER")
-                                                                .requestMatchers("/api/v1/pos/**")
+                                                                 .requestMatchers(BASE + "/pos/**")
                                                                 .hasAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC)
                                                                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                                                                 .anyRequest()

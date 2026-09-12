@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryMovementQueryUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryMovementByReference;
@@ -25,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/inventory/movements")
+@RequestMapping(BASE + "/inventory/movements")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocInventoryMovements
 public class InventoryMovementController {

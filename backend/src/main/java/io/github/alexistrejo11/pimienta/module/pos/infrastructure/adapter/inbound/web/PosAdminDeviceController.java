@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
@@ -24,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/pos/admin/devices")
+@RequestMapping(BASE + "/pos/admin/devices")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocPosAdminDevices
 public class PosAdminDeviceController {

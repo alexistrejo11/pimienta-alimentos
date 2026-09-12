@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.input.HeadquarterUseCases;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.command.CreateHeadquarterCommand;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.command.UpdateHeadquarterCommand;
@@ -47,7 +49,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/headquarters")
+@RequestMapping(BASE + "/headquarters")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocHeadquarters
 public class HeadQuarterController {

@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.task.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.task.core.application.TaskBulkSyncUseCases;
 import io.github.alexistrejo11.pimienta.module.task.core.application.TaskManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.task.core.application.dto.TaskBulkImportResult;
@@ -50,7 +52,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/tasks")
+@RequestMapping(BASE + "/tasks")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocTasks
 public class TaskManagerController {

@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.TelemetryAcceptedResponse;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.WebTelemetryEventRequest;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
@@ -12,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Receives browser telemetry without coupling the client to Loki. */
 @RestController
-@RequestMapping("/api/v1/telemetry")
+@RequestMapping(BASE + "/telemetry")
 @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
 public class TelemetryController {
 

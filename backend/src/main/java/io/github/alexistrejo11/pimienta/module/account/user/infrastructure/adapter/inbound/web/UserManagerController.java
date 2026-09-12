@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AddRolesCommand;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.AssignHeadquartersCommand;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.command.BanUserCommand;
@@ -40,7 +42,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/users/management")
+@RequestMapping(BASE + "/users/management")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocUserManagement
 public class UserManagerController {

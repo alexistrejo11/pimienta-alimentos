@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.DeviceAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.DeviceAuthUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.DeviceTokenIssuer.DeviceIssuedTokens;
@@ -24,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/pos/devices")
+@RequestMapping(BASE + "/pos/devices")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocPosDeviceAuth
 public class DeviceAuthController {

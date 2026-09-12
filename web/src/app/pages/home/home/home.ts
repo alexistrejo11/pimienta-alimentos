@@ -238,6 +238,11 @@ export class Home implements OnInit, AfterViewInit {
   }
 
   private setupRevealObserver(): void {
+    // jsdom (unit tests) and some browsers lack IntersectionObserver.
+    if (typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+
     const root = this.host.nativeElement;
     const sections = Array.from(
       root.querySelectorAll('[data-landing-section]'),

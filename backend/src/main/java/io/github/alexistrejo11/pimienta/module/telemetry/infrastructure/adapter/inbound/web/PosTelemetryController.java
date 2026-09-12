@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.DeviceAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.PosTelemetryBatchRequest;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.TelemetryAcceptedResponse;
@@ -14,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Receives durable POS telemetry using the existing device authorization boundary. */
 @RestController
-@RequestMapping("/api/v1/pos/telemetry")
+@RequestMapping(BASE + "/pos/telemetry")
 @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
 public class PosTelemetryController {
 

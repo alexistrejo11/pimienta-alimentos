@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.controller;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.RegisterEmployeeMultipartPayloadReader;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.UpdateEmployeeMultipartPayloadReader;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.RegisterEmployeeParams;
@@ -65,7 +67,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/employees")
+@RequestMapping(BASE + "/employees")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocEmployees
 public class EmployeeManagerController {

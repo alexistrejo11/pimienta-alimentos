@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator;
@@ -37,7 +39,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/pos/admin/operators")
+@RequestMapping(BASE + "/pos/admin/operators")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocPosAdminOperators
 public class PosAdminOperatorController {

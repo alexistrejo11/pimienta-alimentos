@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosApkReleaseResult;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosApkReleaseUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosApkReleaseLatest;
@@ -12,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/pos/releases")
+@RequestMapping(BASE + "/pos/releases")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocPosApkReleases
 public class PosApkReleaseController {

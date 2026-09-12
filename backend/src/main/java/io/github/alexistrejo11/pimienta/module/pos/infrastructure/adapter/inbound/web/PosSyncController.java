@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.DeviceAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncChangesUseCases;
@@ -25,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/pos/sync")
+@RequestMapping(BASE + "/pos/sync")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocPosDeviceSync
 public class PosSyncController {

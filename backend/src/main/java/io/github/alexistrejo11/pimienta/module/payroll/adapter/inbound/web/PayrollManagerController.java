@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web.doc.DocPayroll;
 import io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web.doc.DocPayrollCreatePeriod;
 import io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web.doc.DocPayrollCreateRecord;
@@ -63,7 +65,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/payroll")
+@RequestMapping(BASE + "/payroll")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocPayroll
 public class PayrollManagerController {

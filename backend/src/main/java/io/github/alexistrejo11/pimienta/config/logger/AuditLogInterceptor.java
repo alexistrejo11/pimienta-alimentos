@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.config.logger;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +28,8 @@ public class AuditLogInterceptor implements HandlerInterceptor {
       "/actuator/metrics",
       "/actuator/prometheus",
       "/api/v2/health",
-      "/api/v1/telemetry/",
-      "/api/v1/pos/telemetry/",
+      BASE + "/telemetry/",
+      BASE + "/pos/telemetry/",
       "/favicon.ico",
       "/swagger-ui.html",
       "/v3/api-docs",

@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocOpportunities;
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocOpportunityAbandon;
 import io.github.alexistrejo11.pimienta.module.crm.adapter.inbound.web.doc.DocOpportunityCreate;
@@ -68,7 +70,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/opportunities")
+@RequestMapping(BASE + "/opportunities")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocOpportunities
 public class OpportunityController {

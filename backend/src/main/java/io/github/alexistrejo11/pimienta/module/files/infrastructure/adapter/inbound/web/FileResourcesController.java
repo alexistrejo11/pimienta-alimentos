@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.files.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.files.core.application.command.UploadFileCommand;
 import io.github.alexistrejo11.pimienta.module.files.core.application.query.FileAssetSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.files.core.domain.FileAsset;
@@ -33,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/v1/files/resources")
+@RequestMapping(BASE + "/files/resources")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocFileResources
 @PreAuthorize("hasRole('ADMIN')")

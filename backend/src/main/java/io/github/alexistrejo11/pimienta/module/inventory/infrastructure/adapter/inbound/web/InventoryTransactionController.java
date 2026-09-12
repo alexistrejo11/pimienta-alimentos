@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryTransaction;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryTransactionManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryTransactionAdjustment;
@@ -45,7 +47,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/inventory/transactions")
+@RequestMapping(BASE + "/inventory/transactions")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocInventoryTransactions
 public class InventoryTransactionController {

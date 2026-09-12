@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.notification.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.notification.core.application.query.NotificationSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.notification.core.application.query.NotificationStatisticsCriteria;
 import io.github.alexistrejo11.pimienta.module.notification.core.domain.Notification;
@@ -24,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/notifications/management")
+@RequestMapping(BASE + "/notifications/management")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocNotificationManagement
 @PreAuthorize("hasRole('ADMIN')")

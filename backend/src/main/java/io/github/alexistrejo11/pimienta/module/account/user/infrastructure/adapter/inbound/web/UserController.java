@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.inbound.web;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.domain.entity.UserManagerDashboard;
 import io.github.alexistrejo11.pimienta.module.account.auth.core.port.input.ProfileUseCases;
@@ -25,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping(BASE + "/users")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocUserProfile
 public class UserController {

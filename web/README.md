@@ -1,59 +1,66 @@
-# Frontend
+# Pimienta Alimentos Web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
+Angular 21 application for Pimienta Alimentos. It provides the public company
+website, legal pages, authenticated staff workspace, and central POS
+administration tools.
 
-## Development server
+## Status
 
-To start a local development server, run:
+Version `2.1.0`. The production domain is acquired and configured. Production
+deployment is performed by GitHub Actions after changes are merged into `main`.
 
-```bash
-ng serve
-```
+## Features
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Public company and service information
+- Legal and quality pages
+- Staff authentication and role-aware workspace
+- Employee, CRM, task, contract, payroll, and headquarters views
+- POS administration, catalog, devices, incidents, and reports
+- Public Android POS download through the backend release endpoint
+- Server-side rendering and prerendered public routes
 
-## Code scaffolding
+## Technology Stack
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- Angular 21 and standalone components
+- TypeScript and RxJS
+- Angular SSR with Express
+- Tailwind CSS 4
+- Vitest and Angular testing tools
+- Docker for production delivery
 
-```bash
-ng generate component component-name
-```
+## Requirements
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+- Node.js 22 or later
+- npm 11 or later
+- A running backend API for authenticated features
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Local Development
 
 ```bash
-ng test
+npm ci
+npm start
 ```
 
-## Running end-to-end tests
+The development server runs on the default Angular port. Configure the API
+base URL through the local environment configuration when required.
 
-For end-to-end (e2e) testing, run:
+## Build and Test
 
 ```bash
-ng e2e
+npm run build
+npm test
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Production Delivery
 
-## Additional Resources
+The web workflow builds the application, publishes a container image to GHCR,
+and deploys the matching image to the production host through Cloudflare
+Access. The workflow runs for relevant changes merged into `main`.
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Documentation
+
+Web project navigation and detailed notes are organized under `docs/`.
+
+## License
+
+Apache License 2.0.

@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.controller;
 
+import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
+
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.AttendanceResponsePresenter;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocAttendanceEndWorkday;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocAttendanceEndWorkdayJsonHidden;
@@ -44,7 +46,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/v1/employees")
+@RequestMapping(BASE + "/employees")
 @RateLimit(profile = RateLimitProfile.STANDARD)
 @DocEmployeeAttendances
 public class EmployeeAttendanceController {
