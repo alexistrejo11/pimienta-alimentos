@@ -5,7 +5,8 @@ import java.security.MessageDigest
 
 // Verifies operator PINs against server Argon2id hashes or sandbox debug digests.
 object PinVerifier {
-    private val argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id)
+    // Lazily initialized to prevent UnsatisfiedLinkError on emulators when operating in sandbox mode.
+    private val argon2 by lazy { Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id) }
 
     fun matches(pin: String, storedHash: String, sandbox: Boolean): Boolean {
         val hash = storedHash.trim()

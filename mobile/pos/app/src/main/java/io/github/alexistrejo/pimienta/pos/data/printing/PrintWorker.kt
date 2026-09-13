@@ -40,5 +40,10 @@ class PrintWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
                     .build(),
             )
         }
+
+        // Stops a queued print drain before the training database is deleted or replaced.
+        fun cancel(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_PRINT)
+        }
     }
 }

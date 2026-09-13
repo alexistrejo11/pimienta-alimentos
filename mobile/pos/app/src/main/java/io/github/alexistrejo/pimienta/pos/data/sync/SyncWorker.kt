@@ -43,7 +43,12 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         val state = db.syncDao().state() ?: return Result.success()
         val baseUrl = state.baseUrl?.trim()?.let { if (it.endsWith("/")) it else "$it/" } ?: return Result.success()
         val device = db.operationsDao().device() ?: return Result.success()
-        if (credentials.access() == null) return Result.success()
+        // Tokens gone but URL still set: force enrollment UI instead of a silent no-op.
+        if (credentials.access() == null) {
+            ProvisioningRepository(applicationContext, provider)
+                .resetForReenrollment("Sesión del dispositivo inválida. Vuelve a enrolar.")
+            return Result.failure()
+        }
         val api = api(baseUrl)
         return try {
             val events = db.syncDao().eligible(System.currentTimeMillis(), 50)
@@ -59,8 +64,10 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
                 }
             }
             val current = db.syncDao().state() ?: state
-            if (current.changesCursor == null) ProvisioningRepository(applicationContext, provider).applyBootstrap(api.bootstrap())
-            else {
+            val localIncomplete = db.productDao().count() == 0 || db.userDao().count() == 0
+            if (current.changesCursor == null || localIncomplete) {
+                ProvisioningRepository(applicationContext, provider).applyBootstrap(api.bootstrap())
+            } else {
                 val changes = api.changes(current.changesCursor)
                 ProvisioningRepository(applicationContext, provider).applyChanges(changes)
             }
@@ -70,18 +77,24 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         } catch (e: HttpException) {
             recordDiagnostic("ERROR", "sync_http_failure", "POS sync HTTP ${e.code()}")
             if (e.code() == 401) {
-                val refresh = credentials.refresh() ?: return Result.failure()
+                val refresh = credentials.refresh()
+                if (refresh == null) {
+                    ProvisioningRepository(applicationContext, provider)
+                        .resetForReenrollment("Sesión expirada. Vuelve a enrolar el dispositivo.")
+                    return Result.failure()
+                }
                 try {
                     val token = refreshApi(baseUrl).refresh(RefreshRequest(refresh))
                     credentials.save(token.accessToken, token.refreshToken)
                     Result.retry()
                 } catch (_: Exception) {
-                    credentials.clear()
-                    db.syncDao().saveState(state.copy(status = "REQUIRES_REENROLLMENT", lastError = "refresh revoked"))
+                    ProvisioningRepository(applicationContext, provider)
+                        .resetForReenrollment("La sesión del dispositivo expiró o fue revocada. Vuelve a enrolar.")
                     Result.failure()
                 }
             } else if (e.code() == 403) {
-                db.syncDao().saveState(state.copy(status = "REQUIRES_REENROLLMENT", lastError = "device revoked"))
+                ProvisioningRepository(applicationContext, provider)
+                    .resetForReenrollment("Este dispositivo fue revocado. Genera un código nuevo en la Web Central.")
                 Result.failure()
             } else if (e.code() == 409) {
                 // Invalid sync cursor: replace local catalog snapshot from a fresh bootstrap.

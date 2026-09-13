@@ -39,6 +39,8 @@ class TrainingBootstrapImporter(private val context: Context) {
             name = deviceJson.getString("name"),
             visibleCode = "T1",
             nextEventSequence = 1,
+            siteId = site.id,
+            status = deviceJson.optString("status", "SANDBOX"),
         )
 
         database.runInTransaction {

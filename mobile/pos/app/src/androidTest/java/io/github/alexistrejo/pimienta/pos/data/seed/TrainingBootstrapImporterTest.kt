@@ -35,6 +35,7 @@ class TrainingBootstrapImporterTest {
         TrainingBootstrapImporter(context).resetFromTemplate(database)
 
         assertEquals("Sede demostración", database.siteDao().current()?.name)
+        assertEquals("site-debug-001", database.operationsDao().device()?.siteId)
         assertTrue(database.productDao().getAll().isNotEmpty())
         assertTrue(database.userDao().count() >= 2)
         database.openHelper.writableDatabase.query("SELECT snapshotId FROM bootstrap_snapshot LIMIT 1").use { cursor ->

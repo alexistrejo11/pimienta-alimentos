@@ -1,5 +1,10 @@
 package io.github.alexistrejo.pimienta.pos
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,6 +32,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.domain.*
 import java.math.BigDecimal
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -189,26 +195,38 @@ internal fun LockedCashRegister(
         }
     }
 
+    // Compact header + full keypad; the whole page scrolls when content is taller than the screen.
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = 480.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Image(
                     painter = painterResource(R.drawable.logo),
                     contentDescription = null,
-                    modifier = Modifier.size(64.dp).padding(bottom = 16.dp)
+                    modifier = Modifier.size(48.dp).padding(top = 4.dp),
                 )
-                Text("Pimienta POS", style = MaterialTheme.typography.headlineSmall)
-                Text("Caja bloqueada", style = MaterialTheme.typography.titleLarge)
+                Text("Pimienta POS", style = MaterialTheme.typography.titleLarge)
+                Text("Caja bloqueada", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Turno activo · Cajero responsable: $cashierName",
                     textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text("PIN", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Agrega PIN para desbloquear",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::unlock)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center) }
                 PosButton(
@@ -224,6 +242,7 @@ internal fun LockedCashRegister(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(Modifier.height(8.dp))
             }
         }
     }
@@ -674,60 +693,81 @@ internal fun ChangeSummary(change: Long) {
     }
 }
 
-// Announces a committed local sale without hiding the workspace behind a dialog.
+// Brief confirmation that auto-hides; a new folio replaces the message and restarts the timer.
 @Composable
-internal fun SaleCompleted(folio: String, dismiss: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primary).padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+internal fun SaleCompleted(folio: String?, onFinished: (String) -> Unit) {
+    var displayed by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(folio) {
+        if (folio != null) {
+            displayed = folio
+            delay(3_500)
+            onFinished(folio)
+        }
+    }
+    AnimatedVisibility(
+        visible = folio != null,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
     ) {
-        Text(
-            "Venta confirmada · $folio · Ticket en cola de impresión",
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.labelLarge,
-        )
-        Button(
-            onClick = dismiss,
-            shape = MaterialTheme.shapes.extraSmall,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.onPrimary,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Nueva venta")
+            Text(
+                "Venta confirmada · ${displayed.orEmpty()} · Ticket en cola de impresión",
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.labelLarge,
+            )
         }
     }
 }
 
-// Provides number-only input without invoking the Android keyboard during cashier workflows.
+// Provides number-only input without a nested scroll grid so parent screens can scroll the full pad.
 @Composable
 internal fun Numpad(value: String, changed: (String) -> Unit, masked: Boolean = false, onSubmit: (() -> Unit)? = null) {
-    val keys = if (masked) listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "⌫", "Entrar") else listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
-    if (masked) {
-        Text(if (value.isBlank()) "PIN vacío" else "•".repeat(value.length), style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(8.dp))
+    val keys = if (masked) {
+        listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "⌫", "Entrar")
+    } else {
+        listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
     }
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        modifier = Modifier.fillMaxWidth().height(218.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
+    // Dots only while typing; empty state stays quiet so the parent can label the field.
+    if (masked && value.isNotBlank()) {
+        Text(
+            "•".repeat(value.length),
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(4.dp))
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        items(keys) { key ->
-            PosButton(
-                key,
-                {
-                    when (key) {
-                        "⌫" -> changed(value.dropLast(1))
-                        "Entrar" -> onSubmit?.invoke()
-                        "." -> if (!value.contains('.')) changed(if (value.isBlank()) "0." else "$value.")
-                        else -> if (value.length < 8) changed(value + key)
-                    }
-                },
-                enabled = key != "Entrar" || (onSubmit != null && value.isNotBlank()),
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-            )
+        keys.chunked(3).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                row.forEach { key ->
+                    PosButton(
+                        key,
+                        {
+                            when (key) {
+                                "⌫" -> changed(value.dropLast(1))
+                                "Entrar" -> onSubmit?.invoke()
+                                "." -> if (!value.contains('.')) changed(if (value.isBlank()) "0." else "$value.")
+                                else -> if (value.length < 8) changed(value + key)
+                            }
+                        },
+                        enabled = key != "Entrar" || (onSubmit != null && value.isNotBlank()),
+                        modifier = Modifier.weight(1f).height(48.dp),
+                    )
+                }
+            }
         }
     }
 }

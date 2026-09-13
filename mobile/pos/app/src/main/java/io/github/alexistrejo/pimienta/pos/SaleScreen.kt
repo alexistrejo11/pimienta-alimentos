@@ -152,7 +152,7 @@ internal fun Sale(
     }
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).systemBarsPadding(),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
     ) {
         val landscape = maxWidth > maxHeight
         if (locked) {
@@ -189,7 +189,9 @@ internal fun Sale(
                 openWithdrawal = { withdrawalRequested = true },
                 withdrawalEnabled = !checkout && !busy,
             )
-            completedFolio?.let { SaleCompleted(it) { completedFolio = null } }
+            SaleCompleted(completedFolio) { folio ->
+                if (completedFolio == folio) completedFolio = null
+            }
             if (discountRequested) {
                 DiscountAuthorization(
                     users = users,

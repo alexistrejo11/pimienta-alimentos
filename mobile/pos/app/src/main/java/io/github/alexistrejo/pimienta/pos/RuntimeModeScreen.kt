@@ -1,8 +1,10 @@
 package io.github.alexistrejo.pimienta.pos
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -14,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -35,16 +38,28 @@ internal fun RuntimeModeBanner(
         mode == RuntimeMode.SANDBOX -> "Modo capacitaci\u00f3n"
         else -> "Modo producci\u00f3n"
     }
+    // Tight bar: sits flush above the sale StatusBar (no extra bottom gap).
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = MaterialTheme.colorScheme.primary)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(label, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             if (mode == RuntimeMode.SANDBOX && isDebug && onResetDemo != null) {
-                Button(onClick = onResetDemo) { Text("Reiniciar datos demo") }
+                Button(
+                    onClick = onResetDemo,
+                    modifier = Modifier.heightIn(min = 36.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
+                ) { Text("Reiniciar datos demo") }
             }
-            Button(onClick = { pin = ""; open = true }) { Text("Cambiar modo") }
+            Button(
+                onClick = { pin = ""; open = true },
+                modifier = Modifier.heightIn(min = 36.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                shape = MaterialTheme.shapes.extraSmall,
+            ) { Text("Cambiar modo") }
         }
     }
     if (open) {

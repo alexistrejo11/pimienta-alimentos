@@ -8,8 +8,29 @@ import kotlinx.serialization.Serializable
 @Serializable data class TokenPair(val accessToken: String, val refreshToken: String, val accessTokenExpiresInSeconds: Long, val refreshTokenExpiresInSeconds: Long, val refreshTokenMaxExpiresInSeconds: Long)
 @Serializable data class RefreshRequest(val refreshToken: String)
 @Serializable data class OperatorDto(val id: String, val displayName: String, val role: String, val pinHash: String, val active: Boolean)
-@Serializable data class ProductDto(val id: String, val sku: String, val barcode: String? = null, val name: String, val saleCategory: String, val unit: String, val priceCentavos: Long, val costCentavos: Long, val available: Boolean, val stockQuantity: String, val stockMinQuantity: String, val stockPolicy: String, val negativeStockLimit: Int? = null)
-@Serializable data class PoliciesDto(val allowNegativeStock: Boolean, val defaultNegativeStockLimit: Int, val staleCatalogWarnHours: Int, val staleCatalogBlockHours: Int)
+@Serializable data class ProductDto(
+    val id: String,
+    val sku: String,
+    val barcode: String? = null,
+    val name: String,
+    val saleCategory: String = "",
+    val unit: String,
+    val priceCentavos: Long,
+    val costCentavos: Long,
+    val available: Boolean,
+    // Backend sends JSON numbers; Room stores them as text.
+    val stockQuantity: Int,
+    val stockMinQuantity: Int,
+    val stockPolicy: String = "UNLIMITED",
+    val negativeStockLimit: Int? = null,
+)
+@Serializable data class PoliciesDto(
+    val allowNegativeStock: Boolean = true,
+    // Backend omits this when null (@JsonInclude NON_NULL).
+    val defaultNegativeStockLimit: Int? = null,
+    val staleCatalogWarnHours: Int = 24,
+    val staleCatalogBlockHours: Int = 72,
+)
 @Serializable data class CursorsDto(val changes: String)
 @Serializable data class BootstrapResponse(val schemaVersion: Int, val kind: String, val snapshotId: String, val generatedAt: String, val site: SiteDto, val device: DeviceDto, val operators: List<OperatorDto>, val products: List<ProductDto>, val openAmountCategories: List<String>, val policies: PoliciesDto, val cursors: CursorsDto)
 @Serializable data class DeviceDto(val id: String, val name: String, val visibleCode: String, val status: String)
