@@ -72,6 +72,9 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
 
   @Override
   public Item create(Item item) {
+    if (item.getSku() == null || item.getSku().isBlank()) {
+      item.setSku(itemRepository.nextInternalSku());
+    }
     log.info(
         "create item start sku={} category={} status={} unit={}",
         item.getSku(),

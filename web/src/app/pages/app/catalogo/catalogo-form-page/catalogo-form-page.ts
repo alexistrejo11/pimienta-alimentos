@@ -47,7 +47,7 @@ export class CatalogoFormPageComponent implements OnInit {
   readonly itemStatusLabel = itemStatusLabel;
 
   readonly form = this.fb.nonNullable.group({
-    sku: ['', Validators.required],
+    sku: [''],
     name: ['', Validators.required],
     description: [''],
     costPrice: [0, [Validators.required, Validators.min(0)]],
@@ -59,6 +59,7 @@ export class CatalogoFormPageComponent implements OnInit {
     brand: [''],
     barcode: [''],
     status: ['ACTIVE' as ItemStatus],
+    catalogRole: ['INVENTORY_ONLY' as 'INVENTORY_ONLY' | 'POS_SELLABLE'],
   });
 
   ngOnInit(): void {
@@ -85,6 +86,7 @@ export class CatalogoFormPageComponent implements OnInit {
               brand: item.brand ?? '',
               barcode: item.barcode ?? '',
               status: item.status,
+              catalogRole: item.catalogRole,
             });
           },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
@@ -105,7 +107,7 @@ export class CatalogoFormPageComponent implements OnInit {
 
     const request$ = id
       ? this.inventory.updateItem(id, {
-          sku: v.sku,
+           sku: v.sku,
           name: v.name,
           description: v.description || undefined,
           costPrice: v.costPrice,
@@ -116,10 +118,11 @@ export class CatalogoFormPageComponent implements OnInit {
           reorderQuantity: v.reorderQuantity,
           brand: v.brand || undefined,
           barcode: v.barcode || undefined,
-          status: v.status,
+           status: v.status,
+           catalogRole: v.catalogRole,
         })
       : this.inventory.createItem({
-          sku: v.sku,
+           sku: v.sku || undefined,
           name: v.name,
           description: v.description || undefined,
           costPrice: v.costPrice,
@@ -129,7 +132,8 @@ export class CatalogoFormPageComponent implements OnInit {
           reorderPoint: v.reorderPoint,
           reorderQuantity: v.reorderQuantity,
           brand: v.brand || undefined,
-          barcode: v.barcode || undefined,
+           barcode: v.barcode || undefined,
+           catalogRole: v.catalogRole,
         });
 
     request$.pipe(finalize(() => this.loading.set(false))).subscribe({

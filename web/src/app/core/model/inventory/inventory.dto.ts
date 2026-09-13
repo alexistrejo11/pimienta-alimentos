@@ -25,11 +25,12 @@ export interface ItemResponse {
   updatedAt: string;
   deletedAt: string | null;
   version: number;
+  catalogRole: 'INVENTORY_ONLY' | 'POS_SELLABLE';
 }
 
 /** POST /api/v1/inventory/items */
 export interface ItemCreateRequest {
-  sku: string;
+  sku?: string;
   name: string;
   description?: string;
   costPrice: number;
@@ -40,6 +41,7 @@ export interface ItemCreateRequest {
   reorderQuantity: number;
   brand?: string;
   barcode?: string;
+  catalogRole?: 'INVENTORY_ONLY' | 'POS_SELLABLE';
 }
 
 /** PUT /api/v1/inventory/items/:id */
@@ -56,6 +58,7 @@ export interface ItemUpdateRequest {
   brand?: string;
   barcode?: string;
   status: ItemStatus;
+  catalogRole?: 'INVENTORY_ONLY' | 'POS_SELLABLE';
 }
 
 export interface ItemSearchParams {

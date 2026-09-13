@@ -1,5 +1,6 @@
 import type { PosDeviceStatus, PosRole, StockPolicy } from './pos.enums';
 import type { ItemCategory, ItemUnit } from '../inventory/inventory.enums';
+import type { ItemResponse } from '../inventory/inventory.dto';
 
 export interface PosSaleCategoryResponse {
   id: number;
@@ -86,6 +87,8 @@ export interface HeadquarterPosCatalogItemRequest {
   stockPolicy: StockPolicy;
   negativeStockLimit?: number | null;
 }
+
+export type PosCatalogCandidateResponse = ItemResponse;
 
 /** GET /api/v1/pos/admin/devices */
 export interface PosDeviceAdminResponse {

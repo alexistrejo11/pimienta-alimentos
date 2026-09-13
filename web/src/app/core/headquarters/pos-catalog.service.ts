@@ -11,6 +11,7 @@ import type {
   PosSaleCategoryResponse,
   CreatePosProductRequest,
   CreatedPosProductResponse,
+  PosCatalogCandidateResponse,
 } from '../model/pos/pos.dto';
 import type { PagedResponse } from '../model/common/pagination';
 
@@ -34,6 +35,10 @@ export class PosCatalogService {
       `${this.hqBase}/${headquarterId}/pos-catalog`,
       { params },
     );
+  }
+
+  listCandidates(headquarterId: number): Observable<PosCatalogCandidateResponse[]> {
+    return this.http.get<PosCatalogCandidateResponse[]>(`${this.hqBase}/${headquarterId}/pos-catalog/candidates`);
   }
 
   getCatalogItem(headquarterId: number, itemId: number): Observable<HeadquarterPosCatalogItemResponse> {

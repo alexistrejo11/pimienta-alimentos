@@ -4,6 +4,8 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.application.comm
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.List;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 
 public interface HeadquarterPosCatalogUseCases {
 
@@ -12,4 +14,5 @@ public interface HeadquarterPosCatalogUseCases {
   HeadquarterItem get(long headquarterId, long itemId);
 
   HeadquarterItem upsert(long headquarterId, long itemId, UpsertHeadquarterItemCommand command);
+  List<Item> candidates(long headquarterId);
 }

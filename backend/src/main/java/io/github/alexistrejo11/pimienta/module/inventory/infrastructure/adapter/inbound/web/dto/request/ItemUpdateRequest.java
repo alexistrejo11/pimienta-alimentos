@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemStatus;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemUnit;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.CatalogRole;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,4 +21,5 @@ public record ItemUpdateRequest(
     @Min(0) int reorderQuantity,
     String brand,
     String barcode,
-    @NotNull ItemStatus status) {}
+    @NotNull ItemStatus status,
+    CatalogRole catalogRole) {}

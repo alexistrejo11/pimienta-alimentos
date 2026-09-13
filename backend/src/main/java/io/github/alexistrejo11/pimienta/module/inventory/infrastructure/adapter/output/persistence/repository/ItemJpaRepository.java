@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.ItemJpaEntity;
 
 import java.util.Optional;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +25,9 @@ public interface ItemJpaRepository
 
   @Query(value = "select next_internal_item_sku()", nativeQuery = true)
   String nextInternalSku();
+
+  @Query(value = "select i.* from inventory_items i where i.deleted_at is null and i.status = 'ACTIVE' and i.catalog_role = 'POS_SELLABLE' and not exists (select 1 from headquarter_items h where h.item_id = i.id and h.headquarter_id = :headquarterId and h.deleted_at is null) order by i.name", nativeQuery = true)
+  List<ItemJpaEntity> findPosCandidates(@Param("headquarterId") Long headquarterId);
 
   @Query("""
       select case when count(e) > 0 then true else false end from ItemJpaEntity e

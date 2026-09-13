@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemStatus;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemUnit;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.CatalogRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -67,6 +68,10 @@ public class ItemJpaEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   private ItemStatus status;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "catalog_role", nullable = false, length = 32)
+  private CatalogRole catalogRole;
 
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
@@ -183,6 +188,9 @@ public class ItemJpaEntity {
   public void setStatus(ItemStatus status) {
     this.status = status;
   }
+
+  public CatalogRole getCatalogRole() { return catalogRole; }
+  public void setCatalogRole(CatalogRole catalogRole) { this.catalogRole = catalogRole; }
 
   public LocalDateTime getCreatedAt() {
     return createdAt;

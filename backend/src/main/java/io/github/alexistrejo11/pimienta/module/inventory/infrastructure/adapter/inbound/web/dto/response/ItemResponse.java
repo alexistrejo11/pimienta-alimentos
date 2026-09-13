@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemStatus;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemUnit;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.CatalogRole;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -23,4 +24,5 @@ public record ItemResponse(
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime deletedAt,
-    Long version) {}
+    Long version,
+    CatalogRole catalogRole) {}

@@ -8,6 +8,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.mapper.ItemPersistenceMapper;
 
 import java.util.Optional;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -53,6 +54,11 @@ public class ItemRepositoryImpl implements ItemRepository {
   @Override
   public String nextInternalSku() {
     return jpaRepository.nextInternalSku();
+  }
+
+  @Override
+  public List<Item> findPosCandidates(long headquarterId) {
+    return jpaRepository.findPosCandidates(headquarterId).stream().map(ItemPersistenceMapper::toDomain).toList();
   }
 
   @Override

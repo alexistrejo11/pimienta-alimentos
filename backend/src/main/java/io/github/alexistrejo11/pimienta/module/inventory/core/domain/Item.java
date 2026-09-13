@@ -42,6 +42,7 @@ public class Item extends BaseDomain<Long> {
   private int reorderQuantity;
 
   private ItemStatus status;
+  private CatalogRole catalogRole = CatalogRole.INVENTORY_ONLY;
 
   // ─────────────────────────────────────────────
   // ENUMERACIONES
@@ -77,6 +78,8 @@ public class Item extends BaseDomain<Long> {
     OUT_OF_STOCK,
     PENDING_APPROVAL
   }
+
+  public enum CatalogRole { INVENTORY_ONLY, POS_SELLABLE }
 
   // ─────────────────────────────────────────────
   // CONSTRUCTOR
@@ -231,6 +234,9 @@ public class Item extends BaseDomain<Long> {
   public void setBarcode(String barcode) {
     this.barcode = barcode;
   }
+
+  public CatalogRole getCatalogRole() { return catalogRole; }
+  public void setCatalogRole(CatalogRole catalogRole) { this.catalogRole = catalogRole != null ? catalogRole : CatalogRole.INVENTORY_ONLY; }
 
   public BigDecimal getCostPrice() {
     return costPrice;

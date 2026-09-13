@@ -26,6 +26,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.mapper.InventoryItemWebMapper;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.ItemResponse;
+import java.util.List;
 
 @RestController
 @RequestMapping(BASE + "/headquarters/{id}/pos-catalog")
@@ -54,6 +57,17 @@ public class HeadquarterPosCatalogController {
     Page<HeadquarterItem> page =
         posCatalogUseCases.list(headquarterId, pageable.toPageable());
     return PagedResponse.map(page, HeadquarterPosWebMapper::toResponse);
+  }
+
+  @GetMapping("/candidates")
+  @RateLimit(profile = RateLimitProfile.READ_HEAVY)
+  public List<ItemResponse> candidates(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("id") Long headquarterId) {
+    headquarterAccessService.requireHeadquarterAccess(principal, headquarterId);
+    return posCatalogUseCases.candidates(headquarterId).stream()
+        .map(InventoryItemWebMapper::toResponse)
+        .toList();
   }
 
   @GetMapping("/{itemId}")

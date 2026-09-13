@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
@@ -21,7 +21,7 @@ import { DataStateComponent } from '../../../../shared/ui/data-state/data-state'
 
 @Component({
   selector: 'app-sede-pos-page',
-  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, FormsModule, RouterLink],
+  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, FormsModule],
   templateUrl: './sede-pos-page.html',
 })
 export class SedePosPageComponent implements OnInit {
@@ -40,6 +40,7 @@ export class SedePosPageComponent implements OnInit {
   readonly settings = signal<PosSettingsResponse | null>(null);
   readonly catalog = signal<HeadquarterPosCatalogItemResponse[]>([]);
   readonly masterItems = signal<ItemResponse[]>([]);
+  readonly posCandidates = signal<ItemResponse[]>([]);
   readonly saleCategories = signal<PosSaleCategoryResponse[]>([]);
   readonly savingSettings = signal(false);
   readonly savingCatalogId = signal<number | null>(null);
@@ -48,6 +49,7 @@ export class SedePosPageComponent implements OnInit {
   readonly stockPolicies: StockPolicy[] = ['CONTROLLED', 'NOT_CONTROLLED'];
 
   lookupSku = '';
+  candidateId: number | null = null;
   newCategoryName = '';
   readonly editingItemId = signal<number | null>(null);
 
@@ -113,6 +115,11 @@ export class SedePosPageComponent implements OnInit {
       next: (page) => this.masterItems.set(page.items),
       error: () => {},
     });
+
+    this.posCatalog.listCandidates(id).subscribe({
+      next: (items) => this.posCandidates.set(items),
+      error: () => {},
+    });
   }
 
   saveSettings(): void {
@@ -162,14 +169,28 @@ export class SedePosPageComponent implements OnInit {
       })
       .pipe(finalize(() => this.savingCatalogId.set(null)))
       .subscribe({
-        next: () => {
+         next: () => {
           this.editingItemId.set(null);
-          this.posCatalog.listCatalog(this.headquarterId(), 0, 100).subscribe({
+           this.posCatalog.listCatalog(this.headquarterId(), 0, 100).subscribe({
             next: (page) => this.catalog.set(page.items),
-          });
+           });
+          this.posCatalog.listCandidates(this.headquarterId()).subscribe({ next: (items) => this.posCandidates.set(items) });
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
+  }
+
+  configureCandidate(): void {
+    const item = this.posCandidates().find((candidate) => candidate.id === Number(this.candidateId));
+    if (!item) return;
+    this.editingItemId.set(item.id);
+    this.catalogForm.reset({
+      saleCategory: this.saleCategories()[0]?.name ?? '',
+      salePrice: item.salePrice,
+      available: true,
+      stockPolicy: 'CONTROLLED',
+      negativeStockLimit: null,
+    });
   }
 
   createCategory(): void {

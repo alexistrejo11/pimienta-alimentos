@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 
 @Service
 public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogUseCases {
@@ -90,6 +92,12 @@ public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogU
                                 : StockPolicy.CONTROLLED)
                         .withNegativeStockLimit(command.negativeStockLimit())
                         .register()));
+  }
+
+  @Override
+  public List<Item> candidates(long headquarterId) {
+    assertHeadquarterExists(headquarterId);
+    return itemRepository.findPosCandidates(headquarterId);
   }
 
   private void assertHeadquarterExists(long headquarterId) {

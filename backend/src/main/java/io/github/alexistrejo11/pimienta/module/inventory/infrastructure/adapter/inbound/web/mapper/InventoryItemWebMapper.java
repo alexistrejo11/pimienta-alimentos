@@ -27,6 +27,7 @@ public final class InventoryItemWebMapper {
     if (request.barcode() != null) {
       item.setBarcode(request.barcode());
     }
+    item.setCatalogRole(request.catalogRole());
     return item;
   }
 
@@ -45,6 +46,7 @@ public final class InventoryItemWebMapper {
     merged.setReorderPoint(request.reorderPoint());
     merged.setReorderQuantity(request.reorderQuantity());
     merged.setStatus(request.status());
+    merged.setCatalogRole(request.catalogRole());
     return merged;
   }
 
@@ -66,6 +68,7 @@ public final class InventoryItemWebMapper {
         item.getCreatedAt(),
         item.getUpdatedAt(),
         item.getDeletedAt(),
-        item.getVersion());
+        item.getVersion(),
+        item.getCatalogRole());
   }
 }

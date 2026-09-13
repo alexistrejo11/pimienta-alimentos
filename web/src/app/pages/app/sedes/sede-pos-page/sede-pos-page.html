@@ -77,11 +77,6 @@
               Los productos nuevos reciben un SKU interno automáticamente.
             </p>
           </div>
-          <a
-            [routerLink]="['/app/sedes', headquarterId(), 'pos', 'nuevo']"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
-            >Nuevo producto POS</a
-          >
           <button
             type="button"
             class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
@@ -89,7 +84,22 @@
           >
             Imprimir etiquetas
           </button>
-        </div>
+         </div>
+         <div class="mt-4 flex flex-wrap items-center gap-2">
+           <select
+             class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+             [(ngModel)]="candidateId"
+             [ngModelOptions]="{ standalone: true }"
+           >
+             <option [ngValue]="null">Seleccionar artículo maestro POS</option>
+             @for (item of posCandidates(); track item.id) {
+               <option [ngValue]="item.id">{{ item.name }} · {{ item.sku }}</option>
+             }
+           </select>
+           <button type="button" class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" (click)="configureCandidate()">
+             Configurar artículo
+           </button>
+         </div>
         <div class="mt-4 flex flex-wrap gap-2">
           <input
             class="rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"

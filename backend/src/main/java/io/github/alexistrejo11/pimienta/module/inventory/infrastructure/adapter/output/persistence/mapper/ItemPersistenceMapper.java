@@ -27,6 +27,7 @@ public final class ItemPersistenceMapper {
     e.setReorderPoint(domain.getReorderPoint());
     e.setReorderQuantity(domain.getReorderQuantity());
     e.setStatus(domain.getStatus());
+    e.setCatalogRole(domain.getCatalogRole());
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
@@ -49,6 +50,7 @@ public final class ItemPersistenceMapper {
     item.setReorderPoint(e.getReorderPoint());
     item.setReorderQuantity(e.getReorderQuantity());
     item.setStatus(e.getStatus());
+    item.setCatalogRole(e.getCatalogRole());
     item.setCreatedAt(e.getCreatedAt());
     item.setUpdatedAt(e.getUpdatedAt());
     item.setDeletedAt(e.getDeletedAt());
