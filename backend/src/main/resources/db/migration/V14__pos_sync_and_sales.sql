@@ -1,6 +1,4 @@
--- POS B4: sync event ledger, immutable sales snapshots, sync incidents
-
--- ── pos_sync_events ──────────────────────────────────────────────────────────
+-- POS sync event ledger, incidents, immutable sales snapshots, and tombstones
 
 CREATE TABLE pos_sync_events (
     event_id            UUID         PRIMARY KEY,
@@ -33,8 +31,6 @@ CREATE INDEX idx_pos_sync_events_deleted_at ON pos_sync_events (deleted_at);
 
 COMMENT ON TABLE pos_sync_events IS 'Idempotent POS device sync event ledger (unique event_id).';
 
--- ── pos_sync_incidents ───────────────────────────────────────────────────────
-
 CREATE TABLE pos_sync_incidents (
     id              UUID         PRIMARY KEY,
     event_id        UUID         NOT NULL REFERENCES pos_sync_events (event_id),
@@ -44,6 +40,7 @@ CREATE TABLE pos_sync_incidents (
     accepted_at     TIMESTAMP,
     accepted_by     BIGINT,
     accept_note     VARCHAR(1024),
+    accept_label    VARCHAR(128),
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at      TIMESTAMP,
@@ -55,13 +52,12 @@ CREATE INDEX idx_pos_sync_incidents_headquarter_id ON pos_sync_incidents (headqu
 CREATE INDEX idx_pos_sync_incidents_accepted_at ON pos_sync_incidents (accepted_at);
 CREATE INDEX idx_pos_sync_incidents_deleted_at ON pos_sync_incidents (deleted_at);
 
-COMMENT ON TABLE pos_sync_incidents IS 'POS sync review incidents (accept in B6; does not mutate sale payload).';
+COMMENT ON TABLE pos_sync_incidents IS 'POS sync review incidents (accept does not mutate sale payload).';
+COMMENT ON COLUMN pos_sync_incidents.accept_label IS 'Staff ADMIN accept label (set on accept; nullable while open).';
 
 ALTER TABLE pos_sync_events
     ADD CONSTRAINT fk_pos_sync_events_incident
         FOREIGN KEY (incident_id) REFERENCES pos_sync_incidents (id);
-
--- ── pos_sales ────────────────────────────────────────────────────────────────
 
 CREATE TABLE pos_sales (
     sale_id             UUID         PRIMARY KEY,
@@ -90,8 +86,6 @@ CREATE INDEX idx_pos_sales_occurred_at ON pos_sales (occurred_at);
 CREATE INDEX idx_pos_sales_deleted_at ON pos_sales (deleted_at);
 
 COMMENT ON TABLE pos_sales IS 'Immutable POS sale facts (unique sale_id; never overwritten).';
-
--- ── pos_sale_lines ───────────────────────────────────────────────────────────
 
 CREATE TABLE pos_sale_lines (
     id                          BIGSERIAL PRIMARY KEY,
@@ -122,8 +116,6 @@ CREATE INDEX idx_pos_sale_lines_product_id ON pos_sale_lines (product_id);
 
 COMMENT ON TABLE pos_sale_lines IS 'Snapshot lines for a POS sale (names/prices frozen at sync time).';
 
--- ── pos_sale_payments ────────────────────────────────────────────────────────
-
 CREATE TABLE pos_sale_payments (
     id                  BIGSERIAL PRIMARY KEY,
     sale_id             UUID         NOT NULL REFERENCES pos_sales (sale_id),
@@ -144,3 +136,18 @@ CREATE TABLE pos_sale_payments (
 CREATE INDEX idx_pos_sale_payments_sale_id ON pos_sale_payments (sale_id);
 
 COMMENT ON TABLE pos_sale_payments IS 'Snapshot payments for a POS sale.';
+
+CREATE TABLE pos_sync_tombstones (
+    id              BIGSERIAL PRIMARY KEY,
+    headquarter_id  BIGINT       NOT NULL REFERENCES headquarters (id),
+    entity          VARCHAR(32)  NOT NULL,
+    entity_id       VARCHAR(64)  NOT NULL,
+    created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_pos_sync_tombstones_entity CHECK (entity IN ('product', 'operator'))
+);
+
+CREATE INDEX idx_pos_sync_tombstones_hq_created
+    ON pos_sync_tombstones (headquarter_id, created_at);
+
+COMMENT ON TABLE pos_sync_tombstones IS
+    'POS sync deactivate markers (e.g. operator unassign) for GET /pos/sync/changes.';

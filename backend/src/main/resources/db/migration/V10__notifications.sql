@@ -22,7 +22,13 @@ CREATE TABLE notifications (
     created_at              TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at              TIMESTAMP,
-    version                 BIGINT       NOT NULL DEFAULT 1
+    version                 BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_notifications_channel
+        CHECK (channel IN ('EMAIL', 'SMS', 'LOG')),
+    CONSTRAINT ck_notifications_type
+        CHECK (type IN ('ACCOUNT_PENDING_APPROVAL', 'UNDEFINED')),
+    CONSTRAINT ck_notifications_status
+        CHECK (status IN ('PENDING', 'SENT', 'FAILED', 'SKIPPED'))
 );
 
 CREATE INDEX idx_notifications_created_at ON notifications (created_at);
@@ -35,11 +41,3 @@ CREATE INDEX idx_notifications_related_user_id ON notifications (related_user_id
 CREATE INDEX idx_notifications_deleted_at ON notifications (deleted_at);
 
 COMMENT ON TABLE notifications IS 'Audit log of outbound notifications (all channels).';
-
-ALTER TABLE notifications
-    ADD CONSTRAINT ck_notifications_channel
-        CHECK (channel IN ('EMAIL', 'SMS', 'LOG')),
-    ADD CONSTRAINT ck_notifications_type
-        CHECK (type IN ('ACCOUNT_PENDING_APPROVAL', 'UNDEFINED')),
-    ADD CONSTRAINT ck_notifications_status
-        CHECK (status IN ('PENDING', 'SENT', 'FAILED', 'SKIPPED'));

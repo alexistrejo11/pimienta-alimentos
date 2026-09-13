@@ -85,6 +85,14 @@ springdoc:
 pimienta:
   redis:
     key-prefix: ${PIMIENTA_REDIS_KEY_PREFIX:pimienta-alimentos}
+  bootstrap:
+    admin:
+      enabled: ${PIMIENTA_BOOTSTRAP_ADMIN_ENABLED:true}
+      email: ${PIMIENTA_BOOTSTRAP_ADMIN_EMAIL:}
+      password: ${PIMIENTA_BOOTSTRAP_ADMIN_PASSWORD:}
+      first-name: ${PIMIENTA_BOOTSTRAP_ADMIN_FIRST_NAME:Admin}
+      last-name: ${PIMIENTA_BOOTSTRAP_ADMIN_LAST_NAME:Pimienta}
+      phone: ${PIMIENTA_BOOTSTRAP_ADMIN_PHONE:+520000000001}
   notifications:
     admin-emails: ${PIMIENTA_NOTIFICATIONS_ADMIN_EMAILS:admin@example.com}
   image:

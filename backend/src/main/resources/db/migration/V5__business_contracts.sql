@@ -22,7 +22,13 @@ CREATE TABLE business_contracts (
     created_at             TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at             TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at             TIMESTAMP,
-    version                BIGINT       NOT NULL DEFAULT 1
+    version                BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_business_contracts_category
+        CHECK (category IS NULL OR category IN (
+            'EMPLOYEE', 'SUPPLIER', 'CUSTOMER', 'PARTNER', 'OTHER', 'UNDEFINED'
+        )),
+    CONSTRAINT ck_business_contracts_term_kind
+        CHECK (term_kind IS NULL OR term_kind IN ('FIXED_TERM', 'INDEFINITE', 'UNDEFINED'))
 );
 
 CREATE INDEX idx_business_contracts_employee_id ON business_contracts (employee_id);
@@ -32,11 +38,3 @@ CREATE INDEX idx_business_contracts_reference_code ON business_contracts (refere
 CREATE INDEX idx_business_contracts_deleted_at ON business_contracts (deleted_at);
 
 COMMENT ON TABLE business_contracts IS 'Legal/business agreements tied to employees, opportunities, or projects.';
-
-ALTER TABLE business_contracts
-    ADD CONSTRAINT ck_business_contracts_category
-        CHECK (category IS NULL OR category IN (
-            'EMPLOYEE', 'SUPPLIER', 'CUSTOMER', 'PARTNER', 'OTHER', 'UNDEFINED'
-        )),
-    ADD CONSTRAINT ck_business_contracts_term_kind
-        CHECK (term_kind IS NULL OR term_kind IN ('FIXED_TERM', 'INDEFINITE', 'UNDEFINED'));

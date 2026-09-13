@@ -87,7 +87,7 @@ public class User extends BaseDomain<Long> {
   }
 
   /**
-   * New registration: no roles until an administrator assigns them.
+   * New registration starts with the unassigned baseline role.
    */
   public static User register(UserRegisterParams params) {
     Objects.requireNonNull(params, "params");
@@ -119,7 +119,7 @@ public class User extends BaseDomain<Long> {
     u.accountStatus = AccountStatus.PENDING_APPROVAL;
     u.bannedReason = null;
     u.bannedAt = null;
-    u.roles = new ArrayList<>();
+    u.roles = new ArrayList<>(List.of(Role.USER));
     u.assignedHeadquarterIds = new ArrayList<>();
     u.createdAt = now;
     u.updatedAt = now;
@@ -224,7 +224,11 @@ public class User extends BaseDomain<Long> {
   }
 
   public void replaceRoles(List<Role> newRoles) {
-    this.roles = newRoles != null ? new ArrayList<>(newRoles) : new ArrayList<>();
+    var uniqueRoles = EnumSet.noneOf(Role.class);
+    if (newRoles != null) {
+      newRoles.stream().filter(Objects::nonNull).forEach(uniqueRoles::add);
+    }
+    this.roles = new ArrayList<>(uniqueRoles);
     touch();
   }
 

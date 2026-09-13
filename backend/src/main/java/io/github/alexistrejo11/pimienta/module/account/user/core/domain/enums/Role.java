@@ -13,7 +13,10 @@ public enum Role {
           Permission.PROFILE_READ,
           Permission.PROFILE_WRITE,
           Permission.USERS_READ,
-          Permission.USERS_WRITE)),
+           Permission.USERS_WRITE)),
+  SALES(EnumSet.noneOf(Permission.class)),
+  POS_OPERATOR(EnumSet.noneOf(Permission.class)),
+  EMPLOYEE(EnumSet.noneOf(Permission.class)),
   ADMIN(EnumSet.allOf(Permission.class));
 
   private final EnumSet<Permission> permissions;

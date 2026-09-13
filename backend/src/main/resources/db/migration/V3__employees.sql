@@ -35,7 +35,26 @@ CREATE TABLE employees (
     created_at                      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at                      TIMESTAMP,
-    version                         BIGINT       NOT NULL DEFAULT 1
+    version                         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_employees_status
+        CHECK (status IS NULL OR status IN (
+            'DRAFT', 'PENDING_CONTRACT', 'ACTIVE', 'SICK', 'ON_VACATION', 'ON_LEAVE',
+            'TERMINATED', 'FIRED', 'RESIGNED', 'UNDEFINED'
+        )),
+    CONSTRAINT ck_employees_contract_type
+        CHECK (contract_type IS NULL OR contract_type IN (
+            'INDEFINITE', 'FIXED_TERM', 'PROJECT_BASED', 'TEMPORARY', 'FREELANCE', 'UNDEFINED'
+        )),
+    CONSTRAINT ck_employees_work_shift
+        CHECK (work_shift IS NULL OR work_shift IN (
+            'MORNING', 'AFTERNOON', 'NIGHT', 'MIXED', 'REMOTE', 'UNDEFINED'
+        )),
+    CONSTRAINT ck_employees_imss_worker_type
+        CHECK (imss_worker_type IS NULL OR imss_worker_type IN (
+            'PERMANENT_URBAN', 'EVENTUAL_URBAN', 'PERMANENT_RURAL', 'EVENTUAL_RURAL'
+        )),
+    CONSTRAINT ck_employees_imss_salary_type
+        CHECK (imss_salary_type IS NULL OR imss_salary_type IN ('FIXED', 'VARIABLE', 'MIXED'))
 );
 
 CREATE INDEX idx_employees_status ON employees (status);
@@ -59,7 +78,12 @@ CREATE TABLE employee_attendances (
     created_at                   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at                   TIMESTAMP,
-    version                      BIGINT       NOT NULL DEFAULT 1
+    version                      BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_employee_attendances_status
+        CHECK (status IN (
+            'UNDEFINED', 'CHECKED_IN', 'CHECKED_OUT',
+            'AUTO_CLOSED_EXCEEDED_MAX_SHIFT_HOURS', 'AUTO_CLOSED_ASSUMED_CONTRACT_DAY'
+        ))
 );
 
 CREATE INDEX idx_employee_attendances_employee_work_date ON employee_attendances (employee_id, work_date);
@@ -68,31 +92,3 @@ CREATE INDEX idx_employee_attendances_work_date ON employee_attendances (work_da
 CREATE INDEX idx_employee_attendances_deleted_at ON employee_attendances (deleted_at);
 
 COMMENT ON TABLE employee_attendances IS 'Daily check-in/out records per employee and headquarter.';
-
-ALTER TABLE employees
-    ADD CONSTRAINT ck_employees_status
-        CHECK (status IS NULL OR status IN (
-            'DRAFT', 'PENDING_CONTRACT', 'ACTIVE', 'SICK', 'ON_VACATION', 'ON_LEAVE',
-            'TERMINATED', 'FIRED', 'RESIGNED', 'UNDEFINED'
-        )),
-    ADD CONSTRAINT ck_employees_contract_type
-        CHECK (contract_type IS NULL OR contract_type IN (
-            'INDEFINITE', 'FIXED_TERM', 'PROJECT_BASED', 'TEMPORARY', 'FREELANCE', 'UNDEFINED'
-        )),
-    ADD CONSTRAINT ck_employees_work_shift
-        CHECK (work_shift IS NULL OR work_shift IN (
-            'MORNING', 'AFTERNOON', 'NIGHT', 'MIXED', 'REMOTE', 'UNDEFINED'
-        )),
-    ADD CONSTRAINT ck_employees_imss_worker_type
-        CHECK (imss_worker_type IS NULL OR imss_worker_type IN (
-            'PERMANENT_URBAN', 'EVENTUAL_URBAN', 'PERMANENT_RURAL', 'EVENTUAL_RURAL'
-        )),
-    ADD CONSTRAINT ck_employees_imss_salary_type
-        CHECK (imss_salary_type IS NULL OR imss_salary_type IN ('FIXED', 'VARIABLE', 'MIXED'));
-
-ALTER TABLE employee_attendances
-    ADD CONSTRAINT ck_employee_attendances_status
-        CHECK (status IN (
-            'UNDEFINED', 'CHECKED_IN', 'CHECKED_OUT',
-            'AUTO_CLOSED_EXCEEDED_MAX_SHIFT_HOURS', 'AUTO_CLOSED_ASSUMED_CONTRACT_DAY'
-        ));

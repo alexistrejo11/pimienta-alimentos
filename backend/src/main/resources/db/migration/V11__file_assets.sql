@@ -15,7 +15,9 @@ CREATE TABLE file_assets (
     created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at          TIMESTAMP,
-    version             BIGINT       NOT NULL DEFAULT 1
+    version             BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_file_assets_category
+        CHECK (category IN ('TEMPLATE', 'COMPANY', 'EXTRAS', 'RESOURCE'))
 );
 
 CREATE INDEX idx_file_assets_category       ON file_assets (category);
@@ -31,7 +33,3 @@ COMMENT ON COLUMN file_assets.module          IS 'Owning module slug for RESOURC
 COMMENT ON COLUMN file_assets.entity_type     IS 'Optional domain entity type tag within the module.';
 COMMENT ON COLUMN file_assets.entity_id       IS 'Optional FK-style entity id (not enforced by DB).';
 COMMENT ON COLUMN file_assets.s3_key          IS 'Full S3 object key used for delete/presign.';
-
-ALTER TABLE file_assets
-    ADD CONSTRAINT ck_file_assets_category
-        CHECK (category IN ('TEMPLATE', 'COMPANY', 'EXTRAS', 'RESOURCE'));

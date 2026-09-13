@@ -115,7 +115,7 @@ public class UserManagementUseCasesImpl implements UserManagementUseCases {
     log.info("add roles start userId={} roleCount={}", userId, roleCount);
 
     User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
-    user.addRoles(command.roles());
+    user.replaceRoles(command.roles());
     User saved = userRepository.save(user);
 
     log.info("add roles complete userId={}", userId);

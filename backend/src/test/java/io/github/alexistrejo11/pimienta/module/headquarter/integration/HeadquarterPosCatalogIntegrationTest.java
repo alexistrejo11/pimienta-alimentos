@@ -151,6 +151,35 @@ class HeadquarterPosCatalogIntegrationTest {
   }
 
   @Test
+  void posCatalog_candidates_returnsOnlySellableUnassignedItems() throws Exception {
+    String token = obtainAccessToken();
+    long hqId = createHeadquarter(token, "CANDIDATE-HQ-" + UUID.randomUUID());
+    long candidateId = createItem(token, "SKU-CANDIDATE-" + UUID.randomUUID(), "Candidate", "POS_SELLABLE");
+    createItem(token, "SKU-INVENTORY-" + UUID.randomUUID(), "Inventory only");
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer(
+            "/api/v1/headquarters/" + hqId + "/pos-catalog/candidates", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].id").value(candidateId))
+        .andExpect(jsonPath("$[0].catalogRole").value("POS_SELLABLE"));
+
+    String catalogBody = """
+        {"saleCategory":"BEVERAGE","salePrice":25.50,"available":true,"stockPolicy":"CONTROLLED"}
+        """;
+    mockMvc.perform(AccountTestRequests.putJsonBearer(
+        "/api/v1/headquarters/" + hqId + "/pos-catalog/" + candidateId, token, catalogBody))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer(
+            "/api/v1/headquarters/" + hqId + "/pos-catalog/candidates", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(0)));
+  }
+
+  @Test
   void itemBarcode_duplicate_returns409() throws Exception {
     String token = obtainAccessToken();
     String barcode = "BC-" + UUID.randomUUID();
@@ -188,10 +217,14 @@ class HeadquarterPosCatalogIntegrationTest {
   }
 
   private long createItem(String token, String sku, String name) throws Exception {
+    return createItem(token, sku, name, null);
+  }
+
+  private long createItem(String token, String sku, String name, String catalogRole) throws Exception {
     MvcResult r =
         mockMvc
             .perform(
-                AccountTestRequests.postJson("/api/v1/inventory/items", itemJson(sku, name, null))
+                AccountTestRequests.postJson("/api/v1/inventory/items", itemJson(sku, name, null, catalogRole))
                     .header("Authorization", "Bearer " + token))
             .andExpect(status().isCreated())
             .andReturn();
@@ -199,8 +232,13 @@ class HeadquarterPosCatalogIntegrationTest {
   }
 
   private static String itemJson(String sku, String name, String barcode) {
+    return itemJson(sku, name, barcode, null);
+  }
+
+  private static String itemJson(String sku, String name, String barcode, String catalogRole) {
     String barcodeField =
         barcode == null ? "" : ", \"barcode\": \"%s\"".formatted(barcode.replace("\"", "\\\""));
+    String roleField = catalogRole == null ? "" : ", \"catalogRole\": \"%s\"".formatted(catalogRole);
     return """
         {
           "sku": "%s",
@@ -212,10 +250,10 @@ class HeadquarterPosCatalogIntegrationTest {
           "unit": "PIECE",
           "reorderPoint": 0,
           "reorderQuantity": 0
-          %s
+          %s%s
         }
         """
-        .formatted(sku, name, barcodeField);
+        .formatted(sku, name, barcodeField, roleField);
   }
 
   private static long extractLongId(String json, String path) {

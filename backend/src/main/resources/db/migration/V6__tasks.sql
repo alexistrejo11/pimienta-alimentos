@@ -19,7 +19,13 @@ CREATE TABLE tasks (
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at      TIMESTAMP,
-    version         BIGINT       NOT NULL DEFAULT 1
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_tasks_status
+        CHECK (status IS NULL OR status IN (
+            'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'DELAYED', 'ON_HOLD', 'FAILED', 'UNDEFINED'
+        )),
+    CONSTRAINT ck_tasks_priority
+        CHECK (priority IS NULL OR priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT', 'UNDEFINED'))
 );
 
 CREATE INDEX idx_tasks_assigned_to_id ON tasks (assigned_to_id);
@@ -31,11 +37,3 @@ CREATE INDEX idx_tasks_due_date ON tasks (due_date);
 CREATE INDEX idx_tasks_deleted_at ON tasks (deleted_at);
 
 COMMENT ON TABLE tasks IS 'Operational tasks optionally linked to projects, opportunities, or headquarters.';
-
-ALTER TABLE tasks
-    ADD CONSTRAINT ck_tasks_status
-        CHECK (status IS NULL OR status IN (
-            'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'DELAYED', 'ON_HOLD', 'FAILED', 'UNDEFINED'
-        )),
-    ADD CONSTRAINT ck_tasks_priority
-        CHECK (priority IS NULL OR priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT', 'UNDEFINED'));

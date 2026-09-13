@@ -1,4 +1,19 @@
--- Pimienta Alimentos — CRM opportunities, projects, and milestones
+-- Pimienta Alimentos — CRM clients, opportunities, projects, and milestones
+
+CREATE TABLE crm_clients (
+    id            BIGSERIAL PRIMARY KEY,
+    name          VARCHAR(500) NOT NULL,
+    company_name  VARCHAR(500),
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at    TIMESTAMP,
+    version       BIGINT       NOT NULL DEFAULT 1
+);
+
+CREATE INDEX idx_crm_clients_deleted_at ON crm_clients (deleted_at);
+CREATE INDEX idx_crm_clients_name ON crm_clients (name);
+
+COMMENT ON TABLE crm_clients IS 'CRM client accounts linked to delivery projects.';
 
 CREATE TABLE crm_opportunities (
     id                    BIGSERIAL PRIMARY KEY,
@@ -22,7 +37,15 @@ CREATE TABLE crm_opportunities (
     created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at            TIMESTAMP,
-    version               BIGINT       NOT NULL DEFAULT 1
+    version               BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_crm_opportunities_source
+        CHECK (source IN (
+            'INBOUND', 'OUTBOUND', 'REFERRAL', 'SOCIAL_MEDIA', 'EVENT', 'COLD_CALL', 'OTHER'
+        )),
+    CONSTRAINT ck_crm_opportunities_status
+        CHECK (status IN (
+            'NEW', 'DISCOVERY', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'ABANDONED'
+        ))
 );
 
 CREATE INDEX idx_crm_opportunities_status ON crm_opportunities (status);
@@ -34,7 +57,7 @@ COMMENT ON TABLE crm_opportunities IS 'Sales pipeline opportunities before proje
 
 CREATE TABLE crm_projects (
     id                    BIGSERIAL PRIMARY KEY,
-    client_id             BIGINT,
+    client_id             BIGINT REFERENCES crm_clients (id),
     origin_opportunity_id BIGINT REFERENCES crm_opportunities (id) ON DELETE SET NULL,
     project_code          VARCHAR(64)  NOT NULL,
     project_name          VARCHAR(500) NOT NULL,
@@ -58,7 +81,16 @@ CREATE TABLE crm_projects (
     updated_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at            TIMESTAMP,
     version               BIGINT       NOT NULL DEFAULT 1,
-    CONSTRAINT uk_crm_projects_project_code UNIQUE (project_code)
+    CONSTRAINT uk_crm_projects_project_code UNIQUE (project_code),
+    CONSTRAINT ck_crm_projects_type
+        CHECK (type IN (
+            'CONSULTING', 'SOFTWARE_DEVELOPMENT', 'IMPLEMENTATION', 'MAINTENANCE',
+            'TRAINING', 'RESEARCH', 'OTHER'
+        )),
+    CONSTRAINT ck_crm_projects_status
+        CHECK (status IN ('PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED', 'ARCHIVED')),
+    CONSTRAINT ck_crm_projects_priority
+        CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'))
 );
 
 CREATE INDEX idx_crm_projects_status ON crm_projects (status);
@@ -82,35 +114,12 @@ CREATE TABLE crm_project_milestones (
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at      TIMESTAMP,
-    version         BIGINT       NOT NULL DEFAULT 1
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_crm_project_milestones_status
+        CHECK (status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'DELAYED', 'CANCELLED'))
 );
 
 CREATE INDEX idx_crm_project_milestones_project_sort ON crm_project_milestones (project_id, sort_order);
 CREATE INDEX idx_crm_project_milestones_deleted_at ON crm_project_milestones (deleted_at);
 
 COMMENT ON TABLE crm_project_milestones IS 'Ordered billing/delivery milestones within a project.';
-
-ALTER TABLE crm_opportunities
-    ADD CONSTRAINT ck_crm_opportunities_source
-        CHECK (source IN (
-            'INBOUND', 'OUTBOUND', 'REFERRAL', 'SOCIAL_MEDIA', 'EVENT', 'COLD_CALL', 'OTHER'
-        )),
-    ADD CONSTRAINT ck_crm_opportunities_status
-        CHECK (status IN (
-            'NEW', 'DISCOVERY', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'ABANDONED'
-        ));
-
-ALTER TABLE crm_projects
-    ADD CONSTRAINT ck_crm_projects_type
-        CHECK (type IN (
-            'CONSULTING', 'SOFTWARE_DEVELOPMENT', 'IMPLEMENTATION', 'MAINTENANCE',
-            'TRAINING', 'RESEARCH', 'OTHER'
-        )),
-    ADD CONSTRAINT ck_crm_projects_status
-        CHECK (status IN ('PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED', 'ARCHIVED')),
-    ADD CONSTRAINT ck_crm_projects_priority
-        CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'));
-
-ALTER TABLE crm_project_milestones
-    ADD CONSTRAINT ck_crm_project_milestones_status
-        CHECK (status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'DELAYED', 'CANCELLED'));

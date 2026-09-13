@@ -1,6 +1,4 @@
--- POS B2: devices, operators, enrollment codes
-
--- ── pos_devices ──────────────────────────────────────────────────────────────
+-- POS devices, operators, and enrollment codes
 
 CREATE TABLE pos_devices (
     id                    UUID         PRIMARY KEY,
@@ -29,8 +27,6 @@ CREATE UNIQUE INDEX uk_pos_devices_hq_visible_code_active
 
 COMMENT ON TABLE pos_devices IS 'POS tablets enrolled per headquarter (JWT device identity).';
 
--- ── pos_operators ────────────────────────────────────────────────────────────
-
 CREATE TABLE pos_operators (
     id            BIGSERIAL PRIMARY KEY,
     user_id       BIGINT REFERENCES account_users (id),
@@ -52,8 +48,6 @@ CREATE INDEX idx_pos_operators_active ON pos_operators (active);
 
 COMMENT ON TABLE pos_operators IS 'POS cashiers/managers (PIN-based; optional link to web User).';
 
--- ── pos_operator_headquarter ─────────────────────────────────────────────────
-
 CREATE TABLE pos_operator_headquarter (
     operator_id     BIGINT NOT NULL REFERENCES pos_operators (id),
     headquarter_id  BIGINT NOT NULL REFERENCES headquarters (id),
@@ -63,8 +57,6 @@ CREATE TABLE pos_operator_headquarter (
 CREATE INDEX idx_pos_operator_headquarter_hq ON pos_operator_headquarter (headquarter_id);
 
 COMMENT ON TABLE pos_operator_headquarter IS 'N:N authorization of POS operators to headquarters.';
-
--- ── pos_enrollment_codes ─────────────────────────────────────────────────────
 
 CREATE TABLE pos_enrollment_codes (
     id                     BIGSERIAL PRIMARY KEY,

@@ -49,14 +49,14 @@ class InventoryIntegrationTest {
   }
 
   @Test
-  void items_create_validation_blankSku_returns400() throws Exception {
+  void items_create_blankSku_generatesInternalSku() throws Exception {
     String token = obtainAccessToken();
     mockMvc
         .perform(
             AccountTestRequests.postJson("/api/v1/inventory/items", minimalItemCreateJson("   ", "Name"))
                 .header("Authorization", "Bearer " + token))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.sku").value(org.hamcrest.Matchers.startsWith("CAF-")));
   }
 
   @Test

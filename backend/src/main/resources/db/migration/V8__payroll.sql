@@ -9,7 +9,9 @@ CREATE TABLE payroll_periods (
     created_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
-    version    BIGINT      NOT NULL DEFAULT 1
+    version    BIGINT      NOT NULL DEFAULT 1,
+    CONSTRAINT ck_payroll_periods_frequency
+        CHECK (frequency IN ('WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM'))
 );
 
 CREATE INDEX idx_payroll_periods_dates ON payroll_periods (start_date, end_date);
@@ -32,7 +34,9 @@ CREATE TABLE payroll_records (
     created_at        TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at        TIMESTAMP,
-    version           BIGINT         NOT NULL DEFAULT 1
+    version           BIGINT         NOT NULL DEFAULT 1,
+    CONSTRAINT ck_payroll_records_status
+        CHECK (status IN ('PENDING', 'PAID', 'PARTIAL', 'DEFERRED'))
 );
 
 CREATE INDEX idx_payroll_records_employee_id ON payroll_records (employee_id);
@@ -51,7 +55,9 @@ CREATE TABLE payroll_adjustments (
     created_at        TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at        TIMESTAMP,
-    version           BIGINT         NOT NULL DEFAULT 1
+    version           BIGINT         NOT NULL DEFAULT 1,
+    CONSTRAINT ck_payroll_adjustments_type
+        CHECK (type IN ('DISCOUNT', 'BONUS'))
 );
 
 CREATE INDEX idx_payroll_adjustments_payroll_record_id ON payroll_adjustments (payroll_record_id);
@@ -75,7 +81,11 @@ CREATE TABLE payroll_payments (
     created_at          TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at          TIMESTAMP,
-    version             BIGINT         NOT NULL DEFAULT 1
+    version             BIGINT         NOT NULL DEFAULT 1,
+    CONSTRAINT ck_payroll_payments_frequency
+        CHECK (frequency IN ('WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM')),
+    CONSTRAINT ck_payroll_payments_status
+        CHECK (status IN ('PENDING', 'PAID', 'PARTIAL', 'DEFERRED'))
 );
 
 CREATE INDEX idx_payroll_payments_payroll_record_id ON payroll_payments (payroll_record_id);
@@ -104,21 +114,3 @@ CREATE INDEX idx_payroll_debts_settled ON payroll_debts (settled);
 CREATE INDEX idx_payroll_debts_deleted_at ON payroll_debts (deleted_at);
 
 COMMENT ON TABLE payroll_debts IS 'Outstanding amounts owed by employees to the company.';
-
-ALTER TABLE payroll_periods
-    ADD CONSTRAINT ck_payroll_periods_frequency
-        CHECK (frequency IN ('WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM'));
-
-ALTER TABLE payroll_records
-    ADD CONSTRAINT ck_payroll_records_status
-        CHECK (status IN ('PENDING', 'PAID', 'PARTIAL', 'DEFERRED'));
-
-ALTER TABLE payroll_adjustments
-    ADD CONSTRAINT ck_payroll_adjustments_type
-        CHECK (type IN ('DISCOUNT', 'BONUS'));
-
-ALTER TABLE payroll_payments
-    ADD CONSTRAINT ck_payroll_payments_frequency
-        CHECK (frequency IN ('WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM')),
-    ADD CONSTRAINT ck_payroll_payments_status
-        CHECK (status IN ('PENDING', 'PAID', 'PARTIAL', 'DEFERRED'));

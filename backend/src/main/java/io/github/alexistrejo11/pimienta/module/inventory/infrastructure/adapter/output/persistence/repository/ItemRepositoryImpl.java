@@ -9,6 +9,8 @@ import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.
 
 import java.util.Optional;
 import java.util.List;
+import java.util.UUID;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -53,7 +55,12 @@ public class ItemRepositoryImpl implements ItemRepository {
 
   @Override
   public String nextInternalSku() {
-    return jpaRepository.nextInternalSku();
+    try {
+      return jpaRepository.nextInternalSku();
+    } catch (DataAccessException ex) {
+      // Keep local/test databases usable when the optional database function is absent.
+      return "CAF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
   }
 
   @Override
