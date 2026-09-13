@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-6 p-8">
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     title="Contratos"
     subtitle="Acuerdos con colaboradores, clientes y proveedores; vinculación con empleados, oportunidades y proyectos."
@@ -25,18 +25,26 @@
         Registrar contrato
       </h2>
       <p class="mt-1 text-sm text-on-surface-variant">
-        La URL del documento firmado es obligatoria. Si el tipo es <strong>Empleado</strong>, elige al colaborador en onboarding o pendiente de contrato.
+        La URL del documento firmado es obligatoria. Si el tipo es <strong>Empleado</strong>, elige
+        al colaborador en onboarding o pendiente de contrato.
       </p>
 
       @if (formError(); as fe) {
-        <p class="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
+        <p
+          class="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+          role="alert"
+        >
           {{ fe }}
         </p>
       }
 
       <form class="mt-6 grid gap-4 md:grid-cols-2" [formGroup]="form" (ngSubmit)="submitCreate()">
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-name">Nombre del contrato</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-name"
+            >Nombre del contrato</label
+          >
           <input
             id="c-name"
             type="text"
@@ -47,7 +55,11 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-desc">Descripción</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-desc"
+            >Descripción</label
+          >
           <textarea
             id="c-desc"
             formControlName="description"
@@ -57,7 +69,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-cat">Categoría</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-cat"
+            >Categoría</label
+          >
           <select
             id="c-cat"
             formControlName="category"
@@ -72,7 +88,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-term">Modalidad</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-term"
+            >Modalidad</label
+          >
           <select
             id="c-term"
             formControlName="termKind"
@@ -85,7 +105,11 @@
 
         @if (form.controls.category.value === 'EMPLOYEE') {
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-emp">Colaborador</label>
+            <label
+              class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              for="c-emp"
+              >Colaborador</label
+            >
             <select
               id="c-emp"
               formControlName="employeeId"
@@ -93,14 +117,20 @@
             >
               <option [ngValue]="null">Selecciona…</option>
               @for (e of employeeOptions(); track e.id) {
-                <option [ngValue]="e.id">{{ e.fullName }} — {{ e.department }} ({{ e.status }})</option>
+                <option [ngValue]="e.id">
+                  {{ e.fullName }} — {{ e.department }} ({{ e.status }})
+                </option>
               }
             </select>
           </div>
         }
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-opp">Oportunidad CRM (opcional)</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-opp"
+            >Oportunidad CRM (opcional)</label
+          >
           <select
             id="c-opp"
             formControlName="opportunityId"
@@ -114,7 +144,11 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-proj">Proyecto CRM (opcional)</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-proj"
+            >Proyecto CRM (opcional)</label
+          >
           <select
             id="c-proj"
             formControlName="projectId"
@@ -128,7 +162,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-start">Inicio vigencia</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-start"
+            >Inicio vigencia</label
+          >
           <input
             id="c-start"
             type="date"
@@ -139,7 +177,11 @@
 
         @if (form.controls.termKind.value === 'FIXED_TERM') {
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-end">Fin vigencia</label>
+            <label
+              class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              for="c-end"
+              >Fin vigencia</label
+            >
             <input
               id="c-end"
               type="date"
@@ -150,7 +192,11 @@
         }
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-url">URL del documento firmado</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-url"
+            >URL del documento firmado</label
+          >
           <input
             id="c-url"
             type="url"
@@ -162,7 +208,11 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-terms">Cláusulas o resumen (opcional)</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-terms"
+            >Cláusulas o resumen (opcional)</label
+          >
           <textarea
             id="c-terms"
             formControlName="termsAndConditions"
@@ -172,7 +222,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-ref">Referencia interna</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-ref"
+            >Referencia interna</label
+          >
           <input
             id="c-ref"
             type="text"
@@ -183,7 +237,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-renew">Meses por renovación (opcional)</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-renew"
+            >Meses por renovación (opcional)</label
+          >
           <input
             id="c-renew"
             type="number"
@@ -194,7 +252,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-val">Monto acordado (opcional)</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-val"
+            >Monto acordado (opcional)</label
+          >
           <input
             id="c-val"
             type="number"
@@ -205,7 +267,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="c-curr">Moneda ISO (3 letras)</label>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-curr"
+            >Moneda ISO (3 letras)</label
+          >
           <input
             id="c-curr"
             type="text"
@@ -248,7 +314,7 @@
     emptyMessage="Aún no hay contratos registrados."
     (retry)="reloadList()"
   >
-    <div class="overflow-x-auto rounded-xl border ui-panel">
+    <div class="responsive-table responsive-table--wide rounded-xl border ui-panel">
       <table class="w-full min-w-[720px] text-sm" aria-label="Lista de contratos">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
@@ -266,13 +332,19 @@
               <td class="px-4 py-3 text-on-surface-variant">{{ c.category }}</td>
               <td class="px-4 py-3 text-xs text-on-surface-variant">
                 @if (c.employeeId != null) {
-                  <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">{{ employeeName(c.employeeId) }}</span>
+                  <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">{{
+                    employeeName(c.employeeId)
+                  }}</span>
                 }
                 @if (c.opportunityId != null) {
-                  <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">{{ opportunityName(c.opportunityId) }}</span>
+                  <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">{{
+                    opportunityName(c.opportunityId)
+                  }}</span>
                 }
                 @if (c.projectId != null) {
-                  <span class="inline-block rounded bg-surface-container px-2 py-0.5">{{ projectName(c.projectId) }}</span>
+                  <span class="inline-block rounded bg-surface-container px-2 py-0.5">{{
+                    projectName(c.projectId)
+                  }}</span>
                 }
                 @if (c.employeeId == null && c.opportunityId == null && c.projectId == null) {
                   —
@@ -293,7 +365,8 @@
                     [href]="c.documentUrl"
                     target="_blank"
                     rel="noopener noreferrer"
-                  >Abrir</a>
+                    >Abrir</a
+                  >
                 } @else {
                   —
                 }

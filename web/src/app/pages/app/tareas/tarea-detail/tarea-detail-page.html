@@ -1,5 +1,4 @@
-<div class="flex flex-col gap-6 p-8">
-
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     [title]="tarea()?.title ?? 'Detalle de tarea'"
     backLink="/app/tareas"
@@ -27,7 +26,10 @@
           <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Acciones</h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="space-y-1.5">
-              <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="task-status">
+              <label
+                class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+                for="task-status"
+              >
                 Estado
               </label>
               <select
@@ -63,7 +65,11 @@
               [disabled]="saving()"
               (click)="applyUpdates()"
             >
-              @if (saving()) { Guardando... } @else { Aplicar cambios }
+              @if (saving()) {
+                Guardando...
+              } @else {
+                Aplicar cambios
+              }
             </button>
             <button
               type="button"
@@ -71,7 +77,11 @@
               [disabled]="deleting()"
               (click)="eliminar()"
             >
-              @if (deleting()) { Eliminando... } @else { Eliminar }
+              @if (deleting()) {
+                Eliminando...
+              } @else {
+                Eliminar
+              }
             </button>
           </div>
         </section>
@@ -89,18 +99,27 @@
 
           <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Fecha límite</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Fecha límite
+              </dt>
               <dd class="mt-1 text-on-surface">{{ formatDate(t.dueDate) }}</dd>
             </div>
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Fecha de completado</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Fecha de completado
+              </dt>
               <dd class="mt-1 text-on-surface">{{ formatDate(t.completedAt) }}</dd>
             </div>
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Progreso del checklist</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Progreso del checklist
+              </dt>
               <dd class="mt-1 flex items-center gap-2">
                 <div class="h-2 w-24 overflow-hidden rounded-full bg-surface-container-high">
-                  <div class="h-full rounded-full bg-primary transition-all" [style.width.%]="t.progressPercent"></div>
+                  <div
+                    class="h-full rounded-full bg-primary transition-all"
+                    [style.width.%]="t.progressPercent"
+                  ></div>
                 </div>
                 <span class="text-sm tabular-nums text-on-surface">{{ t.progressPercent }}%</span>
               </dd>
@@ -114,9 +133,7 @@
           [readonly]="false"
           (toggleItem)="toggleChecklist($event)"
         />
-
       </div>
     }
   </app-data-state>
-
 </div>

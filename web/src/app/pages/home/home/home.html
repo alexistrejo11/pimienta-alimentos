@@ -1,4 +1,4 @@
-<div class="landing-page flex min-h-screen flex-col font-body">
+<div class="landing-page flex min-h-screen flex-col font-body" [class.overflow-hidden]="mobileMenuOpen()">
   <nav
     class="landing-nav fixed left-0 right-0 top-0 z-50 border-b backdrop-blur-md"
     [class.landing-nav--scrolled]="navScrolled()"
@@ -29,10 +29,41 @@
           href="#contacto"
           class="font-headline inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary no-underline transition hover:-translate-y-0.5"
           (click)="scrollToSection('contacto'); $event.preventDefault()"
-          >Contacto</a
+        >Contacto</a
         >
       </div>
+      <button
+        type="button"
+        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container lg:hidden"
+        [attr.aria-expanded]="mobileMenuOpen()"
+        aria-controls="landing-mobile-menu"
+        [attr.aria-label]="mobileMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
+        (click)="toggleMobileMenu()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">{{ mobileMenuOpen() ? 'close' : 'menu' }}</span>
+      </button>
     </div>
+    @if (mobileMenuOpen()) {
+      <div id="landing-mobile-menu" class="border-t border-[color-mix(in_srgb,var(--color-outline-variant)_18%,transparent)] bg-background px-6 py-4 lg:hidden">
+        <div class="mx-auto flex max-w-[80rem] flex-col gap-1">
+          @for (item of navItems; track item.id) {
+            <a
+              [href]="'#' + item.id"
+              class="rounded-lg px-3 py-3 font-headline text-sm font-bold text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+              (click)="scrollToSection(item.id); $event.preventDefault()"
+            >{{ item.label }}</a>
+          }
+          <div class="mt-2 flex items-center justify-between border-t border-[color-mix(in_srgb,var(--color-outline-variant)_18%,transparent)] pt-3">
+            <app-theme-toggle />
+            <a
+              href="#contacto"
+              class="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-primary"
+              (click)="scrollToSection('contacto'); $event.preventDefault()"
+            >Contacto</a>
+          </div>
+        </div>
+      </div>
+    }
   </nav>
 
   <div class="flex-1">

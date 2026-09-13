@@ -1,17 +1,18 @@
-<div class="flex flex-col gap-6 p-8">
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     title="Nómina"
     subtitle="Registros, períodos, pagos y adeudos según la política de la empresa"
   />
 
   <!-- Rango del resumen -->
-  <section
-    class="ui-panel p-4"
-    aria-label="Filtros de resumen"
-  >
+  <section class="ui-panel p-4" aria-label="Filtros de resumen">
     <div class="flex flex-wrap items-end gap-4">
       <div class="space-y-1">
-        <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="sum-from">Desde</label>
+        <label
+          class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+          for="sum-from"
+          >Desde</label
+        >
         <input
           id="sum-from"
           type="date"
@@ -21,7 +22,11 @@
         />
       </div>
       <div class="space-y-1">
-        <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="sum-to">Hasta</label>
+        <label
+          class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+          for="sum-to"
+          >Hasta</label
+        >
         <input
           id="sum-to"
           type="date"
@@ -52,34 +57,64 @@
   @if (summary(); as s) {
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       <div class="ui-panel p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Empleados pagados</p>
-        <p class="font-headline mt-1 text-2xl font-bold tabular-nums text-on-surface">{{ s.employeesPaid }}</p>
+        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+          Empleados pagados
+        </p>
+        <p class="font-headline mt-1 text-2xl font-bold tabular-nums text-on-surface">
+          {{ s.employeesPaid }}
+        </p>
       </div>
       <div class="ui-panel p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Total bruto</p>
-        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalGross) }}</p>
+        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+          Total bruto
+        </p>
+        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">
+          {{ formatMXN(s.totalGross) }}
+        </p>
       </div>
       <div class="ui-panel p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Total neto</p>
-        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalNet) }}</p>
+        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+          Total neto
+        </p>
+        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">
+          {{ formatMXN(s.totalNet) }}
+        </p>
       </div>
       <div class="ui-panel p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Descuentos</p>
-        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalDiscounts) }}</p>
+        <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+          Descuentos
+        </p>
+        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">
+          {{ formatMXN(s.totalDiscounts) }}
+        </p>
       </div>
       <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Bonos</p>
-        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">{{ formatMXN(s.totalBonuses) }}</p>
+        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-on-surface">
+          {{ formatMXN(s.totalBonuses) }}
+        </p>
       </div>
-      <div class="rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/40 dark:bg-amber-950/30">
-        <p class="text-xs font-medium uppercase tracking-wide text-amber-900 dark:text-amber-200">Adeudo acumulado</p>
-        <p class="font-headline mt-1 text-xl font-bold tabular-nums text-amber-950 dark:text-amber-100">{{ formatMXN(s.totalDebt) }}</p>
+      <div
+        class="rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/40 dark:bg-amber-950/30"
+      >
+        <p class="text-xs font-medium uppercase tracking-wide text-amber-900 dark:text-amber-200">
+          Adeudo acumulado
+        </p>
+        <p
+          class="font-headline mt-1 text-xl font-bold tabular-nums text-amber-950 dark:text-amber-100"
+        >
+          {{ formatMXN(s.totalDebt) }}
+        </p>
       </div>
     </div>
   }
 
   <!-- Pestañas -->
-  <div class="flex flex-wrap gap-2 border-b border-outline-variant/20 pb-1" role="tablist" aria-label="Secciones de nómina">
+  <div
+    class="flex flex-wrap gap-2 border-b border-outline-variant/20 pb-1"
+    role="tablist"
+    aria-label="Secciones de nómina"
+  >
     <button
       type="button"
       role="tab"
@@ -128,7 +163,9 @@
           [disabled]="importExporting()"
           (click)="exportExcel()"
         >
-          <span class="material-symbols-outlined mr-1 align-middle text-lg" aria-hidden="true">download</span>
+          <span class="material-symbols-outlined mr-1 align-middle text-lg" aria-hidden="true"
+            >download</span
+          >
           Exportar Excel
         </button>
         <label
@@ -136,7 +173,13 @@
         >
           <span class="material-symbols-outlined text-lg" aria-hidden="true">upload_file</span>
           Importar Excel
-          <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="sr-only" (change)="onImportFile($event)" [disabled]="importExporting()" />
+          <input
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            class="sr-only"
+            (change)="onImportFile($event)"
+            [disabled]="importExporting()"
+          />
         </label>
       </div>
       @if (importMessage(); as msg) {
@@ -173,7 +216,11 @@
         @if (recordFormError(); as fe) {
           <p class="mb-2 text-sm text-[var(--color-error)]">{{ fe.message }}</p>
         }
-        <form [formGroup]="recordForm" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" (ngSubmit)="submitRecord()">
+        <form
+          [formGroup]="recordForm"
+          class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          (ngSubmit)="submitRecord()"
+        >
           <app-employee-select
             label="Empleado"
             [allowNull]="false"
@@ -186,16 +233,38 @@
             (valueChange)="recordForm.controls.periodId.setValue($event)"
           />
           <div class="space-y-1">
-            <label class="text-xs font-medium text-on-surface-variant" for="nr-start">Inicio labores</label>
-            <input id="nr-start" type="date" formControlName="workedDaysStart" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
+            <label class="text-xs font-medium text-on-surface-variant" for="nr-start"
+              >Inicio labores</label
+            >
+            <input
+              id="nr-start"
+              type="date"
+              formControlName="workedDaysStart"
+              class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm"
+            />
           </div>
           <div class="space-y-1">
-            <label class="text-xs font-medium text-on-surface-variant" for="nr-end">Fin labores</label>
-            <input id="nr-end" type="date" formControlName="workedDaysEnd" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
+            <label class="text-xs font-medium text-on-surface-variant" for="nr-end"
+              >Fin labores</label
+            >
+            <input
+              id="nr-end"
+              type="date"
+              formControlName="workedDaysEnd"
+              class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm"
+            />
           </div>
           <div class="space-y-1">
-            <label class="text-xs font-medium text-on-surface-variant" for="nr-gross">Importe bruto</label>
-            <input id="nr-gross" type="number" step="0.01" formControlName="grossAmount" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
+            <label class="text-xs font-medium text-on-surface-variant" for="nr-gross"
+              >Importe bruto</label
+            >
+            <input
+              id="nr-gross"
+              type="number"
+              step="0.01"
+              formControlName="grossAmount"
+              class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm"
+            />
           </div>
           <div class="flex items-end sm:col-span-2 lg:col-span-1">
             <button
@@ -216,14 +285,16 @@
         emptyMessage="No hay registros de nómina con los filtros actuales."
         (retry)="loadRecords()"
       >
-        <div class="overflow-x-auto rounded-xl border ui-panel">
+        <div class="responsive-table responsive-table--wide rounded-xl border ui-panel">
           <table class="w-full min-w-[720px] text-sm" aria-label="Registros de nómina">
             <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">ID</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Empleado</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Período</th>
-                <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Periodo laboral</th>
+                <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">
+                  Periodo laboral
+                </th>
                 <th class="px-3 py-3 text-right font-semibold text-on-surface-variant">Bruto</th>
                 <th class="px-3 py-3 text-right font-semibold text-on-surface-variant">Neto</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
@@ -236,11 +307,17 @@
                   <td class="px-3 py-3 tabular-nums text-on-surface">{{ r.id }}</td>
                   <td class="px-3 py-3">{{ empName(r.employeeId) }}</td>
                   <td class="px-3 py-3">{{ periodName(r.periodId) }}</td>
-                  <td class="px-3 py-3 text-on-surface-variant">{{ formatDate(r.workedDaysStart) }} – {{ formatDate(r.workedDaysEnd) }}</td>
+                  <td class="px-3 py-3 text-on-surface-variant">
+                    {{ formatDate(r.workedDaysStart) }} – {{ formatDate(r.workedDaysEnd) }}
+                  </td>
                   <td class="px-3 py-3 text-right tabular-nums">{{ formatMXN(r.grossAmount) }}</td>
-                  <td class="px-3 py-3 text-right font-medium tabular-nums">{{ formatMXN(r.netAmount) }}</td>
+                  <td class="px-3 py-3 text-right font-medium tabular-nums">
+                    {{ formatMXN(r.netAmount) }}
+                  </td>
                   <td class="px-3 py-3">
-                    <span class="rounded-md bg-surface-container px-2 py-0.5 text-xs font-medium">{{ statusLabel(r.status) }}</span>
+                    <span class="rounded-md bg-surface-container px-2 py-0.5 text-xs font-medium">{{
+                      statusLabel(r.status)
+                    }}</span>
                   </td>
                   <td class="px-3 py-3">
                     <button
@@ -258,23 +335,46 @@
                       @if (adjustmentError(); as adjErr) {
                         <p class="mb-2 text-sm text-[var(--color-error)]">{{ adjErr.message }}</p>
                       }
-                      <form [formGroup]="adjustmentForm" class="flex flex-wrap items-end gap-3" (ngSubmit)="submitAdjustment(r.id)">
+                      <form
+                        [formGroup]="adjustmentForm"
+                        class="flex flex-wrap items-end gap-3"
+                        (ngSubmit)="submitAdjustment(r.id)"
+                      >
                         <div class="space-y-1">
                           <label class="text-xs font-medium" for="adj-type">Tipo</label>
-                          <select id="adj-type" formControlName="type" class="rounded-lg bg-surface-container px-2 py-2 text-sm">
+                          <select
+                            id="adj-type"
+                            formControlName="type"
+                            class="rounded-lg bg-surface-container px-2 py-2 text-sm"
+                          >
                             <option value="DISCOUNT">Descuento</option>
                             <option value="BONUS">Bono</option>
                           </select>
                         </div>
                         <div class="space-y-1">
                           <label class="text-xs font-medium" for="adj-amt">Importe</label>
-                          <input id="adj-amt" type="number" step="0.01" formControlName="amount" class="w-32 rounded-lg bg-surface-container px-2 py-2 text-sm" />
+                          <input
+                            id="adj-amt"
+                            type="number"
+                            step="0.01"
+                            formControlName="amount"
+                            class="w-full rounded-lg bg-surface-container px-2 py-2 text-sm sm:w-32"
+                          />
                         </div>
-                        <div class="min-w-[200px] flex-1 space-y-1">
+                        <div class="min-w-0 flex-1 space-y-1">
                           <label class="text-xs font-medium" for="adj-reason">Motivo</label>
-                          <input id="adj-reason" type="text" formControlName="reason" class="w-full rounded-lg bg-surface-container px-2 py-2 text-sm" />
+                          <input
+                            id="adj-reason"
+                            type="text"
+                            formControlName="reason"
+                            class="w-full rounded-lg bg-surface-container px-2 py-2 text-sm"
+                          />
                         </div>
-                        <button type="submit" class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]" [disabled]="adjustmentSaving()">
+                        <button
+                          type="submit"
+                          class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]"
+                          [disabled]="adjustmentSaving()"
+                        >
                           {{ adjustmentSaving() ? 'Aplicando…' : 'Aplicar' }}
                         </button>
                       </form>
@@ -286,8 +386,15 @@
           </table>
         </div>
         @if (recordsMeta(); as meta) {
-          <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant">
-            <span>Página {{ meta.pageNumber + 1 }} de {{ meta.totalPages || 1 }} ({{ meta.totalElements }} registros)</span>
+          <div
+            class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant"
+          >
+            <span
+              >Página {{ meta.pageNumber + 1 }} de {{ meta.totalPages || 1 }} ({{
+                meta.totalElements
+              }}
+              registros)</span
+            >
             <div class="flex gap-2">
               <button
                 type="button"
@@ -320,10 +427,18 @@
         @if (periodFormError(); as pe) {
           <p class="mb-2 text-sm text-[var(--color-error)]">{{ pe.message }}</p>
         }
-        <form [formGroup]="periodForm" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" (ngSubmit)="submitPeriod()">
+        <form
+          [formGroup]="periodForm"
+          class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          (ngSubmit)="submitPeriod()"
+        >
           <div class="space-y-1">
             <label class="text-xs font-medium" for="pf-freq">Frecuencia</label>
-            <select id="pf-freq" formControlName="frequency" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm">
+            <select
+              id="pf-freq"
+              formControlName="frequency"
+              class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm"
+            >
               @for (opt of frequencyOptions; track opt.value) {
                 <option [value]="opt.value">{{ opt.label }}</option>
               }
@@ -331,14 +446,28 @@
           </div>
           <div class="space-y-1">
             <label class="text-xs font-medium" for="pf-start">Inicio</label>
-            <input id="pf-start" type="date" formControlName="startDate" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
+            <input
+              id="pf-start"
+              type="date"
+              formControlName="startDate"
+              class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm"
+            />
           </div>
           <div class="space-y-1">
             <label class="text-xs font-medium" for="pf-end">Fin</label>
-            <input id="pf-end" type="date" formControlName="endDate" class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm" />
+            <input
+              id="pf-end"
+              type="date"
+              formControlName="endDate"
+              class="w-full rounded-lg bg-surface-container px-3 py-2 text-sm"
+            />
           </div>
           <div class="flex items-end">
-            <button type="submit" class="w-full rounded-lg bg-[var(--color-primary)] py-2.5 text-sm font-bold text-[var(--color-on-primary)]" [disabled]="periodSaving()">
+            <button
+              type="submit"
+              class="w-full rounded-lg bg-[var(--color-primary)] py-2.5 text-sm font-bold text-[var(--color-on-primary)]"
+              [disabled]="periodSaving()"
+            >
               {{ periodSaving() ? 'Guardando…' : 'Crear período' }}
             </button>
           </div>
@@ -352,12 +481,14 @@
         emptyMessage="No hay períodos registrados."
         (retry)="loadPeriods()"
       >
-        <div class="overflow-x-auto rounded-xl border ui-panel">
+        <div class="responsive-table rounded-xl border ui-panel">
           <table class="w-full text-sm" aria-label="Períodos">
             <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">ID</th>
-                <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Frecuencia</th>
+                <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">
+                  Frecuencia
+                </th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Inicio</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Fin</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
@@ -390,7 +521,11 @@
           [value]="filterPaymentEmployeeId"
           (valueChange)="filterPaymentEmployeeId = $event"
         />
-        <button type="button" class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]" (click)="applyPaymentFilters()">
+        <button
+          type="button"
+          class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-[var(--color-on-primary)]"
+          (click)="applyPaymentFilters()"
+        >
           Filtrar
         </button>
       </div>
@@ -401,13 +536,15 @@
         emptyMessage="No hay pagos registrados."
         (retry)="loadPayments()"
       >
-        <div class="overflow-x-auto rounded-xl border ui-panel">
+        <div class="responsive-table responsive-table--wide rounded-xl border ui-panel">
           <table class="w-full min-w-[640px] text-sm" aria-label="Pagos">
             <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">ID</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Empleado</th>
-                <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Periodo laboral</th>
+                <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">
+                  Periodo laboral
+                </th>
                 <th class="px-3 py-3 text-right font-semibold text-on-surface-variant">Neto</th>
                 <th class="px-3 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
               </tr>
@@ -417,7 +554,9 @@
                 <tr>
                   <td class="px-3 py-3 tabular-nums">{{ p.id }}</td>
                   <td class="px-3 py-3">{{ empName(p.employeeId) }}</td>
-                  <td class="px-3 py-3 text-on-surface-variant">{{ formatDate(p.workedDaysStart) }} – {{ formatDate(p.workedDaysEnd) }}</td>
+                  <td class="px-3 py-3 text-on-surface-variant">
+                    {{ formatDate(p.workedDaysStart) }} – {{ formatDate(p.workedDaysEnd) }}
+                  </td>
                   <td class="px-3 py-3 text-right font-medium">{{ formatMXN(p.netAmount) }}</td>
                   <td class="px-3 py-3">{{ paymentStatusLabel(p.status) }}</td>
                 </tr>
@@ -426,11 +565,27 @@
           </table>
         </div>
         @if (paymentsMeta(); as pm) {
-          <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant">
+          <div
+            class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant"
+          >
             <span>Página {{ pm.pageNumber + 1 }} de {{ pm.totalPages || 1 }}</span>
             <div class="flex gap-2">
-              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!pm.hasPrevious" (click)="paymentsPrev()">Anterior</button>
-              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!pm.hasNext" (click)="paymentsNext()">Siguiente</button>
+              <button
+                type="button"
+                class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40"
+                [disabled]="!pm.hasPrevious"
+                (click)="paymentsPrev()"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40"
+                [disabled]="!pm.hasNext"
+                (click)="paymentsNext()"
+              >
+                Siguiente
+              </button>
             </div>
           </div>
         }
@@ -448,7 +603,7 @@
         emptyMessage="No hay adeudos registrados."
         (retry)="loadDebts()"
       >
-        <div class="overflow-x-auto rounded-xl border ui-panel">
+        <div class="responsive-table rounded-xl border ui-panel">
           <table class="w-full text-sm" aria-label="Adeudos">
             <thead class="border-b border-outline-variant/20 bg-surface-container-low">
               <tr>
@@ -473,11 +628,27 @@
           </table>
         </div>
         @if (debtsMeta(); as dm) {
-          <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant">
+          <div
+            class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-on-surface-variant"
+          >
             <span>Página {{ dm.pageNumber + 1 }} de {{ dm.totalPages || 1 }}</span>
             <div class="flex gap-2">
-              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!dm.hasPrevious" (click)="debtsPrev()">Anterior</button>
-              <button type="button" class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40" [disabled]="!dm.hasNext" (click)="debtsNext()">Siguiente</button>
+              <button
+                type="button"
+                class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40"
+                [disabled]="!dm.hasPrevious"
+                (click)="debtsPrev()"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                class="rounded-lg border border-outline-variant/20 px-3 py-1.5 disabled:opacity-40"
+                [disabled]="!dm.hasNext"
+                (click)="debtsNext()"
+              >
+                Siguiente
+              </button>
             </div>
           </div>
         }

@@ -1,0 +1,31 @@
+<div class="flex min-h-screen flex-col bg-background text-on-background">
+  <header class="ui-chrome sticky top-0 z-40 border-b px-4 py-3 sm:px-6 lg:px-8">
+    <div class="mx-auto flex w-full max-w-[80rem] items-center justify-between gap-4">
+      <a routerLink="/" fragment="inicio" class="flex min-w-0 items-center gap-3">
+        <img class="h-9 w-auto" [src]="logoUrl" width="160" height="40" alt="" />
+        <span class="truncate font-headline text-lg font-extrabold text-primary sm:text-xl">Pimienta Alimentos</span>
+      </a>
+      <div class="flex shrink-0 items-center gap-2 sm:gap-4">
+        <app-theme-toggle />
+        <a routerLink="/" fragment="inicio" class="rounded-lg px-3 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container hover:text-on-surface">
+          Inicio
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <ng-content />
+  </main>
+
+  <footer class="ui-chrome border-t px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto flex w-full max-w-[80rem] flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <span class="font-headline font-bold text-on-surface">Pimienta Alimentos</span>
+      <nav class="flex flex-wrap gap-x-4 gap-y-2 text-on-surface-variant" aria-label="Enlaces legales">
+        <a routerLink="/aviso-privacidad" class="hover:text-on-surface hover:underline">Aviso de Privacidad</a>
+        <a routerLink="/terminos-servicio" class="hover:text-on-surface hover:underline">Términos de Servicio</a>
+        <a routerLink="/calidad-higienica" class="hover:text-on-surface hover:underline">Calidad Higiénica</a>
+      </nav>
+    </div>
+  </footer>
+</div>

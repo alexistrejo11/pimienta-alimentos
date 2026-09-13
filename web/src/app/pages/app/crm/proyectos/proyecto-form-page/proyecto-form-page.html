@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-6 p-8">
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     [title]="isEdit ? 'Editar proyecto' : 'Nuevo proyecto'"
     subtitle="CreateProjectRequest / UpdateProjectRequest (PATCH parcial)."
@@ -19,21 +19,23 @@
           @if (err.fieldErrors.length > 0) {
             <ul class="mt-2 list-disc space-y-1 pl-5">
               @for (fe of err.fieldErrors; track fe.field + fe.message) {
-                <li><span class="font-medium">{{ fe.field }}</span>: {{ fe.message }}</li>
+                <li>
+                  <span class="font-medium">{{ fe.field }}</span
+                  >: {{ fe.message }}
+                </li>
               }
             </ul>
           }
         </div>
       }
 
-      <section
-        class="ui-panel p-6"
-        aria-label="Identificación del proyecto"
-      >
+      <section class="ui-panel p-6" aria-label="Identificación del proyecto">
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Identificación</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-code"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-code"
               >Código de proyecto</label
             >
             <input
@@ -43,9 +45,15 @@
               class="w-full rounded-lg border border-transparent bg-stone-100 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-stone-900"
             />
             @if (isEdit) {
-              <p class="ml-1 text-xs text-on-surface-variant">El código no se puede cambiar (no está en UpdateProjectRequest).</p>
+              <p class="ml-1 text-xs text-on-surface-variant">
+                El código no se puede cambiar (no está en UpdateProjectRequest).
+              </p>
             }
-            @if (!isEdit && form.controls.projectCode.touched && form.controls.projectCode.hasError('required')) {
+            @if (
+              !isEdit &&
+              form.controls.projectCode.touched &&
+              form.controls.projectCode.hasError('required')
+            ) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
             @if (apiFieldMessage('projectCode'); as m) {
@@ -54,7 +62,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-name"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-name"
               >Nombre</label
             >
             <input
@@ -63,7 +73,9 @@
               type="text"
               class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
-            @if (form.controls.projectName.touched && form.controls.projectName.hasError('required')) {
+            @if (
+              form.controls.projectName.touched && form.controls.projectName.hasError('required')
+            ) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
           </div>
@@ -76,9 +88,13 @@
             (valueChange)="form.controls.clientId.setValue($event)"
           />
           @if (isEdit) {
-            <p class="text-xs text-on-surface-variant sm:col-span-2">El cliente no se modifica por API de actualización.</p>
+            <p class="text-xs text-on-surface-variant sm:col-span-2">
+              El cliente no se modifica por API de actualización.
+            </p>
           }
-          @if (!isEdit && form.controls.clientId.touched && form.controls.clientId.hasError('required')) {
+          @if (
+            !isEdit && form.controls.clientId.touched && form.controls.clientId.hasError('required')
+          ) {
             <p class="text-xs text-[var(--color-error)] sm:col-span-2">Selecciona un cliente.</p>
           }
           @if (apiFieldMessage('clientId'); as m) {
@@ -96,7 +112,9 @@
           }
 
           <div class="sm:col-span-2 space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-desc"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-desc"
               >Descripción</label
             >
             <textarea
@@ -109,14 +127,15 @@
         </div>
       </section>
 
-      <section
-        class="ui-panel p-6"
-        aria-label="Clasificación y fechas"
-      >
-        <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Clasificación y fechas</h2>
+      <section class="ui-panel p-6" aria-label="Clasificación y fechas">
+        <h2 class="font-headline mb-4 text-base font-bold text-on-surface">
+          Clasificación y fechas
+        </h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-type"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-type"
               >Tipo</label
             >
             <select
@@ -131,7 +150,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-prio"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-prio"
               >Prioridad</label
             >
             <select
@@ -157,7 +178,9 @@
           />
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-ps"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-ps"
               >Inicio planeado</label
             >
             <input
@@ -169,7 +192,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-pe"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-pe"
               >Fin planeado</label
             >
             <input
@@ -182,14 +207,13 @@
         </div>
       </section>
 
-      <section
-        class="ui-panel p-6"
-        aria-label="Financiero"
-      >
+      <section class="ui-panel p-6" aria-label="Financiero">
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Financiero</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-contract"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-contract"
               >Valor contratado</label
             >
             <input
@@ -203,7 +227,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-est"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="pr-est"
               >Costo estimado</label
             >
             <input
@@ -218,7 +244,9 @@
 
           @if (isEdit) {
             <div class="space-y-1.5 sm:col-span-2">
-              <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="pr-prog"
+              <label
+                class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+                for="pr-prog"
                 >Avance % (0–100, solo edición)</label
               >
               <input

@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-6 p-8">
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     [title]="isEdit ? 'Editar oportunidad' : 'Nueva oportunidad'"
     subtitle="Campos obligatorios según la API (CreateOpportunityRequest / UpdateOpportunityRequest)."
@@ -19,21 +19,23 @@
           @if (err.fieldErrors.length > 0) {
             <ul class="mt-2 list-disc space-y-1 pl-5">
               @for (fe of err.fieldErrors; track fe.field + fe.message) {
-                <li><span class="font-medium">{{ fe.field }}</span>: {{ fe.message }}</li>
+                <li>
+                  <span class="font-medium">{{ fe.field }}</span
+                  >: {{ fe.message }}
+                </li>
               }
             </ul>
           }
         </div>
       }
 
-      <section
-        class="ui-panel p-6"
-        aria-label="Datos de la oportunidad"
-      >
+      <section class="ui-panel p-6" aria-label="Datos de la oportunidad">
         <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Oportunidad</h2>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="sm:col-span-2 space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-title"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-title"
               >Título</label
             >
             <input
@@ -51,7 +53,9 @@
           </div>
 
           <div class="sm:col-span-2 space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-desc"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-desc"
               >Descripción</label
             >
             <textarea
@@ -63,7 +67,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-company"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-company"
               >Empresa</label
             >
             <input
@@ -72,7 +78,9 @@
               type="text"
               class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
-            @if (form.controls.companyName.touched && form.controls.companyName.hasError('required')) {
+            @if (
+              form.controls.companyName.touched && form.controls.companyName.hasError('required')
+            ) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
             @if (apiFieldMessage('companyName'); as m) {
@@ -81,7 +89,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-industry"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-industry"
               >Industria</label
             >
             <input
@@ -93,7 +103,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-contact"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-contact"
               >Contacto</label
             >
             <input
@@ -102,13 +114,17 @@
               type="text"
               class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
-            @if (form.controls.contactName.touched && form.controls.contactName.hasError('required')) {
+            @if (
+              form.controls.contactName.touched && form.controls.contactName.hasError('required')
+            ) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-email"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-email"
               >Correo del contacto</label
             >
             <input
@@ -117,16 +133,22 @@
               type="email"
               class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
-            @if (form.controls.contactEmail.touched && form.controls.contactEmail.hasError('required')) {
+            @if (
+              form.controls.contactEmail.touched && form.controls.contactEmail.hasError('required')
+            ) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
-            @if (form.controls.contactEmail.touched && form.controls.contactEmail.hasError('email')) {
+            @if (
+              form.controls.contactEmail.touched && form.controls.contactEmail.hasError('email')
+            ) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Correo no válido.</p>
             }
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-phone"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-phone"
               >Teléfono</label
             >
             <input
@@ -138,7 +160,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-loc"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-loc"
               >Ubicación empresa</label
             >
             <input
@@ -150,7 +174,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-value"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-value"
               >Valor estimado (MXN)</label
             >
             <input
@@ -161,13 +187,18 @@
               min="0"
               class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             />
-            @if (form.controls.estimatedValue.touched && form.controls.estimatedValue.hasError('required')) {
+            @if (
+              form.controls.estimatedValue.touched &&
+              form.controls.estimatedValue.hasError('required')
+            ) {
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-prob"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-prob"
               >Probabilidad % (0–100)</label
             >
             <input
@@ -181,7 +212,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-source"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-source"
               >Fuente</label
             >
             <select
@@ -196,7 +229,9 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="op-close"
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="op-close"
               >Cierre esperado</label
             >
             <input

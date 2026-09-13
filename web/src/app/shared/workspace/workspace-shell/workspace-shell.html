@@ -1,13 +1,52 @@
-<div class="flex min-h-screen bg-surface text-on-surface">
+<div class="flex min-h-screen bg-surface text-on-surface" [class.overflow-hidden]="mobileNavOpen()">
+  <button
+    type="button"
+    class="fixed inset-0 z-40 bg-black/40 transition-opacity lg:hidden"
+    [class.pointer-events-none]="!mobileNavOpen()"
+    [class.opacity-0]="!mobileNavOpen()"
+    [attr.aria-hidden]="!mobileNavOpen()"
+    aria-label="Cerrar navegación"
+    (click)="closeMobileNav()"
+  ></button>
+
   <app-workspace-sidebar
-    (abrirAsistenciaHoy)="mostrarAsistenciaHoy.set(true)"
-    (abrirAsistenciaBusqueda)="mostrarAsistenciaBusqueda.set(true)"
-    (abrirPerfil)="mostrarPerfil.set(true)"
+    [abierta]="mobileNavOpen()"
+    (cerrar)="closeMobileNav()"
+    (abrirAsistenciaHoy)="mobileNavOpen.set(false); mostrarAsistenciaHoy.set(true)"
+    (abrirAsistenciaBusqueda)="mobileNavOpen.set(false); mostrarAsistenciaBusqueda.set(true)"
+    (abrirPerfil)="mobileNavOpen.set(false); mostrarPerfil.set(true)"
   />
-  <div class="ml-64 flex min-h-screen flex-1 flex-col">
-    <div class="flex flex-1 flex-col">
+  <div class="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-64">
+    <header
+      class="ui-chrome sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 lg:hidden"
+    >
+      <div class="flex min-w-0 items-center gap-2">
+        <img
+          class="h-8 w-8 rounded-lg object-contain"
+          [src]="logoUrl"
+          width="32"
+          height="32"
+          alt=""
+        />
+        <span class="truncate font-headline text-base font-extrabold text-primary"
+          >Pimienta Alimentos</span
+        >
+      </div>
+      <button
+        type="button"
+        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition hover:bg-surface-container"
+        [attr.aria-expanded]="mobileNavOpen()"
+        aria-controls="workspace-navigation"
+        aria-label="Abrir navegación"
+        (click)="mobileNavOpen.set(true)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+      </button>
+    </header>
+
+    <main class="flex min-w-0 flex-1 flex-col">
       <router-outlet />
-    </div>
+    </main>
     <app-workspace-footer />
   </div>
 </div>

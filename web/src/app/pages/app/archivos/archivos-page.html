@@ -1,12 +1,18 @@
-<div class="flex flex-col gap-6 p-8">
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     title="Archivos"
     subtitle="Documentos y plantillas de la empresa — PDF, Excel y otros formatos"
   />
 
   @if (profileLoading()) {
-    <div class="flex items-center gap-3 py-16 text-on-surface-variant" role="status" aria-live="polite">
-      <span class="material-symbols-outlined animate-spin text-2xl" aria-hidden="true">progress_activity</span>
+    <div
+      class="flex items-center gap-3 py-16 text-on-surface-variant"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="material-symbols-outlined animate-spin text-2xl" aria-hidden="true"
+        >progress_activity</span
+      >
       <span class="text-sm">Cargando perfil…</span>
     </div>
   } @else {
@@ -37,7 +43,10 @@
         </p>
 
         @if (uploadError(); as ue) {
-          <p class="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
+          <p
+            class="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+            role="alert"
+          >
             {{ ue }}
           </p>
         }
@@ -45,7 +54,10 @@
         <div class="mt-6 grid gap-4 md:grid-cols-2">
           @if (isAdmin()) {
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="up-cat">
+              <label
+                class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+                for="up-cat"
+              >
                 Categoría
               </label>
               <select
@@ -63,7 +75,10 @@
 
             @if (uploadCategory === 'RESOURCE') {
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="up-mod">
+                <label
+                  class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+                  for="up-mod"
+                >
                   Módulo
                 </label>
                 <select
@@ -88,7 +103,10 @@
           }
 
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant" for="up-desc">
+            <label
+              class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              for="up-desc"
+            >
               Descripción (opcional)
             </label>
             <input
@@ -152,14 +170,14 @@
     }
 
     <!-- Filtros -->
-    <section
-      class="ui-panel p-4"
-      aria-label="Filtros de archivos"
-    >
+    <section class="ui-panel p-4" aria-label="Filtros de archivos">
       <div class="flex flex-wrap items-end gap-4">
         @if (isAdmin()) {
           <div class="space-y-1">
-            <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="f-cat">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+              for="f-cat"
+            >
               Categoría
             </label>
             <select
@@ -178,8 +196,14 @@
         }
 
         <div class="space-y-1">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="f-mod">
-            Módulo@if (!isAdmin()) { *}
+          <label
+            class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+            for="f-mod"
+          >
+            Módulo
+            @if (!isAdmin()) {
+              *
+            }
           </label>
           <select
             id="f-mod"
@@ -194,7 +218,10 @@
         </div>
 
         <div class="space-y-1">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="f-name">
+          <label
+            class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+            for="f-name"
+          >
             Nombre contiene
           </label>
           <input
@@ -202,14 +229,17 @@
             type="text"
             [(ngModel)]="filterName"
             [ngModelOptions]="{ standalone: true }"
-            class="w-40 rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 sm:w-40"
             placeholder="reporte"
             autocomplete="off"
           />
         </div>
 
         <div class="space-y-1">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="f-type">
+          <label
+            class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+            for="f-type"
+          >
             Tipo MIME
           </label>
           <input
@@ -217,14 +247,17 @@
             type="text"
             [(ngModel)]="filterContentType"
             [ngModelOptions]="{ standalone: true }"
-            class="w-32 rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 sm:w-32"
             placeholder="pdf"
             autocomplete="off"
           />
         </div>
 
         <div class="space-y-1">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="f-from">
+          <label
+            class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+            for="f-from"
+          >
             Desde
           </label>
           <input
@@ -237,7 +270,10 @@
         </div>
 
         <div class="space-y-1">
-          <label class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]" for="f-to">
+          <label
+            class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]"
+            for="f-to"
+          >
             Hasta
           </label>
           <input
@@ -268,7 +304,7 @@
       emptyMessage="No hay archivos que coincidan con los filtros."
       (retry)="reloadList()"
     >
-      <div class="overflow-x-auto rounded-xl border ui-panel">
+      <div class="responsive-table responsive-table--wide rounded-xl border ui-panel">
         <table class="w-full min-w-[720px] text-sm" aria-label="Lista de archivos">
           <thead class="border-b border-outline-variant/20 bg-surface-container-low">
             <tr>
@@ -298,8 +334,8 @@
       @if (metadata(); as meta) {
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p class="text-sm text-on-surface-variant">
-            Página {{ meta.pageNumber + 1 }} de {{ meta.totalPages || 1 }}
-            · {{ meta.totalElements }} archivo{{ meta.totalElements === 1 ? '' : 's' }}
+            Página {{ meta.pageNumber + 1 }} de {{ meta.totalPages || 1 }} ·
+            {{ meta.totalElements }} archivo{{ meta.totalElements === 1 ? '' : 's' }}
           </p>
           <div class="flex gap-2">
             <button

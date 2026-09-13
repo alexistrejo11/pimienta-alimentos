@@ -1,11 +1,7 @@
-<div class="flex flex-col gap-6 p-8">
-
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <!-- Encabezado de la sección -->
-    <app-page-header
-      title="Empleados"
-      subtitle="Directorio de colaboradores de la empresa"
-    />
+    <app-page-header title="Empleados" subtitle="Directorio de colaboradores de la empresa" />
     <div class="flex flex-wrap items-center gap-3">
       <button
         type="button"
@@ -39,26 +35,34 @@
 
   <!-- Barra de estadísticas: solo visible cuando se cargaron correctamente -->
   @if (stats(); as s) {
-    <div class="grid grid-cols-3 gap-4">
-
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <!-- Total -->
       <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Total</p>
-        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">{{ s.total }}</p>
+        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">
+          {{ s.total }}
+        </p>
       </div>
 
       <!-- Activos -->
-      <div class="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/30">
-        <p class="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-400">Activos</p>
-        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">{{ s.active }}</p>
+      <div
+        class="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/30"
+      >
+        <p class="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-400">
+          Activos
+        </p>
+        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">
+          {{ s.active }}
+        </p>
       </div>
 
       <!-- Inactivos -->
       <div class="ui-panel p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Inactivos</p>
-        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">{{ s.notActive }}</p>
+        <p class="font-headline mt-1 text-3xl font-bold tabular-nums text-on-surface">
+          {{ s.notActive }}
+        </p>
       </div>
-
     </div>
   }
 
@@ -70,7 +74,7 @@
     emptyMessage="No se encontraron empleados registrados."
     (retry)="cargar()"
   >
-    <div class="overflow-x-auto rounded-xl border ui-panel">
+    <div class="responsive-table rounded-xl border ui-panel">
       <table class="w-full text-sm" aria-label="Lista de empleados">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
@@ -79,7 +83,9 @@
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Departamento</th>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Puesto</th>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
-            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Fecha de ingreso</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">
+              Fecha de ingreso
+            </th>
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
@@ -92,5 +98,4 @@
       </table>
     </div>
   </app-data-state>
-
 </div>

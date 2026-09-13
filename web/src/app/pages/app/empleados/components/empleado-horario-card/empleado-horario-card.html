@@ -57,7 +57,7 @@
           <div class="flex items-center gap-3 rounded-lg border border-stone-100 p-3 dark:border-stone-800"
                [class.opacity-50]="!slot.enabled">
             <!-- Toggle día -->
-            <label class="flex cursor-pointer items-center gap-2 min-w-[100px]">
+            <label class="flex min-w-0 cursor-pointer items-center gap-2 sm:min-w-[100px]">
               <input
                 type="checkbox"
                 [(ngModel)]="typedDrafts[i].enabled"

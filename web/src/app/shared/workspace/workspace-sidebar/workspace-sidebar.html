@@ -1,9 +1,13 @@
 <aside
-  class="ui-chrome fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r px-4 py-6 shadow-xl shadow-black/5"
+  id="workspace-navigation"
+  class="ui-chrome pointer-events-none fixed left-0 top-0 z-50 flex h-full w-64 -translate-x-full flex-col border-r px-4 py-6 shadow-xl shadow-black/5 transition-transform duration-200 lg:pointer-events-auto lg:translate-x-0"
+  [class.translate-x-0]="abierta()"
+  [class.pointer-events-none]="!abierta()"
+  [class.pointer-events-auto]="abierta()"
   aria-label="Panel de navegación"
 >
   <!-- Logo y nombre de la empresa -->
-  <div class="mb-8 flex items-center gap-3 px-2">
+  <div class="mb-8 flex items-start gap-3 px-2">
     <img
       class="h-10 w-10 rounded-lg object-contain"
       [src]="logoUrl"
@@ -15,15 +19,24 @@
       <p class="font-headline text-xl font-extrabold leading-tight tracking-tighter text-primary">
         Pimienta Alimentos
       </p>
-      <p class="font-headline text-[10px] font-bold uppercase tracking-tight text-on-surface-variant">
+      <p
+        class="font-headline text-[10px] font-bold uppercase tracking-tight text-on-surface-variant"
+      >
         Precision Kitchen Management
       </p>
     </div>
+    <button
+      type="button"
+      class="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container lg:hidden"
+      aria-label="Cerrar navegación"
+      (click)="cerrar.emit()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
   </div>
 
   <!-- Navegación principal -->
   <nav class="flex flex-grow flex-col space-y-1 overflow-y-auto" aria-label="Secciones">
-
     <!-- Dashboard -->
     <a
       routerLink="/app/dashboard"
@@ -37,7 +50,9 @@
 
     <!-- ── Sección CRM ─────────────────────────────────────── -->
     <div class="pt-4">
-      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
+      <p
+        class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+      >
         CRM
       </p>
 
@@ -62,7 +77,9 @@
 
     <!-- ── Módulos operativos ──────────────────────────────── -->
     <div class="pt-4">
-      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
+      <p
+        class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+      >
         Operaciones
       </p>
 
@@ -106,7 +123,9 @@
     <!-- ── POS (admin / manager) ───────────────────────────── -->
     @if (canAccessPos()) {
       <div class="pt-4">
-        <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
+        <p
+          class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+        >
           Punto de venta
         </p>
 
@@ -199,7 +218,9 @@
 
     <!-- ── Asistencia (acceso rápido global) ──────────────── -->
     <div class="pt-4">
-      <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
+      <p
+        class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+      >
         Asistencia
       </p>
 
@@ -211,7 +232,9 @@
       >
         <span class="material-symbols-outlined" aria-hidden="true">today</span>
         <span class="font-headline font-bold tracking-tight">Hoy</span>
-        <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white">
+        <span
+          class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white"
+        >
           ↗
         </span>
       </button>
@@ -230,7 +253,9 @@
 
   <!-- Acciones y utilidades al fondo -->
   <div class="mt-auto space-y-1 border-t border-outline-variant/10 pt-6">
-    <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
+    <p
+      class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+    >
       Acciones
     </p>
     <a
@@ -249,7 +274,11 @@
       <span class="material-symbols-outlined" aria-hidden="true">folder</span>
       <span class="font-headline font-bold tracking-tight">Archivos</span>
     </a>
-    <button type="button" [class]="navLinkInactive + ' w-full text-left'" (click)="abrirPerfil.emit()">
+    <button
+      type="button"
+      [class]="navLinkInactive + ' w-full text-left'"
+      (click)="abrirPerfil.emit()"
+    >
       <span class="material-symbols-outlined" aria-hidden="true">person</span>
       <span class="font-headline font-bold tracking-tight">Mi perfil</span>
     </button>

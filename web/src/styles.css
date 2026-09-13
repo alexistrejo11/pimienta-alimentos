@@ -122,6 +122,22 @@
     background-color: var(--color-surface-container-low);
   }
 
+  /* Keep wide operational tables inside their panel instead of widening the page. */
+  .responsive-table {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .responsive-table > table {
+    min-width: 42rem;
+  }
+
+  .responsive-table--wide > table {
+    min-width: 45rem;
+  }
+
   .ui-badge-success {
     background-color: color-mix(in srgb, #10b981 18%, var(--color-surface-container));
     color: color-mix(in srgb, #10b981 65%, var(--color-on-surface));

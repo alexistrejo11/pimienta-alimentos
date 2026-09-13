@@ -1,5 +1,4 @@
-<div class="flex flex-col gap-6 p-8">
-
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     [title]="oportunidad()?.title ?? 'Detalle de oportunidad'"
     [subtitle]="oportunidad()?.companyName"
@@ -52,72 +51,92 @@
 
         <!-- Datos principales -->
         <section class="ui-panel p-6">
-          <div class="mb-4 flex items-center justify-between">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 class="font-headline text-base font-bold text-on-surface">Información general</h2>
             <app-status-badge [status]="op.status" kind="opportunity" />
           </div>
 
           <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Empresa</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Empresa
+              </dt>
               <dd class="mt-1 font-semibold text-on-surface">{{ op.companyName }}</dd>
             </div>
 
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Industria</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Industria
+              </dt>
               <dd class="mt-1 text-on-surface">{{ op.industry || '—' }}</dd>
             </div>
 
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Contacto</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Contacto
+              </dt>
               <dd class="mt-1 text-on-surface">{{ op.contactName }}</dd>
             </div>
 
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Correo del contacto</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Correo del contacto
+              </dt>
               <dd class="mt-1 text-on-surface">{{ op.contactEmail }}</dd>
             </div>
 
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Valor estimado</dt>
-              <dd class="font-headline mt-1 text-xl font-bold text-on-surface">{{ formatMXN(op.estimatedValue) }}</dd>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Valor estimado
+              </dt>
+              <dd class="font-headline mt-1 text-xl font-bold text-on-surface">
+                {{ formatMXN(op.estimatedValue) }}
+              </dd>
             </div>
 
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Probabilidad</dt>
-              <dd class="font-headline mt-1 text-xl font-bold text-on-surface">{{ op.probabilityPercent }}%</dd>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Probabilidad
+              </dt>
+              <dd class="font-headline mt-1 text-xl font-bold text-on-surface">
+                {{ op.probabilityPercent }}%
+              </dd>
             </div>
 
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Fuente</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Fuente
+              </dt>
               <dd class="mt-1 text-on-surface">{{ fuente(op.source) }}</dd>
             </div>
 
             <div>
-              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Cierre esperado</dt>
+              <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Cierre esperado
+              </dt>
               <dd class="mt-1 text-on-surface">{{ formatDate(op.expectedCloseDate) }}</dd>
             </div>
 
             @if (op.description) {
               <div class="sm:col-span-2">
-                <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Descripción</dt>
+                <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                  Descripción
+                </dt>
                 <dd class="mt-1 text-on-surface">{{ op.description }}</dd>
               </div>
             }
 
             @if (op.lostReason) {
               <div class="sm:col-span-2">
-                <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Motivo de pérdida</dt>
+                <dt class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                  Motivo de pérdida
+                </dt>
                 <dd class="mt-1 text-red-700 dark:text-red-400">{{ op.lostReason }}</dd>
               </div>
             }
-
           </dl>
         </section>
-
       </div>
     }
   </app-data-state>
-
 </div>

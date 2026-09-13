@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-8 p-10">
+<div class="flex flex-col gap-8 p-4 sm:p-6 lg:p-8">
   <header class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
     <div>
       <h1 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface">
@@ -25,11 +25,14 @@
       @if (posLoading()) {
         <p class="text-on-surface-variant text-sm">Cargando resumen POS…</p>
       } @else if (posError(); as err) {
-        <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40" role="alert">
+        <div
+          class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40"
+          role="alert"
+        >
           {{ err.message }}
         </div>
       } @else if (isAdmin()) {
-        <div class="ui-panel overflow-x-auto">
+        <div class="responsive-table responsive-table--wide ui-panel">
           <table class="w-full text-sm">
             <thead class="ui-panel-muted border-b border-outline-variant/20">
               <tr>
@@ -62,19 +65,27 @@
           <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
             <li class="ui-panel p-5 shadow-sm">
               <p class="text-on-surface-variant text-xs font-medium uppercase">Ventas hoy</p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(row.salesCentavos) }}</p>
+              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">
+                {{ formatCentavos(row.salesCentavos) }}
+              </p>
             </li>
             <li class="ui-panel p-5 shadow-sm">
               <p class="text-on-surface-variant text-xs font-medium uppercase">Tickets</p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ row.ticketCount }}</p>
+              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">
+                {{ row.ticketCount }}
+              </p>
             </li>
             <li class="ui-panel p-5 shadow-sm">
               <p class="text-on-surface-variant text-xs font-medium uppercase">Mermas</p>
               <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ row.wasteCount }}</p>
             </li>
             <li class="ui-panel p-5 shadow-sm">
-              <p class="text-on-surface-variant text-xs font-medium uppercase">Incidencias abiertas</p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ row.openIncidentCount }}</p>
+              <p class="text-on-surface-variant text-xs font-medium uppercase">
+                Incidencias abiertas
+              </p>
+              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">
+                {{ row.openIncidentCount }}
+              </p>
             </li>
           </ul>
         }
@@ -105,14 +116,9 @@
         </button>
       </div>
     } @else if (dashboard(); as dash) {
-      <ul
-        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        role="list"
-      >
+      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
         @for (m of metrics; track m.key) {
-          <li
-            class="ui-panel p-5 shadow-sm"
-          >
+          <li class="ui-panel p-5 shadow-sm">
             <p class="text-on-surface-variant text-xs font-medium uppercase tracking-wide">
               {{ m.label }}
             </p>

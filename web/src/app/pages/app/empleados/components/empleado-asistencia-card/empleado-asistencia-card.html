@@ -1,10 +1,11 @@
 <!-- Tarjeta: historial de asistencia del empleado -->
 <section class="ui-panel p-6" aria-label="Asistencia">
-
   <!-- Encabezado + acciones rápidas -->
   <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-[var(--color-primary)]" aria-hidden="true">fact_check</span>
+      <span class="material-symbols-outlined text-[var(--color-primary)]" aria-hidden="true"
+        >fact_check</span
+      >
       <h2 class="font-headline text-base font-bold text-on-surface">Asistencia</h2>
     </div>
 
@@ -30,7 +31,9 @@
 
   <!-- Formulario de entrada -->
   @if (checkinOpen()) {
-    <div class="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20">
+    <div
+      class="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20"
+    >
       <h3 class="mb-3 text-sm font-bold text-on-surface">Registrar entrada</h3>
       <div class="flex flex-wrap gap-3">
         <app-headquarter-select
@@ -39,7 +42,9 @@
           (valueChange)="onHeadquarterChange($event)"
         />
         <div class="flex flex-col gap-1">
-          <label for="photo-in" class="text-xs font-medium text-green-700 dark:text-green-400">Foto evidencia (opcional)</label>
+          <label for="photo-in" class="text-xs font-medium text-green-700 dark:text-green-400"
+            >Foto evidencia (opcional)</label
+          >
           <input
             id="photo-in"
             type="file"
@@ -51,7 +56,9 @@
       </div>
 
       @if (actionError()) {
-        <p role="alert" class="mt-2 text-xs text-red-700 dark:text-red-400">{{ actionError()!.message }}</p>
+        <p role="alert" class="mt-2 text-xs text-red-700 dark:text-red-400">
+          {{ actionError()!.message }}
+        </p>
       }
 
       <div class="mt-3 flex gap-2">
@@ -63,8 +70,11 @@
         >
           {{ actionLoading() ? 'Registrando…' : 'Confirmar entrada' }}
         </button>
-        <button type="button" (click)="checkinOpen.set(false)"
-          class="rounded-lg border border-outline-variant/20 px-4 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">
+        <button
+          type="button"
+          (click)="checkinOpen.set(false)"
+          class="rounded-lg border border-outline-variant/20 px-4 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container"
+        >
           Cancelar
         </button>
       </div>
@@ -77,7 +87,9 @@
       <h3 class="mb-3 text-sm font-bold text-on-surface">Registrar salida</h3>
       <div class="flex flex-wrap gap-3">
         <div class="flex flex-col gap-1">
-          <label for="photo-out" class="text-xs font-medium text-on-surface-variant">Foto evidencia (opcional)</label>
+          <label for="photo-out" class="text-xs font-medium text-on-surface-variant"
+            >Foto evidencia (opcional)</label
+          >
           <input
             id="photo-out"
             type="file"
@@ -89,7 +101,9 @@
       </div>
 
       @if (actionError()) {
-        <p role="alert" class="mt-2 text-xs text-red-700 dark:text-red-400">{{ actionError()!.message }}</p>
+        <p role="alert" class="mt-2 text-xs text-red-700 dark:text-red-400">
+          {{ actionError()!.message }}
+        </p>
       }
 
       <div class="mt-3 flex gap-2">
@@ -101,8 +115,11 @@
         >
           {{ actionLoading() ? 'Registrando…' : 'Confirmar salida' }}
         </button>
-        <button type="button" (click)="checkoutOpen.set(false)"
-          class="rounded-lg border border-outline-variant/20 px-4 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">
+        <button
+          type="button"
+          (click)="checkoutOpen.set(false)"
+          class="rounded-lg border border-outline-variant/20 px-4 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container"
+        >
           Cancelar
         </button>
       </div>
@@ -111,7 +128,9 @@
 
   <!-- Mensaje de éxito -->
   @if (actionSuccess()) {
-    <p class="mb-3 flex items-center gap-1.5 text-sm font-semibold text-green-700 dark:text-green-400">
+    <p
+      class="mb-3 flex items-center gap-1.5 text-sm font-semibold text-green-700 dark:text-green-400"
+    >
       <span class="material-symbols-outlined text-base" aria-hidden="true">check_circle</span>
       {{ actionSuccess() }}
     </p>
@@ -161,16 +180,28 @@
     emptyMessage="Sin registros de asistencia en el período seleccionado."
     (retry)="cargar()"
   >
-    <div class="overflow-x-auto rounded-xl border border-outline-variant/20">
+    <div class="responsive-table rounded-xl border border-outline-variant/20">
       <table class="w-full text-sm" aria-label="Historial de asistencia">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
-            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Fecha</th>
-            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Entrada</th>
-            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Salida</th>
-            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Tiempo</th>
-            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Estado</th>
-            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">Evidencia</th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">
+              Fecha
+            </th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">
+              Entrada
+            </th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">
+              Salida
+            </th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">
+              Tiempo
+            </th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">
+              Estado
+            </th>
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-on-surface-variant">
+              Evidencia
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant/15">
@@ -178,26 +209,45 @@
             <tr class="hover:bg-surface-container/50">
               <td class="px-4 py-3 font-mono text-xs text-on-surface">{{ r.workDate }}</td>
               <td class="px-4 py-3 text-xs text-on-surface">{{ formatDateTime(r.checkInTime) }}</td>
-              <td class="px-4 py-3 text-xs text-on-surface">{{ formatDateTime(r.checkOutTime) }}</td>
-              <td class="px-4 py-3 text-xs font-semibold text-on-surface">{{ formatMinutes(r.minutesWorked) }}</td>
+              <td class="px-4 py-3 text-xs text-on-surface">
+                {{ formatDateTime(r.checkOutTime) }}
+              </td>
+              <td class="px-4 py-3 text-xs font-semibold text-on-surface">
+                {{ formatMinutes(r.minutesWorked) }}
+              </td>
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" [class]="statusClasses(r.status)">
+                <span
+                  class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  [class]="statusClasses(r.status)"
+                >
                   {{ statusLabel(r.status) }}
                 </span>
               </td>
               <td class="px-4 py-3">
                 <div class="flex gap-2">
                   @if (r.checkInEvidencePhotoUrl) {
-                    <a [href]="r.checkInEvidencePhotoUrl" target="_blank" rel="noopener"
-                      class="inline-flex items-center gap-0.5 text-xs text-[var(--color-primary)] hover:underline">
-                      <span class="material-symbols-outlined text-sm" aria-hidden="true">photo_camera</span>
+                    <a
+                      [href]="r.checkInEvidencePhotoUrl"
+                      target="_blank"
+                      rel="noopener"
+                      class="inline-flex items-center gap-0.5 text-xs text-[var(--color-primary)] hover:underline"
+                    >
+                      <span class="material-symbols-outlined text-sm" aria-hidden="true"
+                        >photo_camera</span
+                      >
                       Entrada
                     </a>
                   }
                   @if (r.checkOutEvidencePhotoUrl) {
-                    <a [href]="r.checkOutEvidencePhotoUrl" target="_blank" rel="noopener"
-                      class="inline-flex items-center gap-0.5 text-xs text-on-surface-variant hover:underline">
-                      <span class="material-symbols-outlined text-sm" aria-hidden="true">photo_camera</span>
+                    <a
+                      [href]="r.checkOutEvidencePhotoUrl"
+                      target="_blank"
+                      rel="noopener"
+                      class="inline-flex items-center gap-0.5 text-xs text-on-surface-variant hover:underline"
+                    >
+                      <span class="material-symbols-outlined text-sm" aria-hidden="true"
+                        >photo_camera</span
+                      >
                       Salida
                     </a>
                   }
@@ -212,5 +262,4 @@
       </table>
     </div>
   </app-data-state>
-
 </section>

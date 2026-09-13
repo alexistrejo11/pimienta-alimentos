@@ -48,6 +48,7 @@ export class Home implements OnInit, AfterViewInit {
 
   readonly navScrolled = signal(false);
   readonly activeSection = signal('inicio');
+  readonly mobileMenuOpen = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
@@ -81,11 +82,16 @@ export class Home implements OnInit, AfterViewInit {
   }
 
   scrollToSection(id: string): void {
+    this.mobileMenuOpen.set(false);
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
     const targetId = id === 'inicio' && !this.showBrandCover ? 'empresa' : id;
     document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen.update((open) => !open);
   }
 
   contactPhoneHref(): string {
