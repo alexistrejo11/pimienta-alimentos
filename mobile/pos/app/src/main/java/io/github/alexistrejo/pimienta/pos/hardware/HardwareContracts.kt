@@ -61,6 +61,11 @@ data class TicketDocument(
     override val totalCentavos: Long,
     override val paymentLabel: String,
     val duplicate: Boolean = false,
+    val siteName: String? = null,
+    val siteAddress: String? = null,
+    val discountCentavos: Long = 0,
+    val tenderedCentavos: Long? = null,
+    val changeCentavos: Long? = null,
 ) : PrintableDocument
 
 // Represents a non-sale operational document such as a withdrawal or close.

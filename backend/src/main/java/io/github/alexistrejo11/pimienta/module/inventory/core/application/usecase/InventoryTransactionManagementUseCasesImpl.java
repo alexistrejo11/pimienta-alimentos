@@ -302,7 +302,7 @@ public class InventoryTransactionManagementUseCasesImpl implements InventoryTran
 
     InventoryTransaction tx = InventoryTransaction.open(
         newTransactionNumber(),
-        TransactionType.PHYSICAL_COUNT,
+        TransactionType.ADJUSTMENT,
         command.externalReference(),
         command.notes(),
         command.initiatedById());
@@ -504,7 +504,7 @@ public class InventoryTransactionManagementUseCasesImpl implements InventoryTran
 
     InventoryTransaction tx = InventoryTransaction.open(
         newTransactionNumber(),
-        TransactionType.PHYSICAL_COUNT,
+        TransactionType.ADJUSTMENT,
         null,
         command.reason(),
         command.performedById());

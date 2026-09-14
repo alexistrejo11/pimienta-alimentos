@@ -121,11 +121,20 @@ public class SecurityConfig {
                                                                                  BASE + "/headquarters/*/pos-catalog",
                                                                                  BASE + "/headquarters/*/pos-catalog/**")
                                                                  .hasAnyRole("ADMIN", "MANAGER")
-                                                                 // POS operators may inspect stock and submit sales, but not inventory administration.
+                                                                 // POS operators may inspect stock only; inventory writes stay with staff roles.
                                                                  .requestMatchers(HttpMethod.GET, BASE + "/inventory/**")
                                                                  .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
                                                                  .requestMatchers(HttpMethod.POST, BASE + "/inventory/transactions/sale")
-                                                                 .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
+                                                                 .hasAnyRole("ADMIN", "MANAGER")
+                                                                 .requestMatchers(
+                                                                                  HttpMethod.POST,
+                                                                                  BASE + "/inventory/transactions/adjustment",
+                                                                                  BASE + "/inventory/transactions/physical-adjustment")
+                                                                 .hasRole("ADMIN")
+                                                                 .requestMatchers(
+                                                                                  HttpMethod.POST,
+                                                                                  BASE + "/inventory/count-sessions/*/approve")
+                                                                 .hasRole("ADMIN")
                                                                  // Managers own CRM, talent, tasks, and HQ-scoped inventory workflows.
                                                                  .requestMatchers(
                                                                                   BASE + "/clients/**",

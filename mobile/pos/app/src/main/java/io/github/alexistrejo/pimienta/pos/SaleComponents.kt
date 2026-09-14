@@ -1,5 +1,6 @@
 package io.github.alexistrejo.pimienta.pos
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -29,12 +30,35 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
+import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.domain.*
+import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterFactory
+import io.github.alexistrejo.pimienta.pos.hardware.printerStatusPresentation
 import java.math.BigDecimal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+// Polls USB printer health for the sale status bar and USB attach events.
+@Composable
+internal fun rememberLivePrinterStatus(context: Context, mode: RuntimeMode): Pair<String, Boolean> {
+    var refresh by remember { mutableIntStateOf(0) }
+    LaunchedEffect(mode) {
+        PosPrinterRegistry.statusTick.collect { refresh++ }
+    }
+    LaunchedEffect(mode) {
+        while (true) {
+            delay(2_000)
+            refresh++
+        }
+    }
+    val presentation = remember(refresh, mode) {
+        printerStatusPresentation(mode, PrinterFactory.printerStatus(context, mode))
+    }
+    return presentation.label to presentation.alert
+}
 
 // Keeps operational status visible without letting a portrait header overflow.
 @Composable
@@ -48,6 +72,9 @@ internal fun StatusBar(
     openManager: () -> Unit,
     openWithdrawal: () -> Unit,
     withdrawalEnabled: Boolean,
+    printerLabel: String,
+    printerAlert: Boolean,
+    scannerLabel: String,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(horizontal = 12.dp, vertical = 8.dp),
@@ -78,7 +105,8 @@ internal fun StatusBar(
             StatusChip("Sin conexión · $pending pendientes")
             StatusChip("Tablet T1")
             StatusChip(if (landscape) "Turno abierto · $cashier" else "Turno abierto")
-            StatusChip("Impresora lista")
+            StatusChip(printerLabel, alert = printerAlert)
+            StatusChip(scannerLabel)
         }
     }
 }
@@ -250,12 +278,15 @@ internal fun LockedCashRegister(
 
 // Displays one small operational status without presenting it as a dashboard card.
 @Composable
-internal fun StatusChip(label: String) {
-    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp)) {
+internal fun StatusChip(label: String, alert: Boolean = false) {
+    val background = if (alert) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
+    val content = if (alert) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+    Surface(color = background, shape = RoundedCornerShape(8.dp)) {
         Text(
             label,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
             style = MaterialTheme.typography.labelMedium,
+            color = content,
             maxLines = 1,
         )
     }

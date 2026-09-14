@@ -477,6 +477,231 @@ class InventoryIntegrationTest {
         .andExpect(jsonPath("$.errorCode").value("ITEM_NOT_FOUND"));
   }
 
+  @Test
+  void managerForbiddenOnRawAdjustment_adminCanAdjust() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    long hq = createHeadquarter(admin.token(), "ADJ-HQ-" + UUID.randomUUID());
+    assignHeadquarters(admin.token(), manager.userId(), hq);
+    putPosSettings(admin.token(), hq);
+
+    long locationId = findPosLocationId(admin.token(), hq);
+    long itemId = createItem(admin.token(), "SKU-ADJ-" + UUID.randomUUID(), "Adjust item");
+    createInitialStock(admin.token(), itemId, locationId, 10);
+
+    String adjustmentBody =
+        """
+            {
+              "lines": [{"itemId": %d, "locationId": %d, "newQuantity": 12, "reason": "Audit fix"}]
+            }
+            """
+            .formatted(itemId, locationId);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson("/api/v1/inventory/transactions/adjustment", adjustmentBody)
+                .header("Authorization", "Bearer " + manager.token()))
+        .andExpect(status().isForbidden());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson("/api/v1/inventory/transactions/adjustment", adjustmentBody)
+                .header("Authorization", "Bearer " + admin.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.type").value("ADJUSTMENT"));
+  }
+
+  @Test
+  void countSession_blindDraft_adminSeesVarianceOnSubmitted_managerCannotApprove() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    long hq = createHeadquarter(admin.token(), "CNT-HQ-" + UUID.randomUUID());
+    assignHeadquarters(admin.token(), manager.userId(), hq);
+    putPosSettings(admin.token(), hq);
+
+    long locationId = findPosLocationId(admin.token(), hq);
+    long itemId = createItem(admin.token(), "SKU-CNT-" + UUID.randomUUID(), "Count item");
+    createInitialStock(admin.token(), itemId, locationId, 8);
+
+    MvcResult openResult =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/inventory/count-sessions",
+                        """
+                        {"locationId": %d, "type": "FULL"}
+                        """
+                            .formatted(locationId))
+                    .header("Authorization", "Bearer " + manager.token()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("DRAFT"))
+            .andExpect(jsonPath("$.responses[0].expectedQuantity").doesNotExist())
+            .andReturn();
+    long sessionId = extractLongId(openResult.getResponse().getContentAsString(), "$.id");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                    "/api/v1/inventory/count-sessions/" + sessionId + "/responses",
+                    """
+                    {"itemId": %d, "countedQuantity": 6}
+                    """
+                        .formatted(itemId))
+                .header("Authorization", "Bearer " + manager.token()))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/inventory/count-sessions/" + sessionId + "/submit", manager.token(), "{}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("SUBMITTED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer("/api/v1/inventory/count-sessions/" + sessionId, manager.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.responses[0].expectedQuantity").doesNotExist())
+        .andExpect(jsonPath("$.responses[0].variance").doesNotExist());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer("/api/v1/inventory/count-sessions/" + sessionId, admin.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.responses[0].expectedQuantity").value(8))
+        .andExpect(jsonPath("$.responses[0].variance").value(-2));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/inventory/count-sessions/" + sessionId + "/approve", manager.token(), "{}"))
+        .andExpect(status().isForbidden());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/inventory/count-sessions/" + sessionId + "/approve", admin.token(), "{}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("APPROVED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/inventory/count-sessions?headquarterId=" + hq + "&page=0&size=20",
+                manager.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value((int) sessionId));
+  }
+
+  private record TokenPair(String token, Long userId) {}
+
+  private TokenPair obtainToken(Set<Role> roles) throws Exception {
+    String email = "it-inv-role-" + UUID.randomUUID() + "@mail.com";
+    String phone =
+        "+52"
+            + String.format(
+                "%010d", Math.abs(ThreadLocalRandom.current().nextLong()) % 10_000_000_000L);
+    String password = "Str0ngPass!";
+    mockMvc
+        .perform(
+            post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(AccountTestRequests.validRegisterJson(email, phone, password)))
+        .andExpect(status().isCreated());
+
+    UserJpaEntity user =
+        userJpaRepository
+            .findByEmailAndDeletedAtIsNull(email)
+            .orElseThrow(() -> new AssertionError("user missing"));
+    user.setAccountStatus(AccountStatus.ACTIVE);
+    user.setRoles(new LinkedHashSet<>(roles));
+    userJpaRepository.saveAndFlush(user);
+
+    MvcResult login =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/auth/login", AccountTestRequests.loginJson(email, password)))
+            .andExpect(status().isOk())
+            .andReturn();
+    return new TokenPair(
+        JsonPath.read(login.getResponse().getContentAsString(), "$.accessToken"), user.getId());
+  }
+
+  private long createHeadquarter(String token, String name) throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJsonBearer(
+                    "/api/v1/headquarters",
+                    token,
+                    """
+                    {"name":"%s","address":"Test 1","description":"INV IT"}
+                    """
+                        .formatted(name)))
+            .andExpect(status().isCreated())
+            .andReturn();
+    return extractLongId(result.getResponse().getContentAsString(), "$.id");
+  }
+
+  private void assignHeadquarters(String adminToken, long userId, long headquarterId)
+      throws Exception {
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/users/management/" + userId + "/headquarters",
+                adminToken,
+                """
+                {"headquarterIds":[%d]}
+                """
+                    .formatted(headquarterId)))
+        .andExpect(status().isOk());
+  }
+
+  private void putPosSettings(String token, long hqId) throws Exception {
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                """
+                {
+                  "currency": "MXN",
+                  "catalogStaleWarnHours": 24,
+                  "catalogStaleBlockHours": 72,
+                  "openAmountCategories": ["MISC"],
+                  "defaultNegativeStockLimit": 10
+                }
+                """))
+        .andExpect(status().isOk());
+  }
+
+  private long findPosLocationId(String token, long hqId) throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(
+                AccountTestRequests.getBearer(
+                    "/api/v1/inventory/locations?type=POS&headquarterId=" + hqId + "&page=0&size=20",
+                    token))
+            .andExpect(status().isOk())
+            .andReturn();
+    return extractLongId(result.getResponse().getContentAsString(), "$.items[0].id");
+  }
+
+  private void createInitialStock(String token, long itemId, long locationId, int quantity)
+      throws Exception {
+    String body =
+        """
+            {"itemId": %d, "locationId": %d, "initialQuantity": %d}
+            """
+            .formatted(itemId, locationId, quantity);
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson("/api/v1/inventory/stock", body)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isCreated());
+  }
+
   private long createWarehouseLocation(String token, String code, String name) throws Exception {
     String body =
         """

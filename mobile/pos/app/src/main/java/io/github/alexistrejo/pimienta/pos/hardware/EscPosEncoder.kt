@@ -17,6 +17,10 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         if (document is TicketDocument && document.duplicate) writeLine(output, "REIMPRESION", centered = true)
         writeLine(output, "Folio: ${folio(document)}")
         writeLine(output, "Fecha: ${document.occurredAt}")
+        if (document is TicketDocument) {
+            document.siteName?.takeIf { it.isNotBlank() }?.let { writeLine(output, it, centered = true) }
+            document.siteAddress?.takeIf { it.isNotBlank() }?.let { writeLine(output, it) }
+        }
         output.write("-".repeat(profile.paperWidth.columns).toByteArray(charset))
         output.write('\n'.code)
         document.lines.forEach { line ->
@@ -25,8 +29,15 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         }
         output.write("-".repeat(profile.paperWidth.columns).toByteArray(charset))
         output.write('\n'.code)
+        if (document is TicketDocument && document.discountCentavos > 0) {
+            writeLine(output, "Descuento -${formatAmount(document.discountCentavos)}")
+        }
         writeLine(output, "TOTAL ${formatAmount(document.totalCentavos)}", bold = true)
         document.paymentLabel?.let { writeLine(output, "Pago: $it") }
+        if (document is TicketDocument && document.tenderedCentavos != null) {
+            writeLine(output, "Recibido ${formatAmount(document.tenderedCentavos)}")
+            document.changeCentavos?.let { writeLine(output, "Cambio ${formatAmount(it)}") }
+        }
         writeLine(output, "Si no te entregamos tu ticket, tu consumo es GRATIS", centered = true)
         output.write(byteArrayOf(0x1B, 0x64, 0x03))
         if (openDrawer && profile.supportsCashDrawer) {

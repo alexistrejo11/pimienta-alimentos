@@ -34,7 +34,7 @@ class PrintWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         fun enqueue(context: Context) {
             WorkManager.getInstance(context).enqueueUniqueWork(
                 UNIQUE_PRINT,
-                ExistingWorkPolicy.KEEP,
+                ExistingWorkPolicy.APPEND_OR_REPLACE,
                 OneTimeWorkRequestBuilder<PrintWorker>()
                     .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                     .build(),

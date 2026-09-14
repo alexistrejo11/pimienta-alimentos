@@ -41,7 +41,7 @@ class UsbPrintTransport(
     }
 
     companion object {
-        private const val ACTION_USB_PERMISSION = "io.github.alexistrejo.pimienta.pos.USB_PERMISSION"
+        const val ACTION_USB_PERMISSION = "io.github.alexistrejo.pimienta.pos.USB_PERMISSION"
 
         // Opens the first compatible USB printer discovered on the bus.
         fun open(context: Context): UsbPrintTransport? {
@@ -58,6 +58,15 @@ class UsbPrintTransport(
             val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
             val device = manager.deviceList.values.firstOrNull(::isPrinterCandidate) ?: return PeripheralStatus.DISCONNECTED
             return if (manager.hasPermission(device)) PeripheralStatus.READY else PeripheralStatus.PERMISSION_REQUIRED
+        }
+
+        // Prompts for USB access when a printer is visible but not yet authorized.
+        fun requestPermissionIfNeeded(context: Context) {
+            val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+            val device = manager.deviceList.values.firstOrNull(::isPrinterCandidate) ?: return
+            if (!manager.hasPermission(device)) {
+                requestPermission(context, manager, device)
+            }
         }
 
         private fun isPrinterCandidate(device: UsbDevice): Boolean {

@@ -1,5 +1,10 @@
 package io.github.alexistrejo.pimienta.pos
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.hardware.usb.UsbManager
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -57,11 +62,15 @@ import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
+import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.FakeBarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.HidKeyboardBarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.MultiplexBarcodeScanner
+import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
+import io.github.alexistrejo.pimienta.pos.hardware.UsbPrintTransport
+import androidx.core.content.ContextCompat
 
 // Identifies the visible panel used by portrait tablets during a draft sale.
 internal enum class PortraitPanel { CATALOG, CART }
@@ -71,6 +80,7 @@ class MainActivity : ComponentActivity() {
     private val hidScanner = HidKeyboardBarcodeScanner()
     private val fakeScanner = FakeBarcodeScanner()
     private val barcodeScanner = MultiplexBarcodeScanner(listOf(hidScanner, fakeScanner))
+    private var usbReceiver: BroadcastReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +88,7 @@ class MainActivity : ComponentActivity() {
         PosScannerRegistry.hid = hidScanner
         PosScannerRegistry.fake = fakeScanner
         PosScannerRegistry.primary = barcodeScanner
+        registerUsbReceiver()
 
         val preferences = getSharedPreferences("pos-demo", MODE_PRIVATE)
 
@@ -97,6 +108,40 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (hidScanner.onKeyEvent(event)) return true
         return super.dispatchKeyEvent(event)
+    }
+
+    override fun onDestroy() {
+        usbReceiver?.let { unregisterReceiver(it) }
+        usbReceiver = null
+        super.onDestroy()
+    }
+
+    // Refreshes printer status and drains queued tickets after USB permission or reconnect.
+    private fun registerUsbReceiver() {
+        val filter = IntentFilter().apply {
+            addAction(UsbPrintTransport.ACTION_USB_PERMISSION)
+            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
+        usbReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                when (intent.action) {
+                    UsbPrintTransport.ACTION_USB_PERMISSION -> {
+                        PosPrinterRegistry.notifyChanged()
+                        if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                            PrintWorker.enqueue(context)
+                        }
+                    }
+                    UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                        PosPrinterRegistry.notifyChanged()
+                        UsbPrintTransport.requestPermissionIfNeeded(context)
+                        PrintWorker.enqueue(context)
+                    }
+                    UsbManager.ACTION_USB_DEVICE_DETACHED -> PosPrinterRegistry.notifyChanged()
+                }
+            }
+        }
+        ContextCompat.registerReceiver(this, usbReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 }
 

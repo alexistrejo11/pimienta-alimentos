@@ -47,7 +47,8 @@ public class InventoryTransaction extends BaseDomain<Long> {
     PURCHASE_RECEIPT, // Recepción de compra
     SALE_DISPATCH, // Despacho por venta
     INTERNAL_TRANSFER, // Transferencia entre ubicaciones
-    PHYSICAL_COUNT, // Conteo físico / ajuste de inventario
+    PHYSICAL_COUNT, // Conteo físico aprobado
+    ADJUSTMENT, // Ajuste directo autorizado (ADMIN)
     RETURN_FROM_CLIENT, // Devolución recibida de cliente
     RETURN_TO_SUPPLIER, // Devolución enviada a proveedor
     PRODUCTION_ISSUE, // Salida para producción

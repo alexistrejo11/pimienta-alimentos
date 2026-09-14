@@ -102,13 +102,23 @@ estados, por lo que Room se actualiza fila por fila.
 
 ## Alcance semántico actual
 
-El servidor guarda cualquier evento recibido en el ledger, pero **solo
-`SALE_CONFIRMED` tiene hoy proyección de negocio completa**: persistencia de
-venta/líneas/pagos, movimiento POS de inventario e incidencia. Los demás
-eventos locales (`SHIFT_*`, merma, reposición, sangría, cancelación,
-reimpresión) pueden reconocerse como ledger, pero no deben anunciarse como
-reportes o proyecciones centrales completas hasta que exista su procesador
-backend y su payload versionado.
+El servidor guarda cualquier evento recibido en el ledger. La proyección de
+existencias centrales aplica solo a:
+
+- **`SALE_CONFIRMED`:** persistencia de venta/líneas/pagos y movimiento POS de
+  inventario para líneas `CONTROLLED`.
+- **`SALE_CANCELLED`:** reversión del movimiento POS asociado a la venta
+  cancelada.
+
+**`WASTE_RECORDED` y `RESTOCK_RECORDED`** se aceptan como entradas de auditoría
+en el ledger (reportes operativos), pero **no modifican** el inventario HQ.
+Mermas oficiales y entradas de stock se registran en la web central
+(`POST /api/v1/inventory/transactions/scrap` y `purchase`).
+
+Los demás eventos locales (`SHIFT_*`, sangría, reimpresión) pueden
+reconocerse como ledger, pero no deben anunciarse como reportes o proyecciones
+centrales completas hasta que exista su procesador backend y su payload
+versionado.
 
 Por eso el primer cliente debe drenar toda la outbox en orden —para no dejar
 huecos ni evidencia pendiente— y mostrar que los eventos no-venta están

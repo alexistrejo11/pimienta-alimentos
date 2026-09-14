@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CashCountAttemptEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CashWithdrawalEntity
-import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
@@ -49,10 +48,11 @@ import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
-import io.github.alexistrejo.pimienta.pos.hardware.PeripheralStatus
+import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PrintableLine
 import io.github.alexistrejo.pimienta.pos.hardware.PrinterFactory
+import io.github.alexistrejo.pimienta.pos.hardware.printerStatusPresentation
 import io.github.alexistrejo.pimienta.pos.hardware.PrintResult
 import java.time.Instant
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
@@ -61,11 +61,12 @@ import io.github.alexistrejo.pimienta.pos.domain.DashboardSummary
 import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 // Describes the local Manager workspace navigation.
-private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte Z"), INVENTORY("Inventario"), HISTORY("Historial"), STATUS("Estado") }
+private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte Z"), HISTORY("Historial"), STATUS("Estado") }
 // Tracks the blind-count workflow before a shift is sealed.
 private enum class CountStage { OPEN, COUNTING, VALIDATION }
 
@@ -178,7 +179,6 @@ private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity, m
     when (section) {
         ManagerSection.DASHBOARD -> DashboardPanel(summary, pendingEvents, modifier)
         ManagerSection.Z_CLOSE -> ZClosePanel(shift, manager, summary, repository, refresh, onShiftClosed, modifier)
-        ManagerSection.INVENTORY -> InventoryPanel(shift, manager, products, repository, refresh, modifier)
         ManagerSection.HISTORY -> HistoryPanel(shift, manager, repository, refresh, modifier)
         ManagerSection.STATUS -> StatusPanel(pendingEvents, products, repository, modifier)
     }
@@ -255,41 +255,6 @@ private fun WithdrawalsPanel(shift: ShiftEntity, repository: PosRepository, modi
     LaunchedEffect(shift.id) { withdrawals = withContext(Dispatchers.IO) { repository.withdrawals(shift.id) } }
     val total = withdrawals.sumOf { it.amountCentavos }
     Surface(modifier, color = MaterialTheme.colorScheme.background) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("Sangrías de resguardo", style = MaterialTheme.typography.headlineSmall); Text("Consulta de solo lectura · se registran desde la barra de caja.", color = MaterialTheme.colorScheme.onSurfaceVariant); MetricTile("Total retirado · ${withdrawals.size} registros", Money.format(total)); if (withdrawals.isEmpty()) EmptySurface("No hay sangrías en este turno.") else withdrawals.forEach { withdrawal -> Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) { Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) { Text("${withdrawal.folio} · ${Money.format(withdrawal.amountCentavos)}", style = MaterialTheme.typography.titleMedium); Text("Cajero ${withdrawal.cashierId} · Autorizó ${withdrawal.authorizedByUserId}", color = MaterialTheme.colorScheme.onSurfaceVariant); Text("Comprobante pendiente de hardware", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } } } } }
-}
-
-// Persists restocks and wastes while keeping the form compact for touch input.
-@Composable
-private fun InventoryPanel(shift: ShiftEntity, manager: LocalUserEntity, products: List<ProductEntity>, repository: PosRepository, refresh: () -> Unit, modifier: Modifier) {
-    var type by remember { mutableStateOf("RESTOCK") }; var selected by remember { mutableStateOf(products.firstOrNull()) }; var quantity by remember { mutableStateOf("") }; var reason by remember { mutableStateOf("") }; var message by remember { mutableStateOf<String?>(null) }; var movements by remember { mutableStateOf(emptyList<InventoryMovementEntity>()) }; val scope = rememberCoroutineScope()
-    LaunchedEffect(shift.id) { movements = withContext(Dispatchers.IO) { repository.recentInventoryMovements() } }
-    Surface(modifier, color = MaterialTheme.colorScheme.background) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Inventario operativo", style = MaterialTheme.typography.headlineSmall); Text("Manager ${manager.displayName} · cambios locales con sincronización pendiente.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { PosButton("Reposición", { type = "RESTOCK" }, selected = type == "RESTOCK", modifier = Modifier.weight(1f)); PosButton("Merma", { type = "WASTE" }, selected = type == "WASTE", modifier = Modifier.weight(1f)) }
-        Text("Producto", style = MaterialTheme.typography.labelLarge); products.take(8).forEach { product -> PosButton(product.name, { selected = product }, selected = selected?.id == product.id, modifier = Modifier.fillMaxWidth()) }
-        Text("Cantidad: ${quantity.ifBlank { "0" }}", style = MaterialTheme.typography.titleLarge); Numpad(quantity, { quantity = it }); OutlinedTextField(reason, { reason = it }, label = { Text("Motivo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        PosButton("Registrar ${if (type == "WASTE") "merma" else "reposición"}", { val product = selected; val count = quantity.toIntOrNull(); if (product == null || count == null || count <= 0 || reason.isBlank()) message = "Selecciona producto, cantidad y motivo." else scope.launch { val saved = withContext(Dispatchers.IO) { repository.recordInventoryMovement(shift, product, count, type, reason) }; message = if (saved) "Movimiento guardado localmente." else "No se pudo guardar el movimiento."; if (saved) { quantity = ""; reason = ""; movements = withContext(Dispatchers.IO) { repository.recentInventoryMovements() }; refresh() } } }, primary = true, modifier = Modifier.fillMaxWidth())
-        message?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        Text("Movimientos recientes", style = MaterialTheme.typography.titleMedium)
-        if (movements.isEmpty()) EmptySurface("Aún no hay reposiciones ni mermas registradas.") else movements.take(8).forEach { movement ->
-            val productName = products.firstOrNull { it.id == movement.productId }?.name ?: "Producto local"
-            Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
-                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(productName, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${movementTypeLabel(movement.movementType)} · ${movement.quantityDelta}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-        Text("Crear productos, precios y disponibilidad se gestiona en Web Central.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
-    } }
-}
-
-// Converts persisted movement codes into cashier-facing Spanish labels.
-private fun movementTypeLabel(type: String): String = when (type) {
-    "WASTE" -> "Merma"
-    "RESTOCK" -> "Reposición"
-    "SALE_CANCELLATION" -> "Cancelación"
-    "SALE" -> "Venta"
-    else -> type
 }
 
 // Displays real tickets from the current shift and queues reprints locally.
@@ -387,7 +352,19 @@ private fun StatusPanel(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val mode = repository.mode()
-    val printerStatus = remember(mode) { PrinterFactory.printerStatus(context, mode) }
+    var printerStatus by remember(mode) { mutableStateOf(PrinterFactory.printerStatus(context, mode)) }
+
+    LaunchedEffect(mode) {
+        PosPrinterRegistry.statusTick.collect {
+            printerStatus = PrinterFactory.printerStatus(context, mode)
+        }
+    }
+    LaunchedEffect(mode) {
+        while (true) {
+            delay(2_000)
+            printerStatus = PrinterFactory.printerStatus(context, mode)
+        }
+    }
 
     fun refreshPrintJobs() {
         scope.launch {
@@ -423,13 +400,8 @@ private fun StatusPanel(
                     Text("${printJobs.value.size} trabajos pendientes · $failed fallidos", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         when (mode) {
-                            RuntimeMode.SANDBOX -> "Impresora fake · perfil POS-5890A 58 mm"
-                            RuntimeMode.PRODUCTION -> when (printerStatus) {
-                                PeripheralStatus.READY -> "Impresora USB lista · POS-5890A"
-                                PeripheralStatus.PERMISSION_REQUIRED -> "Impresora detectada · concede permiso USB"
-                                PeripheralStatus.DISCONNECTED -> "Sin impresora USB conectada"
-                                else -> printerStatus.name
-                            }
+                            RuntimeMode.SANDBOX -> "Impresora simulada · perfil POS-5890A 58 mm"
+                            RuntimeMode.PRODUCTION -> printerStatusPresentation(mode, printerStatus).label
                         },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -49,6 +49,8 @@ internal fun Sale(
     var pendingCatalogBarcode by remember { mutableStateOf<String?>(null) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val mode = repository.mode()
+    val (printerLabel, printerAlert) = rememberLivePrinterStatus(context, mode)
 
     LaunchedEffect(Unit) {
         pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
@@ -120,7 +122,13 @@ internal fun Sale(
         scanner ?: return@LaunchedEffect
         scanner.start()
         scanner.events.collect { read ->
-            if (busy || checkout) return@collect
+            if (busy) return@collect
+            if (checkout) {
+                checkout = false
+                paymentMethodDraft = PaymentMethod.CASH
+                tenderedDraft = ""
+                portraitPanel = PortraitPanel.CART
+            }
             val code = read.rawValue.trim()
             if (code.isBlank()) return@collect
             val product = withContext(Dispatchers.IO) { repository.findProductByCode(code) }
@@ -188,6 +196,9 @@ internal fun Sale(
                 openManager = { managerAccessRequested = true },
                 openWithdrawal = { withdrawalRequested = true },
                 withdrawalEnabled = !checkout && !busy,
+                printerLabel = printerLabel,
+                printerAlert = printerAlert,
+                scannerLabel = "Lector HID",
             )
             SaleCompleted(completedFolio) { folio ->
                 if (completedFolio == folio) completedFolio = null

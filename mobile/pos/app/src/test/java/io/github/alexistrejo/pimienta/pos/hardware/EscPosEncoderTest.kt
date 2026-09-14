@@ -1,7 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.hardware
 
-import java.time.Instant
 import java.nio.charset.Charset
+import java.time.Instant
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -14,8 +14,13 @@ class EscPosEncoderTest {
             folio = "T1-001-0001",
             occurredAt = Instant.parse("2026-09-10T12:00:00Z"),
             lines = listOf(PrintableLine("Jugo de piña", "1", 1250)),
-            totalCentavos = 1250,
-            paymentLabel = "CASH",
+            totalCentavos = 1150,
+            paymentLabel = "Efectivo",
+            siteName = "Comedor Centro",
+            siteAddress = "Av. Principal 123",
+            discountCentavos = 100,
+            tenderedCentavos = 2000,
+            changeCentavos = 850,
         )
 
         val profile = PrinterProfiles.pos5890A
@@ -24,6 +29,11 @@ class EscPosEncoderTest {
 
         assertTrue(bytes.take(3).toByteArray().contentEquals(byteArrayOf(0x1B, 0x40, 0x1B)))
         assertTrue(text.contains("Jugo de piña"))
+        assertTrue(text.contains("Comedor Centro"))
+        assertTrue(text.contains("Descuento"))
+        assertTrue(text.contains("Pago: Efectivo"))
+        assertTrue(text.contains("Recibido"))
+        assertTrue(text.contains("Cambio"))
         assertTrue(bytes.toList().contains(0x1D.toByte()))
         assertTrue(bytes.toList().contains(0x70.toByte()))
     }

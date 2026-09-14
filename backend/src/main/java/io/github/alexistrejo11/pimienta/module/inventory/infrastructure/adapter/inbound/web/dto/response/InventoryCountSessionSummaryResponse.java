@@ -1,0 +1,18 @@
+package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response;
+
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryCountSession.CountType;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryCountSession.Status;
+import java.time.LocalDateTime;
+
+public record InventoryCountSessionSummaryResponse(
+    Long id,
+    Long locationId,
+    CountType type,
+    Status status,
+    Long createdById,
+    Long submittedById,
+    Long approvedById,
+    LocalDateTime createdAt,
+    LocalDateTime submittedAt,
+    LocalDateTime approvedAt,
+    LocalDateTime cancelledAt) {}

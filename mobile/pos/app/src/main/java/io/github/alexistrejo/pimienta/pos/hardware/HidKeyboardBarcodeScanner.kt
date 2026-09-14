@@ -11,19 +11,19 @@ import kotlinx.coroutines.flow.asStateFlow
 class HidKeyboardBarcodeScanner : BarcodeScanner {
     private val _status = MutableStateFlow(PeripheralStatus.READY)
     private val _events = MutableSharedFlow<BarcodeRead>(extraBufferCapacity = 32)
-    private val buffer = StringBuilder()
+    private val burst = HidScanBurstHelper()
 
     override val status: Flow<PeripheralStatus> = _status.asStateFlow()
     override val events: Flow<BarcodeRead> = _events.asSharedFlow()
 
-    // Consumes key events from the activity before they reach focused text fields.
+    // Consumes only fast wedge bursts so slow typing can reach Compose search fields.
     fun onKeyEvent(event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN) return false
+        val now = System.currentTimeMillis()
         return when (event.keyCode) {
             KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                val code = buffer.toString().trim()
-                buffer.clear()
-                if (code.isNotEmpty()) {
+                val code = burst.onEnter()
+                if (code != null) {
                     _events.tryEmit(BarcodeRead(code, ScannerSource.USB_HID))
                     true
                 } else {
@@ -33,8 +33,7 @@ class HidKeyboardBarcodeScanner : BarcodeScanner {
             else -> {
                 val char = event.unicodeChar.toChar()
                 if (char.isLetterOrDigit() || char in "-._/") {
-                    buffer.append(char)
-                    true
+                    burst.onCharacter(char, now)
                 } else {
                     false
                 }
@@ -43,12 +42,12 @@ class HidKeyboardBarcodeScanner : BarcodeScanner {
     }
 
     override suspend fun start() {
-        buffer.clear()
+        burst.reset()
         _status.value = PeripheralStatus.READY
     }
 
     override suspend fun stop() {
-        buffer.clear()
+        burst.reset()
         _status.value = PeripheralStatus.DISCONNECTED
     }
 }

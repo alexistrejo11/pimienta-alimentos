@@ -11,7 +11,11 @@ object PrinterFactory {
     fun create(context: Context, mode: RuntimeMode): TicketPrinter {
         return when (mode) {
             RuntimeMode.SANDBOX -> FakeTicketPrinter(profile = PrinterProfiles.pos5890A)
-            RuntimeMode.PRODUCTION -> UsbTicketPrinter.open(context) ?: UnavailableTicketPrinter
+            RuntimeMode.PRODUCTION -> UsbTicketPrinter.open(context)
+                ?: when (UsbTicketPrinter.status(context)) {
+                    PeripheralStatus.PERMISSION_REQUIRED -> PermissionPendingTicketPrinter
+                    else -> UnavailableTicketPrinter
+                }
         }
     }
 
@@ -23,9 +27,16 @@ object PrinterFactory {
     }
 }
 
-// Makes production failures explicit until a physical printer adapter is installed.
+// Makes a missing USB printer explicit so the sale still queues a durable print job.
 private object UnavailableTicketPrinter : TicketPrinter {
     override val profile: PrinterProfile = PrinterProfiles.pos5890A
     override val status: Flow<PeripheralStatus> = MutableStateFlow(PeripheralStatus.DISCONNECTED)
     override suspend fun print(bytes: ByteArray): PrintResult = PrintResult.Failed(PrintFailure.NO_PRINTER)
+}
+
+// Avoids treating a visible printer as missing while Android is still asking for USB permission.
+private object PermissionPendingTicketPrinter : TicketPrinter {
+    override val profile: PrinterProfile = PrinterProfiles.pos5890A
+    override val status: Flow<PeripheralStatus> = MutableStateFlow(PeripheralStatus.PERMISSION_REQUIRED)
+    override suspend fun print(bytes: ByteArray): PrintResult = PrintResult.Failed(PrintFailure.PERMISSION_REQUIRED)
 }

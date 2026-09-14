@@ -9,6 +9,7 @@ import io.github.alexistrejo.pimienta.pos.hardware.PrintableLine
 import io.github.alexistrejo.pimienta.pos.hardware.TicketDocument
 import io.github.alexistrejo.pimienta.pos.hardware.TicketPrinter
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
+import io.github.alexistrejo.pimienta.pos.hardware.spanishPaymentLabel
 import java.time.Instant
 
 // Processes one durable print job without changing the sale or payment records.
@@ -40,14 +41,21 @@ class PrintJobProcessor(
         val document = when (job.documentType) {
             "SALE" -> {
                 val sale = dao.sale(job.saleId) ?: return PrintResult.Failed(PrintFailure.UNSUPPORTED)
+                val site = database.siteDao().current()
+                val isCash = sale.paymentMethod == "CASH"
                 TicketDocument(
                     title = "Ticket de compra",
                     folio = sale.folio,
                     occurredAt = Instant.ofEpochMilli(sale.confirmedAtEpochMillis),
                     lines = dao.linesForSale(sale.id).map { PrintableLine(it.productName, it.quantity.toString(), it.subtotalCentavos) },
                     totalCentavos = sale.totalCentavos,
-                    paymentLabel = sale.paymentMethod,
+                    paymentLabel = spanishPaymentLabel(sale.paymentMethod),
                     duplicate = job.duplicate,
+                    siteName = site?.name,
+                    siteAddress = site?.address,
+                    discountCentavos = sale.discountCentavos,
+                    tenderedCentavos = if (isCash) sale.tenderedCentavos else null,
+                    changeCentavos = if (isCash) sale.changeCentavos else null,
                 )
             }
             "CASH_WITHDRAWAL" -> {
