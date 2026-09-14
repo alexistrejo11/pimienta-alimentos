@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosPaymentMethod;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStockPolicy;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosSaleJpaEntity;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosSaleLineJpaEntity;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosSalePaymentJpaEntity;
@@ -26,6 +27,7 @@ public final class PosSalePersistenceMapper {
         lines.add(
             new PosSale.Line(
                 line.getLineId(),
+                line.getLineType(),
                 line.getProductId(),
                 line.getProductName(),
                 line.getSaleCategory(),
@@ -36,7 +38,9 @@ public final class PosSalePersistenceMapper {
                 line.getStockPolicy(),
                 line.isSoldWithNegativeStock(),
                 line.isSoldWhileUnavailable(),
-                line.getRawBarcode()));
+                line.getRawBarcode(),
+                line.getAuthorizedByOperatorId(),
+                line.getAuthorizedAt()));
       }
     }
     List<PosSale.Payment> payments = new ArrayList<>();
@@ -99,6 +103,7 @@ public final class PosSalePersistenceMapper {
       PosSaleLineJpaEntity le = new PosSaleLineJpaEntity();
       le.setSale(e);
       le.setLineId(line.lineId());
+      le.setLineType(line.lineType() != null ? line.lineType() : PosSaleLineType.CATALOG);
       le.setProductId(line.productId());
       le.setProductName(line.productName() != null ? line.productName() : "");
       le.setSaleCategory(blankToNull(line.saleCategory()));
@@ -111,6 +116,8 @@ public final class PosSalePersistenceMapper {
       le.setSoldWithNegativeStock(line.soldWithNegativeStock());
       le.setSoldWhileUnavailable(line.soldWhileUnavailable());
       le.setRawBarcode(blankToNull(line.rawBarcode()));
+      le.setAuthorizedByOperatorId(line.authorizedByOperatorId());
+      le.setAuthorizedAt(line.authorizedAt());
       le.setCreatedAt(now);
       le.setUpdatedAt(now);
       le.setVersion(null);

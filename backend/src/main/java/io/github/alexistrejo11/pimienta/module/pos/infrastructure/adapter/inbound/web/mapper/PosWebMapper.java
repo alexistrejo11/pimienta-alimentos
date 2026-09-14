@@ -8,6 +8,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.application.command.Upda
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosEnrollmentCode;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncEvent;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncIncident;
@@ -61,6 +62,7 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inboun
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -141,8 +143,9 @@ public final class PosWebMapper {
           Map<String, Object> line = (Map<String, Object>) m;
           lines.add(
               new SaleLinePayload(
-                  parseUuid(line.get("lineId")),
-                  parseLong(line.get("productId")),
+                   parseUuid(line.get("lineId")),
+                   parseLineType(line.get("lineType")),
+                   parseLong(line.get("productId")),
                   asString(line.get("productName")),
                   asString(line.get("saleCategory")),
                   parseInt(line.get("quantity"), 0),
@@ -152,7 +155,9 @@ public final class PosWebMapper {
                   asString(line.get("stockPolicy")),
                   parseBoolean(line.get("soldWithNegativeStock")),
                   parseBoolean(line.get("soldWhileUnavailable")),
-                  asString(line.get("rawBarcode"))));
+                   asString(line.get("rawBarcode")),
+                   parseLong(line.get("authorizedByOperatorId")),
+                   parseInstant(line.get("authorizedAt"))));
         }
       }
     }
@@ -191,6 +196,28 @@ public final class PosWebMapper {
     try {
       return UUID.fromString(String.valueOf(value));
     } catch (IllegalArgumentException ex) {
+      return null;
+    }
+  }
+
+  private static PosSaleLineType parseLineType(Object value) {
+    if (value == null) {
+      return PosSaleLineType.CATALOG;
+    }
+    try {
+      return PosSaleLineType.valueOf(String.valueOf(value).strip());
+    } catch (IllegalArgumentException ex) {
+      return PosSaleLineType.CATALOG;
+    }
+  }
+
+  private static Instant parseInstant(Object value) {
+    if (value == null) {
+      return null;
+    }
+    try {
+      return Instant.parse(String.valueOf(value));
+    } catch (RuntimeException ex) {
       return null;
     }
   }
@@ -377,7 +404,9 @@ public final class PosWebMapper {
         sale.getDiscountCentavos(),
         sale.getTotalCentavos(),
         sale.getStatus().name(),
-        sale.getOccurredAt());
+         sale.getOccurredAt(),
+         sale.getLines().stream().anyMatch(line -> line.lineType() == io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType.OPEN_AMOUNT),
+         sale.getLines().stream().map(PosSaleReportResponse.PosSaleLineReportResponse::from).toList());
   }
 
   public static PosProductReportResponse toProductReportResponse(PosProductReportRow row) {
@@ -429,6 +458,7 @@ public final class PosWebMapper {
         snapshot.openAmountCategories(),
         new PosBootstrapPoliciesResponse(
             snapshot.policies().allowNegativeStock(),
+            snapshot.policies().allowOpenProducts(),
             snapshot.policies().defaultNegativeStockLimit(),
             snapshot.policies().staleCatalogWarnHours(),
             snapshot.policies().staleCatalogBlockHours()),
@@ -468,6 +498,7 @@ public final class PosWebMapper {
       data =
           new PosSyncPoliciesDataResponse(
               pol.allowNegativeStock(),
+              pol.allowOpenProducts(),
               pol.defaultNegativeStockLimit(),
               pol.staleCatalogWarnHours(),
               pol.staleCatalogBlockHours(),

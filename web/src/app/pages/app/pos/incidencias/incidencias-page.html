@@ -26,8 +26,8 @@
           @for (inc of incidents(); track inc.id) {
             <tr>
               <td class="px-4 py-3">{{ hqName(inc.headquarterId) }}</td>
-              <td class="px-4 py-3">{{ inc.reasonCode }}</td>
-              <td class="px-4 py-3 max-w-xs truncate">{{ inc.detail }}</td>
+              <td class="px-4 py-3">@if (inc.reasonCode.startsWith('OPEN_PRODUCT')) { <span class="ui-badge-warning">Producto abierto</span> } @else { {{ inc.reasonCode }} }</td>
+              <td class="px-4 py-3 max-w-xs truncate" title="{{ inc.detail }}">{{ inc.detail }}</td>
               <td class="px-4 py-3">{{ inc.createdAt | date: 'short' }}</td>
               <td class="px-4 py-3 text-right">
                 <button

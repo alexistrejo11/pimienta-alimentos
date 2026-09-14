@@ -178,6 +178,22 @@ class PosSyncEventsIntegrationTest {
         .andExpect(jsonPath("$.errorCode").value("POS_DEVICE_REVOKED"));
   }
 
+  @Test
+  void openAmount_enabledWithManager_isAuditedAndDoesNotMoveInventory() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-OPEN-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId, true);
+    long itemId = createItem(staffToken, "SKU-OPEN-" + UUID.randomUUID(), "Open seed");
+    long managerId = createOperator(staffToken, hqId, "Manager Open", "MANAGER");
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Open");
+
+    String body = openSaleEventJson(device, hqId, UUID.randomUUID(), UUID.randomUUID(), itemId, managerId);
+    mockMvc.perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"))
+        .andExpect(jsonPath("$.results[0].message").value(org.hamcrest.Matchers.containsString("OPEN_PRODUCT")));
+  }
+
   private Inventory stockAtPos(long hqId, long itemId) {
     var loc = posLocationUseCases.findPosLocation(hqId).orElseThrow();
     return inventoryRepository
@@ -292,6 +308,10 @@ class PosSyncEventsIntegrationTest {
   }
 
   private long createOperator(String staffToken, long hqId, String name) throws Exception {
+    return createOperator(staffToken, hqId, name, "CASHIER");
+  }
+
+  private long createOperator(String staffToken, long hqId, String name, String role) throws Exception {
     MvcResult r =
         mockMvc
             .perform(
@@ -301,12 +321,12 @@ class PosSyncEventsIntegrationTest {
                     """
                     {
                       "displayName": "%s",
-                      "posRole": "CASHIER",
+                      "posRole": "%s",
                       "pin": "1234",
                       "headquarterIds": [%d]
                     }
                     """
-                        .formatted(name, hqId)))
+                        .formatted(name, role, hqId)))
             .andExpect(status().isOk())
             .andReturn();
     Number n = JsonPath.read(r.getResponse().getContentAsString(), "$.id");
@@ -327,6 +347,10 @@ class PosSyncEventsIntegrationTest {
   }
 
   private void putPosSettings(String token, long hqId) throws Exception {
+    putPosSettings(token, hqId, false);
+  }
+
+  private void putPosSettings(String token, long hqId, boolean allowOpenProducts) throws Exception {
     String body =
         """
         {
@@ -334,14 +358,27 @@ class PosSyncEventsIntegrationTest {
           "catalogStaleWarnHours": 24,
           "catalogStaleBlockHours": 72,
           "openAmountCategories": ["MISC"],
+          "allowOpenProducts": %s,
           "defaultNegativeStockLimit": 10
         }
-        """;
+        """.formatted(allowOpenProducts);
     mockMvc
         .perform(
             AccountTestRequests.putJsonBearer(
                 "/api/v1/headquarters/" + hqId + "/pos-settings", token, body))
         .andExpect(status().isOk());
+  }
+
+  private String openSaleEventJson(
+      EnrolledDevice device, long siteId, UUID eventId, UUID saleId, long seedProductId, long authorizerId)
+      throws Exception {
+    String body = saleEventJson(device, siteId, eventId, saleId, seedProductId, authorizerId, 1, 4000, false);
+    return body
+        .replace("\"productId\": \"" + seedProductId + "\"", "\"lineType\": \"OPEN_AMOUNT\",\n                     \"productId\": null")
+        .replace("\"productName\": \"Producto\"", "\"productName\": \"Producto abierto · MISC\"")
+        .replace("\"saleCategory\": \"Bebidas\"", "\"saleCategory\": \"MISC\"")
+        .replace("\"stockPolicy\": \"CONTROLLED\"", "\"stockPolicy\": \"NOT_CONTROLLED\"")
+        .replace("\"rawBarcode\": null", "\"rawBarcode\": null,\n                     \"authorizedByOperatorId\": " + authorizerId + ",\n                     \"authorizedAt\": \"2026-09-14T17:00:00Z\"");
   }
 
   private void putCatalog(

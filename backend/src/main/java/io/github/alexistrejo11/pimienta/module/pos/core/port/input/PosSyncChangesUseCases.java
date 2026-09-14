@@ -41,6 +41,7 @@ public interface PosSyncChangesUseCases {
 
   record PoliciesData(
       boolean allowNegativeStock,
+      boolean allowOpenProducts,
       Integer defaultNegativeStockLimit,
       int staleCatalogWarnHours,
       int staleCatalogBlockHours,

@@ -10,4 +10,8 @@ public record PosReportSummaryRow(
     long cancellationCount,
     Instant lastShiftClosedAt,
     long openIncidentCount,
-    long deviceCount) {}
+    long deviceCount,
+    long openProductCentavos,
+    long openProductLineCount,
+    long openProductTicketCount,
+    long openProductPendingReviewCount) {}

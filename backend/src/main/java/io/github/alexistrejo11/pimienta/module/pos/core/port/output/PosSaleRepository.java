@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.pos.core.port.output;
 
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosProductReportRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosSalesSummary;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosOpenProductSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosReportFilterQuery;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
 import java.time.Instant;
@@ -23,4 +24,6 @@ public interface PosSaleRepository {
   Page<PosProductReportRow> findAcceptedProductTotals(PosReportFilterQuery filter, Pageable pageable);
 
   PosSalesSummary summarizeAcceptedSales(long headquarterId, Instant from, Instant to);
+
+  PosOpenProductSummary summarizeOpenProducts(long headquarterId, Instant from, Instant to);
 }

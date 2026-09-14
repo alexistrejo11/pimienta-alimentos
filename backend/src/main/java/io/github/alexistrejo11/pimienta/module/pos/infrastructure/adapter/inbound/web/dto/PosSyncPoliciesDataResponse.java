@@ -8,6 +8,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PosSyncPoliciesDataResponse(
     boolean allowNegativeStock,
+    boolean allowOpenProducts,
     Integer defaultNegativeStockLimit,
     int staleCatalogWarnHours,
     int staleCatalogBlockHours,

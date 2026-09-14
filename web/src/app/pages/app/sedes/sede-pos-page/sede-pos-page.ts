@@ -60,6 +60,7 @@ export class SedePosPageComponent implements OnInit {
     catalogStaleWarnHours: [24, [Validators.required, Validators.min(1)]],
     catalogStaleBlockHours: [72, [Validators.required, Validators.min(1)]],
     openAmountCategories: [''],
+    allowOpenProducts: [false],
     defaultNegativeStockLimit: [null as number | null],
   });
 
@@ -103,6 +104,7 @@ export class SedePosPageComponent implements OnInit {
           catalogStaleWarnHours: s.catalogStaleWarnHours,
           catalogStaleBlockHours: s.catalogStaleBlockHours,
           openAmountCategories: (s.openAmountCategories ?? []).join(', '),
+          allowOpenProducts: s.allowOpenProducts,
           defaultNegativeStockLimit: s.defaultNegativeStockLimit,
         });
       },
@@ -149,6 +151,7 @@ export class SedePosPageComponent implements OnInit {
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean),
+        allowOpenProducts: v.allowOpenProducts,
         defaultNegativeStockLimit: v.defaultNegativeStockLimit,
       })
       .pipe(finalize(() => this.savingSettings.set(false)))

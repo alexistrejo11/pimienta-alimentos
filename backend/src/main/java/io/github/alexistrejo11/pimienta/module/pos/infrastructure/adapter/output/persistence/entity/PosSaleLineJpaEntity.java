@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity;
 
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStockPolicy;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -30,6 +31,10 @@ public class PosSaleLineJpaEntity {
 
   @Column(name = "line_id", nullable = false)
   private UUID lineId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "line_type", nullable = false, length = 32)
+  private PosSaleLineType lineType;
 
   @Column(name = "product_id")
   private Long productId;
@@ -64,6 +69,12 @@ public class PosSaleLineJpaEntity {
 
   @Column(name = "raw_barcode", length = 128)
   private String rawBarcode;
+
+  @Column(name = "authorized_by_operator_id")
+  private Long authorizedByOperatorId;
+
+  @Column(name = "authorized_at")
+  private java.time.Instant authorizedAt;
 
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
@@ -101,6 +112,9 @@ public class PosSaleLineJpaEntity {
   public void setLineId(UUID lineId) {
     this.lineId = lineId;
   }
+
+  public PosSaleLineType getLineType() { return lineType; }
+  public void setLineType(PosSaleLineType lineType) { this.lineType = lineType; }
 
   public Long getProductId() {
     return productId;
@@ -189,6 +203,11 @@ public class PosSaleLineJpaEntity {
   public void setRawBarcode(String rawBarcode) {
     this.rawBarcode = rawBarcode;
   }
+
+  public Long getAuthorizedByOperatorId() { return authorizedByOperatorId; }
+  public void setAuthorizedByOperatorId(Long id) { this.authorizedByOperatorId = id; }
+  public java.time.Instant getAuthorizedAt() { return authorizedAt; }
+  public void setAuthorizedAt(java.time.Instant at) { this.authorizedAt = at; }
 
   public LocalDateTime getCreatedAt() {
     return createdAt;

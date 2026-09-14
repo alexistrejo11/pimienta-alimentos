@@ -29,6 +29,12 @@ export class VentasPageComponent implements OnInit {
   selectedHeadquarterId: number | null = null;
   dateFrom = '';
   dateTo = '';
+  openProductsOnly = false;
+  readonly expandedSaleId = signal<string | null>(null);
+
+  toggleDetails(saleId: string): void {
+    this.expandedSaleId.update(current => current === saleId ? null : saleId);
+  }
   private initialLoad = true;
 
   ngOnInit(): void {
@@ -66,7 +72,7 @@ export class VentasPageComponent implements OnInit {
     const to = `${this.dateTo}T23:59:59.999Z`;
 
     this.posAdmin
-      .reportSales({ headquarterId: hqId, from, to, page: 0, size: 50 })
+       .reportSales({ headquarterId: hqId, from, to, openProductsOnly: this.openProductsOnly, page: 0, size: 50 })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (page) => this.sales.set(page.items),

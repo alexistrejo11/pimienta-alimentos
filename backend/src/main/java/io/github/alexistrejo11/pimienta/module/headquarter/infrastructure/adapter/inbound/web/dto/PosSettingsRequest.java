@@ -11,4 +11,5 @@ public record PosSettingsRequest(
     @Min(1) @Schema(example = "24") Integer catalogStaleWarnHours,
     @Min(1) @Schema(example = "72") Integer catalogStaleBlockHours,
     @Schema(example = "[\"MISC\", \"SERVICE\"]") List<String> openAmountCategories,
+    @Schema(example = "true") Boolean allowOpenProducts,
     @Schema(example = "10") Integer defaultNegativeStockLimit) {}

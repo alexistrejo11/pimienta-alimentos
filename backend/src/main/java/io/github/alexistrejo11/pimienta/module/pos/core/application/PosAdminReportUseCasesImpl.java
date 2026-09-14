@@ -77,6 +77,7 @@ public class PosAdminReportUseCasesImpl implements PosAdminReportUseCases {
     List<PosReportSummaryRow> rows = new ArrayList<>(hqIds.size());
     for (Long hqId : hqIds) {
       PosSalesSummary sales = saleRepository.summarizeAcceptedSales(hqId, from, to);
+      PosOpenProductSummary openProducts = saleRepository.summarizeOpenProducts(hqId, from, to);
       long wasteCount =
           eventRepository.countAcceptedByEventType(hqId, from, to, "WASTE_RECORDED");
       long cancellationCount =
@@ -92,7 +93,11 @@ public class PosAdminReportUseCasesImpl implements PosAdminReportUseCases {
               cancellationCount,
               lastShiftClosedAt,
               incidentRepository.countOpenByHeadquarterId(hqId),
-              deviceRepository.countByHeadquarterId(hqId)));
+               deviceRepository.countByHeadquarterId(hqId),
+               openProducts.openProductCentavos(),
+               openProducts.openProductLineCount(),
+               openProducts.openProductTicketCount(),
+               openProducts.openProductPendingReviewCount()));
     }
     return List.copyOf(rows);
   }

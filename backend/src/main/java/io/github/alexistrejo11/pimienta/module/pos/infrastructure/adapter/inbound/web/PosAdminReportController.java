@@ -6,6 +6,7 @@ import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosReportFilterQuery;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosAdminReportUseCases;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosAdminReports;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosReportProducts;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosReportSales;
@@ -65,11 +66,13 @@ public class PosAdminReportController {
       @RequestParam Instant from,
       @RequestParam Instant to,
       @RequestParam(required = false) UUID shiftId,
-      @RequestParam(required = false) Long productId,
-      @ModelAttribute PageableRequest pageable) {
+       @RequestParam(required = false) Long productId,
+       @RequestParam(required = false) PosSaleLineType lineType,
+       @RequestParam(defaultValue = "false") boolean openProductsOnly,
+       @ModelAttribute PageableRequest pageable) {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
-        reportUseCases.sales(filter(hq, from, to, shiftId, productId, null), pageable.toPageable()),
+         reportUseCases.sales(filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly), pageable.toPageable()),
         PosWebMapper::toSaleReportResponse);
   }
 
@@ -82,12 +85,14 @@ public class PosAdminReportController {
       @RequestParam Instant from,
       @RequestParam Instant to,
       @RequestParam(required = false) UUID shiftId,
-      @RequestParam(required = false) Long productId,
-      @ModelAttribute PageableRequest pageable) {
+       @RequestParam(required = false) Long productId,
+       @RequestParam(required = false) PosSaleLineType lineType,
+       @RequestParam(defaultValue = "false") boolean openProductsOnly,
+       @ModelAttribute PageableRequest pageable) {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.products(
-            filter(hq, from, to, shiftId, productId, null), pageable.toPageable()),
+             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly), pageable.toPageable()),
         PosWebMapper::toProductReportResponse);
   }
 
@@ -105,7 +110,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.wasteCancellations(
-            filter(hq, from, to, shiftId, null, eventType), pageable.toPageable()),
+             filter(hq, from, to, shiftId, null, eventType, null, false), pageable.toPageable()),
         PosWebMapper::toLedgerEventReportResponse);
   }
 
@@ -122,7 +127,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.shiftCloses(
-            filter(hq, from, to, shiftId, null, null), pageable.toPageable()),
+             filter(hq, from, to, shiftId, null, null, null, false), pageable.toPageable()),
         PosWebMapper::toLedgerEventReportResponse);
   }
 
@@ -132,7 +137,9 @@ public class PosAdminReportController {
       Instant to,
       UUID shiftId,
       Long productId,
-      String eventType) {
-    return new PosReportFilterQuery(headquarterId, from, to, shiftId, productId, eventType);
+      String eventType,
+      PosSaleLineType lineType,
+      boolean openProductsOnly) {
+    return new PosReportFilterQuery(headquarterId, from, to, shiftId, productId, eventType, lineType, openProductsOnly);
   }
 }

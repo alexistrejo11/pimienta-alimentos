@@ -52,6 +52,7 @@ import kotlinx.coroutines.withContext
 import androidx.core.content.edit
 import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.sync.DeviceCredentials
+import io.github.alexistrejo.pimienta.pos.data.sync.DeviceSessionPolicy
 import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
@@ -128,17 +129,21 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         scope.launch {
             val state = withContext(Dispatchers.IO) {
                 app.awaitActiveDatabaseReady()
-                // Orphan production config (URL without tokens) must return to enrollment.
+                // Only force re-enrollment when explicitly revoked or no credentials remain.
                 if (mode == RuntimeMode.PRODUCTION) {
-                    val provisioning = ProvisioningRepository(context, app.databaseProvider)
+                    val deviceCredentials = DeviceCredentials(context)
                     val sync = repo.syncState()
                     val hasUrl = !sync?.baseUrl.isNullOrBlank()
-                    val hasAccess = DeviceCredentials(context).access() != null
-                    if (hasUrl && (!hasAccess || sync?.status == "REQUIRES_REENROLLMENT")) {
-                        provisioning.resetForReenrollment(
-                            sync?.lastError
-                                ?: "Sesión del dispositivo inválida. Vuelve a enrolar.",
+                    val hasAccess = deviceCredentials.access() != null
+                    val hasRefresh = deviceCredentials.refresh() != null
+                    if (sync?.status == "REQUIRES_REENROLLMENT") {
+                        // Already flagged by sync worker; keep enrollment screen without wiping again.
+                    } else if (hasUrl && !hasAccess && !hasRefresh) {
+                        ProvisioningRepository(context, app.databaseProvider).resetForReenrollment(
+                            sync?.lastError ?: DeviceSessionPolicy.orphanAccessTokenMessage(),
                         )
+                    } else if (hasUrl && !hasAccess && hasRefresh) {
+                        SyncWorker.enqueue(context)
                     }
                 }
                 Quadruple(repo.syncState(), repo.users(), repo.products(), repo.activeShift())

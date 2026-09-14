@@ -43,11 +43,9 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         val state = db.syncDao().state() ?: return Result.success()
         val baseUrl = state.baseUrl?.trim()?.let { if (it.endsWith("/")) it else "$it/" } ?: return Result.success()
         val device = db.operationsDao().device() ?: return Result.success()
-        // Tokens gone but URL still set: force enrollment UI instead of a silent no-op.
+        // Missing access may still be recoverable via refresh; only wipe session on definitive auth failure.
         if (credentials.access() == null) {
-            ProvisioningRepository(applicationContext, provider)
-                .resetForReenrollment("Sesión del dispositivo inválida. Vuelve a enrolar.")
-            return Result.failure()
+            return refreshAccessTokenOrRetry(state, baseUrl)
         }
         val api = api(baseUrl)
         return try {
@@ -77,24 +75,10 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         } catch (e: HttpException) {
             recordDiagnostic("ERROR", "sync_http_failure", "POS sync HTTP ${e.code()}")
             if (e.code() == 401) {
-                val refresh = credentials.refresh()
-                if (refresh == null) {
-                    ProvisioningRepository(applicationContext, provider)
-                        .resetForReenrollment("Sesión expirada. Vuelve a enrolar el dispositivo.")
-                    return Result.failure()
-                }
-                try {
-                    val token = refreshApi(baseUrl).refresh(RefreshRequest(refresh))
-                    credentials.save(token.accessToken, token.refreshToken)
-                    Result.retry()
-                } catch (_: Exception) {
-                    ProvisioningRepository(applicationContext, provider)
-                        .resetForReenrollment("La sesión del dispositivo expiró o fue revocada. Vuelve a enrolar.")
-                    Result.failure()
-                }
+                return refreshAccessTokenOrRetry(state, baseUrl)
             } else if (e.code() == 403) {
                 ProvisioningRepository(applicationContext, provider)
-                    .resetForReenrollment("Este dispositivo fue revocado. Genera un código nuevo en la Web Central.")
+                    .resetForReenrollment(DeviceSessionPolicy.revokedDeviceMessage())
                 Result.failure()
             } else if (e.code() == 409) {
                 // Invalid sync cursor: replace local catalog snapshot from a fresh bootstrap.
@@ -114,6 +98,38 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             recordDiagnostic("ERROR", "sync_failure", "POS sync ${e.javaClass.simpleName}")
             db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message ?: e.javaClass.simpleName))
             Result.retry()
+        }
+    }
+
+    // Rotates access from refresh; re-enrolls only when the server rejects credentials.
+    private suspend fun refreshAccessTokenOrRetry(
+        state: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity,
+        baseUrl: String,
+    ): Result {
+        val refresh = credentials.refresh()
+        if (refresh == null) {
+            ProvisioningRepository(applicationContext, provider)
+                .resetForReenrollment(DeviceSessionPolicy.missingRefreshTokenMessage())
+            return Result.failure()
+        }
+        return try {
+            val token = refreshApi(baseUrl).refresh(RefreshRequest(refresh))
+            credentials.save(token.accessToken, token.refreshToken)
+            Result.retry()
+        } catch (error: Exception) {
+            if (DeviceSessionPolicy.refreshFailureRequiresReenrollment(error)) {
+                ProvisioningRepository(applicationContext, provider)
+                    .resetForReenrollment(DeviceSessionPolicy.invalidRefreshTokenMessage())
+                Result.failure()
+            } else {
+                db.syncDao().saveState(
+                    state.copy(
+                        status = "RETRYING",
+                        lastError = DeviceSessionPolicy.syncRetryMessage(error),
+                    ),
+                )
+                Result.retry()
+            }
         }
     }
 

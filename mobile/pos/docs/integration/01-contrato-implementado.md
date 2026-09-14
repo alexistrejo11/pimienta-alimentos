@@ -45,6 +45,41 @@ turnos, tickets, impresión y outbox no se borran ni se regeneran. En deltas,
 la app guarda `nextCursor` solo después de aplicar todo el lote. Un cambio de
 catálogo no modifica snapshots de ventas ni un carrito activo.
 
+### Política de producto abierto
+
+El bootstrap y las operaciones `policies` de los deltas incluyen
+`allowOpenProducts`, además de `openAmountCategories`. La aplicación debe
+actualizar ambos valores atómicamente con el cursor.
+
+Una línea manual de monto abierto se envía dentro de `SALE_CONFIRMED` con esta
+forma:
+
+```json
+{
+  "lineType": "OPEN_AMOUNT",
+  "productId": null,
+  "productName": "Producto abierto · Snacks",
+  "saleCategory": "Snacks",
+  "quantity": 1,
+  "unit": "PIECE",
+  "unitPriceCentavos": 4000,
+  "subtotalCentavos": 4000,
+  "stockPolicy": "NOT_CONTROLLED",
+  "rawBarcode": null,
+  "authorizedByOperatorId": "42",
+  "authorizedAt": "2026-09-14T17:00:00Z"
+}
+```
+
+Para `OPEN_AMOUNT`, `productId` y `rawBarcode` son nulos, `quantity` es `1`,
+el importe es positivo y el subtotal coincide. La categoría debe estar
+configurada en la sede y `allowOpenProducts` debe estar activo. El autorizador
+debe ser un operador activo asignado a la sede con rol `MANAGER` o `SUPERADMIN`;
+el PIN plano nunca se transmite ni se persiste.
+
+Estas líneas no mueven inventario. El servidor conserva sus snapshots y siempre
+devuelve `REQUIRES_REVIEW` con una incidencia `OPEN_PRODUCT` para auditoría.
+
 ## Envelope y resultados
 
 Cada evento persistido localmente debe conservar exactamente:

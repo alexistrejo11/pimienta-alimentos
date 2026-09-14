@@ -16,6 +16,10 @@
         [(ngModel)]="dateFrom"
       />
     </label>
+    <label class="flex items-center gap-2 self-end pb-2 text-sm">
+      <input type="checkbox" class="size-4 accent-primary" [(ngModel)]="openProductsOnly" />
+      Solo productos abiertos
+    </label>
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-medium">Hasta</span>
       <input
@@ -48,15 +52,19 @@
             <th class="px-4 py-3 text-left">Fecha</th>
             <th class="px-4 py-3 text-left">Total</th>
             <th class="px-4 py-3 text-left">Estado</th>
+            <th class="px-4 py-3 text-left">Auditoría</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant/15">
           @for (s of sales(); track s.saleId) {
             <tr>
-              <td class="px-4 py-3 font-mono">{{ s.folio }}</td>
+              <td class="px-4 py-3 font-mono"><button type="button" class="font-semibold text-primary" (click)="toggleDetails(s.saleId)">{{ s.folio }}</button>
+                @if (expandedSaleId() === s.saleId) { <div class="mt-2 space-y-1 font-sans text-xs text-on-surface-variant">@for (line of s.lines ?? []; track line.lineId) { <div><span class="font-medium text-on-surface">{{ line.productName }}</span> · {{ line.saleCategory ?? 'Sin categoría' }} · {{ formatCentavos(line.subtotalCentavos) }} @if (line.lineType === 'OPEN_AMOUNT') { <span class="ui-badge-warning">Abierto</span> }</div> }</div> }
+              </td>
               <td class="px-4 py-3">{{ s.occurredAt | date: 'short' }}</td>
               <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.totalCentavos) }}</td>
               <td class="px-4 py-3">{{ s.status }}</td>
+              <td class="px-4 py-3">@if (s.containsOpenProduct) { <span class="ui-badge-warning">Producto abierto</span> } @else { <span class="text-on-surface-variant">Catálogo</span> }</td>
             </tr>
           }
         </tbody>

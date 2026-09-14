@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosPaymentM
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStockPolicy;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -92,6 +93,7 @@ public class PosSale extends BaseDomain<UUID> {
 
   public record Line(
       UUID lineId,
+      PosSaleLineType lineType,
       Long productId,
       String productName,
       String saleCategory,
@@ -102,7 +104,9 @@ public class PosSale extends BaseDomain<UUID> {
       PosSaleStockPolicy stockPolicy,
       boolean soldWithNegativeStock,
       boolean soldWhileUnavailable,
-      String rawBarcode) {}
+      String rawBarcode,
+      Long authorizedByOperatorId,
+      Instant authorizedAt) {}
 
   public record Payment(
       UUID paymentId,

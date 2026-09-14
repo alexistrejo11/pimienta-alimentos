@@ -24,6 +24,7 @@ public final class PosOperationalConfigPersistenceMapper {
             entity.getOpenAmountCategories() != null
                 ? new ArrayList<>(entity.getOpenAmountCategories())
                 : List.of())
+        .withAllowOpenProducts(entity.isAllowOpenProducts())
         .withDefaultNegativeStockLimit(entity.getDefaultNegativeStockLimit())
         .withCreatedAt(entity.getCreatedAt())
         .withUpdatedAt(entity.getUpdatedAt())
@@ -42,6 +43,7 @@ public final class PosOperationalConfigPersistenceMapper {
     e.setCatalogStaleWarnHours(domain.getCatalogStaleWarnHours());
     e.setCatalogStaleBlockHours(domain.getCatalogStaleBlockHours());
     e.setOpenAmountCategories(new ArrayList<>(domain.getOpenAmountCategories()));
+    e.setAllowOpenProducts(domain.isAllowOpenProducts());
     e.setDefaultNegativeStockLimit(domain.getDefaultNegativeStockLimit());
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     e.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt() : LocalDateTime.now());

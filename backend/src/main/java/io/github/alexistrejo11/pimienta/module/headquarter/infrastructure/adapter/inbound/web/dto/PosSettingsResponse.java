@@ -12,6 +12,7 @@ public record PosSettingsResponse(
     int catalogStaleWarnHours,
     int catalogStaleBlockHours,
     List<String> openAmountCategories,
+    boolean allowOpenProducts,
     Integer defaultNegativeStockLimit,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,

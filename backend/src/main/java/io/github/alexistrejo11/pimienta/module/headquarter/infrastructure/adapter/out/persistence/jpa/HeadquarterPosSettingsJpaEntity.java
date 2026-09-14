@@ -42,6 +42,9 @@ public class HeadquarterPosSettingsJpaEntity {
   @Column(name = "open_amount_categories", nullable = false)
   private List<String> openAmountCategories = new ArrayList<>();
 
+  @Column(name = "allow_open_products", nullable = false)
+  private boolean allowOpenProducts;
+
   @Column(name = "default_negative_stock_limit")
   private Integer defaultNegativeStockLimit;
 
@@ -105,6 +108,14 @@ public class HeadquarterPosSettingsJpaEntity {
   public void setOpenAmountCategories(List<String> openAmountCategories) {
     this.openAmountCategories =
         openAmountCategories != null ? openAmountCategories : new ArrayList<>();
+  }
+
+  public boolean isAllowOpenProducts() {
+    return allowOpenProducts;
+  }
+
+  public void setAllowOpenProducts(boolean allowOpenProducts) {
+    this.allowOpenProducts = allowOpenProducts;
   }
 
   public Integer getDefaultNegativeStockLimit() {

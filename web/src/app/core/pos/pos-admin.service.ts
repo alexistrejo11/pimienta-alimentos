@@ -148,6 +148,8 @@ export class PosAdminService {
     if (params.shiftId) p = p.set('shiftId', params.shiftId);
     if (params.productId != null) p = p.set('productId', String(params.productId));
     if (params.eventType) p = p.set('eventType', params.eventType);
+    if (params.lineType) p = p.set('lineType', params.lineType);
+    if (params.openProductsOnly) p = p.set('openProductsOnly', 'true');
     return p;
   }
 }

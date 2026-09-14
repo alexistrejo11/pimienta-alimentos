@@ -21,7 +21,11 @@ public record PosReportSummaryResponse(List<PosReportSummaryItemResponse> rows) 
       long cancellationCount,
       Instant lastShiftClosedAt,
       long openIncidentCount,
-      long deviceCount) {
+       long deviceCount,
+       long openProductCentavos,
+       long openProductLineCount,
+       long openProductTicketCount,
+       long openProductPendingReviewCount) {
 
     static PosReportSummaryItemResponse from(PosReportSummaryRow row) {
       return new PosReportSummaryItemResponse(
@@ -32,7 +36,8 @@ public record PosReportSummaryResponse(List<PosReportSummaryItemResponse> rows) 
           row.cancellationCount(),
           row.lastShiftClosedAt(),
           row.openIncidentCount(),
-          row.deviceCount());
+           row.deviceCount(), row.openProductCentavos(), row.openProductLineCount(),
+           row.openProductTicketCount(), row.openProductPendingReviewCount());
     }
   }
 }

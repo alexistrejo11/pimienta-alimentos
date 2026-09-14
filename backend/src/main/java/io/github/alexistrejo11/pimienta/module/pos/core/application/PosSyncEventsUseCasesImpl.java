@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.pos.core.application;
 
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand;
@@ -17,6 +18,8 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventRes
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosPaymentMethod;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStockPolicy;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosRole;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceNotFoundException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceRevokedException;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncEventsUseCases;
@@ -25,6 +28,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSaleRepos
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncEventRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncIncidentRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosShiftRepository;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosOperatorRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -58,6 +62,8 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
   private final PosEventStockProjector eventStockProjector;
   private final TransactionTemplate transactionTemplate;
   private final PosShiftRepository shiftRepository;
+  private final PosOperationalConfigRepository operationalConfigRepository;
+  private final PosOperatorRepository operatorRepository;
 
   public PosSyncEventsUseCasesImpl(
       PosDeviceRepository deviceRepository,
@@ -68,7 +74,9 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       PosSaleInventoryUseCases posSaleInventoryUseCases,
       PosEventStockProjector eventStockProjector,
       PlatformTransactionManager transactionManager,
-      PosShiftRepository shiftRepository) {
+      PosShiftRepository shiftRepository,
+      PosOperationalConfigRepository operationalConfigRepository,
+      PosOperatorRepository operatorRepository) {
     this.deviceRepository = deviceRepository;
     this.syncEventRepository = syncEventRepository;
     this.saleRepository = saleRepository;
@@ -78,6 +86,8 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
     this.eventStockProjector = eventStockProjector;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
     this.shiftRepository = shiftRepository;
+    this.operationalConfigRepository = operationalConfigRepository;
+    this.operatorRepository = operatorRepository;
   }
 
   @Override
@@ -311,10 +321,34 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
 
   private List<String> collectReviewReasons(long headquarterId, SaleConfirmedPayload payload) {
     List<String> reasons = new ArrayList<>();
+    var config = operationalConfigRepository.findByHeadquarterId(headquarterId).orElse(null);
     if (payload.lines() == null) {
       return reasons;
     }
     for (SaleLinePayload line : payload.lines()) {
+      if (line.lineType() == PosSaleLineType.OPEN_AMOUNT) {
+        // Open amounts are always retained as an auditable exception.
+        reasons.add("OPEN_PRODUCT");
+        if (line.productId() != null || !isBlank(line.rawBarcode())) {
+          reasons.add("OPEN_PRODUCT_INVALID_IDENTITY");
+        }
+        if (config == null || !config.isAllowOpenProducts()) {
+          reasons.add("OPEN_PRODUCT_DISABLED");
+        }
+        if (line.unitPriceCentavos() <= 0 || line.quantity() != 1
+            || line.subtotalCentavos() != line.unitPriceCentavos()) {
+          reasons.add("OPEN_PRODUCT_INVALID_AMOUNT");
+        }
+        if (config == null || line.saleCategory() == null
+            || config.getOpenAmountCategories().stream()
+                .noneMatch(category -> category.equalsIgnoreCase(line.saleCategory().strip()))) {
+          reasons.add("OPEN_PRODUCT_CATEGORY_NOT_ALLOWED");
+        }
+        if (!hasValidAuthorizer(headquarterId, line)) {
+          reasons.add("OPEN_PRODUCT_AUTHORIZATION_INVALID");
+        }
+        continue;
+      }
       if (line.soldWhileUnavailable()) {
         reasons.add("soldWhileUnavailable");
       }
@@ -341,6 +375,8 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
                     + " got="
                     + line.unitPriceCentavos());
           }
+        } else {
+          reasons.add("PRODUCT_NOT_IN_HEADQUARTER_CATALOG");
         }
       }
     }
@@ -361,6 +397,12 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
     if (first.contains("rawBarcode")) {
       return "RAW_BARCODE_WITHOUT_PRODUCT";
     }
+    if (first.equals("OPEN_PRODUCT_DISABLED")
+        || first.equals("OPEN_PRODUCT_CATEGORY_NOT_ALLOWED")
+        || first.equals("OPEN_PRODUCT_AUTHORIZATION_INVALID")
+        || first.equals("OPEN_PRODUCT")) {
+      return first;
+    }
     if (first.contains("unitPriceCentavos")) {
       return "PRICE_MISMATCH";
     }
@@ -375,6 +417,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
         lines.add(
             new PosSale.Line(
                 line.lineId() != null ? line.lineId() : UUID.randomUUID(),
+                line.lineType(),
                 line.productId(),
                 line.productName() != null ? line.productName() : "",
                 line.saleCategory(),
@@ -385,7 +428,9 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
                 parseStockPolicy(line.stockPolicy()),
                 line.soldWithNegativeStock(),
                 line.soldWhileUnavailable(),
-                blankToNull(line.rawBarcode())));
+                blankToNull(line.rawBarcode()),
+                line.authorizedByOperatorId(),
+                line.authorizedAt()));
       }
     }
     List<PosSale.Payment> payments = new ArrayList<>();
@@ -427,7 +472,10 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       if (line.productId() == null) {
         continue;
       }
-      if (parseStockPolicy(line.stockPolicy()) != PosSaleStockPolicy.CONTROLLED) {
+      Optional<HeadquarterItem> catalog =
+          headquarterItemRepository.findByHeadquarterIdAndItemId(headquarterId, line.productId());
+      if (catalog.isEmpty()
+          || catalog.get().getStockPolicy() != HeadquarterItem.StockPolicy.CONTROLLED) {
         continue;
       }
       if (line.quantity() == 0) {
@@ -498,5 +546,22 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       return null;
     }
     return value.strip();
+  }
+
+  private boolean hasValidAuthorizer(long headquarterId, SaleLinePayload line) {
+    if (line.authorizedByOperatorId() == null || line.authorizedAt() == null) {
+      return false;
+    }
+    Optional<io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator> operator =
+        operatorRepository.findById(line.authorizedByOperatorId());
+    return operator.isPresent()
+        && operator.get().isActive()
+        && operator.get().getHeadquarterIds().contains(headquarterId)
+        && (operator.get().getPosRole() == PosRole.MANAGER
+            || operator.get().getPosRole() == PosRole.SUPERADMIN);
+  }
+
+  private static boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 }

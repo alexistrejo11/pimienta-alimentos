@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outpu
 
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosProductReportRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosSalesSummary;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosOpenProductSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosReportFilterQuery;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus;
@@ -52,6 +53,8 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
             filter.to(),
             filter.shiftId(),
             filter.productId(),
+            filter.lineType(),
+            filter.openProductsOnly(),
             PosEventResultStatus.ACCEPTED,
             pageable)
         .map(PosSalePersistenceMapper::toDomain);
@@ -67,6 +70,8 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
             filter.to(),
             filter.shiftId(),
             filter.productId(),
+            filter.lineType(),
+            filter.openProductsOnly(),
             PosEventResultStatus.ACCEPTED);
     int start = (int) Math.min(pageable.getOffset(), all.size());
     int end = Math.min(start + pageable.getPageSize(), all.size());
@@ -81,5 +86,16 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
     long salesCentavos = row[0] != null ? ((Number) row[0]).longValue() : 0L;
     long ticketCount = row[1] != null ? ((Number) row[1]).longValue() : 0L;
     return new PosSalesSummary(salesCentavos, ticketCount);
+  }
+
+  @Override
+  public PosOpenProductSummary summarizeOpenProducts(long headquarterId, Instant from, Instant to) {
+    Object[] row = jpa.summarizeOpenProducts(headquarterId, from, to, PosEventResultStatus.ACCEPTED);
+    return new PosOpenProductSummary(
+        number(row[0]), number(row[1]), number(row[2]), number(row[3]));
+  }
+
+  private static long number(Object value) {
+    return value == null ? 0L : ((Number) value).longValue();
   }
 }

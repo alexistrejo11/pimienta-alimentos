@@ -19,6 +19,7 @@ public final class HeadquarterPosWebMapper {
         request.catalogStaleWarnHours(),
         request.catalogStaleBlockHours(),
         request.openAmountCategories(),
+        request.allowOpenProducts(),
         request.defaultNegativeStockLimit());
   }
 
@@ -30,6 +31,7 @@ public final class HeadquarterPosWebMapper {
         config.getCatalogStaleWarnHours(),
         config.getCatalogStaleBlockHours(),
         config.getOpenAmountCategories(),
+        config.isAllowOpenProducts(),
         config.getDefaultNegativeStockLimit(),
         config.getCreatedAt(),
         config.getUpdatedAt(),

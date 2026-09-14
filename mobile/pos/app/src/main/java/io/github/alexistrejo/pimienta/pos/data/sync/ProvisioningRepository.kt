@@ -116,19 +116,9 @@ class ProvisioningRepository(private val context: Context, private val provider:
             pullCatalog(api, state)
         } catch (e: HttpException) {
             if (e.code() == 401) {
-                val refresh = credentials.refresh()
-                    ?: return Result.failure(e)
-                try {
-                    val tokens = retrofit(baseUrl, null).refresh(RefreshRequest(refresh))
-                    credentials.save(tokens.accessToken, tokens.refreshToken)
-                    val api = retrofit(baseUrl, tokens.accessToken)
-                    pullCatalog(api, db.syncDao().state() ?: state)
-                } catch (refreshError: Exception) {
-                    resetForReenrollment("La sesión del dispositivo expiró o fue revocada. Vuelve a enrolar.")
-                    Result.failure(refreshError)
-                }
+                return refreshAccessAndPullCatalog(baseUrl, state)
             } else if (e.code() == 403) {
-                resetForReenrollment("Este dispositivo fue revocado. Genera un código nuevo en la Web Central.")
+                resetForReenrollment(DeviceSessionPolicy.revokedDeviceMessage())
                 Result.failure(e)
             } else {
                 val current = db.syncDao().state() ?: state
@@ -139,6 +129,32 @@ class ProvisioningRepository(private val context: Context, private val provider:
             val current = db.syncDao().state() ?: state
             db.syncDao().saveState(current.copy(status = "RETRYING", lastError = e.message))
             Result.failure(e)
+        }
+    }
+
+    private suspend fun refreshAccessAndPullCatalog(
+        baseUrl: String,
+        state: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity,
+    ): Result<CatalogSyncReport> {
+        val refresh = credentials.refresh()
+            ?: return Result.failure(IllegalStateException(DeviceSessionPolicy.missingRefreshTokenMessage()))
+        return try {
+            val tokens = retrofit(baseUrl, null).refresh(RefreshRequest(refresh))
+            credentials.save(tokens.accessToken, tokens.refreshToken)
+            pullCatalog(retrofit(baseUrl, tokens.accessToken), db.syncDao().state() ?: state)
+        } catch (refreshError: Exception) {
+            if (DeviceSessionPolicy.refreshFailureRequiresReenrollment(refreshError)) {
+                resetForReenrollment(DeviceSessionPolicy.invalidRefreshTokenMessage())
+            } else {
+                val current = db.syncDao().state() ?: state
+                db.syncDao().saveState(
+                    current.copy(
+                        status = "RETRYING",
+                        lastError = DeviceSessionPolicy.syncRetryMessage(refreshError),
+                    ),
+                )
+            }
+            Result.failure(refreshError)
         }
     }
 

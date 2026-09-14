@@ -48,6 +48,7 @@ public interface PosSyncBootstrapUseCases {
 
   record Policies(
       boolean allowNegativeStock,
+      boolean allowOpenProducts,
       Integer defaultNegativeStockLimit,
       int staleCatalogWarnHours,
       int staleCatalogBlockHours) {}

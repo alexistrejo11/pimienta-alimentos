@@ -7,4 +7,5 @@ public record UpsertPosSettingsCommand(
     Integer catalogStaleWarnHours,
     Integer catalogStaleBlockHours,
     List<String> openAmountCategories,
+    Boolean allowOpenProducts,
     Integer defaultNegativeStockLimit) {}

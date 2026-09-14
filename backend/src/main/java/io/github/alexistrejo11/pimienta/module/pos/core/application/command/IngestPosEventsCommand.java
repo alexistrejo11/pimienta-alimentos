@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.pos.core.application.command;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType;
 
 public record IngestPosEventsCommand(List<IngestPosEventItem> events) {
 
@@ -32,6 +33,7 @@ public record IngestPosEventsCommand(List<IngestPosEventItem> events) {
 
   public record SaleLinePayload(
       UUID lineId,
+      PosSaleLineType lineType,
       Long productId,
       String productName,
       String saleCategory,
@@ -42,7 +44,9 @@ public record IngestPosEventsCommand(List<IngestPosEventItem> events) {
       String stockPolicy,
       boolean soldWithNegativeStock,
       boolean soldWhileUnavailable,
-      String rawBarcode) {}
+      String rawBarcode,
+      Long authorizedByOperatorId,
+      Instant authorizedAt) {}
 
   public record SalePaymentPayload(
       UUID paymentId,

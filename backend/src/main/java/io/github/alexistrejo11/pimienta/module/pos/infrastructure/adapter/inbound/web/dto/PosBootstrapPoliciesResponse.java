@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PosBootstrapPoliciesResponse(
     boolean allowNegativeStock,
+    boolean allowOpenProducts,
     Integer defaultNegativeStockLimit,
     int staleCatalogWarnHours,
     int staleCatalogBlockHours) {}

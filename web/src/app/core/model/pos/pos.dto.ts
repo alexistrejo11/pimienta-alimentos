@@ -51,6 +51,7 @@ export interface PosSettingsResponse {
   catalogStaleWarnHours: number;
   catalogStaleBlockHours: number;
   openAmountCategories: string[];
+  allowOpenProducts: boolean;
   defaultNegativeStockLimit: number | null;
   createdAt: string;
   updatedAt: string;
@@ -62,6 +63,7 @@ export interface PosSettingsRequest {
   catalogStaleWarnHours?: number;
   catalogStaleBlockHours?: number;
   openAmountCategories?: string[];
+  allowOpenProducts?: boolean;
   defaultNegativeStockLimit?: number | null;
 }
 
@@ -202,6 +204,10 @@ export interface PosReportSummaryItemResponse {
   lastShiftClosedAt: string | null;
   openIncidentCount: number;
   deviceCount: number;
+  openProductCentavos: number;
+  openProductLineCount: number;
+  openProductTicketCount: number;
+  openProductPendingReviewCount: number;
 }
 
 /** GET /api/v1/pos/admin/reports/sales */
@@ -218,11 +224,24 @@ export interface PosSaleReportResponse {
   totalCentavos: number;
   status: string;
   occurredAt: string;
+  containsOpenProduct?: boolean;
+  lines?: PosSaleLineReportResponse[];
+}
+
+export interface PosSaleLineReportResponse {
+  lineId: string;
+  productId: number | null;
+  lineType: 'CATALOG' | 'OPEN_AMOUNT' | 'PENDING_CATALOG';
+  productName: string;
+  saleCategory: string | null;
+  quantity: number;
+  unitPriceCentavos: number;
+  subtotalCentavos: number;
 }
 
 /** GET /api/v1/pos/admin/reports/products */
 export interface PosProductReportResponse {
-  productId: number;
+  productId: number | null;
   productName: string;
   quantitySum: number;
   subtotalCentavosSum: number;
@@ -246,6 +265,8 @@ export interface PosReportFilterParams {
   to: string;
   shiftId?: string;
   productId?: number;
+  lineType?: 'CATALOG' | 'OPEN_AMOUNT' | 'PENDING_CATALOG';
+  openProductsOnly?: boolean;
   eventType?: string;
   page?: number;
   size?: number;

@@ -26,6 +26,7 @@ import kotlinx.serialization.Serializable
 )
 @Serializable data class PoliciesDto(
     val allowNegativeStock: Boolean = true,
+    val allowOpenProducts: Boolean = false,
     // Backend omits this when null (@JsonInclude NON_NULL).
     val defaultNegativeStockLimit: Int? = null,
     val staleCatalogWarnHours: Int = 24,

@@ -13,6 +13,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
   private int catalogStaleWarnHours;
   private int catalogStaleBlockHours;
   private List<String> openAmountCategories;
+  private boolean allowOpenProducts;
   private Integer defaultNegativeStockLimit;
 
   private PosOperationalConfig() {
@@ -22,6 +23,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     this.catalogStaleWarnHours = 24;
     this.catalogStaleBlockHours = 72;
     this.openAmountCategories = new ArrayList<>();
+    this.allowOpenProducts = false;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.version = 0L;
@@ -51,6 +53,10 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     return defaultNegativeStockLimit;
   }
 
+  public boolean isAllowOpenProducts() {
+    return allowOpenProducts;
+  }
+
   public void touch() {
     this.updatedAt = LocalDateTime.now();
   }
@@ -66,6 +72,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     private Integer catalogStaleWarnHours;
     private Integer catalogStaleBlockHours;
     private List<String> openAmountCategories;
+    private Boolean allowOpenProducts;
     private Integer defaultNegativeStockLimit;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -99,6 +106,11 @@ public class PosOperationalConfig extends BaseDomain<Long> {
 
     public SafeBuilder withOpenAmountCategories(List<String> categories) {
       this.openAmountCategories = categories;
+      return this;
+    }
+
+    public SafeBuilder withAllowOpenProducts(Boolean allowOpenProducts) {
+      this.allowOpenProducts = allowOpenProducts;
       return this;
     }
 
@@ -136,6 +148,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       c.catalogStaleBlockHours = catalogStaleBlockHours != null ? catalogStaleBlockHours : 72;
       c.openAmountCategories =
           openAmountCategories != null ? new ArrayList<>(openAmountCategories) : new ArrayList<>();
+      c.allowOpenProducts = allowOpenProducts != null && allowOpenProducts;
       c.defaultNegativeStockLimit = defaultNegativeStockLimit;
       c.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       c.updatedAt = updatedAt != null ? updatedAt : c.createdAt;

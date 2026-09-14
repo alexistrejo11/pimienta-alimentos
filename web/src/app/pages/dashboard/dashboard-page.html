@@ -51,6 +51,7 @@
                 <th class="px-4 py-3 text-left">Mermas</th>
                 <th class="px-4 py-3 text-left">Cancelaciones</th>
                 <th class="px-4 py-3 text-left">Incidencias</th>
+                <th class="px-4 py-3 text-left">Abiertos</th>
                 <th class="px-4 py-3 text-left">Dispositivos</th>
               </tr>
             </thead>
@@ -63,6 +64,7 @@
                   <td class="px-4 py-3 tabular-nums">{{ row.wasteCount }}</td>
                   <td class="px-4 py-3 tabular-nums">{{ row.cancellationCount }}</td>
                   <td class="px-4 py-3 tabular-nums">{{ row.openIncidentCount }}</td>
+                  <td class="px-4 py-3 tabular-nums">{{ formatCentavos(row.openProductCentavos) }} <span class="ui-badge-warning">{{ row.openProductPendingReviewCount }} pendientes</span></td>
                   <td class="px-4 py-3 tabular-nums">{{ row.deviceCount }}</td>
                 </tr>
               }
@@ -77,6 +79,11 @@
               <p class="font-headline mt-2 text-3xl font-bold tabular-nums">
                 {{ formatCentavos(row.salesCentavos) }}
               </p>
+            </li>
+            <li class="ui-panel p-5 shadow-sm">
+              <p class="text-on-surface-variant text-xs font-medium uppercase">Productos abiertos</p>
+              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(row.openProductCentavos) }}</p>
+              <p class="mt-1 text-xs text-on-surface-variant">{{ row.openProductLineCount }} líneas · {{ row.openProductPendingReviewCount }} por revisar</p>
             </li>
             <li class="ui-panel p-5 shadow-sm">
               <p class="text-on-surface-variant text-xs font-medium uppercase">Tickets</p>

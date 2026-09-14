@@ -167,7 +167,8 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
               "policies",
               String.valueOf(hqId),
               new PoliciesData(
-                  policies.allowNegativeStock(),
+                   policies.allowNegativeStock(),
+                   policies.allowOpenProducts(),
                   policies.defaultNegativeStockLimit(),
                   policies.staleCatalogWarnHours(),
                   policies.staleCatalogBlockHours(),

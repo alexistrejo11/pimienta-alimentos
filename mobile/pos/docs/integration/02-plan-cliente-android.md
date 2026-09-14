@@ -49,6 +49,14 @@ si no se puede reconstruir alguno, queda bloqueado y nunca se elimina.
 5. Ante 401/403, detener worker y pedir reenrolamiento; ante 409 del cursor,
    conservar hechos y ejecutar bootstrap de maestros.
 
+### Monto abierto
+
+El cliente persiste `allowOpenProducts` y `openAmountCategories` desde el
+bootstrap y cada delta de `policies`. Antes de agregar la línea solicita una
+categoría configurada, un importe positivo y autorización local de
+Manager/Superadmin. El payload conserva `lineType`, la identidad nula de
+producto, el snapshot generado, `authorizedByOperatorId` y `authorizedAt`.
+
 ## Corte III — worker único y no bloqueante
 
 1. Agregar WorkManager y un único `SyncWorker` serial por dispositivo. El
