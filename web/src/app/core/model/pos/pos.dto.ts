@@ -101,6 +101,35 @@ export interface PosDeviceAdminResponse {
   minAppVersion: string;
 }
 
+export interface PosShiftResponse {
+  shiftId: string;
+  headquarterId: number;
+  deviceId: string;
+  cashierOperatorId: number | null;
+  openingCashCentavos: number;
+  openedAt: string;
+  closedAt: string | null;
+  status: string;
+  expectedCashCentavos: number | null;
+  countedCashCentavos: number | null;
+  differenceCentavos: number | null;
+}
+
+export interface PosShiftListParams {
+  headquarterId?: number;
+  page?: number;
+  size?: number;
+}
+
+export interface PosActivityItem {
+  id: string;
+  type: 'VENTA' | 'MERMA' | 'CANCELACIÓN' | 'CORTE' | 'INCIDENCIA';
+  detail: string;
+  deviceId: string | null;
+  occurredAt: string;
+  amountCentavos?: number;
+}
+
 /** POST /api/v1/pos/admin/enrollment-codes */
 export interface CreateEnrollmentCodeRequest {
   headquarterId: number;

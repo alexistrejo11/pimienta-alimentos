@@ -5,6 +5,7 @@ import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.PosTelemetryHealthRequest;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.PosTelemetryLogRequest;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.WebTelemetryEventRequest;
+import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.output.persistence.PosHealthSnapshotRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -18,9 +19,12 @@ public class TelemetryIngestionService {
   private static final Logger log = LoggerFactory.getLogger(TelemetryIngestionService.class);
   private static final int MAX_TEXT_LENGTH = 2000;
   private final MeterRegistry meterRegistry;
+  private final PosHealthSnapshotRepository healthSnapshotRepository;
 
-  public TelemetryIngestionService(MeterRegistry meterRegistry) {
+  public TelemetryIngestionService(MeterRegistry meterRegistry,
+      PosHealthSnapshotRepository healthSnapshotRepository) {
     this.meterRegistry = meterRegistry;
+    this.healthSnapshotRepository = healthSnapshotRepository;
   }
 
   public void ingestWeb(WebTelemetryEventRequest event) {
@@ -38,6 +42,9 @@ public class TelemetryIngestionService {
     PosTelemetryHealthRequest health = batch.health();
     if (health != null) {
       meterRegistry.counter("pimienta.telemetry.health.received", "state", state(health.syncState())).increment();
+      healthSnapshotRepository.save(
+          device.deviceId(), device.headquarterId(), state(health.syncState()), health.pendingEvents(),
+          health.oldestPendingAgeSeconds(), clean(health.appVersion(), 64));
       log.atInfo()
           .addKeyValue("source", "pos-client")
           .addKeyValue("eventType", "health_snapshot")
@@ -58,7 +65,8 @@ public class TelemetryIngestionService {
         .addKeyValue("source", source)
         .addKeyValue("schemaVersion", schemaVersion)
         .addKeyValue("eventType", clean(eventType, 40))
-        .addKeyValue("message", clean(message, MAX_TEXT_LENGTH));
+         // The structured encoder already owns the reserved `message` field.
+         .addKeyValue("clientMessage", clean(message, MAX_TEXT_LENGTH));
     if (stack != null && !stack.isBlank()) event = event.addKeyValue("stack", clean(stack, 12000));
     if (occurredAt != null) event = event.addKeyValue("occurredAt", clean(occurredAt, 500));
     if (deviceId != null) event = event.addKeyValue("deviceId", deviceId);

@@ -16,9 +16,9 @@ public interface InventoryManagementUseCases {
 
   List<Inventory> findByLocationId(Long locationId);
 
-  Page<Inventory> findLowStock(Pageable pageable);
+  Page<Inventory> findLowStock(InventorySearchCriteria criteria, Pageable pageable);
 
-  Page<Inventory> findOutOfStock(Pageable pageable);
+  Page<Inventory> findOutOfStock(InventorySearchCriteria criteria, Pageable pageable);
 
   Inventory createInitialStock(long itemId, long locationId, int initialQuantity);
 }

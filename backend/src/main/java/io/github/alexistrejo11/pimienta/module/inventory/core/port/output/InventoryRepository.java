@@ -19,9 +19,9 @@ public interface InventoryRepository {
 
   List<Inventory> findByLocationId(long locationId);
 
-  Page<Inventory> findLowStock(Pageable pageable);
+  Page<Inventory> findLowStock(InventorySearchCriteria criteria, Pageable pageable);
 
-  Page<Inventory> findOutOfStock(Pageable pageable);
+  Page<Inventory> findOutOfStock(InventorySearchCriteria criteria, Pageable pageable);
 
   long countByLocationId(long locationId);
 

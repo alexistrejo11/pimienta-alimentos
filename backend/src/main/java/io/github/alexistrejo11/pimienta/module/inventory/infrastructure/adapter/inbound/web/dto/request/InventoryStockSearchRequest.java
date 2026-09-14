@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.InventorySearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory.InventoryStatus;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
+import java.util.List;
 
 public class InventoryStockSearchRequest extends PageableRequest {
 
@@ -43,7 +44,7 @@ public class InventoryStockSearchRequest extends PageableRequest {
     this.headquarterId = headquarterId;
   }
 
-  public InventorySearchCriteria toCriteria(Long effectiveHeadquarterId) {
-    return new InventorySearchCriteria(itemId, locationId, status, effectiveHeadquarterId);
+  public InventorySearchCriteria toCriteria(List<Long> effectiveHeadquarterIds) {
+    return new InventorySearchCriteria(itemId, locationId, status, effectiveHeadquarterIds);
   }
 }

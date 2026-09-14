@@ -37,7 +37,7 @@ export class VentasPageComponent implements OnInit {
     this.dateTo = range.to.slice(0, 10);
 
     if (!this.session.isAdmin()) {
-      this.selectedHeadquarterId = this.session.managerHeadquarterId();
+      this.selectedHeadquarterId = this.session.activeHeadquarterId();
       this.cargar();
     } else {
       this.loading.set(false);
@@ -46,6 +46,7 @@ export class VentasPageComponent implements OnInit {
 
   onHeadquarterChange(value: number | number[] | null): void {
     this.selectedHeadquarterId = typeof value === 'number' ? value : null;
+    this.session.selectHeadquarter(this.selectedHeadquarterId);
     if (this.initialLoad && this.selectedHeadquarterId != null) {
       this.initialLoad = false;
       this.cargar();

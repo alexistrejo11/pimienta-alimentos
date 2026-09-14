@@ -3,6 +3,8 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement;
+import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryMovementQueryUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryMovementByReference;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryMovementGetById;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping(BASE + "/inventory/movements")
@@ -33,18 +36,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class InventoryMovementController {
 
   private final InventoryMovementQueryUseCases inventoryMovementQueryUseCases;
+  private final HeadquarterAccessService headquarterAccessService;
 
-  public InventoryMovementController(InventoryMovementQueryUseCases inventoryMovementQueryUseCases) {
+  public InventoryMovementController(InventoryMovementQueryUseCases inventoryMovementQueryUseCases,
+      HeadquarterAccessService headquarterAccessService) {
     this.inventoryMovementQueryUseCases = inventoryMovementQueryUseCases;
+    this.headquarterAccessService = headquarterAccessService;
   }
 
   @GetMapping
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryMovementSearch
   public PagedResponse<InventoryMovementResponse> searchMovements(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @ParameterObject @ModelAttribute InventoryMovementSearchRequest filter) {
     Page<InventoryMovement> page =
         inventoryMovementQueryUseCases.search(filter.toCriteria(), filter.toPageable());
+    page.forEach(m -> requireAccess(principal, m));
     return PagedResponse.map(page, InventoryMovementWebMapper::toResponse);
   }
 
@@ -52,33 +60,47 @@ public class InventoryMovementController {
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryMovementByReference
   public List<InventoryMovementResponse> findByReferenceNumber(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @RequestParam("referenceNumber") String referenceNumber) {
     List<InventoryMovement> movements =
         inventoryMovementQueryUseCases.findByReferenceNumber(referenceNumber);
+    movements.forEach(m -> requireAccess(principal, m));
     return movements.stream().map(InventoryMovementWebMapper::toResponse).toList();
   }
 
   @GetMapping("/item/{itemId}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryMovementListByItem
-  public List<InventoryMovementResponse> listByItem(@PathVariable Long itemId) {
+  public List<InventoryMovementResponse> listByItem(@AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long itemId) {
     List<InventoryMovement> movements = inventoryMovementQueryUseCases.findByItemId(itemId);
+    movements.forEach(m -> requireAccess(principal, m));
     return movements.stream().map(InventoryMovementWebMapper::toResponse).toList();
   }
 
   @GetMapping("/location/{locationId}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryMovementListByLocation
-  public List<InventoryMovementResponse> listByLocation(@PathVariable Long locationId) {
+  public List<InventoryMovementResponse> listByLocation(@AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long locationId) {
     List<InventoryMovement> movements = inventoryMovementQueryUseCases.findByLocationId(locationId);
+    movements.forEach(m -> requireAccess(principal, m));
     return movements.stream().map(InventoryMovementWebMapper::toResponse).toList();
   }
 
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryMovementGetById
-  public InventoryMovementResponse getMovementById(@PathVariable Long id) {
+  public InventoryMovementResponse getMovementById(@AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
     InventoryMovement movement = inventoryMovementQueryUseCases.getById(id);
+    requireAccess(principal, movement);
     return InventoryMovementWebMapper.toResponse(movement);
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, InventoryMovement movement) {
+    if (movement.getSourceLocation() != null) {
+      headquarterAccessService.requireOwnedLocation(principal, movement.getSourceLocation().getHeadquarterId());
+    }
+    if (movement.getDestinationLocation() != null) {
+      headquarterAccessService.requireOwnedLocation(principal, movement.getDestinationLocation().getHeadquarterId());
+    }
   }
 }

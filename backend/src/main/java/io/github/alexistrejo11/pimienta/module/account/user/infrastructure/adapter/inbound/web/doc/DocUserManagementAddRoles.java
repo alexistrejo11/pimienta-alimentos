@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 @Documented
 @DocJwtSecured
 @Operation(
-    summary = "Add roles to user",
+    summary = "Replace user roles",
     description =
         """
         Adds roles from the request body (enum names such as `MANAGER`, `ADMIN`). Idempotent merge \

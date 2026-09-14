@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLocation.LocationStatus;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLocation.LocationType;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
+import java.util.List;
 
 public class StorageLocationSearchRequest extends PageableRequest {
 
@@ -35,7 +36,7 @@ public class StorageLocationSearchRequest extends PageableRequest {
     this.headquarterId = headquarterId;
   }
 
-  public StorageLocationSearchCriteria toCriteria(Long effectiveHeadquarterId) {
-    return new StorageLocationSearchCriteria(type, status, effectiveHeadquarterId);
+  public StorageLocationSearchCriteria toCriteria(List<Long> effectiveHeadquarterIds) {
+    return new StorageLocationSearchCriteria(type, status, effectiveHeadquarterIds);
   }
 }

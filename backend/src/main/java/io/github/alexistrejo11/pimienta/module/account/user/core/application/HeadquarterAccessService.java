@@ -2,7 +2,6 @@ package io.github.alexistrejo11.pimienta.module.account.user.core.application;
 
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.User;
-import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.exceptions.UserNotFoundException;
 import io.github.alexistrejo11.pimienta.module.account.user.core.port.output.UserRepository;
 import io.github.alexistrejo11.pimienta.shared.exception.ForbiddenException;
@@ -26,7 +25,7 @@ public class HeadquarterAccessService {
     if (isAdmin(principal)) {
       return;
     }
-    if (isManager(principal) && assignedHeadquarters(principal).contains(headquarterId)) {
+    if (isScopedStaff(principal) && assignedHeadquarters(principal).contains(headquarterId)) {
       return;
     }
     throw forbidden(headquarterId);
@@ -103,6 +102,35 @@ public class HeadquarterAccessService {
       requireHeadquarterAccess(principal, requestedHeadquarterId);
     }
     return requestedHeadquarterId;
+  }
+
+  /** Returns all HQs in scope; null denotes an ADMIN-wide query. */
+  @Transactional(readOnly = true)
+  public List<Long> enforceHeadquarterScope(JwtAuthenticationContext principal, Long requestedHeadquarterId) {
+    if (isAdmin(principal)) {
+      return requestedHeadquarterId == null ? null : List.of(requestedHeadquarterId);
+    }
+    if (requestedHeadquarterId != null) {
+      requireHeadquarterAccess(principal, requestedHeadquarterId);
+      return List.of(requestedHeadquarterId);
+    }
+    return isScopedStaff(principal) ? List.copyOf(assignedHeadquarters(principal)) : List.of();
+  }
+
+  private boolean isScopedStaff(JwtAuthenticationContext principal) {
+    return isManager(principal)
+        || principal.roles().stream()
+            .anyMatch(r -> "POS_OPERATOR".equals(r) || "ROLE_POS_OPERATOR".equals(r));
+  }
+
+  /** Null-owned warehouse locations are global data and are ADMIN-only. */
+  @Transactional(readOnly = true)
+  public void requireOwnedLocation(JwtAuthenticationContext principal, Long headquarterId) {
+    if (headquarterId == null) {
+      requireGlobalPosAccess(principal);
+    } else {
+      requireHeadquarterAccess(principal, headquarterId);
+    }
   }
 
   private User loadUser(JwtAuthenticationContext principal) {

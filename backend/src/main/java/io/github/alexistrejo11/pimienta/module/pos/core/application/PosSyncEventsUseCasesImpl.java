@@ -24,6 +24,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosDeviceRep
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSaleRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncEventRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncIncidentRepository;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosShiftRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,8 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
 
   private static final Logger log = LoggerFactory.getLogger(PosSyncEventsUseCasesImpl.class);
   private static final String SALE_CONFIRMED = "SALE_CONFIRMED";
+  private static final Set<String> SHIFT_EVENTS = Set.of(
+      "SHIFT_OPENED", "CASH_WITHDRAWAL_RECORDED", "CASH_DEPOSIT_RECORDED", "CASH_COUNT_SUBMITTED", "SHIFT_CLOSED");
 
   private final PosDeviceRepository deviceRepository;
   private final PosSyncEventRepository syncEventRepository;
@@ -53,6 +57,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
   private final PosSaleInventoryUseCases posSaleInventoryUseCases;
   private final PosEventStockProjector eventStockProjector;
   private final TransactionTemplate transactionTemplate;
+  private final PosShiftRepository shiftRepository;
 
   public PosSyncEventsUseCasesImpl(
       PosDeviceRepository deviceRepository,
@@ -62,7 +67,8 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       HeadquarterItemRepository headquarterItemRepository,
       PosSaleInventoryUseCases posSaleInventoryUseCases,
       PosEventStockProjector eventStockProjector,
-      PlatformTransactionManager transactionManager) {
+      PlatformTransactionManager transactionManager,
+      PosShiftRepository shiftRepository) {
     this.deviceRepository = deviceRepository;
     this.syncEventRepository = syncEventRepository;
     this.saleRepository = saleRepository;
@@ -71,6 +77,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
     this.posSaleInventoryUseCases = posSaleInventoryUseCases;
     this.eventStockProjector = eventStockProjector;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
+    this.shiftRepository = shiftRepository;
   }
 
   @Override
@@ -127,6 +134,15 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       return processSaleConfirmed(device, item);
     }
 
+    if (SHIFT_EVENTS.contains(item.eventType()) && !validShiftEvent(item)) {
+      return new EventIngestResult(
+          item.eventId(),
+          PosEventResultStatus.REJECTED,
+          Instant.now(),
+          null,
+          "required shift event identifiers or payload fields are missing");
+    }
+
     PosSyncEvent event =
         PosSyncEvent.builder()
             .withId(item.eventId())
@@ -143,6 +159,9 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
             .withMessage(null)
             .register();
     PosSyncEvent saved = syncEventRepository.save(event);
+    if (SHIFT_EVENTS.contains(item.eventType())) {
+      shiftRepository.materialize(saved);
+    }
     eventStockProjector.project(
         device.getHeadquarterId(),
         saved.getId(),
@@ -156,6 +175,24 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
         saved.getServerReceivedAt(),
         null,
         null);
+  }
+
+  private static boolean validShiftEvent(IngestPosEventItem item) {
+    if (item.shiftId() == null || item.aggregateId() == null || item.payloadJson() == null
+        || item.payloadJson().isBlank() || "{}".equals(item.payloadJson())) {
+      return false;
+    }
+    return switch (item.eventType()) {
+      case "SHIFT_OPENED" -> item.payloadJson().contains("shiftId")
+          && item.payloadJson().contains("openingCashCentavos");
+      case "CASH_WITHDRAWAL_RECORDED", "CASH_DEPOSIT_RECORDED" -> item.payloadJson().contains("amountCentavos");
+      case "CASH_COUNT_SUBMITTED" -> item.payloadJson().contains("totalCentavos")
+          && item.payloadJson().contains("denominations");
+      case "SHIFT_CLOSED" -> item.payloadJson().contains("cashExpectedCentavos")
+          && item.payloadJson().contains("countedCashCentavos")
+          && item.payloadJson().contains("differenceCentavos");
+      default -> false;
+    };
   }
 
   private EventIngestResult processSaleConfirmed(PosDevice device, IngestPosEventItem item) {

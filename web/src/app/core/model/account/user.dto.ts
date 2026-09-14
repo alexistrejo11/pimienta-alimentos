@@ -1,4 +1,4 @@
-import type { AccountStatus, Gender } from './enums';
+import type { AccountStatus, AppRole, Gender } from './enums';
 
 /** GET /api/v1/users/me — perfil del usuario autenticado (JWT). */
 export interface UserResponse {
@@ -13,7 +13,7 @@ export interface UserResponse {
   accountStatus: AccountStatus;
   bannedReason: string | null;
   bannedAt: string | null;
-  roles: string[];
+  roles: AppRole[];
   permissions: string[];
   assignedHeadquarterIds: number[];
   createdAt: string;
@@ -46,6 +46,10 @@ export interface UserStatisticsResponse {
   totalUsers: number;
   activeUsers: number;
   bannedUsers: number;
+}
+
+export interface AssignHeadquartersRequest {
+  headquarterIds: number[];
 }
 
 /** POST /api/v1/users/management/:id/roles */

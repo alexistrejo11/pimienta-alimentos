@@ -1,0 +1,7 @@
+<section class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <div><h1 class="font-headline text-3xl font-extrabold text-on-surface">Asistencia</h1><p class="mt-1 text-on-surface-variant">Registros de la jornada actual.</p></div>
+  @if (error(); as err) { <div role="alert" class="rounded-lg bg-red-50 p-4 text-red-900">{{ err.message }}</div> }
+  @if (loading()) { <div class="ui-panel p-8 text-center text-on-surface-variant">Cargando registros...</div> } @else {
+    <div class="ui-panel overflow-x-auto"><table class="w-full min-w-[700px] text-sm"><thead class="border-b border-outline-variant/20 text-left"><tr><th class="p-4">Empleado</th><th class="p-4">Sede</th><th class="p-4">Entrada</th><th class="p-4">Salida</th><th class="p-4">Estado</th></tr></thead><tbody class="divide-y divide-outline-variant/15">@for (record of records(); track record.id) { <tr><td class="p-4">{{ record.employeeFullName }}</td><td class="p-4">{{ record.headquarterId }}</td><td class="p-4">{{ record.checkInTime | date:'shortTime' }}</td><td class="p-4">{{ record.checkOutTime ? (record.checkOutTime | date:'shortTime') : 'En turno' }}</td><td class="p-4">{{ statusLabel(record.status) }}</td></tr> }</tbody></table></div>
+  }
+</section>

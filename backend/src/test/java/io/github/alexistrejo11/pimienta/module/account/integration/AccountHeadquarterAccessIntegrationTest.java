@@ -65,7 +65,7 @@ class AccountHeadquarterAccessIntegrationTest {
   }
 
   @Test
-  void managerForbiddenOnInventoryLocations() throws Exception {
+  void managerCanReadInventoryLocationsWithinAssignedHeadquarter() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
     long hq1 = createHeadquarter(admin.token(), "ACL-INV1-" + UUID.randomUUID());
     putPosSettings(admin.token(), hq1);
@@ -77,11 +77,11 @@ class AccountHeadquarterAccessIntegrationTest {
         .perform(
             AccountTestRequests.getBearer(
                 "/api/v1/inventory/locations?type=POS&page=0&size=20", manager.token()))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isOk());
   }
 
   @Test
-  void managerForbiddenOnInventoryStock() throws Exception {
+  void managerCanReadInventoryStockWithinAssignedHeadquarter() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
     long hq1 = createHeadquarter(admin.token(), "ACL-STK1-" + UUID.randomUUID());
     putPosSettings(admin.token(), hq1);
@@ -92,16 +92,16 @@ class AccountHeadquarterAccessIntegrationTest {
     mockMvc
         .perform(
             AccountTestRequests.getBearer("/api/v1/inventory/stock?page=0&size=20", manager.token()))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isOk());
   }
 
   @Test
-  void managerForbiddenOnNonPosStaffApis() throws Exception {
+  void managerCanReadTalentButNotUserManagement() throws Exception {
     TokenPair manager = obtainToken(Set.of(Role.MANAGER));
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/employees?page=0&size=10", manager.token()))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isOk());
 
     mockMvc
         .perform(

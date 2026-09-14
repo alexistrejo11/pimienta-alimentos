@@ -66,7 +66,7 @@ public class StorageLocationController {
   public PagedResponse<StorageLocationResponse> searchLocations(
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @ParameterObject @ModelAttribute StorageLocationSearchRequest filter) {
-    Long hq = headquarterAccessService.enforceHeadquarterFilter(principal, filter.getHeadquarterId());
+    List<Long> hq = headquarterAccessService.enforceHeadquarterScope(principal, filter.getHeadquarterId());
     Page<StorageLocation> page =
         storageLocationManagementUseCases.search(filter.toCriteria(hq), filter.toPageable());
     return PagedResponse.map(page, StorageLocationWebMapper::toResponse);
@@ -75,7 +75,9 @@ public class StorageLocationController {
   @GetMapping("/tree")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocStorageLocationTree
-  public List<LocationTreeNodeResponse> getLocationTree() {
+  public List<LocationTreeNodeResponse> getLocationTree(
+      @AuthenticationPrincipal JwtAuthenticationContext principal) {
+    headquarterAccessService.requireGlobalPosAccess(principal);
     List<LocationTreeNode> tree = storageLocationManagementUseCases.getTree();
     return tree.stream().map(StorageLocationWebMapper::toTreeResponse).toList();
   }
@@ -83,7 +85,10 @@ public class StorageLocationController {
   @GetMapping("/parent/{parentId}/children")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocStorageLocationChildren
-  public List<StorageLocationResponse> getChildren(@PathVariable Long parentId) {
+  public List<StorageLocationResponse> getChildren(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long parentId) {
+    StorageLocation parent = storageLocationManagementUseCases.getById(parentId);
+    headquarterAccessService.requireOwnedLocation(principal, parent.getHeadquarterId());
     List<StorageLocation> children = storageLocationManagementUseCases.getChildren(parentId);
     return children.stream().map(StorageLocationWebMapper::toResponse).toList();
   }
@@ -91,8 +96,10 @@ public class StorageLocationController {
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocStorageLocationGetById
-  public StorageLocationResponse getLocationById(@PathVariable Long id) {
+  public StorageLocationResponse getLocationById(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
     StorageLocation location = storageLocationManagementUseCases.getById(id);
+    headquarterAccessService.requireOwnedLocation(principal, location.getHeadquarterId());
     return StorageLocationWebMapper.toResponse(location);
   }
 
@@ -100,8 +107,12 @@ public class StorageLocationController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocStorageLocationCreate
-  public StorageLocationResponse createLocation(@Valid @RequestBody StorageLocationCreateRequest request) {
-    StorageLocation created = storageLocationManagementUseCases.create(StorageLocationWebMapper.toDomain(request));
+  public StorageLocationResponse createLocation(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @Valid @RequestBody StorageLocationCreateRequest request) {
+    StorageLocation domain = StorageLocationWebMapper.toDomain(request);
+    headquarterAccessService.requireOwnedLocation(principal, domain.getHeadquarterId());
+    StorageLocation created = storageLocationManagementUseCases.create(domain);
     return StorageLocationWebMapper.toResponse(created);
   }
 
@@ -109,7 +120,10 @@ public class StorageLocationController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocStorageLocationUpdate
   public StorageLocationResponse updateLocation(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @PathVariable Long id, @Valid @RequestBody StorageLocationUpdateRequest request) {
+    StorageLocation existing = storageLocationManagementUseCases.getById(id);
+    headquarterAccessService.requireOwnedLocation(principal, existing.getHeadquarterId());
     StorageLocation merged = StorageLocationWebMapper.toMergedDomain(request);
     StorageLocation updated = storageLocationManagementUseCases.update(id, merged);
     return StorageLocationWebMapper.toResponse(updated);
@@ -118,7 +132,10 @@ public class StorageLocationController {
   @PutMapping("/{id}/block")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocStorageLocationBlock
-  public StorageLocationResponse blockLocation(@PathVariable Long id) {
+  public StorageLocationResponse blockLocation(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
+    headquarterAccessService.requireOwnedLocation(
+        principal, storageLocationManagementUseCases.getById(id).getHeadquarterId());
     StorageLocation location = storageLocationManagementUseCases.block(id);
     return StorageLocationWebMapper.toResponse(location);
   }
@@ -126,7 +143,10 @@ public class StorageLocationController {
   @PutMapping("/{id}/unblock")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocStorageLocationUnblock
-  public StorageLocationResponse unblockLocation(@PathVariable Long id) {
+  public StorageLocationResponse unblockLocation(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
+    headquarterAccessService.requireOwnedLocation(
+        principal, storageLocationManagementUseCases.getById(id).getHeadquarterId());
     StorageLocation location = storageLocationManagementUseCases.unblock(id);
     return StorageLocationWebMapper.toResponse(location);
   }
@@ -134,7 +154,10 @@ public class StorageLocationController {
   @DeleteMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocStorageLocationDelete
-  public ResponseEntity<Void> deleteLocation(@PathVariable Long id) {
+  public ResponseEntity<Void> deleteLocation(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
+    headquarterAccessService.requireOwnedLocation(
+        principal, storageLocationManagementUseCases.getById(id).getHeadquarterId());
     storageLocationManagementUseCases.delete(id);
     return ResponseEntity.noContent().build();
   }

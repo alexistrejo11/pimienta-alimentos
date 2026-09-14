@@ -51,7 +51,7 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
         effective.itemId(),
         effective.locationId(),
         effective.status(),
-        effective.headquarterId());
+        effective.headquarterIds());
 
     Page<Inventory> page = inventoryRepository.search(effective, pageable);
 
@@ -93,13 +93,13 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
   }
 
   @Override
-  public Page<Inventory> findLowStock(Pageable pageable) {
+  public Page<Inventory> findLowStock(InventorySearchCriteria criteria, Pageable pageable) {
     log.debug(
         "find low stock inventory query start page={} size={}",
         pageable != null ? pageable.getPageNumber() : null,
         pageable != null ? pageable.getPageSize() : null);
 
-    Page<Inventory> page = inventoryRepository.findLowStock(pageable);
+    Page<Inventory> page = inventoryRepository.findLowStock(criteria, pageable);
 
     log.debug(
         "find low stock inventory query complete totalElements={} numberOfElements={}",
@@ -109,13 +109,13 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
   }
 
   @Override
-  public Page<Inventory> findOutOfStock(Pageable pageable) {
+  public Page<Inventory> findOutOfStock(InventorySearchCriteria criteria, Pageable pageable) {
     log.debug(
         "find out of stock inventory query start page={} size={}",
         pageable != null ? pageable.getPageNumber() : null,
         pageable != null ? pageable.getPageSize() : null);
 
-    Page<Inventory> page = inventoryRepository.findOutOfStock(pageable);
+    Page<Inventory> page = inventoryRepository.findOutOfStock(criteria, pageable);
 
     log.debug(
         "find out of stock inventory query complete totalElements={} numberOfElements={}",

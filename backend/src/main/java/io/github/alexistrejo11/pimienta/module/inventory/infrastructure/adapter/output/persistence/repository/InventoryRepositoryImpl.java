@@ -64,13 +64,13 @@ public class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @Override
-  public Page<Inventory> findLowStock(Pageable pageable) {
-    return jpaRepository.findLowStock(pageable).map(mapper::toDomain);
+  public Page<Inventory> findLowStock(InventorySearchCriteria criteria, Pageable pageable) {
+    return jpaRepository.findAll(InventorySpecifications.lowStock(criteria), pageable).map(mapper::toDomain);
   }
 
   @Override
-  public Page<Inventory> findOutOfStock(Pageable pageable) {
-    return jpaRepository.findByDeletedAtIsNullAndAvailableQuantity(0, pageable).map(mapper::toDomain);
+  public Page<Inventory> findOutOfStock(InventorySearchCriteria criteria, Pageable pageable) {
+    return jpaRepository.findAll(InventorySpecifications.outOfStock(criteria), pageable).map(mapper::toDomain);
   }
 
   @Override

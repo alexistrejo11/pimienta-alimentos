@@ -20,7 +20,16 @@
 
   @if (session.canAccessPos()) {
     <section class="flex flex-col gap-4">
-      <h2 class="font-headline text-lg font-bold text-on-surface">Punto de venta — hoy</h2>
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <h2 class="font-headline text-lg font-bold text-on-surface">Punto de venta — hoy</h2>
+        <app-headquarter-select
+          class="w-full sm:w-auto sm:min-w-[12rem]"
+          label="Sede"
+          [allowAll]="isAdmin()"
+          [value]="session.activeHeadquarterId()"
+          (valueChange)="onHeadquarterChange($event)"
+        />
+      </div>
 
       @if (posLoading()) {
         <p class="text-on-surface-variant text-sm">Cargando resumen POS…</p>
@@ -60,7 +69,7 @@
             </tbody>
           </table>
         </div>
-      } @else if (isManager() && posSummary().length > 0) {
+      } @else if (!isAdmin() && posSummary().length > 0) {
         @for (row of posSummary(); track row.headquarterId) {
           <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
             <li class="ui-panel p-5 shadow-sm">
@@ -136,4 +145,36 @@
       </ul>
     }
   </section>
+
+  @if (session.canAccessPos() && session.activeHeadquarterId() != null) {
+    <section class="flex flex-col gap-4">
+      <div class="flex items-end justify-between gap-3">
+        <div>
+          <h2 class="font-headline text-lg font-bold text-on-surface">Actividad reciente</h2>
+          <p class="text-on-surface-variant text-sm">Ventas recibidas hoy. Se actualiza automáticamente.</p>
+        </div>
+        <span class="text-on-surface-variant hidden text-xs sm:inline">Cada 30 s</span>
+      </div>
+      @if (activityLoading() && activity().length === 0) {
+        <p class="text-on-surface-variant text-sm">Cargando actividad…</p>
+      } @else if (activityError(); as err) {
+        <p class="text-error text-sm" role="alert">{{ err.message }}</p>
+      } @else if (activity().length === 0) {
+        <p class="text-on-surface-variant text-sm">Sin ventas registradas hoy.</p>
+      } @else {
+        <div class="responsive-table ui-panel">
+          <table class="w-full text-sm">
+            <thead class="ui-panel-muted">
+              <tr><th class="px-4 py-3 text-left">Folio</th><th class="px-4 py-3 text-left">Dispositivo</th><th class="px-4 py-3 text-left">Hora</th><th class="px-4 py-3 text-right">Total</th></tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant/15">
+              @for (sale of activity(); track sale.saleId) {
+                <tr><td class="px-4 py-3 font-mono">{{ sale.folio }}</td><td class="px-4 py-3">{{ sale.deviceId }}</td><td class="px-4 py-3">{{ sale.occurredAt | date: 'shortTime' }}</td><td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(sale.totalCentavos) }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
 </div>

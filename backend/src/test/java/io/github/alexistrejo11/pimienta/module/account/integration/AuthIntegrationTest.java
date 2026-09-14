@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
+import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
 import java.time.LocalDate;
@@ -72,7 +73,7 @@ class AuthIntegrationTest {
     assertThat(saved.getPhone()).isEqualTo(phone);
     assertThat(saved.getDateOfBirth()).isEqualTo(LocalDate.of(2000, 1, 10));
     assertThat(saved.getAccountStatus()).isEqualTo(AccountStatus.PENDING_APPROVAL);
-    assertThat(saved.getRoles()).isEmpty();
+    assertThat(saved.getRoles()).containsExactly(Role.USER);
     assertThat(saved.getPasswordHash()).isNotEqualTo(rawPassword);
     assertThat(passwordEncoder.matches(rawPassword, saved.getPasswordHash())).isTrue();
   }

@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { finalize } from 'rxjs';
+import { RouterLink } from '@angular/router';
+import { EMPTY, finalize, switchMap } from 'rxjs';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
 import { HeadquarterLookupService } from '../../../core/headquarters/headquarter-lookup.service';
@@ -12,7 +13,7 @@ import { HeadquarterSelectComponent } from '../../../shared/ui/headquarter-selec
 
 @Component({
   selector: 'app-inventario-page',
-  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent],
+  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent, RouterLink],
   templateUrl: './inventario-page.html',
 })
 export class InventarioPageComponent implements OnInit {
@@ -26,12 +27,13 @@ export class InventarioPageComponent implements OnInit {
   readonly posLocations = signal<StorageLocationResponse[]>([]);
 
   selectedHeadquarterId: number | null = null;
+  private initialLoad = true;
 
   readonly effectiveHeadquarterId = computed(() => {
     if (this.session.isAdmin()) {
       return this.selectedHeadquarterId;
     }
-    return this.session.managerHeadquarterId();
+    return this.session.activeHeadquarterId();
   });
 
   readonly isAdmin = this.session.isAdmin;
@@ -39,14 +41,27 @@ export class InventarioPageComponent implements OnInit {
   ngOnInit(): void {
     void this.hqLookup.ensureLoaded();
     if (!this.session.isAdmin()) {
-      this.selectedHeadquarterId = this.session.managerHeadquarterId();
+      this.selectedHeadquarterId = this.session.activeHeadquarterId();
       this.cargarStock();
+    } else {
+      // Admin waits for headquarter-select; avoid an endless spinner before a sede is chosen.
+      this.loading.set(false);
     }
   }
 
   onHeadquarterChange(id: number | number[] | null): void {
     const hqId = Array.isArray(id) ? id[0] ?? null : id;
     this.selectedHeadquarterId = hqId;
+    this.session.selectHeadquarter(hqId);
+    if (hqId == null) {
+      this.stock.set([]);
+      this.error.set(null);
+      this.loading.set(false);
+      return;
+    }
+    if (this.initialLoad) {
+      this.initialLoad = false;
+    }
     this.cargarStock();
   }
 
@@ -63,20 +78,20 @@ export class InventarioPageComponent implements OnInit {
 
     this.inventory
       .searchLocations({ type: 'POS', page: 0, size: 100 })
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: (page) => {
+      .pipe(
+        switchMap((page) => {
           this.posLocations.set(page.items);
           const loc = page.items.find((l) => l.headquarterId === hqId);
           if (!loc) {
             this.stock.set([]);
-            return;
+            return EMPTY;
           }
-          this.inventory.searchStock({ locationId: loc.id, page: 0, size: 100 }).subscribe({
-            next: (stockPage) => this.stock.set(stockPage.items),
-            error: (err: unknown) => this.error.set(parseApiError(err)),
-          });
-        },
+          return this.inventory.searchStock({ locationId: loc.id, page: 0, size: 100 });
+        }),
+        finalize(() => this.loading.set(false)),
+      )
+      .subscribe({
+        next: (stockPage) => this.stock.set(stockPage.items),
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
   }

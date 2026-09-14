@@ -20,5 +20,5 @@ public interface PosAdminReportUseCases {
 
   Page<PosSyncEvent> shiftCloses(PosReportFilterQuery filter, Pageable pageable);
 
-  List<PosReportSummaryRow> summary(Long headquarterId, Instant from, Instant to);
+  List<PosReportSummaryRow> summary(List<Long> headquarterIds, Instant from, Instant to);
 }

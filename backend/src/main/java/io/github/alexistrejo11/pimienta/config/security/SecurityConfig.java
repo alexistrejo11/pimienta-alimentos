@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
@@ -104,17 +105,40 @@ public class SecurityConfig {
                                                                 .requestMatchers(AUTH_PUBLIC_PATHS).permitAll()
                                                                 .requestMatchers(POS_DEVICE_PUBLIC_PATHS).permitAll()
                                                                  .requestMatchers(BASE + "/users/me", BASE + "/users/me/**")
-                                                                .access(staffJwtOnly())
+                                                                 .access(staffJwtOnly())
+                                                                 // POS operator read/report and sale access is deliberately narrower than POS admin.
+                                                                 .requestMatchers(
+                                                                                  BASE + "/pos/admin/reports/sales",
+                                                                                  BASE + "/pos/admin/reports/products",
+                                                                                  BASE + "/pos/admin/reports/waste-cancellations",
+                                                                                  BASE + "/pos/admin/reports/shift-closes")
+                                                                 .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
                                                                  .requestMatchers(BASE + "/pos/admin/**")
-                                                                .hasAnyRole("ADMIN", "MANAGER")
-                                                                .requestMatchers(
-                                                                                 BASE + "/headquarters/*/pos-settings",
+                                                                 .hasAnyRole("ADMIN", "MANAGER")
+                                                                 .requestMatchers(
+                                                                                  BASE + "/headquarters/*/pos-settings",
                                                                                  BASE + "/headquarters/*/pos-settings/**",
                                                                                  BASE + "/headquarters/*/pos-catalog",
                                                                                  BASE + "/headquarters/*/pos-catalog/**")
-                                                                .hasAnyRole("ADMIN", "MANAGER")
+                                                                 .hasAnyRole("ADMIN", "MANAGER")
+                                                                 // POS operators may inspect stock and submit sales, but not inventory administration.
+                                                                 .requestMatchers(HttpMethod.GET, BASE + "/inventory/**")
+                                                                 .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
+                                                                 .requestMatchers(HttpMethod.POST, BASE + "/inventory/transactions/sale")
+                                                                 .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
+                                                                 // Managers own CRM, talent, tasks, and HQ-scoped inventory workflows.
+                                                                 .requestMatchers(
+                                                                                  BASE + "/clients/**",
+                                                                                  BASE + "/opportunities/**",
+                                                                                  BASE + "/projects/**",
+                                                                                  BASE + "/tasks/**",
+                                                                                  BASE + "/employees/**",
+                                                                                  BASE + "/contracts/**",
+                                                                                  BASE + "/payroll/**",
+                                                                                  BASE + "/inventory/**")
+                                                                 .hasAnyRole("ADMIN", "MANAGER")
                                                                  .requestMatchers(BASE + "/pos/**")
-                                                                .hasAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC)
+                                                                 .hasAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC)
                                                                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                                                                 .anyRequest()
                                                                 .hasRole("ADMIN"))

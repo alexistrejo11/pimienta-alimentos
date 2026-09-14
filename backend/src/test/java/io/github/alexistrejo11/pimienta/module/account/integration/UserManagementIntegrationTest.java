@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.account.integration;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -75,7 +76,7 @@ class UserManagementIntegrationTest {
   }
 
   @Test
-  void addRoles_emptyRoles_returns400() throws Exception {
+  void replaceRoles_emptyRoles_returns400() throws Exception {
     String adminToken = obtainAdminToken();
     String targetEmail = registerPendingUser();
     long targetId = userIdByEmail(targetEmail);
@@ -181,9 +182,23 @@ class UserManagementIntegrationTest {
             AccountTestRequests.postJsonBearer(
                 "/api/v1/users/management/" + targetId + "/roles",
                 adminToken,
-                "{\"roles\":[\"SUPPORT\"]}"))
+                 "{\"roles\":[\"SUPPORT\",\"SALES\",\"SALES\"]}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.roles", hasItem("SUPPORT")));
+        .andExpect(jsonPath("$.roles", hasItem("SUPPORT")))
+        .andExpect(jsonPath("$.roles", hasItem("SALES")))
+        .andExpect(jsonPath("$.roles", hasSize(2)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/users/management/" + targetId + "/roles",
+                adminToken,
+                "{\"roles\":[\"EMPLOYEE\",\"POS_OPERATOR\",\"EMPLOYEE\"]}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.roles", hasItem("EMPLOYEE")))
+        .andExpect(jsonPath("$.roles", hasItem("POS_OPERATOR")))
+        .andExpect(jsonPath("$.roles", hasSize(2)))
+        .andExpect(jsonPath("$.roles", org.hamcrest.Matchers.not(hasItem("SUPPORT"))));
 
     mockMvc
         .perform(

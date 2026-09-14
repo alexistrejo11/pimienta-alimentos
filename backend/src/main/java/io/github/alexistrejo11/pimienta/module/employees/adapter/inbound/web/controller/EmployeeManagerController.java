@@ -151,7 +151,7 @@ public class EmployeeManagerController {
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeImport
   public SpreadsheetBulkImportResult importEmployees(
@@ -166,7 +166,7 @@ public class EmployeeManagerController {
   }
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocEmployeeRegister
@@ -178,7 +178,7 @@ public class EmployeeManagerController {
   }
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocEmployeeRegisterJsonHidden
@@ -187,7 +187,7 @@ public class EmployeeManagerController {
   }
 
   @PutMapping("/{id}/submit-for-contract")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeSubmitForContract
   public EmployeeResponse submitEmployeeForContract(@PathVariable Long id) {
@@ -204,7 +204,7 @@ public class EmployeeManagerController {
   }
 
   @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeUpdate
   public EmployeeResponse updateEmployeeMultipart(
@@ -217,7 +217,7 @@ public class EmployeeManagerController {
   }
 
   @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeUpdateJsonHidden
   public EmployeeResponse updateEmployeeJsonOnly(@PathVariable Long id, @Valid @RequestBody UpdateEmployeeRequest request) {
@@ -232,7 +232,7 @@ public class EmployeeManagerController {
   }
 
   @PutMapping("/{id}/terminate")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeTerminate
   public EmployeeResponse terminateEmployee(@PathVariable Long id) {
@@ -241,7 +241,7 @@ public class EmployeeManagerController {
   }
 
   @PutMapping("/{id}/rehire")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeRehire
   public EmployeeResponse rehireEmployee(@PathVariable Long id) {
@@ -250,7 +250,7 @@ public class EmployeeManagerController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocEmployeeDelete
   public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {

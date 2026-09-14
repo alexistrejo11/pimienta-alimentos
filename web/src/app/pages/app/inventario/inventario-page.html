@@ -4,14 +4,14 @@
     subtitle="Existencias en ubicación de punto de venta por sede"
   />
 
-  @if (isAdmin()) {
-    <app-headquarter-select
-      class="max-w-xs"
-      label="Sede"
-      [value]="selectedHeadquarterId"
-      (valueChange)="onHeadquarterChange($event)"
-    />
-  }
+  <app-headquarter-select
+    class="max-w-xs"
+    label="Sede"
+    [value]="selectedHeadquarterId"
+    (valueChange)="onHeadquarterChange($event)"
+  />
+
+  <a routerLink="/app/inventario/conteos" class="self-start rounded-lg bg-primary px-4 py-2.5 font-bold text-on-primary">Conteos físicos</a>
 
   <app-data-state
     [loading]="loading()"

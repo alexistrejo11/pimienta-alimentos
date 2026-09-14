@@ -1,5 +1,7 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { finalize } from 'rxjs';
+import { DatePipe } from '@angular/common';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { catchError, finalize, merge, of, Subject, switchMap, timer } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { SessionContextService } from '../../core/auth/session-context.service';
 import { HeadquarterLookupService } from '../../core/headquarters/headquarter-lookup.service';
@@ -8,16 +10,17 @@ import {
   type ParsedApiError,
 } from '../../core/http/parse-api-error';
 import type { UserDashboardResponse } from '../../core/model/account/user.dto';
-import type { PosReportSummaryItemResponse } from '../../core/model/pos/pos.dto';
+import type { PosReportSummaryItemResponse, PosSaleReportResponse } from '../../core/model/pos/pos.dto';
 import { formatCentavos, todayInstantRange } from '../../core/pos/pos-date.util';
 import { PosAdminService } from '../../core/pos/pos-admin.service';
 import { UserProfileService } from '../../core/user/user-profile.service';
+import { HeadquarterSelectComponent } from '../../shared/ui/headquarter-select/headquarter-select';
 
 type MetricKey = keyof UserDashboardResponse;
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [],
+  imports: [HeadquarterSelectComponent, DatePipe],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.css',
 })
@@ -35,10 +38,16 @@ export class DashboardPageComponent implements OnInit {
   readonly posLoading = signal(false);
   readonly posError = signal<ParsedApiError | null>(null);
   readonly posSummary = signal<PosReportSummaryItemResponse[]>([]);
+  readonly activity = signal<PosSaleReportResponse[]>([]);
+  readonly activityLoading = signal(false);
+  readonly activityError = signal<ParsedApiError | null>(null);
 
   readonly isAdmin = this.session.isAdmin;
   readonly isManager = this.session.isManager;
   readonly formatCentavos = formatCentavos;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly refreshPos$ = new Subject<void>();
+  private posPollingStarted = false;
 
   readonly metrics: { key: MetricKey; label: string; hint: string }[] = [
     {
@@ -91,6 +100,11 @@ export class DashboardPageComponent implements OnInit {
     return d[key];
   }
 
+  onHeadquarterChange(id: number | number[] | null): void {
+    this.session.selectHeadquarter(typeof id === 'number' ? id : null);
+    this.refreshPos$.next();
+  }
+
   private load(): void {
     this.error.set(null);
     this.loading.set(true);
@@ -98,28 +112,64 @@ export class DashboardPageComponent implements OnInit {
       .getDashboard()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (d) => this.dashboard.set(d),
+        next: (d: UserDashboardResponse) => this.dashboard.set(d),
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
 
-    if (this.session.canAccessPos()) {
-      this.loadPosSummary();
-    }
+    if (this.session.canAccessPos()) this.startPosPolling();
   }
 
-  private loadPosSummary(): void {
-    this.posError.set(null);
-    this.posLoading.set(true);
+  private startPosPolling(): void {
+    if (this.posPollingStarted) {
+      this.refreshPos$.next();
+      return;
+    }
+    this.posPollingStarted = true;
+    const ticks$ = merge(timer(0, 30_000), this.refreshPos$).pipe(takeUntilDestroyed(this.destroyRef));
 
-    const range = todayInstantRange();
-    const hqId = this.session.isAdmin() ? undefined : this.session.managerHeadquarterId() ?? undefined;
+    ticks$
+      .pipe(
+        switchMap(() => {
+          this.posError.set(null);
+          this.posLoading.set(true);
+          const range = todayInstantRange();
+          return this.posAdmin.reportSummary(this.session.activeHeadquarterId() ?? undefined, range.from, range.to).pipe(
+            catchError((err: unknown) => {
+              this.posError.set(parseApiError(err));
+              return of(null);
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.posLoading.set(false);
+        if (res) this.posSummary.set(res.rows);
+      });
 
-    this.posAdmin
-      .reportSummary(hqId, range.from, range.to)
-      .pipe(finalize(() => this.posLoading.set(false)))
-      .subscribe({
-        next: (res) => this.posSummary.set(res.rows),
-        error: (err: unknown) => this.posError.set(parseApiError(err)),
+    ticks$
+      .pipe(
+        switchMap(() => {
+          const hqId = this.session.activeHeadquarterId();
+          if (hqId == null) {
+            this.activity.set([]);
+            return of(null);
+          }
+          this.activityError.set(null);
+          this.activityLoading.set(true);
+          const range = todayInstantRange();
+          return this.posAdmin.reportSales({ headquarterId: hqId, from: range.from, to: range.to, page: 0, size: 8 }).pipe(
+            catchError((err: unknown) => {
+              this.activityError.set(parseApiError(err));
+              return of(null);
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.activityLoading.set(false);
+        if (res) this.activity.set(res.items);
       });
   }
 }

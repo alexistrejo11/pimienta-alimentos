@@ -198,7 +198,9 @@ class PosAdminSyncIncidentIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.results", hasSize(2)))
         .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
-        .andExpect(jsonPath("$.results[1].status").value("ACCEPTED"));
+        // A close without a previously materialized shift is rejected by the
+        // authoritative lifecycle projection.
+        .andExpect(jsonPath("$.results[1].status").value("REJECTED"));
 
     mockMvc
         .perform(
@@ -218,8 +220,7 @@ class PosAdminSyncIncidentIntegrationTest {
                     .formatted(hqId),
                 admin.token()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items", hasSize(1)))
-        .andExpect(jsonPath("$.items[0].eventId").value(shiftEventId.toString()));
+        .andExpect(jsonPath("$.items", hasSize(0)));
   }
 
   private record EnrolledDevice(UUID deviceId, String accessToken) {}

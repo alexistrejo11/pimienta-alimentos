@@ -34,7 +34,7 @@ export class WorkspaceShellComponent implements OnInit {
   readonly mostrarPerfil = signal(false);
 
   ngOnInit(): void {
-    this.session.load();
+    void this.session.ensureLoaded().subscribe();
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => this.mobileNavOpen.set(false));

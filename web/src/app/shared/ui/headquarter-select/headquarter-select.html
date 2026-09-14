@@ -1,12 +1,28 @@
 @if (loading()) {
   <p class="text-sm text-on-surface-variant">Cargando sedes…</p>
 } @else if (!isAdmin()) {
-  <div class="flex flex-col gap-1 text-sm">
-    <span class="font-medium">{{ label() }}</span>
-    <p class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-on-surface">
-      {{ managerSedeName() }}
-    </p>
-  </div>
+  @if (mode() === 'single' && assignedHqIds().length > 1) {
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="font-medium">{{ label() }}</span>
+      <select
+        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+        [disabled]="disabled()"
+        [ngModel]="value()"
+        (ngModelChange)="onSingleChange($event)"
+      >
+        @for (sede of sedes(); track sede.id) {
+          <option [ngValue]="sede.id">{{ sede.name }}</option>
+        }
+      </select>
+    </label>
+  } @else {
+    <div class="flex flex-col gap-1 text-sm">
+      <span class="font-medium">{{ label() }}</span>
+      <p class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-on-surface">
+        {{ managerSedeName() }}
+      </p>
+    </div>
+  }
 } @else if (mode() === 'multi') {
   <fieldset class="flex flex-col gap-2 text-sm" [disabled]="disabled()">
     <legend class="mb-1 font-medium">{{ label() }}</legend>

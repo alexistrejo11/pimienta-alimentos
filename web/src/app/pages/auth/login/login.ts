@@ -66,7 +66,12 @@ export class Login {
           void this.router.navigateByUrl(safeReturn);
         },
         error: (err: unknown) => {
-          this.apiError.set(parseApiError(err));
+          const parsed = parseApiError(err);
+          if (parsed.errorCode === 'ACCOUNT_PENDING_APPROVAL') {
+            void this.router.navigate(['/auth/pendiente-aprobacion']);
+            return;
+          }
+          this.apiError.set(parsed);
         },
       });
   }

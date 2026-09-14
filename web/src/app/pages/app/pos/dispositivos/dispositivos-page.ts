@@ -9,10 +9,11 @@ import type { PosDeviceAdminResponse } from '../../../../core/model/pos/pos.dto'
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-dispositivos-page',
-  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent],
+  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent, RouterLink],
   templateUrl: './dispositivos-page.html',
 })
 export class DispositivosPageComponent implements OnInit {
@@ -32,14 +33,13 @@ export class DispositivosPageComponent implements OnInit {
 
   ngOnInit(): void {
     void this.lookup.ensureLoaded();
-    if (!this.session.isAdmin()) {
-      this.filterHeadquarterId = this.session.managerHeadquarterId();
-    }
+    this.filterHeadquarterId = this.session.activeHeadquarterId();
     this.cargar();
   }
 
   onFilterChange(value: number | number[] | null): void {
     this.filterHeadquarterId = typeof value === 'number' ? value : null;
+    this.session.selectHeadquarter(this.filterHeadquarterId);
     this.cargar();
   }
 

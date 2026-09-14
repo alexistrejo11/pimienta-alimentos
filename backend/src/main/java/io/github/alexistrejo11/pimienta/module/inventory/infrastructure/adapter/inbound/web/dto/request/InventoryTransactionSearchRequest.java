@@ -5,6 +5,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryTr
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryTransaction.TransactionType;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 
 public class InventoryTransactionSearchRequest extends PageableRequest {
@@ -60,7 +61,7 @@ public class InventoryTransactionSearchRequest extends PageableRequest {
     this.initiatedById = initiatedById;
   }
 
-  public InventoryTransactionSearchCriteria toCriteria() {
-    return new InventoryTransactionSearchCriteria(type, status, fromDate, toDate, initiatedById);
+  public InventoryTransactionSearchCriteria toCriteria(List<Long> headquarterIds) {
+    return new InventoryTransactionSearchCriteria(type, status, fromDate, toDate, initiatedById, headquarterIds);
   }
 }

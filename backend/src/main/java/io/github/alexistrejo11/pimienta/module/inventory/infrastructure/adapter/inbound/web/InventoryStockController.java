@@ -5,7 +5,9 @@ import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.InventorySearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryManagementUseCases;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.StorageLocationManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryStock;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryStockByItem;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryStockByLocation;
@@ -45,12 +47,15 @@ public class InventoryStockController {
 
   private final InventoryManagementUseCases inventoryManagementUseCases;
   private final HeadquarterAccessService headquarterAccessService;
+  private final StorageLocationManagementUseCases storageLocationManagementUseCases;
 
   public InventoryStockController(
       InventoryManagementUseCases inventoryManagementUseCases,
-      HeadquarterAccessService headquarterAccessService) {
+      HeadquarterAccessService headquarterAccessService,
+      StorageLocationManagementUseCases storageLocationManagementUseCases) {
     this.inventoryManagementUseCases = inventoryManagementUseCases;
     this.headquarterAccessService = headquarterAccessService;
+    this.storageLocationManagementUseCases = storageLocationManagementUseCases;
   }
 
   @GetMapping
@@ -59,7 +64,7 @@ public class InventoryStockController {
   public PagedResponse<InventoryStockResponse> searchStock(
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @ParameterObject @ModelAttribute InventoryStockSearchRequest filter) {
-    Long hq = headquarterAccessService.enforceHeadquarterFilter(principal, filter.getHeadquarterId());
+    var hq = headquarterAccessService.enforceHeadquarterScope(principal, filter.getHeadquarterId());
     Page<Inventory> page =
         inventoryManagementUseCases.search(filter.toCriteria(hq), filter.toPageable());
     return PagedResponse.map(page, InventoryStockWebMapper::toResponse);
@@ -68,40 +73,46 @@ public class InventoryStockController {
   @GetMapping("/low-stock")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryStockLow
-  public PagedResponse<InventoryStockResponse> findLowStock(@ParameterObject @ModelAttribute PageableRequest pageable) {
-    Page<Inventory> page = inventoryManagementUseCases.findLowStock(pageable.toPageable());
+  public PagedResponse<InventoryStockResponse> findLowStock(@AuthenticationPrincipal JwtAuthenticationContext principal, @ParameterObject @ModelAttribute PageableRequest pageable) {
+    Page<Inventory> page = inventoryManagementUseCases.findLowStock(new InventorySearchCriteria(null, null, null, headquarterAccessService.enforceHeadquarterScope(principal, null)), pageable.toPageable());
     return PagedResponse.map(page, InventoryStockWebMapper::toResponse);
   }
 
   @GetMapping("/out-of-stock")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryStockOut
-  public PagedResponse<InventoryStockResponse> findOutOfStock(@ParameterObject @ModelAttribute PageableRequest pageable) {
-    Page<Inventory> page = inventoryManagementUseCases.findOutOfStock(pageable.toPageable());
+  public PagedResponse<InventoryStockResponse> findOutOfStock(@AuthenticationPrincipal JwtAuthenticationContext principal, @ParameterObject @ModelAttribute PageableRequest pageable) {
+    Page<Inventory> page = inventoryManagementUseCases.findOutOfStock(new InventorySearchCriteria(null, null, null, headquarterAccessService.enforceHeadquarterScope(principal, null)), pageable.toPageable());
     return PagedResponse.map(page, InventoryStockWebMapper::toResponse);
   }
 
   @GetMapping("/item/{itemId}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryStockByItem
-  public List<InventoryStockResponse> listByItem(@PathVariable Long itemId) {
+  public List<InventoryStockResponse> listByItem(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long itemId) {
     List<Inventory> rows = inventoryManagementUseCases.findByItemId(itemId);
+    rows.forEach(row -> headquarterAccessService.requireOwnedLocation(principal, row.getLocation().getHeadquarterId()));
     return rows.stream().map(InventoryStockWebMapper::toResponse).toList();
   }
 
   @GetMapping("/location/{locationId}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryStockByLocation
-  public List<InventoryStockResponse> listByLocation(@PathVariable Long locationId) {
+  public List<InventoryStockResponse> listByLocation(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long locationId) {
     List<Inventory> rows = inventoryManagementUseCases.findByLocationId(locationId);
+    rows.forEach(row -> headquarterAccessService.requireOwnedLocation(principal, row.getLocation().getHeadquarterId()));
     return rows.stream().map(InventoryStockWebMapper::toResponse).toList();
   }
 
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryStockGetById
-  public InventoryStockResponse getStockById(@PathVariable Long id) {
+  public InventoryStockResponse getStockById(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
     Inventory inv = inventoryManagementUseCases.getById(id);
+    headquarterAccessService.requireOwnedLocation(principal, inv.getLocation().getHeadquarterId());
     return InventoryStockWebMapper.toResponse(inv);
   }
 
@@ -109,7 +120,8 @@ public class InventoryStockController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @ResponseStatus(HttpStatus.CREATED)
   @DocInventoryStockCreateInitial
-  public InventoryStockResponse createInitialStock(@Valid @RequestBody CreateInitialStockRequest request) {
+  public InventoryStockResponse createInitialStock(@AuthenticationPrincipal JwtAuthenticationContext principal, @Valid @RequestBody CreateInitialStockRequest request) {
+    headquarterAccessService.requireOwnedLocation(principal, storageLocationManagementUseCases.getById(request.locationId()).getHeadquarterId());
     Inventory created = inventoryManagementUseCases.createInitialStock(
         request.itemId(), request.locationId(), request.initialQuantity());
     return InventoryStockWebMapper.toResponse(created);

@@ -1,15 +1,13 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header title="Dispositivos POS" subtitle="Tablets enroladas por sede" />
 
-  @if (isAdmin()) {
-    <app-headquarter-select
-      class="max-w-xs"
-      label="Filtrar por sede"
-      [allowAll]="true"
-      [value]="filterHeadquarterId"
-      (valueChange)="onFilterChange($event)"
-    />
-  }
+  <app-headquarter-select
+    class="max-w-xs"
+    label="Filtrar por sede"
+    [allowAll]="isAdmin()"
+    [value]="filterHeadquarterId"
+    (valueChange)="onFilterChange($event)"
+  />
 
   <app-data-state
     [loading]="loading()"
@@ -33,7 +31,7 @@
         <tbody class="divide-y divide-outline-variant/15">
           @for (d of devices(); track d.id) {
             <tr>
-              <td class="px-4 py-3 font-mono">{{ d.visibleCode }}</td>
+              <td class="px-4 py-3 font-mono"><a class="font-semibold text-primary hover:underline" [routerLink]="['/app/pos/dispositivos', d.id]">{{ d.visibleCode }}</a></td>
               <td class="px-4 py-3">{{ d.deviceName || '—' }}</td>
               <td class="px-4 py-3">{{ hqName(d.headquarterId) }}</td>
               <td class="px-4 py-3">{{ d.appVersion || '—' }}</td>

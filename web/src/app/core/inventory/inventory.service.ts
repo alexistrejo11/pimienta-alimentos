@@ -13,6 +13,9 @@ import type {
   ItemUpdateRequest,
   StorageLocationResponse,
   StorageLocationSearchParams,
+  InventoryCountResponseRequest,
+  InventoryCountSessionResponse,
+  OpenInventoryCountRequest,
 } from '../model/inventory/inventory.dto';
 import type { PagedResponse } from '../model/common/pagination';
 
@@ -23,6 +26,7 @@ export class InventoryService {
   private readonly itemsBase = `${API_BASE_URL}/inventory/items`;
   private readonly stockBase = `${API_BASE_URL}/inventory/stock`;
   private readonly locationsBase = `${API_BASE_URL}/inventory/locations`;
+  private readonly countsBase = `${API_BASE_URL}/inventory/count-sessions`;
 
   // ── Ítems maestro ─────────────────────────────────────────────────────────
 
@@ -86,5 +90,29 @@ export class InventoryService {
       .set('size', String(params.size ?? 50));
     if (params.type) p = p.set('type', params.type);
     return this.http.get<PagedResponse<StorageLocationResponse>>(this.locationsBase, { params: p });
+  }
+
+  openCount(body: OpenInventoryCountRequest): Observable<InventoryCountSessionResponse> {
+    return this.http.post<InventoryCountSessionResponse>(this.countsBase, body);
+  }
+
+  getCount(id: number): Observable<InventoryCountSessionResponse> {
+    return this.http.get<InventoryCountSessionResponse>(`${this.countsBase}/${id}`);
+  }
+
+  respondToCount(id: number, body: InventoryCountResponseRequest): Observable<InventoryCountSessionResponse> {
+    return this.http.post<InventoryCountSessionResponse>(`${this.countsBase}/${id}/responses`, body);
+  }
+
+  submitCount(id: number): Observable<InventoryCountSessionResponse> {
+    return this.http.post<InventoryCountSessionResponse>(`${this.countsBase}/${id}/submit`, {});
+  }
+
+  approveCount(id: number): Observable<InventoryCountSessionResponse> {
+    return this.http.post<InventoryCountSessionResponse>(`${this.countsBase}/${id}/approve`, {});
+  }
+
+  cancelCount(id: number): Observable<void> {
+    return this.http.post<void>(`${this.countsBase}/${id}/cancel`, {});
   }
 }

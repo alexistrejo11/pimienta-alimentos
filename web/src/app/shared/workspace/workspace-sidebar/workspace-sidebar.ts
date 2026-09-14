@@ -1,8 +1,113 @@
-import { Component, inject, input, output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
+import { AppRole } from '../../../core/model/account/enums';
 import { BRAND_LOGO_URL } from '../../../pages/home/brand';
+
+export type WorkspaceNavAction = 'attendance-today' | 'attendance-search';
+
+export interface WorkspaceNavItem {
+  readonly label: string;
+  readonly icon: string;
+  readonly route?: string;
+  readonly action?: WorkspaceNavAction;
+  readonly roles: readonly AppRole[];
+  readonly children?: readonly WorkspaceNavItem[];
+}
+
+export interface WorkspaceNavSection {
+  readonly id: string;
+  readonly label: string;
+  readonly items: readonly WorkspaceNavItem[];
+  readonly roles?: readonly AppRole[];
+}
+
+const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
+const STAFF = [AppRole.ADMIN, AppRole.MANAGER];
+const POS_OPERATION = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
+const ADMIN_ONLY = [AppRole.ADMIN];
+
+/** The sidebar catalog is the UI's role-filtered navigation contract. */
+export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
+  {
+    id: 'overview',
+    label: 'Resumen',
+    items: [
+      { label: 'Resumen', icon: 'dashboard', route: '/app/dashboard', roles: STAFF },
+    ],
+  },
+  {
+    id: 'crm',
+    label: 'CRM',
+    items: [
+      { label: 'Oportunidades', icon: 'trending_up', route: '/app/crm/oportunidades', roles: ADMIN_MANAGER },
+      { label: 'Proyectos', icon: 'folder_open', route: '/app/crm/proyectos', roles: ADMIN_MANAGER },
+    ],
+  },
+  {
+    id: 'operations',
+    label: 'Operaciones',
+    items: [
+      { label: 'Sedes', icon: 'location_on', route: '/app/sedes', roles: ADMIN_MANAGER },
+      { label: 'Empleados', icon: 'badge', route: '/app/empleados', roles: ADMIN_MANAGER },
+      { label: 'Nómina', icon: 'payments', route: '/app/nomina', roles: ADMIN_MANAGER },
+      { label: 'Tareas', icon: 'task_alt', route: '/app/tareas', roles: STAFF },
+      { label: 'Archivos', icon: 'folder', route: '/app/archivos', roles: STAFF },
+      { label: 'Contratos', icon: 'contract', route: '/app/contratos', roles: ADMIN_MANAGER },
+    ],
+  },
+  {
+    id: 'pos',
+    label: 'Punto de venta',
+    roles: POS_OPERATION,
+    items: [
+      { label: 'Inventario POS', icon: 'warehouse', route: '/app/inventario', roles: POS_OPERATION },
+      { label: 'Conteos físicos', icon: 'fact_check', route: '/app/inventario/conteos', roles: POS_OPERATION },
+      { label: 'Catálogo por sede', icon: 'storefront', route: '/app/pos/catalogo', roles: ADMIN_MANAGER },
+      { label: 'Ventas', icon: 'receipt_long', route: '/app/pos/ventas', roles: POS_OPERATION },
+      { label: 'Mermas', icon: 'delete_sweep', route: '/app/pos/mermas', roles: POS_OPERATION },
+      { label: 'Cortes', icon: 'point_of_sale', route: '/app/pos/cortes', roles: POS_OPERATION },
+      {
+        label: 'Configuración POS',
+        icon: 'settings',
+        roles: ADMIN_MANAGER,
+        children: [
+          { label: 'Dispositivos', icon: 'tablet_android', route: '/app/pos/dispositivos', roles: ADMIN_MANAGER },
+          { label: 'Enrolamiento', icon: 'qr_code_2', route: '/app/pos/enrolamiento', roles: ADMIN_MANAGER },
+          { label: 'Operadores', icon: 'group', route: '/app/pos/operadores', roles: ADMIN_MANAGER },
+          { label: 'Incidencias', icon: 'sync_problem', route: '/app/pos/incidencias', roles: [AppRole.ADMIN] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'inventory',
+    label: 'Inventario',
+    roles: ADMIN_MANAGER,
+    items: [
+      { label: 'Artículos maestros', icon: 'inventory_2', route: '/app/catalogo', roles: [AppRole.ADMIN] },
+    ],
+  },
+  {
+    id: 'attendance',
+    label: 'Asistencia',
+    items: [
+      { label: 'Asistencia', icon: 'today', route: '/app/asistencia', roles: ADMIN_MANAGER },
+      { label: 'Mi asistencia', icon: 'schedule', route: '/app/mi-asistencia', roles: [AppRole.EMPLOYEE] },
+    ],
+  },
+  {
+    id: 'administration',
+    label: 'Administración',
+    items: [
+      { label: 'Usuarios', icon: 'manage_accounts', route: '/app/usuarios', roles: ADMIN_ONLY },
+    ],
+  },
+];
+
+export const WORKSPACE_ACTIONS: readonly WorkspaceNavItem[] = [];
 
 @Component({
   selector: 'app-workspace-sidebar',
@@ -12,11 +117,17 @@ import { BRAND_LOGO_URL } from '../../../pages/home/brand';
 })
 export class WorkspaceSidebarComponent {
   private readonly session = inject(SessionContextService);
+  private readonly router = inject(Router);
 
   readonly logoUrl = BRAND_LOGO_URL;
   readonly abierta = input(false);
-  readonly canAccessPos = this.session.canAccessPos;
-  readonly isAdmin = this.session.isAdmin;
+  readonly navigation = computed(() => WORKSPACE_NAVIGATION
+    .map((section) => ({ ...section, items: this.visibleItems(section.items) }))
+    .filter((section) => section.items.length > 0));
+  readonly actions = computed(() => WORKSPACE_ACTIONS.filter((item) => this.canSee(item)));
+  readonly currentUrl = signal(this.router.url);
+  readonly expandedSections = signal<ReadonlySet<string>>(new Set());
+  readonly expandedItems = signal<ReadonlySet<string>>(new Set());
 
   readonly cerrar = output<void>();
   readonly abrirAsistenciaHoy = output<void>();
@@ -26,4 +137,77 @@ export class WorkspaceSidebarComponent {
   /** Base styles; active state is layered via {@link RouterLinkActive}. */
   readonly navLinkInactive =
     'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-bold tracking-tight text-on-surface-variant transition-colors hover:bg-surface-container';
+
+  constructor() {
+    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((event) => {
+      this.currentUrl.set(event.urlAfterRedirects);
+    });
+    effect(() => {
+      const active = this.navigation().find((section) => this.sectionIsActive(section));
+      if (active) {
+        this.expandedSections.update((expanded) => {
+          const next = new Set(expanded);
+          next.add(active.id);
+          return next;
+        });
+        active.items.filter((item) => item.children && this.itemIsActive(item)).forEach((item) => {
+          this.expandedItems.update((expanded) => new Set(expanded).add(this.itemKey(active.id, item)));
+        });
+      }
+    });
+  }
+
+  toggleSection(sectionId: string): void {
+    this.expandedSections.update((expanded) => {
+      const next = new Set(expanded);
+      next.has(sectionId) ? next.delete(sectionId) : next.add(sectionId);
+      return next;
+    });
+  }
+
+  isExpanded(sectionId: string): boolean {
+    return this.expandedSections().has(sectionId);
+  }
+
+  toggleItem(sectionId: string, item: WorkspaceNavItem): void {
+    const key = this.itemKey(sectionId, item);
+    this.expandedItems.update((expanded) => {
+      const next = new Set(expanded);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  isItemExpanded(sectionId: string, item: WorkspaceNavItem): boolean {
+    return this.expandedItems().has(this.itemKey(sectionId, item));
+  }
+
+  sectionIsActive(section: WorkspaceNavSection): boolean {
+    return section.items.some((item) => this.itemIsActive(item));
+  }
+
+  itemIsActive(item: WorkspaceNavItem): boolean {
+    return (item.route !== undefined && this.currentUrl().startsWith(item.route))
+      || (item.children?.some((child) => this.itemIsActive(child)) ?? false);
+  }
+
+  activate(item: WorkspaceNavItem): void {
+    if (item.action === 'attendance-today') this.abrirAsistenciaHoy.emit();
+    if (item.action === 'attendance-search') this.abrirAsistenciaBusqueda.emit();
+  }
+
+  private visibleItems(items: readonly WorkspaceNavItem[]): WorkspaceNavItem[] {
+    return items
+      .filter((item) => this.canSee(item))
+      .map((item) => ({ ...item, children: item.children ? this.visibleItems(item.children) : undefined }))
+      .filter((item) => !item.children || item.children.length > 0 || item.route || item.action);
+  }
+
+  private canSee(item: WorkspaceNavItem): boolean {
+    return item.roles.some((role) => this.session.roles().includes(role));
+  }
+
+  private itemKey(sectionId: string, item: WorkspaceNavItem): string {
+    return `${sectionId}:${item.label}`;
+  }
 }

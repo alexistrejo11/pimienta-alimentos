@@ -10,6 +10,7 @@ import { FILE_MODULE_OPTIONS, FileCategory } from '../../../core/model/files/fil
 import { parseApiError, ParsedApiError } from '../../../core/http/parse-api-error';
 import { FileAssetResponse } from '../../../core/model/files/file.dto';
 import { PageMetadata } from '../../../core/model';
+import { AppRole } from '../../../core/model/account/enums';
 
 
 
@@ -75,7 +76,7 @@ export class ArchivosPageComponent implements OnInit {
       .subscribe({
         next: (user) => {
           this.isAdmin.set(
-            user.roles.some((r) => r === 'ROLE_ADMIN' || r === 'ADMIN'),
+            user.roles.some((r) => r === AppRole.ADMIN),
           );
           this.userId.set(user.id);
           this.reloadList();

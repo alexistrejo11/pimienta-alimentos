@@ -22,6 +22,7 @@ import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
 import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -51,8 +52,8 @@ public class PosAdminReportController {
       @RequestParam(required = false) Long headquarterId,
       @RequestParam Instant from,
       @RequestParam Instant to) {
-    Long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
-    return PosReportSummaryResponse.from(reportUseCases.summary(hq, from, to));
+    List<Long> hqs = headquarterAccessService.enforceHeadquarterScope(principal, headquarterId);
+    return PosReportSummaryResponse.from(reportUseCases.summary(hqs, from, to));
   }
 
   @GetMapping("/sales")

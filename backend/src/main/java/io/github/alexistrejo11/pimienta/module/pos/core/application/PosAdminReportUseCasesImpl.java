@@ -72,8 +72,8 @@ public class PosAdminReportUseCasesImpl implements PosAdminReportUseCases {
 
   @Override
   @Transactional(readOnly = true)
-  public List<PosReportSummaryRow> summary(Long headquarterId, Instant from, Instant to) {
-    List<Long> hqIds = resolveHeadquarterIds(headquarterId);
+  public List<PosReportSummaryRow> summary(List<Long> headquarterIds, Instant from, Instant to) {
+    List<Long> hqIds = resolveHeadquarterIds(headquarterIds);
     List<PosReportSummaryRow> rows = new ArrayList<>(hqIds.size());
     for (Long hqId : hqIds) {
       PosSalesSummary sales = saleRepository.summarizeAcceptedSales(hqId, from, to);
@@ -97,9 +97,9 @@ public class PosAdminReportUseCasesImpl implements PosAdminReportUseCases {
     return List.copyOf(rows);
   }
 
-  private List<Long> resolveHeadquarterIds(Long headquarterId) {
-    if (headquarterId != null) {
-      return List.of(headquarterId);
+  private List<Long> resolveHeadquarterIds(List<Long> headquarterIds) {
+    if (headquarterIds != null) {
+      return List.copyOf(headquarterIds);
     }
     return headquarterRepository.findAll(PageRequest.of(0, 500)).stream()
         .filter(h -> h.getDeletedAt() == null)

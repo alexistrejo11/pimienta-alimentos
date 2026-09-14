@@ -18,10 +18,11 @@ import type {
 import type { StockPolicy } from '../../../../core/model/pos/pos.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
+import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 
 @Component({
   selector: 'app-sede-pos-page',
-  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, FormsModule],
+  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, FormsModule, HeadquarterSelectComponent],
   templateUrl: './sede-pos-page.html',
 })
 export class SedePosPageComponent implements OnInit {
@@ -34,6 +35,7 @@ export class SedePosPageComponent implements OnInit {
   private readonly labelPrint = inject(PosLabelPrintService);
 
   readonly headquarterId = signal(0);
+  readonly globalMode = signal(false);
   readonly sedeName = signal('');
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
@@ -70,9 +72,18 @@ export class SedePosPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
+    const routeId = this.route.snapshot.paramMap.get('id');
+    const id = routeId ? Number(routeId) : Number(this.session.activeHeadquarterId() ?? 0);
+    this.globalMode.set(!routeId);
     this.headquarterId.set(id);
-    this.cargar(id);
+    if (id > 0) this.cargar(id);
+    else this.loading.set(false);
+  }
+
+  onHeadquarterChange(value: number | number[] | null): void {
+    if (!this.globalMode() || typeof value !== 'number' || value === this.headquarterId()) return;
+    this.headquarterId.set(value);
+    this.cargar(value);
   }
 
   cargar(id: number): void {
@@ -95,7 +106,10 @@ export class SedePosPageComponent implements OnInit {
           defaultNegativeStockLimit: s.defaultNegativeStockLimit,
         });
       },
-      error: (err: unknown) => this.error.set(parseApiError(err)),
+      error: (err: unknown) => {
+        const parsed = parseApiError(err);
+        if (parsed.errorCode !== 'HEADQUARTER_POS_SETTINGS_NOT_FOUND') this.error.set(parsed);
+      },
     });
 
     this.posCatalog

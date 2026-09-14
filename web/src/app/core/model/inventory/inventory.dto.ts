@@ -4,6 +4,8 @@ import type {
   ItemStatus,
   ItemUnit,
   LocationType,
+  InventoryCountStatus,
+  InventoryCountType,
 } from './inventory.enums';
 
 /** GET /api/v1/inventory/items */
@@ -126,4 +128,37 @@ export interface StorageLocationSearchParams {
   page?: number;
   size?: number;
   type?: LocationType;
+}
+
+export interface InventoryCountResponseDto {
+  itemId: number;
+  expectedQuantity: number | null;
+  countedQuantity: number | null;
+  variance: number | null;
+}
+
+export interface InventoryCountSessionResponse {
+  id: number;
+  locationId: number;
+  type: InventoryCountType;
+  status: InventoryCountStatus;
+  createdById: number;
+  submittedById: number | null;
+  approvedById: number | null;
+  createdAt: string;
+  submittedAt: string | null;
+  approvedAt: string | null;
+  cancelledAt: string | null;
+  responses: InventoryCountResponseDto[];
+}
+
+export interface OpenInventoryCountRequest {
+  locationId: number;
+  type: InventoryCountType;
+  itemIds?: number[];
+}
+
+export interface InventoryCountResponseRequest {
+  itemId: number;
+  countedQuantity: number;
 }

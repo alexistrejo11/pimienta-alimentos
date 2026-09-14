@@ -28,18 +28,23 @@ export class HeadquarterSelectComponent implements OnInit {
   readonly loading = signal(true);
   readonly isAdmin = this.session.isAdmin;
   readonly managerHqId = this.session.managerHeadquarterId;
+  readonly assignedHqIds = this.session.assignedHeadquarterIds;
 
   ngOnInit(): void {
+    this.session.ensureLoaded().subscribe({
+      next: () => this.loadHeadquarters(),
+      error: () => this.loading.set(false),
+    });
+  }
+
+  private loadHeadquarters(): void {
     if (!this.session.isAdmin()) {
-      const hqId = this.session.managerHeadquarterId();
       void this.lookup.ensureLoaded();
-      if (hqId != null) {
-        if (this.mode() === 'multi') {
-          this.valueChange.emit([hqId]);
-        } else {
-          this.valueChange.emit(hqId);
-        }
-      }
+      const ids = this.assignedHqIds();
+      this.sedes.set(ids.map((id) => ({ id, name: this.lookup.name(id) }) as HeadQuarterResponse));
+      const current = this.value();
+      if (this.mode() === 'single' && current == null) this.valueChange.emit(this.session.activeHeadquarterId());
+      if (this.mode() === 'multi' && !Array.isArray(current)) this.valueChange.emit(ids);
       this.loading.set(false);
       return;
     }
@@ -60,6 +65,7 @@ export class HeadquarterSelectComponent implements OnInit {
   }
 
   protected onSingleChange(id: number | null): void {
+    this.session.selectHeadquarter(id);
     this.valueChange.emit(id);
   }
 

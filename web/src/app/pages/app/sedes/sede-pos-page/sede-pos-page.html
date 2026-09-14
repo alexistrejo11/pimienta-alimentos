@@ -1,9 +1,9 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
-    [title]="'POS — ' + (sedeName() || 'Sede')"
+    [title]="globalMode() ? 'Catálogo POS por sede' : 'POS — ' + (sedeName() || 'Sede')"
     subtitle="Configuración de caja y catálogo surtido"
-    [backLink]="'/app/sedes/' + headquarterId()"
-    backLabel="Detalle de sede"
+    [backLink]="globalMode() ? '/app/dashboard' : '/app/sedes/' + headquarterId()"
+    [backLabel]="globalMode() ? 'Dashboard' : 'Detalle de sede'"
   />
 
   @if (!canAccess()) {
@@ -11,6 +11,15 @@
       No tienes acceso a la configuración POS de esta sede.
     </p>
   } @else {
+    @if (globalMode()) {
+      <section class="ui-panel p-6">
+        <app-headquarter-select
+          label="Sede a configurar"
+          [value]="headquarterId()"
+          (valueChange)="onHeadquarterChange($event)"
+        />
+      </section>
+    }
     <app-data-state [loading]="loading()" [error]="error()" [empty]="false">
       <section class="ui-panel p-6">
         <h2 class="font-headline text-lg font-bold text-on-surface">Políticas de caja</h2>

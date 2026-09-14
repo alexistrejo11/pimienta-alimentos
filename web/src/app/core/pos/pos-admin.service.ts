@@ -17,6 +17,8 @@ import type {
   PosReportFilterParams,
   PosReportSummaryResponse,
   PosSaleReportResponse,
+  PosShiftListParams,
+  PosShiftResponse,
   PosSyncIncidentResponse,
   UpdatePosOperatorRequest,
 } from '../model/pos/pos.dto';
@@ -126,6 +128,14 @@ export class PosAdminService {
     return this.http.get<PagedResponse<PosLedgerEventReportResponse>>(`${this.base}/reports/shift-closes`, {
       params: this.reportParams(params),
     });
+  }
+
+  listShifts(params: PosShiftListParams = {}): Observable<PagedResponse<PosShiftResponse>> {
+    let p = new HttpParams()
+      .set('page', String(params.page ?? 0))
+      .set('size', String(params.size ?? 20));
+    if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
+    return this.http.get<PagedResponse<PosShiftResponse>>(`${this.base}/shifts`, { params: p });
   }
 
   private reportParams(params: PosReportFilterParams): HttpParams {

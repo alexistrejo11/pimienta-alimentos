@@ -3,6 +3,18 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryTransaction;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.AdjustmentTransactionCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.PhysicalAdjustmentCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.PurchaseTransactionCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.ReturnClientCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.ReturnSupplierCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.SaleTransactionCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.ScrapCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.InventoryTransactionCommands.TransferTransactionCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryManagementUseCases;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.StorageLocationManagementUseCases;
+import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryTransactionManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryTransactionAdjustment;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryTransactionApprove;
@@ -45,6 +57,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping(BASE + "/inventory/transactions")
@@ -53,18 +66,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class InventoryTransactionController {
 
   private final InventoryTransactionManagementUseCases inventoryTransactionManagementUseCases;
+  private final HeadquarterAccessService headquarterAccessService;
+  private final StorageLocationManagementUseCases storageLocationManagementUseCases;
+  private final InventoryManagementUseCases inventoryManagementUseCases;
 
   public InventoryTransactionController(
-      InventoryTransactionManagementUseCases inventoryTransactionManagementUseCases) {
+      InventoryTransactionManagementUseCases inventoryTransactionManagementUseCases,
+      HeadquarterAccessService headquarterAccessService,
+      StorageLocationManagementUseCases storageLocationManagementUseCases,
+      InventoryManagementUseCases inventoryManagementUseCases) {
     this.inventoryTransactionManagementUseCases = inventoryTransactionManagementUseCases;
+    this.headquarterAccessService = headquarterAccessService;
+    this.storageLocationManagementUseCases = storageLocationManagementUseCases;
+    this.inventoryManagementUseCases = inventoryManagementUseCases;
   }
 
   @GetMapping
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryTransactionSearch
   public PagedResponse<InventoryTransactionResponse> searchTransactions(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @ParameterObject @ModelAttribute InventoryTransactionSearchRequest filter) {
-    Page<InventoryTransaction> page = inventoryTransactionManagementUseCases.search(filter.toCriteria(),
+    Page<InventoryTransaction> page = inventoryTransactionManagementUseCases.search(
+        filter.toCriteria(headquarterAccessService.enforceHeadquarterScope(principal, null)),
         filter.toPageable());
     return PagedResponse.map(page, InventoryTransactionWebMapper::toResponse);
   }
@@ -72,44 +96,66 @@ public class InventoryTransactionController {
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryTransactionGetById
-  public InventoryTransactionResponse getTransactionById(@PathVariable Long id) {
+  public InventoryTransactionResponse getTransactionById(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
     InventoryTransaction tx = inventoryTransactionManagementUseCases.getById(id);
+    requireAccess(principal, tx);
     return InventoryTransactionWebMapper.toResponse(tx);
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, InventoryTransaction tx) {
+    tx.getMovements().forEach(movement -> {
+      if (movement.getSourceLocation() != null) {
+        headquarterAccessService.requireOwnedLocation(principal, movement.getSourceLocation().getHeadquarterId());
+      }
+      if (movement.getDestinationLocation() != null) {
+        headquarterAccessService.requireOwnedLocation(principal, movement.getDestinationLocation().getHeadquarterId());
+      }
+    });
   }
 
   @PostMapping("/purchase")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionPurchase
-  public InventoryTransactionResponse purchase(@Valid @RequestBody PurchaseTransactionRequest request) {
+  public InventoryTransactionResponse purchase(@AuthenticationPrincipal JwtAuthenticationContext principal,
+      @Valid @RequestBody PurchaseTransactionRequest request) {
+    PurchaseTransactionCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases
-        .purchase(InventoryTransactionWebMapper.toCommand(request));
+        .purchase(command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
   @PostMapping("/sale")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionSale
-  public InventoryTransactionResponse sale(@Valid @RequestBody SaleTransactionRequest request) {
+  public InventoryTransactionResponse sale(@AuthenticationPrincipal JwtAuthenticationContext principal, @Valid @RequestBody SaleTransactionRequest request) {
+    SaleTransactionCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases
-        .sale(InventoryTransactionWebMapper.toCommand(request));
+        .sale(command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
   @PostMapping("/transfer")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionTransfer
-  public InventoryTransactionResponse transfer(@Valid @RequestBody TransferTransactionRequest request) {
+  public InventoryTransactionResponse transfer(@AuthenticationPrincipal JwtAuthenticationContext principal, @Valid @RequestBody TransferTransactionRequest request) {
+    TransferTransactionCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases
-        .transfer(InventoryTransactionWebMapper.toCommand(request));
+        .transfer(command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
   @PostMapping("/adjustment")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionAdjustment
-  public InventoryTransactionResponse adjustment(@Valid @RequestBody AdjustmentTransactionRequest request) {
+  public InventoryTransactionResponse adjustment(@AuthenticationPrincipal JwtAuthenticationContext principal, @Valid @RequestBody AdjustmentTransactionRequest request) {
+    AdjustmentTransactionCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases
-        .adjustment(InventoryTransactionWebMapper.toCommand(request));
+        .adjustment(command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
@@ -117,9 +163,12 @@ public class InventoryTransactionController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionReturnClient
   public InventoryTransactionResponse returnFromClient(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @Valid @RequestBody ReturnClientTransactionRequest request) {
+    ReturnClientCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases.returnFromClient(
-        InventoryTransactionWebMapper.toCommand(request));
+        command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
@@ -127,18 +176,23 @@ public class InventoryTransactionController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionReturnSupplier
   public InventoryTransactionResponse returnToSupplier(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @Valid @RequestBody ReturnSupplierTransactionRequest request) {
+    ReturnSupplierCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases.returnToSupplier(
-        InventoryTransactionWebMapper.toCommand(request));
+        command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
   @PostMapping("/scrap")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionScrap
-  public InventoryTransactionResponse scrap(@Valid @RequestBody ScrapTransactionRequest request) {
+  public InventoryTransactionResponse scrap(@AuthenticationPrincipal JwtAuthenticationContext principal, @Valid @RequestBody ScrapTransactionRequest request) {
+    ScrapCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases
-        .scrap(InventoryTransactionWebMapper.toCommand(request));
+        .scrap(command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
@@ -146,16 +200,20 @@ public class InventoryTransactionController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionPhysicalAdjustment
   public InventoryTransactionResponse physicalAdjustment(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
       @Valid @RequestBody PhysicalAdjustmentTransactionRequest request) {
+    PhysicalAdjustmentCommand command = InventoryTransactionWebMapper.toCommand(request);
+    requireAccess(principal, command);
     InventoryTransaction tx = inventoryTransactionManagementUseCases.physicalAdjustment(
-        InventoryTransactionWebMapper.toCommand(request));
+        command);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
 
   @PostMapping("/{id}/submit")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionSubmit
-  public InventoryTransactionResponse submit(@PathVariable Long id) {
+  public InventoryTransactionResponse submit(@AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
+    requireAccess(principal, inventoryTransactionManagementUseCases.getById(id));
     InventoryTransaction tx = inventoryTransactionManagementUseCases.submit(id);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
@@ -163,8 +221,9 @@ public class InventoryTransactionController {
   @PostMapping("/{id}/approve")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionApprove
-  public InventoryTransactionResponse approve(
+  public InventoryTransactionResponse approve(@AuthenticationPrincipal JwtAuthenticationContext principal,
       @PathVariable Long id, @Valid @RequestBody ApproveTransactionRequest request) {
+    requireAccess(principal, inventoryTransactionManagementUseCases.getById(id));
     InventoryTransaction tx = inventoryTransactionManagementUseCases.approve(id, request.approvedById());
     return InventoryTransactionWebMapper.toResponse(tx);
   }
@@ -172,7 +231,8 @@ public class InventoryTransactionController {
   @PostMapping("/{id}/complete")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionComplete
-  public InventoryTransactionResponse complete(@PathVariable Long id) {
+  public InventoryTransactionResponse complete(@AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
+    requireAccess(principal, inventoryTransactionManagementUseCases.getById(id));
     InventoryTransaction tx = inventoryTransactionManagementUseCases.complete(id);
     return InventoryTransactionWebMapper.toResponse(tx);
   }
@@ -180,8 +240,52 @@ public class InventoryTransactionController {
   @PostMapping("/{id}/cancel")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryTransactionCancel
-  public ResponseEntity<Void> cancel(@PathVariable Long id) {
+  public ResponseEntity<Void> cancel(@AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
+    InventoryTransaction tx = inventoryTransactionManagementUseCases.getById(id);
+    requireAccess(principal, tx);
     inventoryTransactionManagementUseCases.cancel(id);
     return ResponseEntity.noContent().build();
   }
+
+  private void requireAccess(JwtAuthenticationContext principal, PurchaseTransactionCommand command) {
+    command.lines().forEach(line -> requireLocationAccess(principal, line.locationId()));
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, SaleTransactionCommand command) {
+    command.lines().forEach(line -> requireLocationAccess(principal, line.locationId()));
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, TransferTransactionCommand command) {
+    command.lines().forEach(line -> {
+      requireLocationAccess(principal, line.fromLocationId());
+      requireLocationAccess(principal, line.toLocationId());
+    });
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, AdjustmentTransactionCommand command) {
+    command.lines().forEach(line -> requireLocationAccess(principal, line.locationId()));
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, ReturnClientCommand command) {
+    command.lines().forEach(line -> requireLocationAccess(principal, line.locationId()));
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, ReturnSupplierCommand command) {
+    command.lines().forEach(line -> requireLocationAccess(principal, line.locationId()));
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, ScrapCommand command) {
+    command.lines().forEach(line -> requireLocationAccess(principal, line.locationId()));
+  }
+
+  private void requireAccess(JwtAuthenticationContext principal, PhysicalAdjustmentCommand command) {
+    requireLocationAccess(principal,
+        inventoryManagementUseCases.getById(command.inventoryId()).getLocation().getId());
+  }
+
+  private void requireLocationAccess(JwtAuthenticationContext principal, long locationId) {
+    headquarterAccessService.requireOwnedLocation(
+        principal, storageLocationManagementUseCases.getById(locationId).getHeadquarterId());
+  }
+
 }

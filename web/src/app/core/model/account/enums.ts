@@ -8,3 +8,13 @@ export type Gender =
 
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus}. */
 export type AccountStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'BANNED';
+
+export enum AppRole {
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  SALES = 'SALES',
+  POS_OPERATOR = 'POS_OPERATOR',
+  EMPLOYEE = 'EMPLOYEE',
+  SUPPORT = 'SUPPORT',
+  USER = 'USER',
+}

@@ -28,6 +28,9 @@ export type ItemStatus = 'ACTIVE' | 'DISCONTINUED' | 'OUT_OF_STOCK' | 'PENDING_A
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory.InventoryStatus}. */
 export type InventoryStatus = 'NORMAL' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 
+export type InventoryCountType = 'FULL' | 'PARTIAL';
+export type InventoryCountStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'CANCELLED';
+
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLocation.LocationType}. */
 export type LocationType =
   | 'WAREHOUSE'

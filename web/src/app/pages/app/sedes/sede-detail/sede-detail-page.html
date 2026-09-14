@@ -17,17 +17,6 @@
           </a>
         }
       }
-      @if (session.canAccessPos()) {
-        <a
-          [routerLink]="['/app/sedes', sede()?.id, 'pos']"
-          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-surface-container"
-        >
-          <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true"
-            >point_of_sale</span
-          >
-          Configuración POS
-        </a>
-      }
     </div>
   </div>
 
