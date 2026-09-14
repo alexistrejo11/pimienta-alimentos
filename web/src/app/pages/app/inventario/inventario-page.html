@@ -1,27 +1,40 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
-    title="Inventario POS"
-    subtitle="Existencias en ubicación de punto de venta por sede"
+    title="Existencias"
+    subtitle="Consulta de stock por sede y ubicación (solo lectura)"
   />
 
-  <app-headquarter-select
-    class="max-w-xs"
-    label="Sede"
-    [value]="selectedHeadquarterId"
-    (valueChange)="onHeadquarterChange($event)"
-  />
-
-  <a routerLink="/app/inventario/conteos" class="self-start rounded-lg bg-primary px-4 py-2.5 font-bold text-on-primary">Conteos físicos</a>
+  <div class="flex flex-wrap gap-4">
+    <app-headquarter-select
+      class="max-w-xs"
+      label="Sede"
+      [value]="selectedHeadquarterId"
+      (valueChange)="onHeadquarterChange($event)"
+    />
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="font-semibold text-on-surface-variant">Ubicación</span>
+      <select
+        class="rounded-lg bg-surface-container px-3 py-2.5"
+        [value]="selectedLocationId ?? ''"
+        (change)="onLocationChange($event)"
+      >
+        <option value="">Todas las ubicaciones</option>
+        @for (loc of locations(); track loc.id) {
+          <option [value]="loc.id">{{ loc.code }} · {{ loc.name }}</option>
+        }
+      </select>
+    </label>
+  </div>
 
   <app-data-state
     [loading]="loading()"
     [error]="error()"
     [empty]="stock().length === 0"
-    emptyMessage="No hay stock POS registrado para esta sede."
+    emptyMessage="No hay existencias registradas para este filtro."
     (retry)="cargarStock()"
   >
     <div class="responsive-table rounded-xl border ui-panel">
-      <table class="w-full text-sm" aria-label="Stock POS">
+      <table class="w-full text-sm" aria-label="Existencias">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
             <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">SKU</th>

@@ -1,6 +1,4 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { EMPTY, finalize, switchMap } from 'rxjs';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
 import { HeadquarterLookupService } from '../../../core/headquarters/headquarter-lookup.service';
@@ -13,7 +11,7 @@ import { HeadquarterSelectComponent } from '../../../shared/ui/headquarter-selec
 
 @Component({
   selector: 'app-inventario-page',
-  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent, RouterLink],
+  imports: [PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent],
   templateUrl: './inventario-page.html',
 })
 export class InventarioPageComponent implements OnInit {
@@ -24,9 +22,10 @@ export class InventarioPageComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly stock = signal<InventoryStockResponse[]>([]);
-  readonly posLocations = signal<StorageLocationResponse[]>([]);
+  readonly locations = signal<StorageLocationResponse[]>([]);
 
   selectedHeadquarterId: number | null = null;
+  selectedLocationId: number | null = null;
   private initialLoad = true;
 
   readonly effectiveHeadquarterId = computed(() => {
@@ -36,33 +35,51 @@ export class InventarioPageComponent implements OnInit {
     return this.session.activeHeadquarterId();
   });
 
-  readonly isAdmin = this.session.isAdmin;
-
   ngOnInit(): void {
     void this.hqLookup.ensureLoaded();
     if (!this.session.isAdmin()) {
       this.selectedHeadquarterId = this.session.activeHeadquarterId();
+      this.cargarLocations();
       this.cargarStock();
     } else {
-      // Admin waits for headquarter-select; avoid an endless spinner before a sede is chosen.
       this.loading.set(false);
     }
   }
 
   onHeadquarterChange(id: number | number[] | null): void {
-    const hqId = Array.isArray(id) ? id[0] ?? null : id;
+    const hqId = Array.isArray(id) ? (id[0] ?? null) : id;
     this.selectedHeadquarterId = hqId;
+    this.selectedLocationId = null;
     this.session.selectHeadquarter(hqId);
     if (hqId == null) {
       this.stock.set([]);
-      this.error.set(null);
+      this.locations.set([]);
       this.loading.set(false);
       return;
     }
     if (this.initialLoad) {
       this.initialLoad = false;
     }
+    this.cargarLocations();
     this.cargarStock();
+  }
+
+  onLocationChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.selectedLocationId = value ? Number(value) : null;
+    this.cargarStock();
+  }
+
+  cargarLocations(): void {
+    const hqId = this.effectiveHeadquarterId();
+    if (hqId == null) {
+      this.locations.set([]);
+      return;
+    }
+    this.inventory.searchLocations({ headquarterId: hqId, page: 0, size: 100 }).subscribe({
+      next: (page) => this.locations.set(page.items),
+      error: () => this.locations.set([]),
+    });
   }
 
   cargarStock(): void {
@@ -75,24 +92,22 @@ export class InventarioPageComponent implements OnInit {
 
     this.error.set(null);
     this.loading.set(true);
-
     this.inventory
-      .searchLocations({ type: 'POS', page: 0, size: 100 })
-      .pipe(
-        switchMap((page) => {
-          this.posLocations.set(page.items);
-          const loc = page.items.find((l) => l.headquarterId === hqId);
-          if (!loc) {
-            this.stock.set([]);
-            return EMPTY;
-          }
-          return this.inventory.searchStock({ locationId: loc.id, page: 0, size: 100 });
-        }),
-        finalize(() => this.loading.set(false)),
-      )
+      .searchStock({
+        headquarterId: hqId,
+        locationId: this.selectedLocationId ?? undefined,
+        page: 0,
+        size: 100,
+      })
       .subscribe({
-        next: (stockPage) => this.stock.set(stockPage.items),
-        error: (err: unknown) => this.error.set(parseApiError(err)),
+        next: (page) => {
+          this.stock.set(page.items);
+          this.loading.set(false);
+        },
+        error: (err: unknown) => {
+          this.error.set(parseApiError(err));
+          this.loading.set(false);
+        },
       });
   }
 }

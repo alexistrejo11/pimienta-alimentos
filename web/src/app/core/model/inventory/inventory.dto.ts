@@ -104,6 +104,7 @@ export interface InventoryStockSearchParams {
   itemId?: number;
   locationId?: number;
   status?: InventoryStatus;
+  headquarterId?: number;
 }
 
 /** GET /api/v1/inventory/locations */
@@ -128,6 +129,7 @@ export interface StorageLocationSearchParams {
   page?: number;
   size?: number;
   type?: LocationType;
+  headquarterId?: number;
 }
 
 export interface InventoryCountResponseDto {
@@ -161,4 +163,72 @@ export interface OpenInventoryCountRequest {
 export interface InventoryCountResponseRequest {
   itemId: number;
   countedQuantity: number;
+}
+
+export interface InventoryCountSessionSummaryResponse {
+  id: number;
+  locationId: number;
+  type: InventoryCountType;
+  status: InventoryCountStatus;
+  createdById: number;
+  submittedById: number | null;
+  approvedById: number | null;
+  createdAt: string;
+  submittedAt: string | null;
+  approvedAt: string | null;
+  cancelledAt: string | null;
+}
+
+export interface InventoryCountSearchParams {
+  page?: number;
+  size?: number;
+  locationId?: number;
+  status?: InventoryCountStatus;
+  headquarterId?: number;
+}
+
+export interface PurchaseLineRequest {
+  itemId: number;
+  locationId: number;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface PurchaseTransactionRequest {
+  externalReference?: string;
+  notes?: string;
+  lines: PurchaseLineRequest[];
+}
+
+export interface ScrapLineRequest {
+  itemId: number;
+  locationId: number;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface ScrapTransactionRequest {
+  externalReference?: string;
+  notes?: string;
+  lines: ScrapLineRequest[];
+}
+
+export interface AdjustmentLineRequest {
+  itemId: number;
+  locationId: number;
+  newQuantity: number;
+  reason: string;
+}
+
+export interface AdjustmentTransactionRequest {
+  externalReference?: string;
+  notes?: string;
+  lines: AdjustmentLineRequest[];
+}
+
+export interface InventoryTransactionResponse {
+  id: number;
+  transactionNumber: string;
+  type: string;
+  status: string;
 }

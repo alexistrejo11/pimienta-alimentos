@@ -1,7 +1,50 @@
-<div class="mx-auto flex max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:p-8"><div><h1 class="font-headline text-2xl font-extrabold text-on-surface">Nuevo conteo físico</h1><p class="mt-1 text-on-surface-variant">El inventario esperado permanece oculto durante la captura.</p></div>
-  <section class="ui-panel flex flex-col gap-5 rounded-xl p-5"><label class="flex flex-col gap-2"><span class="font-semibold">Ubicación</span><select class="rounded-lg bg-surface-container px-3 py-3" [(ngModel)]="locationId" (ngModelChange)="loadStock()"><option [ngValue]="null">Selecciona una ubicación</option>@for (location of locations(); track location.id) {<option [ngValue]="location.id">{{ location.code }} · {{ location.name }}</option>}</select></label>
-    <fieldset><legend class="mb-2 font-semibold">Alcance</legend><div class="flex gap-3"><label class="flex flex-1 cursor-pointer gap-2 rounded-lg bg-surface-container p-3"><input type="radio" [(ngModel)]="type" value="FULL"> <span><strong>Completo</strong><small class="block text-on-surface-variant">Todos los productos de la ubicación</small></span></label><label class="flex flex-1 cursor-pointer gap-2 rounded-lg bg-surface-container p-3"><input type="radio" [(ngModel)]="type" value="PARTIAL"> <span><strong>Parcial</strong><small class="block text-on-surface-variant">Solo productos seleccionados</small></span></label></div></fieldset>
-    @if (type === 'PARTIAL' && stock().length > 0) {<div class="grid gap-2 sm:grid-cols-2">@for (item of stock(); track item.itemId) {<label class="flex cursor-pointer gap-2 rounded-lg bg-surface-container-low p-3"><input type="checkbox" [checked]="selected.has(item.itemId)" (change)="toggle(item.itemId)"><span>{{ item.itemName }} <small class="block text-on-surface-variant">{{ item.itemSku }}</small></span></label>}</div>}
-    @if (error()) {<p class="text-sm text-error">{{ error() }}</p>}<button class="self-start rounded-lg bg-primary px-5 py-3 font-bold text-on-primary disabled:opacity-50" [disabled]="busy() || locationId == null" (click)="open()">Abrir sesión</button>
+<div class="mx-auto flex max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <div>
+    <h1 class="font-headline text-2xl font-extrabold text-on-surface">Nuevo conteo físico</h1>
+    <p class="mt-1 text-on-surface-variant">El inventario esperado permanece oculto durante la captura.</p>
+  </div>
+  <section class="ui-panel flex flex-col gap-5 rounded-xl p-5">
+    <label class="flex flex-col gap-2">
+      <span class="font-semibold">Ubicación</span>
+      <select class="rounded-lg bg-surface-container px-3 py-3" [(ngModel)]="locationId">
+        <option [ngValue]="null">Selecciona una ubicación</option>
+        @for (location of locations(); track location.id) {
+          <option [ngValue]="location.id">{{ location.code }} · {{ location.name }}</option>
+        }
+      </select>
+    </label>
+    <fieldset>
+      <legend class="mb-2 font-semibold">Alcance</legend>
+      <div class="flex gap-3">
+        <label class="flex flex-1 cursor-pointer gap-2 rounded-lg bg-surface-container p-3">
+          <input type="radio" [(ngModel)]="type" value="FULL" />
+          <span><strong>Completo</strong><small class="block text-on-surface-variant">Todos los productos de la ubicación</small></span>
+        </label>
+        <label class="flex flex-1 cursor-pointer gap-2 rounded-lg bg-surface-container p-3">
+          <input type="radio" [(ngModel)]="type" value="PARTIAL" />
+          <span><strong>Parcial</strong><small class="block text-on-surface-variant">Solo productos seleccionados</small></span>
+        </label>
+      </div>
+    </fieldset>
+    @if (type === 'PARTIAL' && items().length > 0) {
+      <div class="grid gap-2 sm:grid-cols-2">
+        @for (item of items(); track item.id) {
+          <label class="flex cursor-pointer gap-2 rounded-lg bg-surface-container-low p-3">
+            <input type="checkbox" [checked]="selected.has(item.id)" (change)="toggle(item.id)" />
+            <span>{{ item.name }} <small class="block text-on-surface-variant">{{ item.sku }}</small></span>
+          </label>
+        }
+      </div>
+    }
+    @if (error()) {
+      <p class="text-sm text-error">{{ error() }}</p>
+    }
+    <button
+      class="self-start rounded-lg bg-primary px-5 py-3 font-bold text-on-primary disabled:opacity-50"
+      [disabled]="busy() || locationId == null"
+      (click)="open()"
+    >
+      Abrir sesión
+    </button>
   </section>
 </div>

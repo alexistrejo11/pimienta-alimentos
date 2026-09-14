@@ -27,6 +27,7 @@ export interface WorkspaceNavSection {
 const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
 const STAFF = [AppRole.ADMIN, AppRole.MANAGER];
 const POS_OPERATION = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
+const INVENTORY_READ = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
 const ADMIN_ONLY = [AppRole.ADMIN];
 
 /** The sidebar catalog is the UI's role-filtered navigation contract. */
@@ -63,11 +64,9 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
     label: 'Punto de venta',
     roles: POS_OPERATION,
     items: [
-      { label: 'Inventario POS', icon: 'warehouse', route: '/app/inventario', roles: POS_OPERATION },
-      { label: 'Conteos físicos', icon: 'fact_check', route: '/app/inventario/conteos', roles: POS_OPERATION },
       { label: 'Catálogo por sede', icon: 'storefront', route: '/app/pos/catalogo', roles: ADMIN_MANAGER },
       { label: 'Ventas', icon: 'receipt_long', route: '/app/pos/ventas', roles: POS_OPERATION },
-      { label: 'Mermas', icon: 'delete_sweep', route: '/app/pos/mermas', roles: POS_OPERATION },
+      { label: 'Mermas POS', icon: 'delete_sweep', route: '/app/pos/mermas', roles: POS_OPERATION },
       { label: 'Cortes', icon: 'point_of_sale', route: '/app/pos/cortes', roles: POS_OPERATION },
       {
         label: 'Configuración POS',
@@ -85,9 +84,14 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
   {
     id: 'inventory',
     label: 'Inventario',
-    roles: ADMIN_MANAGER,
+    roles: INVENTORY_READ,
     items: [
-      { label: 'Artículos maestros', icon: 'inventory_2', route: '/app/catalogo', roles: [AppRole.ADMIN] },
+      { label: 'Existencias', icon: 'warehouse', route: '/app/inventario', roles: INVENTORY_READ },
+      { label: 'Entradas (IN)', icon: 'add_shopping_cart', route: '/app/inventario/entradas', roles: ADMIN_MANAGER },
+      { label: 'Mermas (OUT)', icon: 'delete_sweep', route: '/app/inventario/mermas', roles: ADMIN_MANAGER },
+      { label: 'Ajustes', icon: 'tune', route: '/app/inventario/ajustes', roles: ADMIN_ONLY },
+      { label: 'Conteos físicos', icon: 'fact_check', route: '/app/inventario/conteos', roles: ADMIN_MANAGER },
+      { label: 'Artículos maestros', icon: 'inventory_2', route: '/app/catalogo', roles: ADMIN_ONLY },
     ],
   },
   {

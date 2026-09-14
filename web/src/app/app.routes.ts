@@ -54,8 +54,13 @@ import { AppRole } from './core/model/account/enums';
 import { CountSessionListPageComponent } from './pages/app/inventario/counts/count-session-list-page';
 import { CountSessionCreatePageComponent } from './pages/app/inventario/counts/count-session-create-page';
 import { CountSessionDetailPageComponent } from './pages/app/inventario/counts/count-session-detail-page';
+import { InventarioEntradasPageComponent } from './pages/app/inventario/entradas/entradas-page';
+import { InventarioMermasPageComponent } from './pages/app/inventario/mermas/mermas-hq-page';
+import { InventarioAjustesPageComponent } from './pages/app/inventario/ajustes/ajustes-page';
 
 const ADMIN = [AppRole.ADMIN];
+const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
+const INVENTORY_READ = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
 const POS_STAFF = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
 
 export const routes: Routes = [
@@ -163,17 +168,55 @@ export const routes: Routes = [
         data: { access: { roles: ADMIN } },
       },
 
-      // ── POS: Inventario por sede ──────────────────────────────────────────
+      // ── Inventario HQ ───────────────────────────────────────────────────
       {
         path: 'inventario',
         component: InventarioPageComponent,
         canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
+        data: { access: { roles: INVENTORY_READ } },
       },
-      { path: 'inventario/conteos/nuevo', component: CountSessionCreatePageComponent, canActivate: [roleGuard], data: { access: { roles: POS_STAFF } } },
-      { path: 'inventario/conteos/:id/revision', component: CountSessionDetailPageComponent, canActivate: [roleGuard], data: { access: { roles: POS_STAFF, review: true } } },
-      { path: 'inventario/conteos/:id', component: CountSessionDetailPageComponent, canActivate: [roleGuard], data: { access: { roles: POS_STAFF } } },
-      { path: 'inventario/conteos', component: CountSessionListPageComponent, canActivate: [roleGuard], data: { access: { roles: POS_STAFF } } },
+      {
+        path: 'inventario/entradas',
+        component: InventarioEntradasPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER } },
+      },
+      {
+        path: 'inventario/mermas',
+        component: InventarioMermasPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER } },
+      },
+      {
+        path: 'inventario/ajustes',
+        component: InventarioAjustesPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN } },
+      },
+      {
+        path: 'inventario/conteos/nuevo',
+        component: CountSessionCreatePageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER } },
+      },
+      {
+        path: 'inventario/conteos/:id/revision',
+        component: CountSessionDetailPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER, review: true } },
+      },
+      {
+        path: 'inventario/conteos/:id',
+        component: CountSessionDetailPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER } },
+      },
+      {
+        path: 'inventario/conteos',
+        component: CountSessionListPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER } },
+      },
 
       // ── POS: Dispositivos y operación ─────────────────────────────────────
       {

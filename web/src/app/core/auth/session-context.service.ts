@@ -20,7 +20,6 @@ export class SessionContextService {
   private readonly storageKeyPrefix = 'pimienta.active-headquarter.';
   private loaded = false;
   private inFlight: Observable<SessionContext> | null = null;
-  private userId: number | null = null;
 
   readonly loading = signal(false);
   readonly error = signal<ParsedApiError | null>(null);
@@ -29,6 +28,7 @@ export class SessionContextService {
   readonly permissions = signal<string[]>([]);
   readonly assignedHeadquarterIds = signal<number[]>([]);
   readonly activeHeadquarterId = signal<number | null>(null);
+  readonly userId = signal(0);
 
   readonly isAdmin = computed(() => this.roles().includes(AppRole.ADMIN));
   readonly isManager = computed(() => this.roles().includes(AppRole.MANAGER));
@@ -82,12 +82,13 @@ export class SessionContextService {
     this.permissions.set([]);
     this.assignedHeadquarterIds.set([]);
     this.activeHeadquarterId.set(null);
+    this.userId.set(0);
     this.loading.set(false);
     this.error.set(null);
   }
 
   private setProfile(user: UserResponse): void {
-    this.userId = user.id;
+    this.userId.set(user.id);
     this.accountStatus.set(user.accountStatus);
     this.roles.set(user.roles ?? []);
     this.permissions.set(user.permissions ?? []);
@@ -107,7 +108,7 @@ export class SessionContextService {
 
   private snapshot(): SessionContext {
     return {
-      userId: this.userId ?? 0,
+      userId: this.userId() || 0,
       accountStatus: this.accountStatus() ?? 'PENDING_APPROVAL',
       roles: [...this.roles()],
       permissions: [...this.permissions()],
@@ -117,9 +118,9 @@ export class SessionContextService {
 
   private restoreHeadquarter(assignedIds: number[]): number | null {
     const stored =
-      this.userId == null || typeof sessionStorage === 'undefined'
+      this.userId() === 0 || typeof sessionStorage === 'undefined'
         ? null
-        : sessionStorage.getItem(this.storageKeyPrefix + this.userId);
+        : sessionStorage.getItem(this.storageKeyPrefix + this.userId());
     const storedId = stored == null ? null : Number(stored);
     if (this.isAdmin()) {
       return storedId != null && Number.isInteger(storedId) && storedId > 0 ? storedId : null;
@@ -128,8 +129,8 @@ export class SessionContextService {
   }
 
   private persistHeadquarter(id: number | null): void {
-    if (this.userId == null || typeof sessionStorage === 'undefined') return;
-    const key = this.storageKeyPrefix + this.userId;
+    if (this.userId() === 0 || typeof sessionStorage === 'undefined') return;
+    const key = this.storageKeyPrefix + this.userId();
     if (id == null) sessionStorage.removeItem(key);
     else sessionStorage.setItem(key, String(id));
   }

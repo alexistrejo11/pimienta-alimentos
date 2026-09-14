@@ -4,18 +4,24 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
 import type {
+  AdjustmentTransactionRequest,
   CreateInitialStockRequest,
+  InventoryCountResponseRequest,
+  InventoryCountSearchParams,
+  InventoryCountSessionResponse,
+  InventoryCountSessionSummaryResponse,
   InventoryStockResponse,
   InventoryStockSearchParams,
+  InventoryTransactionResponse,
   ItemCreateRequest,
   ItemResponse,
   ItemSearchParams,
   ItemUpdateRequest,
+  OpenInventoryCountRequest,
+  PurchaseTransactionRequest,
+  ScrapTransactionRequest,
   StorageLocationResponse,
   StorageLocationSearchParams,
-  InventoryCountResponseRequest,
-  InventoryCountSessionResponse,
-  OpenInventoryCountRequest,
 } from '../model/inventory/inventory.dto';
 import type { PagedResponse } from '../model/common/pagination';
 
@@ -27,8 +33,7 @@ export class InventoryService {
   private readonly stockBase = `${API_BASE_URL}/inventory/stock`;
   private readonly locationsBase = `${API_BASE_URL}/inventory/locations`;
   private readonly countsBase = `${API_BASE_URL}/inventory/count-sessions`;
-
-  // ── Ítems maestro ─────────────────────────────────────────────────────────
+  private readonly transactionsBase = `${API_BASE_URL}/inventory/transactions`;
 
   searchItems(params: ItemSearchParams = {}): Observable<PagedResponse<ItemResponse>> {
     let p = new HttpParams()
@@ -66,8 +71,6 @@ export class InventoryService {
     return this.http.put<ItemResponse>(`${this.itemsBase}/${id}/activate`, {});
   }
 
-  // ── Stock ─────────────────────────────────────────────────────────────────
-
   searchStock(params: InventoryStockSearchParams = {}): Observable<PagedResponse<InventoryStockResponse>> {
     let p = new HttpParams()
       .set('page', String(params.page ?? 0))
@@ -75,6 +78,7 @@ export class InventoryService {
     if (params.itemId != null) p = p.set('itemId', String(params.itemId));
     if (params.locationId != null) p = p.set('locationId', String(params.locationId));
     if (params.status) p = p.set('status', params.status);
+    if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
     return this.http.get<PagedResponse<InventoryStockResponse>>(this.stockBase, { params: p });
   }
 
@@ -82,14 +86,23 @@ export class InventoryService {
     return this.http.post<InventoryStockResponse>(this.stockBase, body);
   }
 
-  // ── Ubicaciones ───────────────────────────────────────────────────────────
-
   searchLocations(params: StorageLocationSearchParams = {}): Observable<PagedResponse<StorageLocationResponse>> {
     let p = new HttpParams()
       .set('page', String(params.page ?? 0))
       .set('size', String(params.size ?? 50));
     if (params.type) p = p.set('type', params.type);
+    if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
     return this.http.get<PagedResponse<StorageLocationResponse>>(this.locationsBase, { params: p });
+  }
+
+  searchCounts(params: InventoryCountSearchParams = {}): Observable<PagedResponse<InventoryCountSessionSummaryResponse>> {
+    let p = new HttpParams()
+      .set('page', String(params.page ?? 0))
+      .set('size', String(params.size ?? 20));
+    if (params.locationId != null) p = p.set('locationId', String(params.locationId));
+    if (params.status) p = p.set('status', params.status);
+    if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
+    return this.http.get<PagedResponse<InventoryCountSessionSummaryResponse>>(this.countsBase, { params: p });
   }
 
   openCount(body: OpenInventoryCountRequest): Observable<InventoryCountSessionResponse> {
@@ -114,5 +127,17 @@ export class InventoryService {
 
   cancelCount(id: number): Observable<void> {
     return this.http.post<void>(`${this.countsBase}/${id}/cancel`, {});
+  }
+
+  purchase(body: PurchaseTransactionRequest): Observable<InventoryTransactionResponse> {
+    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/purchase`, body);
+  }
+
+  scrap(body: ScrapTransactionRequest): Observable<InventoryTransactionResponse> {
+    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/scrap`, body);
+  }
+
+  adjustment(body: AdjustmentTransactionRequest): Observable<InventoryTransactionResponse> {
+    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/adjustment`, body);
   }
 }
