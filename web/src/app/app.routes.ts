@@ -1,65 +1,8 @@
 import { Routes } from '@angular/router';
 
-import { AvisoPrivacidadPage } from './pages/home/aviso-privacidad-page/aviso-privacidad-page';
-import { CalidadHigienicaPage } from './pages/home/calidad-higienica-page/calidad-higienica-page';
-import { Home } from './pages/home/home/home';
-import { TerminosServicioPage } from './pages/home/terminos-servicio-page/terminos-servicio-page';
-import { ClientsPageComponent } from './pages/clients/clients-page';
-import { DashboardPageComponent } from './pages/dashboard/dashboard-page';
-import { TasksPageComponent } from './pages/app/tasks/tasks-page';
-import { WorkspaceShellComponent } from './shared/workspace/workspace-shell/workspace-shell';
-import { Login } from './pages/auth/login/login';
-import { Register } from './pages/auth/register/register';
 import { workspaceAuthGuard } from './core/auth/workspace-auth.guard';
 import { roleGuard } from './core/auth/role.guard';
-
-// ── Módulos nuevos ──────────────────────────────────────────────────────────
-import { EmpleadosPageComponent } from './pages/app/empleados/empleados-page';
-import { EmpleadoDetailPageComponent } from './pages/app/empleados/empleado-detail/empleado-detail-page';
-import { EmpleadoFormPageComponent } from './pages/app/empleados/empleado-form-page/empleado-form-page';
-import { OportunidadesPageComponent } from './pages/app/crm/oportunidades/oportunidades-page';
-import { OportunidadDetailPageComponent } from './pages/app/crm/oportunidades/oportunidad-detail/oportunidad-detail-page';
-import { OportunidadFormPageComponent } from './pages/app/crm/oportunidades/oportunidad-form-page/oportunidad-form-page';
-import { ProyectosPageComponent } from './pages/app/crm/proyectos/proyectos-page';
-import { ProyectoDetailPageComponent } from './pages/app/crm/proyectos/proyecto-detail/proyecto-detail-page';
-import { ProyectoFormPageComponent } from './pages/app/crm/proyectos/proyecto-form-page/proyecto-form-page';
-import { TareasPageComponent } from './pages/app/tareas/tareas-page';
-import { TareaDetailPageComponent } from './pages/app/tareas/tarea-detail/tarea-detail-page';
-import { TareaFormPageComponent } from './pages/app/tareas/tarea-form/tarea-form-page';
-import { SedesPageComponent } from './pages/app/sedes/sedes-page';
-import { SedeDetailPageComponent } from './pages/app/sedes/sede-detail/sede-detail-page';
-import { SedeFormPageComponent } from './pages/app/sedes/sede-form-page/sede-form-page';
-import { SedePosPageComponent } from './pages/app/sedes/sede-pos-page/sede-pos-page';
-import { PosConfigPageComponent } from './pages/app/pos/configuracion/pos-config-page';
-import { ContratosPageComponent } from './pages/app/contratos/contratos-page';
-import { NominaPageComponent } from './pages/app/nomina/nomina-page';
-import { ArchivosPageComponent } from './pages/app/archivos/archivos-page';
-import { CatalogoPageComponent } from './pages/app/catalogo/catalogo-page';
-import { CatalogoFormPageComponent } from './pages/app/catalogo/catalogo-form-page/catalogo-form-page';
-import { InventarioPageComponent } from './pages/app/inventario/inventario-page';
-import { DispositivosPageComponent } from './pages/app/pos/dispositivos/dispositivos-page';
-import { DispositivoDetailPageComponent } from './pages/app/pos/dispositivos/dispositivo-detail-page';
-import { EnrolamientoPageComponent } from './pages/app/pos/enrolamiento/enrolamiento-page';
-import { OperadoresPageComponent } from './pages/app/pos/operadores/operadores-page';
-import { VentasPageComponent } from './pages/app/pos/ventas/ventas-page';
-import { CortesRedirectComponent } from './pages/app/pos/cortes/cortes-redirect';
-import { TurnosPageComponent } from './pages/app/pos/turnos/turnos-page';
-import { IncidenciasPageComponent } from './pages/app/pos/incidencias/incidencias-page';
-import { AccessRestrictedPageComponent } from './pages/app/access-restricted/access-restricted-page';
-import { PendingApprovalPageComponent } from './pages/app/pending-approval/pending-approval-page';
-import { PendingApprovalPage } from './pages/auth/pending-approval/pending-approval';
-import { UsuariosPageComponent } from './pages/app/usuarios/usuarios-page';
-import { AsistenciaPageComponent } from './pages/app/asistencia/asistencia-page';
-import { MiAsistenciaPageComponent } from './pages/app/mi-asistencia/mi-asistencia-page';
 import { AppRole } from './core/model/account/enums';
-import { CountSessionListPageComponent } from './pages/app/inventario/counts/count-session-list-page';
-import { CountSessionCreatePageComponent } from './pages/app/inventario/counts/count-session-create-page';
-import { CountSessionDetailPageComponent } from './pages/app/inventario/counts/count-session-detail-page';
-import { InventarioEntradasPageComponent } from './pages/app/inventario/entradas/entradas-page';
-import { InventarioMermasPageComponent } from './pages/app/inventario/mermas/mermas-hq-page';
-import { InventarioAjustesPageComponent } from './pages/app/inventario/ajustes/ajustes-page';
-import { InventarioLedgerPageComponent } from './pages/app/inventario/ledger/inventario-ledger-page';
-import { InventarioTransferPageComponent } from './pages/app/inventario/transferencias/inventario-transfer-page';
 
 const ADMIN = [AppRole.ADMIN];
 const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
@@ -69,110 +12,266 @@ const POS_STAFF = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
 export const routes: Routes = [
   {
     path: 'auth/login',
-    component: Login,
+    loadComponent: () => import('./pages/auth/login/login').then((m) => m.Login),
   },
   {
     path: 'auth/register',
-    component: Register,
+    loadComponent: () => import('./pages/auth/register/register').then((m) => m.Register),
   },
   {
     path: 'auth/pendiente-aprobacion',
-    component: PendingApprovalPage,
+    loadComponent: () =>
+      import('./pages/auth/pending-approval/pending-approval').then((m) => m.PendingApprovalPage),
   },
   {
     path: 'app',
-    component: WorkspaceShellComponent,
+    loadComponent: () =>
+      import('./shared/workspace/workspace-shell/workspace-shell').then((m) => m.WorkspaceShellComponent),
     canActivate: [workspaceAuthGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-      { path: 'pendiente-aprobacion', component: PendingApprovalPageComponent },
-      { path: 'acceso-restringido', component: AccessRestrictedPageComponent },
-      { path: 'usuarios', component: UsuariosPageComponent, canActivate: [roleGuard], data: { access: { roles: ADMIN } } },
-      { path: 'asistencia', component: AsistenciaPageComponent, canActivate: [roleGuard], data: { access: { roles: [AppRole.ADMIN, AppRole.MANAGER] } } },
-      { path: 'mi-asistencia', component: MiAsistenciaPageComponent, canActivate: [roleGuard], data: { access: { roles: [AppRole.EMPLOYEE] } } },
-      { path: 'dashboard', component: DashboardPageComponent },
+      {
+        path: 'pendiente-aprobacion',
+        loadComponent: () =>
+          import('./pages/app/pending-approval/pending-approval-page').then(
+            (m) => m.PendingApprovalPageComponent,
+          ),
+      },
+      {
+        path: 'acceso-restringido',
+        loadComponent: () =>
+          import('./pages/app/access-restricted/access-restricted-page').then(
+            (m) => m.AccessRestrictedPageComponent,
+          ),
+      },
+      {
+        path: 'usuarios',
+        loadComponent: () =>
+          import('./pages/app/usuarios/usuarios-page').then((m) => m.UsuariosPageComponent),
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN } },
+      },
+      {
+        path: 'asistencia',
+        loadComponent: () =>
+          import('./pages/app/asistencia/asistencia-page').then((m) => m.AsistenciaPageComponent),
+        canActivate: [roleGuard],
+        data: { access: { roles: [AppRole.ADMIN, AppRole.MANAGER] } },
+      },
+      {
+        path: 'mi-asistencia',
+        loadComponent: () =>
+          import('./pages/app/mi-asistencia/mi-asistencia-page').then((m) => m.MiAsistenciaPageComponent),
+        canActivate: [roleGuard],
+        data: { access: { roles: [AppRole.EMPLOYEE] } },
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./pages/dashboard/dashboard-page').then((m) => m.DashboardPageComponent),
+      },
 
       // Módulos originales (se mantienen para no romper referencias existentes)
-      { path: 'clients', component: ClientsPageComponent },
+      {
+        path: 'clients',
+        loadComponent: () => import('./pages/clients/clients-page').then((m) => m.ClientsPageComponent),
+      },
       { path: 'inventory', redirectTo: 'inventario', pathMatch: 'full' },
-      { path: 'tasks', component: TasksPageComponent },
+      {
+        path: 'tasks',
+        loadComponent: () => import('./pages/app/tasks/tasks-page').then((m) => m.TasksPageComponent),
+      },
 
       // ── Empleados ────────────────────────────────────────────────────────
-      { path: 'empleados/nuevo', component: EmpleadoFormPageComponent, canActivate: [roleGuard], data: { access: { roles: ADMIN } } },
-      { path: 'empleados/:id/editar', component: EmpleadoFormPageComponent, canActivate: [roleGuard], data: { access: { roles: ADMIN } } },
-      { path: 'empleados/:id', component: EmpleadoDetailPageComponent },
-      { path: 'empleados', component: EmpleadosPageComponent },
+      {
+        path: 'empleados/nuevo',
+        loadComponent: () =>
+          import('./pages/app/empleados/empleado-form-page/empleado-form-page').then(
+            (m) => m.EmpleadoFormPageComponent,
+          ),
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN } },
+      },
+      {
+        path: 'empleados/:id/editar',
+        loadComponent: () =>
+          import('./pages/app/empleados/empleado-form-page/empleado-form-page').then(
+            (m) => m.EmpleadoFormPageComponent,
+          ),
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN } },
+      },
+      {
+        path: 'empleados/:id',
+        loadComponent: () =>
+          import('./pages/app/empleados/empleado-detail/empleado-detail-page').then(
+            (m) => m.EmpleadoDetailPageComponent,
+          ),
+      },
+      {
+        path: 'empleados',
+        loadComponent: () =>
+          import('./pages/app/empleados/empleados-page').then((m) => m.EmpleadosPageComponent),
+      },
 
       // ── CRM: Oportunidades (rutas estáticas y edición antes de `:id` detalle) ─
-      { path: 'crm/oportunidades/nueva', component: OportunidadFormPageComponent },
-      { path: 'crm/oportunidades/:id/editar', component: OportunidadFormPageComponent },
-      { path: 'crm/oportunidades/:id', component: OportunidadDetailPageComponent },
-      { path: 'crm/oportunidades', component: OportunidadesPageComponent },
+      {
+        path: 'crm/oportunidades/nueva',
+        loadComponent: () =>
+          import('./pages/app/crm/oportunidades/oportunidad-form-page/oportunidad-form-page').then(
+            (m) => m.OportunidadFormPageComponent,
+          ),
+      },
+      {
+        path: 'crm/oportunidades/:id/editar',
+        loadComponent: () =>
+          import('./pages/app/crm/oportunidades/oportunidad-form-page/oportunidad-form-page').then(
+            (m) => m.OportunidadFormPageComponent,
+          ),
+      },
+      {
+        path: 'crm/oportunidades/:id',
+        loadComponent: () =>
+          import('./pages/app/crm/oportunidades/oportunidad-detail/oportunidad-detail-page').then(
+            (m) => m.OportunidadDetailPageComponent,
+          ),
+      },
+      {
+        path: 'crm/oportunidades',
+        loadComponent: () =>
+          import('./pages/app/crm/oportunidades/oportunidades-page').then(
+            (m) => m.OportunidadesPageComponent,
+          ),
+      },
 
       // ── CRM: Proyectos ───────────────────────────────────────────────────
-      { path: 'crm/proyectos/nuevo', component: ProyectoFormPageComponent },
-      { path: 'crm/proyectos/:id/editar', component: ProyectoFormPageComponent },
-      { path: 'crm/proyectos/:id', component: ProyectoDetailPageComponent },
-      { path: 'crm/proyectos', component: ProyectosPageComponent },
+      {
+        path: 'crm/proyectos/nuevo',
+        loadComponent: () =>
+          import('./pages/app/crm/proyectos/proyecto-form-page/proyecto-form-page').then(
+            (m) => m.ProyectoFormPageComponent,
+          ),
+      },
+      {
+        path: 'crm/proyectos/:id/editar',
+        loadComponent: () =>
+          import('./pages/app/crm/proyectos/proyecto-form-page/proyecto-form-page').then(
+            (m) => m.ProyectoFormPageComponent,
+          ),
+      },
+      {
+        path: 'crm/proyectos/:id',
+        loadComponent: () =>
+          import('./pages/app/crm/proyectos/proyecto-detail/proyecto-detail-page').then(
+            (m) => m.ProyectoDetailPageComponent,
+          ),
+      },
+      {
+        path: 'crm/proyectos',
+        loadComponent: () =>
+          import('./pages/app/crm/proyectos/proyectos-page').then((m) => m.ProyectosPageComponent),
+      },
 
       // ── Tareas ───────────────────────────────────────────────────────────
-      { path: 'tareas/nueva', component: TareaFormPageComponent },
-      { path: 'tareas/:id', component: TareaDetailPageComponent },
-      { path: 'tareas', component: TareasPageComponent },
+      {
+        path: 'tareas/nueva',
+        loadComponent: () =>
+          import('./pages/app/tareas/tarea-form/tarea-form-page').then((m) => m.TareaFormPageComponent),
+      },
+      {
+        path: 'tareas/:id',
+        loadComponent: () =>
+          import('./pages/app/tareas/tarea-detail/tarea-detail-page').then(
+            (m) => m.TareaDetailPageComponent,
+          ),
+      },
+      {
+        path: 'tareas',
+        loadComponent: () => import('./pages/app/tareas/tareas-page').then((m) => m.TareasPageComponent),
+      },
 
       // ── Sedes ────────────────────────────────────────────────────────────
-      { path: 'sedes', component: SedesPageComponent },
+      {
+        path: 'sedes',
+        loadComponent: () => import('./pages/app/sedes/sedes-page').then((m) => m.SedesPageComponent),
+      },
       {
         path: 'sedes/nueva',
-        component: SedeFormPageComponent,
+        loadComponent: () =>
+          import('./pages/app/sedes/sede-form-page/sede-form-page').then((m) => m.SedeFormPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
       {
         path: 'sedes/:id/editar',
-        component: SedeFormPageComponent,
+        loadComponent: () =>
+          import('./pages/app/sedes/sede-form-page/sede-form-page').then((m) => m.SedeFormPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
       {
         path: 'pos/catalogo',
-        component: SedePosPageComponent,
+        loadComponent: () =>
+          import('./pages/app/sedes/sede-pos-page/sede-pos-page').then((m) => m.SedePosPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/configuracion',
-        component: PosConfigPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/configuracion/pos-config-page').then((m) => m.PosConfigPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER } },
       },
-      { path: 'sedes/:id', component: SedeDetailPageComponent },
+      {
+        path: 'sedes/:id',
+        loadComponent: () =>
+          import('./pages/app/sedes/sede-detail/sede-detail-page').then((m) => m.SedeDetailPageComponent),
+      },
 
       // ── Contratos ─────────────────────────────────────────────────────────
-      { path: 'contratos', component: ContratosPageComponent },
+      {
+        path: 'contratos',
+        loadComponent: () =>
+          import('./pages/app/contratos/contratos-page').then((m) => m.ContratosPageComponent),
+      },
 
       // ── Archivos ──────────────────────────────────────────────────────────
-      { path: 'archivos', component: ArchivosPageComponent },
+      {
+        path: 'archivos',
+        loadComponent: () =>
+          import('./pages/app/archivos/archivos-page').then((m) => m.ArchivosPageComponent),
+      },
 
       // ── Nómina ────────────────────────────────────────────────────────────
-      { path: 'nomina', component: NominaPageComponent },
+      {
+        path: 'nomina',
+        loadComponent: () => import('./pages/app/nomina/nomina-page').then((m) => m.NominaPageComponent),
+      },
 
       // ── POS: Catálogo maestro (admin) ─────────────────────────────────────
       {
         path: 'catalogo/nuevo',
-        component: CatalogoFormPageComponent,
+        loadComponent: () =>
+          import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
+            (m) => m.CatalogoFormPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
       {
         path: 'catalogo/:id/editar',
-        component: CatalogoFormPageComponent,
+        loadComponent: () =>
+          import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
+            (m) => m.CatalogoFormPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
       {
         path: 'catalogo',
-        component: CatalogoPageComponent,
+        loadComponent: () =>
+          import('./pages/app/catalogo/catalogo-page').then((m) => m.CatalogoPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
@@ -180,61 +279,89 @@ export const routes: Routes = [
       // ── Inventario HQ ───────────────────────────────────────────────────
       {
         path: 'inventario',
-        component: InventarioPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/inventario-page').then((m) => m.InventarioPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: INVENTORY_READ } },
       },
       {
         path: 'inventario/entradas',
-        component: InventarioEntradasPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/entradas/entradas-page').then(
+            (m) => m.InventarioEntradasPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER } },
       },
       {
         path: 'inventario/ledger',
-        component: InventarioLedgerPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/ledger/inventario-ledger-page').then(
+            (m) => m.InventarioLedgerPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: INVENTORY_READ } },
       },
       {
         path: 'inventario/transferencias',
-        component: InventarioTransferPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/transferencias/inventario-transfer-page').then(
+            (m) => m.InventarioTransferPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER } },
       },
       {
         path: 'inventario/mermas',
-        component: InventarioMermasPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/mermas/mermas-hq-page').then(
+            (m) => m.InventarioMermasPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER } },
       },
       {
         path: 'inventario/ajustes',
-        component: InventarioAjustesPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/ajustes/ajustes-page').then(
+            (m) => m.InventarioAjustesPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
       {
         path: 'inventario/conteos/nuevo',
-        component: CountSessionCreatePageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/counts/count-session-create-page').then(
+            (m) => m.CountSessionCreatePageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER } },
       },
       {
         path: 'inventario/conteos/:id/revision',
-        component: CountSessionDetailPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/counts/count-session-detail-page').then(
+            (m) => m.CountSessionDetailPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER, review: true } },
       },
       {
         path: 'inventario/conteos/:id',
-        component: CountSessionDetailPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/counts/count-session-detail-page').then(
+            (m) => m.CountSessionDetailPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER } },
       },
       {
         path: 'inventario/conteos',
-        component: CountSessionListPageComponent,
+        loadComponent: () =>
+          import('./pages/app/inventario/counts/count-session-list-page').then(
+            (m) => m.CountSessionListPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN_MANAGER } },
       },
@@ -242,56 +369,91 @@ export const routes: Routes = [
       // ── POS: Dispositivos y operación ─────────────────────────────────────
       {
         path: 'pos/dispositivos',
-        component: DispositivosPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/dispositivos/dispositivos-page').then(
+            (m) => m.DispositivosPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/dispositivos/:id',
-        component: DispositivoDetailPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/dispositivos/dispositivo-detail-page').then(
+            (m) => m.DispositivoDetailPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/enrolamiento',
-        component: EnrolamientoPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/enrolamiento/enrolamiento-page').then(
+            (m) => m.EnrolamientoPageComponent,
+          ),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/operadores',
-        component: OperadoresPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/operadores/operadores-page').then((m) => m.OperadoresPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/ventas',
-        component: VentasPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/ventas/ventas-page').then((m) => m.VentasPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/turnos',
-        component: TurnosPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/turnos/turnos-page').then((m) => m.TurnosPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/cortes',
-        component: CortesRedirectComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/cortes/cortes-redirect').then((m) => m.CortesRedirectComponent),
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/incidencias',
-        component: IncidenciasPageComponent,
+        loadComponent: () =>
+          import('./pages/app/pos/incidencias/incidencias-page').then((m) => m.IncidenciasPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
     ],
   },
-  { path: '', component: Home },
-  { path: 'aviso-privacidad', component: AvisoPrivacidadPage },
-  { path: 'terminos-servicio', component: TerminosServicioPage },
-  { path: 'calidad-higienica', component: CalidadHigienicaPage },
+  {
+    path: '',
+    loadComponent: () => import('./pages/home/home/home').then((m) => m.Home),
+  },
+  {
+    path: 'aviso-privacidad',
+    loadComponent: () =>
+      import('./pages/home/aviso-privacidad-page/aviso-privacidad-page').then(
+        (m) => m.AvisoPrivacidadPage,
+      ),
+  },
+  {
+    path: 'terminos-servicio',
+    loadComponent: () =>
+      import('./pages/home/terminos-servicio-page/terminos-servicio-page').then(
+        (m) => m.TerminosServicioPage,
+      ),
+  },
+  {
+    path: 'calidad-higienica',
+    loadComponent: () =>
+      import('./pages/home/calidad-higienica-page/calidad-higienica-page').then(
+        (m) => m.CalidadHigienicaPage,
+      ),
+  },
 ];
