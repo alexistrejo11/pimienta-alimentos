@@ -459,7 +459,9 @@ public class InventoryTransactionManagementUseCasesImpl implements InventoryTran
         command.externalReference(),
         command.notes(),
         command.initiatedById());
+    tx.setExitReason(command.exitReason());
     tx = transactionRepository.save(tx);
+    String movementDescription = command.exitReason().name();
 
     for (ScrapLine line : command.lines()) {
       assertLocationWritable(line.locationId());
@@ -473,7 +475,7 @@ public class InventoryTransactionManagementUseCasesImpl implements InventoryTran
           line.unitCost(),
           InventoryMovement.InventoryMovementType.SCRAP,
           command.externalReference(),
-          "Scrap",
+          movementDescription,
           command.initiatedById(),
           inv.getAvailableQuantity());
       m.setTransactionId(tx.getId());

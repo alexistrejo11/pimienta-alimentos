@@ -32,6 +32,14 @@ export type InventoryStatus = 'NORMAL' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 export type InventoryTransactionType = 'PURCHASE_RECEIPT' | 'SALE_DISPATCH' | 'INTERNAL_TRANSFER' | 'PHYSICAL_COUNT' | 'RETURN_FROM_CLIENT' | 'RETURN_TO_SUPPLIER' | 'PRODUCTION_ISSUE' | 'SCRAP_WRITE_OFF';
 export type InventoryTransactionStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type InventoryMovementType = 'PURCHASE' | 'RETURN_FROM_CLIENT' | 'INITIAL_STOCK' | 'SALE' | 'RETURN_TO_SUPPLIER' | 'USAGE' | 'SCRAP' | 'TRANSFER' | 'ADJUSTMENT_PLUS' | 'ADJUSTMENT_MINUS';
+
+/** Mirrors {@link io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason}. */
+export type InventoryExitReason =
+  | 'SCRAP'
+  | 'DAMAGED'
+  | 'EXPIRED'
+  | 'INTERNAL_USE'
+  | 'INVENTORY_ADJUSTMENT';
 export type MovementDirection = 'IN' | 'OUT' | 'NEUTRAL';
 
 export type InventoryCountType = 'FULL' | 'PARTIAL';

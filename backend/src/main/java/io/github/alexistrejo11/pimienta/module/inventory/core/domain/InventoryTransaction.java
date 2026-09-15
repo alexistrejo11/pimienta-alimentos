@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 
 /**
@@ -27,6 +28,9 @@ public class InventoryTransaction extends BaseDomain<Long> {
   /** Referencia externa: OC, factura, folio de venta */
   private String externalReference;
   private String notes;
+
+  /** Structured reason for scrap / write-off exits (null for other types). */
+  private InventoryExitReason exitReason;
 
   /** Quién inició la transacción */
   private Long initiatedById;
@@ -185,6 +189,14 @@ public class InventoryTransaction extends BaseDomain<Long> {
 
   public void setNotes(String notes) {
     this.notes = notes;
+  }
+
+  public InventoryExitReason getExitReason() {
+    return exitReason;
+  }
+
+  public void setExitReason(InventoryExitReason exitReason) {
+    this.exitReason = exitReason;
   }
 
   public Long getInitiatedById() {

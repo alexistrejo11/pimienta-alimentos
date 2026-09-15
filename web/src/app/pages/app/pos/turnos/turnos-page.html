@@ -1,0 +1,182 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <app-page-header
+    title="Turnos POS"
+    subtitle="Turnos activos en caja e historial de cortes Z"
+  />
+
+  <div class="flex gap-2 border-b border-outline-variant/20">
+    <button
+      type="button"
+      class="px-4 py-2 text-sm font-semibold"
+      [class.text-primary]="tab === 'active'"
+      [class.border-b-2]="tab === 'active'"
+      [class.border-primary]="tab === 'active'"
+      (click)="setTab('active')"
+    >
+      Turnos activos
+    </button>
+    <button
+      type="button"
+      class="px-4 py-2 text-sm font-semibold"
+      [class.text-primary]="tab === 'history'"
+      [class.border-b-2]="tab === 'history'"
+      [class.border-primary]="tab === 'history'"
+      (click)="setTab('history')"
+    >
+      Historial / Cortes Z
+    </button>
+  </div>
+
+  <div class="flex flex-wrap gap-3">
+    <app-headquarter-select
+      class="w-full sm:min-w-[12rem] sm:w-auto"
+      label="Sede"
+      [value]="selectedHeadquarterId"
+      (valueChange)="onHeadquarterChange($event)"
+    />
+    @if (tab === 'history') {
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium">Desde</span>
+        <input
+          type="date"
+          class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          [(ngModel)]="dateFrom"
+        />
+      </label>
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium">Hasta</span>
+        <input
+          type="date"
+          class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          [(ngModel)]="dateTo"
+        />
+      </label>
+    }
+    <label class="flex flex-col gap-1 text-sm">
+      <span class="font-medium">Operador</span>
+      <select
+        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+        [(ngModel)]="selectedOperatorId"
+      >
+        <option [ngValue]="null">Todos</option>
+        @for (op of operators; track op.id) {
+          <option [ngValue]="op.id">{{ op.displayName }}</option>
+        }
+      </select>
+    </label>
+    <button
+      type="button"
+      class="self-end rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+      (click)="cargar()"
+    >
+      Consultar
+    </button>
+  </div>
+
+  <app-data-state
+    [loading]="loading()"
+    [error]="error()"
+    [empty]="shifts().length === 0"
+    [emptyMessage]="tab === 'active' ? 'No hay turnos abiertos.' : 'Sin cortes en el periodo.'"
+    (retry)="cargar()"
+  >
+    <div class="grid gap-6 lg:grid-cols-[1fr_minmax(18rem,24rem)]">
+      <div class="responsive-table responsive-table--wide rounded-xl border ui-panel">
+        <table class="w-full text-sm">
+          <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+            <tr>
+              <th class="px-4 py-3 text-left">Terminal</th>
+              <th class="px-4 py-3 text-left">Operador</th>
+              <th class="px-4 py-3 text-left">Inicio</th>
+              @if (tab === 'active') {
+                <th class="px-4 py-3 text-left">Transcurrido</th>
+              } @else {
+                <th class="px-4 py-3 text-left">Cierre</th>
+                <th class="px-4 py-3 text-left">Diferencia</th>
+              }
+              <th class="px-4 py-3 text-left">Fondo inicial</th>
+              <th class="px-4 py-3 text-left"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/15">
+            @for (s of shifts(); track s.shiftId) {
+              <tr
+                class="cursor-pointer hover:bg-surface-container-low"
+                [class.bg-surface-container]="selectedShiftId() === s.shiftId"
+                (click)="selectShift(s)"
+              >
+                <td class="px-4 py-3">{{ deviceLabel(s) }}</td>
+                <td class="px-4 py-3">{{ operatorLabel(s) }}</td>
+                <td class="px-4 py-3">{{ s.openedAt | date: 'short' }}</td>
+                @if (tab === 'active') {
+                  <td class="px-4 py-3">{{ elapsed(s.openedAt) }}</td>
+                } @else {
+                  <td class="px-4 py-3">{{ s.closedAt | date: 'short' }}</td>
+                  <td class="px-4 py-3 tabular-nums">
+                    {{ s.differenceCentavos != null ? formatCentavos(s.differenceCentavos) : '—' }}
+                  </td>
+                }
+                <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.openingCashCentavos) }}</td>
+                <td class="px-4 py-3 text-xs text-on-surface-variant">Detalle</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <aside class="rounded-xl border ui-panel p-4 text-sm">
+        <h2 class="mb-3 font-bold">Detalle del turno</h2>
+        @if (detailLoading()) {
+          <p class="text-on-surface-variant">Cargando…</p>
+        } @else if (reconciliation(); as r) {
+          <dl class="grid gap-2">
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Ventas efectivo</dt>
+              <dd class="tabular-nums font-medium">{{ formatCentavos(r.cashSalesCentavos) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Ventas tarjeta</dt>
+              <dd class="tabular-nums font-medium">{{ formatCentavos(r.cardSalesCentavos) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Cortesías</dt>
+              <dd class="tabular-nums font-medium">{{ formatCentavos(r.courtesySalesCentavos) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Tickets</dt>
+              <dd class="tabular-nums font-medium">{{ r.saleTicketCount }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Sangrías</dt>
+              <dd class="tabular-nums font-medium">{{ formatCentavos(r.withdrawalsCentavos) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Depósitos</dt>
+              <dd class="tabular-nums font-medium">{{ formatCentavos(r.depositsCentavos) }}</dd>
+            </div>
+            <div class="flex justify-between gap-2 border-t border-outline-variant/20 pt-2">
+              <dt class="text-on-surface-variant">Efectivo esperado</dt>
+              <dd class="tabular-nums font-medium">
+                {{ r.expectedCashCentavos != null ? formatCentavos(r.expectedCashCentavos) : '—' }}
+              </dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Contado</dt>
+              <dd class="tabular-nums font-medium">
+                {{ r.countedCashCentavos != null ? formatCentavos(r.countedCashCentavos) : '—' }}
+              </dd>
+            </div>
+            <div class="flex justify-between gap-2">
+              <dt class="text-on-surface-variant">Diferencia</dt>
+              <dd class="tabular-nums font-bold">
+                {{ r.differenceCentavos != null ? formatCentavos(r.differenceCentavos) : '—' }}
+              </dd>
+            </div>
+          </dl>
+        } @else {
+          <p class="text-on-surface-variant">Selecciona un turno para ver el corte.</p>
+        }
+      </aside>
+    </div>
+  </app-data-state>
+</div>

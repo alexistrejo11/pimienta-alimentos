@@ -18,6 +18,9 @@ import type {
   PosReportSummaryResponse,
   PosSaleReportResponse,
   PosShiftListParams,
+  PosShiftListItemResponse,
+  PosShiftDetailResponse,
+  PosShiftReconciliationResponse,
   PosShiftResponse,
   PosSyncIncidentResponse,
   UpdatePosOperatorRequest,
@@ -135,7 +138,7 @@ export class PosAdminService {
     });
   }
 
-  listShifts(params: PosShiftListParams = {}): Observable<PagedResponse<PosShiftResponse>> {
+  listShifts(params: PosShiftListParams = {}): Observable<PagedResponse<PosShiftListItemResponse>> {
     let p = new HttpParams()
       .set('page', String(params.page ?? 0))
       .set('size', String(params.size ?? 20));
@@ -143,7 +146,26 @@ export class PosAdminService {
     if (params.from) p = p.set('from', params.from);
     if (params.to) p = p.set('to', params.to);
     if (params.status) p = p.set('status', params.status);
-    return this.http.get<PagedResponse<PosShiftResponse>>(`${this.base}/shifts`, { params: p });
+    if (params.cashierOperatorId != null) {
+      p = p.set('cashierOperatorId', String(params.cashierOperatorId));
+    }
+    return this.http.get<PagedResponse<PosShiftListItemResponse>>(`${this.base}/shifts`, { params: p });
+  }
+
+  getShift(shiftId: string, headquarterId: number): Observable<PosShiftDetailResponse> {
+    const p = new HttpParams().set('headquarterId', String(headquarterId));
+    return this.http.get<PosShiftDetailResponse>(`${this.base}/shifts/${shiftId}`, { params: p });
+  }
+
+  getShiftReconciliation(
+    shiftId: string,
+    headquarterId: number,
+  ): Observable<PosShiftReconciliationResponse> {
+    const p = new HttpParams().set('headquarterId', String(headquarterId));
+    return this.http.get<PosShiftReconciliationResponse>(
+      `${this.base}/shifts/${shiftId}/reconciliation`,
+      { params: p },
+    );
   }
 
   private reportParams(params: PosReportFilterParams): HttpParams {

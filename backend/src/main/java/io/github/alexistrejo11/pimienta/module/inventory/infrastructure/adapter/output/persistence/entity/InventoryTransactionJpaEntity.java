@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryTransaction.TransactionStatus;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryTransaction.TransactionType;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -43,6 +44,10 @@ public class InventoryTransactionJpaEntity {
 
   @Column(length = 4000)
   private String notes;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "exit_reason", length = 32)
+  private InventoryExitReason exitReason;
 
   @Column(name = "initiated_by_id")
   private Long initiatedById;
@@ -114,6 +119,14 @@ public class InventoryTransactionJpaEntity {
 
   public void setNotes(String notes) {
     this.notes = notes;
+  }
+
+  public InventoryExitReason getExitReason() {
+    return exitReason;
+  }
+
+  public void setExitReason(InventoryExitReason exitReason) {
+    this.exitReason = exitReason;
   }
 
   public Long getInitiatedById() {

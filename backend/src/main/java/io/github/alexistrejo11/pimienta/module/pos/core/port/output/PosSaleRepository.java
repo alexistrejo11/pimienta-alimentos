@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.port.output;
 
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosProductReportRow;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosShiftSalesSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosSalesSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosOpenProductSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosReportFilterQuery;
@@ -26,4 +27,6 @@ public interface PosSaleRepository {
   PosSalesSummary summarizeAcceptedSales(long headquarterId, Instant from, Instant to);
 
   PosOpenProductSummary summarizeOpenProducts(long headquarterId, Instant from, Instant to);
+
+  PosShiftSalesSummary summarizeAcceptedSalesForShift(UUID shiftId);
 }

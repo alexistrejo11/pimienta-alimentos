@@ -7,8 +7,18 @@ import { HeadquarterLookupService } from '../../../../core/headquarters/headquar
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { ItemResponse, StorageLocationResponse } from '../../../../core/model/inventory/inventory.dto';
+import { inventoryExitReasonLabel } from '../../../../core/i18n/enum-labels';
+import type { InventoryExitReason } from '../../../../core/model/inventory/inventory.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
+
+const EXIT_REASONS: InventoryExitReason[] = [
+  'SCRAP',
+  'DAMAGED',
+  'EXPIRED',
+  'INTERNAL_USE',
+  'INVENTORY_ADJUSTMENT',
+];
 
 @Component({
   selector: 'app-inventario-mermas-page',
@@ -25,13 +35,16 @@ export class InventarioMermasPageComponent implements OnInit {
   readonly success = signal('');
   readonly items = signal<ItemResponse[]>([]);
   readonly locations = signal<StorageLocationResponse[]>([]);
+  readonly exitReasons = EXIT_REASONS;
+  readonly exitReasonLabel = inventoryExitReasonLabel;
 
   selectedHeadquarterId: number | null = null;
   itemId: number | null = null;
   locationId: number | null = null;
   quantity = 1;
   unitCost = 0;
-  reason = '';
+  exitReason: InventoryExitReason = 'SCRAP';
+  detailNotes = '';
 
   readonly effectiveHeadquarterId = computed(() =>
     this.session.isAdmin() ? this.selectedHeadquarterId : this.session.activeHeadquarterId(),
@@ -61,20 +74,21 @@ export class InventarioMermasPageComponent implements OnInit {
   }
 
   registrar(): void {
-    if (this.itemId == null || this.locationId == null || this.quantity <= 0 || !this.reason.trim()) return;
+    if (this.itemId == null || this.locationId == null || this.quantity <= 0 || !this.exitReason) return;
     this.loading.set(true);
     this.error.set(null);
     this.success.set('');
     this.inventory
       .scrap({
-        notes: this.reason.trim(),
+        exitReason: this.exitReason,
+        notes: this.detailNotes.trim() || undefined,
         lines: [{ itemId: this.itemId, locationId: this.locationId, quantity: this.quantity, unitCost: this.unitCost }],
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => {
           this.success.set('Merma registrada en inventario HQ.');
-          this.reason = '';
+          this.detailNotes = '';
           this.quantity = 1;
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),

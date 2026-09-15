@@ -158,4 +158,40 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       @Param("from") Instant from,
       @Param("to") Instant to,
       @Param("accepted") PosEventResultStatus accepted);
+
+  @Query(
+      """
+      SELECT COUNT(DISTINCT s.saleId)
+      FROM PosSaleJpaEntity s
+      WHERE s.deletedAt IS NULL
+        AND s.shiftId = :shiftId
+        AND s.status = io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus.CONFIRMED
+        AND EXISTS (
+              SELECT 1 FROM PosSyncEventJpaEntity e
+              WHERE e.eventId = s.eventId
+                AND e.deletedAt IS NULL
+                AND e.status = :accepted
+            )
+      """)
+  long countAcceptedConfirmedSalesForShift(
+      @Param("shiftId") UUID shiftId, @Param("accepted") PosEventResultStatus accepted);
+
+  @Query(
+      """
+      SELECT p.method, COALESCE(SUM(p.amountCentavos), 0)
+      FROM PosSalePaymentJpaEntity p
+      JOIN p.sale s
+      WHERE s.deletedAt IS NULL
+        AND s.shiftId = :shiftId
+        AND s.status = io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus.CONFIRMED
+        AND EXISTS (
+              SELECT 1 FROM PosSyncEventJpaEntity e
+              WHERE e.eventId = s.eventId
+                AND e.deletedAt IS NULL
+                AND e.status = :accepted
+            )
+      GROUP BY p.method
+      """)
+  List<Object[]> sumPaymentsByMethodForShift(
+      @Param("shiftId") UUID shiftId, @Param("accepted") PosEventResultStatus accepted);
 }

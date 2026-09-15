@@ -66,7 +66,7 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
     items: [
           { label: 'Catálogo por sede', icon: 'storefront', route: '/app/pos/catalogo', roles: ADMIN_MANAGER },
       { label: 'Ventas', icon: 'receipt_long', route: '/app/pos/ventas', roles: POS_OPERATION },
-      { label: 'Cortes', icon: 'point_of_sale', route: '/app/pos/cortes', roles: POS_OPERATION },
+      { label: 'Turnos', icon: 'point_of_sale', route: '/app/pos/turnos', roles: POS_OPERATION },
       {
         label: 'Configuración POS',
         icon: 'settings',

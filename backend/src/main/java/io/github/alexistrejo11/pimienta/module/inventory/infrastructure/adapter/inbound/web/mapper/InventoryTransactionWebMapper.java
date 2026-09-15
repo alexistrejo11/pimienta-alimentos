@@ -29,6 +29,7 @@ public final class InventoryTransactionWebMapper {
                 tx.getStatus(),
                 tx.getExternalReference(),
                 tx.getNotes(),
+                tx.getExitReason(),
                 tx.getInitiatedById(),
                 tx.getApprovedById(),
                 tx.getApprovedAt(),
@@ -117,7 +118,11 @@ public final class InventoryTransactionWebMapper {
                                 l.itemId(), l.locationId(), l.quantity(), l.unitCost()))
                 .toList();
         return new InventoryTransactionCommands.ScrapCommand(
-                request.externalReference(), request.notes(), request.initiatedById(), lines);
+                request.externalReference(),
+                request.notes(),
+                request.exitReason(),
+                request.initiatedById(),
+                lines);
     }
 
     public static InventoryTransactionCommands.PhysicalAdjustmentCommand toCommand(

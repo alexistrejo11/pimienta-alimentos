@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.inventory.core.application.command;
 
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -52,7 +53,11 @@ public final class InventoryTransactionCommands {
     }
 
     public record ScrapCommand(
-            String externalReference, String notes, Long initiatedById, List<ScrapLine> lines) {
+            String externalReference,
+            String notes,
+            InventoryExitReason exitReason,
+            Long initiatedById,
+            List<ScrapLine> lines) {
     }
 
     public record ScrapLine(long itemId, long locationId, int quantity, BigDecimal unitCost) {

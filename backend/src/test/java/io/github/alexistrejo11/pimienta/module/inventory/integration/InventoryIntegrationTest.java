@@ -157,6 +157,53 @@ class InventoryIntegrationTest {
   }
 
   @Test
+  void transactions_scrap_missingExitReason_returns400() throws Exception {
+    String token = obtainAccessToken();
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                    "/api/v1/inventory/transactions/scrap",
+                    """
+                    {"notes": "x", "lines": [{"itemId": 1, "locationId": 1, "quantity": 1, "unitCost": 1}]}
+                    """)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+  }
+
+  @Test
+  void transactions_scrap_persistsExitReason() throws Exception {
+    String token = obtainAccessToken();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    long locId = createWarehouseLocation(token, "WH-SCRAP-" + suffix, "Scrap WH " + suffix);
+    long itemId = createItem(token, "SKU-SCRAP-" + suffix, "Scrap item " + suffix);
+    String stockBody = "{\"itemId\": %d, \"locationId\": %d, \"initialQuantity\": 5}".formatted(itemId, locId);
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson("/api/v1/inventory/stock", stockBody)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isCreated());
+
+    String scrapBody =
+        """
+        {
+          "exitReason": "DAMAGED",
+          "notes": "Empaque roto",
+          "lines": [{"itemId": %d, "locationId": %d, "quantity": 1, "unitCost": 2.5}]
+        }
+        """
+            .formatted(itemId, locId);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson("/api/v1/inventory/transactions/scrap", scrapBody)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.exitReason").value("DAMAGED"))
+        .andExpect(jsonPath("$.type").value("SCRAP_WRITE_OFF"));
+  }
+
+  @Test
   void transactions_purchase_emptyLines_returns400() throws Exception {
     String token = obtainAccessToken();
     mockMvc

@@ -1,8 +1,10 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence;
 
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosProductReportRow;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosShiftSalesSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosSalesSummary;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosOpenProductSummary;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosPaymentMethod;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosReportFilterQuery;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus;
@@ -94,6 +96,25 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
     Object[] row = jpa.summarizeOpenProducts(headquarterId, from, to, PosEventResultStatus.ACCEPTED);
     return new PosOpenProductSummary(
         number(row[0]), number(row[1]), number(row[2]), number(row[3]));
+  }
+
+  @Override
+  public PosShiftSalesSummary summarizeAcceptedSalesForShift(UUID shiftId) {
+    long ticketCount =
+        jpa.countAcceptedConfirmedSalesForShift(shiftId, PosEventResultStatus.ACCEPTED);
+    long cash = 0;
+    long card = 0;
+    long courtesy = 0;
+    for (Object[] row : jpa.sumPaymentsByMethodForShift(shiftId, PosEventResultStatus.ACCEPTED)) {
+      PosPaymentMethod method = (PosPaymentMethod) row[0];
+      long sum = number(row[1]);
+      switch (method) {
+        case CASH -> cash = sum;
+        case EXTERNAL_CARD_MP -> card = sum;
+        case CORTESIA -> courtesy = sum;
+      }
+    }
+    return new PosShiftSalesSummary(ticketCount, cash, card, courtesy);
   }
 
   private static long number(Object value) {

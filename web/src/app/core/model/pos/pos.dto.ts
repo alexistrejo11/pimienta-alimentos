@@ -117,11 +117,57 @@ export interface PosShiftResponse {
   differenceCentavos: number | null;
 }
 
+export interface PosShiftListItemResponse extends PosShiftResponse {
+  cashierDisplayName: string;
+  deviceName: string;
+  deviceVisibleCode: string;
+}
+
+export interface PosShiftCashMovement {
+  movementId: string;
+  type: string;
+  amountCentavos: number;
+  folio: string | null;
+  reason: string | null;
+  occurredAt: string;
+}
+
+export interface PosShiftCashCount {
+  countId: string;
+  totalCentavos: number;
+  denominations: string;
+  submittedAt: string;
+}
+
+export interface PosShiftDetailResponse {
+  shift: PosShiftListItemResponse;
+  cashMovements: PosShiftCashMovement[];
+  cashCounts: PosShiftCashCount[];
+  cashReconciledCentavos: number;
+}
+
+export interface PosShiftReconciliationResponse {
+  shift: PosShiftListItemResponse;
+  openingCashCentavos: number;
+  cashSalesCentavos: number;
+  cardSalesCentavos: number;
+  courtesySalesCentavos: number;
+  withdrawalsCentavos: number;
+  depositsCentavos: number;
+  expectedCashCentavos: number | null;
+  countedCashCentavos: number | null;
+  differenceCentavos: number | null;
+  saleTicketCount: number;
+  cashMovements: PosShiftCashMovement[];
+  cashCounts: PosShiftCashCount[];
+}
+
 export interface PosShiftListParams {
   headquarterId?: number;
   from?: string;
   to?: string;
   status?: string;
+  cashierOperatorId?: number;
   page?: number;
   size?: number;
 }

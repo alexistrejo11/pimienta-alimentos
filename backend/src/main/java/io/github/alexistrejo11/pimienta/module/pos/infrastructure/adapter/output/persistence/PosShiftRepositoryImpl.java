@@ -6,6 +6,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosCashCount;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosCashMovement;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosShift;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncEvent;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosShiftListFilter;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosShiftRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosShiftMaterializationException;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosCashCountJpaEntity;
@@ -35,15 +36,43 @@ public class PosShiftRepositoryImpl implements PosShiftRepository {
       default -> throw invalid("Tipo de evento de turno no soportado", "Unsupported POS materialization event: "+event.getEventType(), null);
     }
   }
-  @Override public Page<PosShift> findByHeadquarterIds(List<Long> hqs, Instant closedFrom, Instant closedTo, String status, Pageable page){
-    boolean filtered = closedFrom != null || closedTo != null || status != null;
-    if (!filtered) {
-      return (hqs == null ? shifts.findAllByOrderByOpenedAtDesc(page) : shifts.findByHeadquarterIdInOrderByOpenedAtDesc(hqs, page)).map(PosShiftRepositoryImpl::shift);
+  @Override
+  public Page<PosShift> findByHeadquarterIds(List<Long> hqs, PosShiftListFilter filter, Pageable page) {
+    if (!filter.hasDateOrStatusFilter()) {
+      return (hqs == null
+              ? shifts.findAllByOrderByOpenedAtDesc(page)
+              : shifts.findByHeadquarterIdInOrderByOpenedAtDesc(hqs, page))
+          .map(PosShiftRepositoryImpl::shift);
     }
+    boolean useClosed = filter.filterClosedDates();
+    boolean useOpened = filter.filterOpenedDates();
     if (hqs == null) {
-      return shifts.findAllFiltered(closedFrom, closedTo, status, page).map(PosShiftRepositoryImpl::shift);
+      return shifts
+          .findAllFiltered(
+              filter.closedFrom(),
+              filter.closedTo(),
+              filter.openedFrom(),
+              filter.openedTo(),
+              useClosed,
+              useOpened,
+              filter.status(),
+              filter.cashierOperatorId(),
+              page)
+          .map(PosShiftRepositoryImpl::shift);
     }
-    return shifts.findFilteredByHeadquarterIds(hqs, closedFrom, closedTo, status, page).map(PosShiftRepositoryImpl::shift);
+    return shifts
+        .findFilteredByHeadquarterIds(
+            hqs,
+            filter.closedFrom(),
+            filter.closedTo(),
+            filter.openedFrom(),
+            filter.openedTo(),
+            useClosed,
+            useOpened,
+            filter.status(),
+            filter.cashierOperatorId(),
+            page)
+        .map(PosShiftRepositoryImpl::shift);
   }
   @Override public Optional<PosShift> findById(UUID id,long hq){return shifts.findByShiftIdAndHeadquarterId(id,hq).map(PosShiftRepositoryImpl::shift);}
   @Override public List<PosCashMovement> movements(UUID id){return movements.findByShiftIdOrderByOccurredAtAsc(id).stream().map(x->new PosCashMovement(x.getMovementId(),x.getShiftId(),x.getMovementType(),x.getAmountCentavos(),x.getFolio(),x.getReason(),x.getOccurredAt())).toList();}

@@ -4,7 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import { itemCategoryLabel, inventoryMovementTypeLabel, movementDirectionLabel } from '../../../../core/i18n/enum-labels';
+import {
+  itemCategoryLabel,
+  inventoryExitReasonLabel,
+  inventoryMovementTypeLabel,
+  movementDirectionLabel,
+} from '../../../../core/i18n/enum-labels';
 import type { InventoryMovementResponse } from '../../../../core/model/inventory/inventory.dto';
 import type { ItemCategory } from '../../../../core/model/inventory/inventory.enums';
 import type { PageMetadata } from '../../../../core/model/common/pagination';
@@ -33,4 +38,11 @@ export class InventarioLedgerPageComponent implements OnInit {
   filterChanged(): void { this.load(0); }
   previous(): void { if (this.metadata()?.hasPrevious) this.load(this.page() - 1); }
   next(): void { if (this.metadata()?.hasNext) this.load(this.page() + 1); }
+
+  movementReason(row: InventoryMovementResponse): string {
+    if (row.type === 'SCRAP' && row.description) {
+      return inventoryExitReasonLabel(row.description);
+    }
+    return row.description || row.referenceNumber || 'Sin motivo';
+  }
 }

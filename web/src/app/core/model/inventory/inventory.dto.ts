@@ -11,6 +11,7 @@ import type {
   InventoryMovementType,
   MovementDirection,
   CatalogRole,
+  InventoryExitReason,
 } from './inventory.enums';
 
 /** GET /api/v1/inventory/items */
@@ -244,6 +245,7 @@ export interface ScrapLineRequest {
 export interface ScrapTransactionRequest {
   externalReference?: string;
   notes?: string;
+  exitReason: InventoryExitReason;
   lines: ScrapLineRequest[];
 }
 
@@ -267,6 +269,7 @@ export interface InventoryTransactionResponse {
   status: InventoryTransactionStatus;
   externalReference: string | null;
   notes: string | null;
+  exitReason: InventoryExitReason | null;
   initiatedById: number | null;
   approvedById: number | null;
   approvedAt: string | null;

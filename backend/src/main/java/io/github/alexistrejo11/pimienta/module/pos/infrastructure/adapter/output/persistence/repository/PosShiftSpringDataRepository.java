@@ -22,28 +22,62 @@ public interface PosShiftSpringDataRepository extends JpaRepository<PosShiftJpaE
       SELECT s FROM PosShiftJpaEntity s
       WHERE s.headquarterId IN :headquarterIds
         AND (:status IS NULL OR s.status = :status)
-        AND (:closedFrom IS NULL OR (s.closedAt IS NOT NULL AND s.closedAt >= :closedFrom))
-        AND (:closedTo IS NULL OR (s.closedAt IS NOT NULL AND s.closedAt < :closedTo))
+        AND (:cashierOperatorId IS NULL OR s.cashierOperatorId = :cashierOperatorId)
+        AND (
+          :useClosedDateFilter = false OR (
+            s.closedAt IS NOT NULL
+            AND (:closedFrom IS NULL OR s.closedAt >= :closedFrom)
+            AND (:closedTo IS NULL OR s.closedAt < :closedTo)
+          )
+        )
+        AND (
+          :useOpenedDateFilter = false OR (
+            (:openedFrom IS NULL OR s.openedAt >= :openedFrom)
+            AND (:openedTo IS NULL OR s.openedAt < :openedTo)
+          )
+        )
       ORDER BY s.openedAt DESC
       """)
   Page<PosShiftJpaEntity> findFilteredByHeadquarterIds(
       @Param("headquarterIds") List<Long> headquarterIds,
       @Param("closedFrom") Instant closedFrom,
       @Param("closedTo") Instant closedTo,
+      @Param("openedFrom") Instant openedFrom,
+      @Param("openedTo") Instant openedTo,
+      @Param("useClosedDateFilter") boolean useClosedDateFilter,
+      @Param("useOpenedDateFilter") boolean useOpenedDateFilter,
       @Param("status") String status,
+      @Param("cashierOperatorId") Long cashierOperatorId,
       Pageable pageable);
 
   @Query(
       """
       SELECT s FROM PosShiftJpaEntity s
       WHERE (:status IS NULL OR s.status = :status)
-        AND (:closedFrom IS NULL OR (s.closedAt IS NOT NULL AND s.closedAt >= :closedFrom))
-        AND (:closedTo IS NULL OR (s.closedAt IS NOT NULL AND s.closedAt < :closedTo))
+        AND (:cashierOperatorId IS NULL OR s.cashierOperatorId = :cashierOperatorId)
+        AND (
+          :useClosedDateFilter = false OR (
+            s.closedAt IS NOT NULL
+            AND (:closedFrom IS NULL OR s.closedAt >= :closedFrom)
+            AND (:closedTo IS NULL OR s.closedAt < :closedTo)
+          )
+        )
+        AND (
+          :useOpenedDateFilter = false OR (
+            (:openedFrom IS NULL OR s.openedAt >= :openedFrom)
+            AND (:openedTo IS NULL OR s.openedAt < :openedTo)
+          )
+        )
       ORDER BY s.openedAt DESC
       """)
   Page<PosShiftJpaEntity> findAllFiltered(
       @Param("closedFrom") Instant closedFrom,
       @Param("closedTo") Instant closedTo,
+      @Param("openedFrom") Instant openedFrom,
+      @Param("openedTo") Instant openedTo,
+      @Param("useClosedDateFilter") boolean useClosedDateFilter,
+      @Param("useOpenedDateFilter") boolean useOpenedDateFilter,
       @Param("status") String status,
+      @Param("cashierOperatorId") Long cashierOperatorId,
       Pageable pageable);
 }

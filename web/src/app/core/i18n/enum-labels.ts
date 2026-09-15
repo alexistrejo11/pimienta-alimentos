@@ -104,6 +104,18 @@ export function posShiftStatusLabel(status: string): string {
   return POS_SHIFT_STATUS_LABELS[status] ?? status;
 }
 
+const INVENTORY_EXIT_REASON_LABELS: Record<string, string> = {
+  SCRAP: 'Merma genérica',
+  DAMAGED: 'Deteriorado',
+  EXPIRED: 'Caducado',
+  INTERNAL_USE: 'Uso interno',
+  INVENTORY_ADJUSTMENT: 'Ajuste de inventario',
+};
+
+export function inventoryExitReasonLabel(reason: string): string {
+  return INVENTORY_EXIT_REASON_LABELS[reason] ?? reason;
+}
+
 export function taskStatusLabel(status: string): string {
   return TASK_STATUS_LABELS[status] ?? status;
 }

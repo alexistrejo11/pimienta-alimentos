@@ -18,6 +18,7 @@ public class TransactionPersistenceMapper {
     e.setStatus(domain.getStatus());
     e.setExternalReference(domain.getExternalReference());
     e.setNotes(domain.getNotes());
+    e.setExitReason(domain.getExitReason());
     e.setInitiatedById(domain.getInitiatedById());
     e.setApprovedById(domain.getApprovedById());
     e.setApprovedAt(domain.getApprovedAt());
@@ -37,6 +38,7 @@ public class TransactionPersistenceMapper {
     tx.setStatus(e.getStatus());
     tx.setExternalReference(e.getExternalReference());
     tx.setNotes(e.getNotes());
+    tx.setExitReason(e.getExitReason());
     tx.setInitiatedById(e.getInitiatedById());
     tx.setApprovedById(e.getApprovedById());
     tx.setApprovedAt(e.getApprovedAt());

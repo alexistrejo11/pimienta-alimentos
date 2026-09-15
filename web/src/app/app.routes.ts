@@ -42,7 +42,8 @@ import { DispositivoDetailPageComponent } from './pages/app/pos/dispositivos/dis
 import { EnrolamientoPageComponent } from './pages/app/pos/enrolamiento/enrolamiento-page';
 import { OperadoresPageComponent } from './pages/app/pos/operadores/operadores-page';
 import { VentasPageComponent } from './pages/app/pos/ventas/ventas-page';
-import { CortesPageComponent } from './pages/app/pos/cortes/cortes-page';
+import { CortesRedirectComponent } from './pages/app/pos/cortes/cortes-redirect';
+import { TurnosPageComponent } from './pages/app/pos/turnos/turnos-page';
 import { IncidenciasPageComponent } from './pages/app/pos/incidencias/incidencias-page';
 import { AccessRestrictedPageComponent } from './pages/app/access-restricted/access-restricted-page';
 import { PendingApprovalPageComponent } from './pages/app/pending-approval/pending-approval-page';
@@ -270,8 +271,14 @@ export const routes: Routes = [
         data: { access: { roles: POS_STAFF } },
       },
       {
+        path: 'pos/turnos',
+        component: TurnosPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: POS_STAFF } },
+      },
+      {
         path: 'pos/cortes',
-        component: CortesPageComponent,
+        component: CortesRedirectComponent,
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },

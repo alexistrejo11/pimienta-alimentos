@@ -251,7 +251,116 @@ class PosSyncEventsIntegrationTest {
         .andExpect(jsonPath("$.items", hasSize(1)))
         .andExpect(jsonPath("$.items[0].shiftId").value(shiftId.toString()))
         .andExpect(jsonPath("$.items[0].openingCashCentavos").value(50000))
-        .andExpect(jsonPath("$.items[0].expectedCashCentavos").value(60000));
+        .andExpect(jsonPath("$.items[0].expectedCashCentavos").value(60000))
+        .andExpect(jsonPath("$.items[0].cashierDisplayName").value("Cajera Shift"));
+  }
+
+  @Test
+  void shiftReconciliation_aggregatesAcceptedSalesAndWithdrawal() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-RECON-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long itemId = createItem(staffToken, "SKU-RECON-" + UUID.randomUUID(), "Snack");
+    putCatalog(staffToken, hqId, itemId, "Deli", "25.00", "CONTROLLED");
+    long operatorId = createOperator(staffToken, hqId, "Cajera Recon");
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Recon");
+    UUID shiftId = UUID.randomUUID();
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                shiftLifecycleEventJson(
+                    device,
+                    hqId,
+                    shiftId,
+                    UUID.randomUUID(),
+                    1L,
+                    "SHIFT_OPENED",
+                    shiftId,
+                    """
+                    {"shiftId": "%s", "cashierOperatorId": %d, "openingCashCentavos": 10000}
+                    """
+                        .formatted(shiftId, operatorId))))
+        .andExpect(status().isOk());
+
+    UUID cashSaleEvent = UUID.randomUUID();
+    UUID cashSaleId = UUID.randomUUID();
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                saleEventJsonForShift(
+                    device,
+                    hqId,
+                    cashSaleEvent,
+                    cashSaleId,
+                    shiftId,
+                    itemId,
+                    operatorId,
+                    1,
+                    2500,
+                    false,
+                    "CASH")))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    UUID withdrawalEvent = UUID.randomUUID();
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                shiftLifecycleEventJson(
+                    device,
+                    hqId,
+                    shiftId,
+                    withdrawalEvent,
+                    3L,
+                    "CASH_WITHDRAWAL_RECORDED",
+                    UUID.randomUUID(),
+                    """
+                    {"amountCentavos": 1000, "folio": "S1", "reason": "Sangria"}
+                    """)))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                shiftLifecycleEventJson(
+                    device,
+                    hqId,
+                    shiftId,
+                    UUID.randomUUID(),
+                    4L,
+                    "SHIFT_CLOSED",
+                    UUID.randomUUID(),
+                    """
+                    {
+                      "cashExpectedCentavos": 11500,
+                      "countedCashCentavos": 11500,
+                      "differenceCentavos": 0,
+                      "approvedByUserId": "%d"
+                    }
+                    """
+                        .formatted(operatorId))))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/pos/admin/shifts/%s/reconciliation?headquarterId=%d"
+                    .formatted(shiftId, hqId),
+                staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.cashSalesCentavos").value(2500))
+        .andExpect(jsonPath("$.withdrawalsCentavos").value(1000))
+        .andExpect(jsonPath("$.saleTicketCount").value(1))
+        .andExpect(jsonPath("$.openingCashCentavos").value(10000));
   }
 
   @Test
@@ -366,19 +475,20 @@ class PosSyncEventsIntegrationTest {
             payloadJson);
   }
 
-  private String saleEventJson(
+  private String saleEventJsonForShift(
       EnrolledDevice device,
       long siteId,
       UUID eventId,
       UUID saleId,
+      UUID shiftId,
       long productId,
       long operatorId,
       int quantity,
       long unitPriceCentavos,
-      boolean soldWithNegativeStock) {
+      boolean soldWithNegativeStock,
+      String paymentMethod) {
     UUID lineId = UUID.randomUUID();
     UUID paymentId = UUID.randomUUID();
-    UUID shiftId = UUID.randomUUID();
     long subtotal = unitPriceCentavos * quantity;
     return """
         {
@@ -420,7 +530,7 @@ class PosSyncEventsIntegrationTest {
                 "payments": [
                   {
                     "paymentId": "%s",
-                    "method": "CASH",
+                    "method": "%s",
                     "amountCentavos": %d,
                     "tenderedCentavos": %d,
                     "changeCentavos": 0
@@ -449,8 +559,33 @@ class PosSyncEventsIntegrationTest {
             subtotal,
             soldWithNegativeStock,
             paymentId,
+            paymentMethod,
             subtotal,
             subtotal);
+  }
+
+  private String saleEventJson(
+      EnrolledDevice device,
+      long siteId,
+      UUID eventId,
+      UUID saleId,
+      long productId,
+      long operatorId,
+      int quantity,
+      long unitPriceCentavos,
+      boolean soldWithNegativeStock) {
+    return saleEventJsonForShift(
+        device,
+        siteId,
+        eventId,
+        saleId,
+        UUID.randomUUID(),
+        productId,
+        operatorId,
+        quantity,
+        unitPriceCentavos,
+        soldWithNegativeStock,
+        "CASH");
   }
 
   private long createOperator(String staffToken, long hqId, String name) throws Exception {
