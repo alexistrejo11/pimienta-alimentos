@@ -84,7 +84,14 @@ internal fun ManagerAccess(users: List<LocalUserEntity>, repository: PosReposito
     }
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Allows the dialog content to scroll when multiple manager profiles are present
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Text("Autorizar acceso a Manager", style = MaterialTheme.typography.titleLarge)
                 Text("La venta y el carrito permanecerán activos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 managers.forEach { user -> PosButton(user.displayName, { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
