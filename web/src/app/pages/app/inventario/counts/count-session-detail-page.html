@@ -4,11 +4,13 @@
       <a routerLink="/app/inventario/conteos" class="text-sm font-semibold text-primary">← Conteos físicos</a>
       <h1 class="mt-2 font-headline text-2xl font-extrabold text-on-surface">Sesión #{{ session()?.id }}</h1>
       <p class="mt-1 text-on-surface-variant">
-        {{ session()?.type === 'FULL' ? 'Conteo completo' : 'Conteo parcial' }} · ubicación {{ session()?.locationId }}
+        {{ inventoryCountTypeLabel(session()?.type ?? '') }} · ubicación {{ session()?.locationId }}
       </p>
     </div>
     @if (session()) {
-      <span class="ui-badge-neutral rounded-full px-3 py-1 text-sm">{{ session()?.status }}</span>
+      <span class="ui-badge-neutral rounded-full px-3 py-1 text-sm">{{
+        inventoryCountStatusLabel(session()?.status ?? '')
+      }}</span>
     }
   </div>
   @if (error()) {

@@ -7,6 +7,7 @@ import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-
 import type { PosSaleCategoryResponse } from '../../../../core/model/pos/pos.dto';
 import type { StockPolicy } from '../../../../core/model/pos/pos.enums';
 import type { ItemCategory, ItemUnit } from '../../../../core/model/inventory/inventory.enums';
+import { itemCategoryLabel, itemUnitLabel } from '../../../../core/i18n/enum-labels';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 
 const CATEGORIES: ItemCategory[] = ['FINISHED_GOOD', 'RAW_MATERIAL', 'CONSUMABLE', 'PACKAGING', 'OTHER'];
@@ -26,6 +27,8 @@ export class PosProductFormPageComponent implements OnInit {
   readonly units = UNITS;
   readonly inventoryCategories = CATEGORIES;
   readonly stockPolicies: StockPolicy[] = ['CONTROLLED', 'NOT_CONTROLLED'];
+  readonly itemCategoryLabel = itemCategoryLabel;
+  readonly itemUnitLabel = itemUnitLabel;
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(300)]], description: [''], costPrice: [0, [Validators.required, Validators.min(0)]], salePrice: [0, [Validators.required, Validators.min(0)]],
     category: ['FINISHED_GOOD' as ItemCategory, Validators.required], unit: ['PIECE' as ItemUnit, Validators.required], brand: [''], barcode: [''], reorderPoint: [0, [Validators.required, Validators.min(0)]], reorderQuantity: [0, [Validators.required, Validators.min(0)]],

@@ -1,5 +1,6 @@
 /**
  * Spanish UI labels for API enum wire values (English codes stay on the wire).
+ * Never show raw enum codes in templates — always use a label helper from this file.
  */
 
 export function accountStatusLabel(status: string): string {
@@ -35,8 +36,44 @@ export function itemStatusLabel(status: string): string {
   return ITEM_STATUS_LABELS[status] ?? status;
 }
 
+export function itemCategoryLabel(category: string): string {
+  return ITEM_CATEGORY_LABELS[category] ?? category;
+}
+
+export function itemUnitLabel(unit: string): string {
+  return ITEM_UNIT_LABELS[unit] ?? unit;
+}
+
+export function catalogRoleLabel(role: string): string {
+  return CATALOG_ROLE_LABELS[role] ?? role;
+}
+
+export function inventoryStatusLabel(status: string): string {
+  return INVENTORY_STATUS_LABELS[status] ?? status;
+}
+
+export function inventoryCountStatusLabel(status: string): string {
+  return INVENTORY_COUNT_STATUS_LABELS[status] ?? status;
+}
+
+export function inventoryCountTypeLabel(type: string): string {
+  return INVENTORY_COUNT_TYPE_LABELS[type] ?? type;
+}
+
+export function locationTypeLabel(type: string): string {
+  return LOCATION_TYPE_LABELS[type] ?? type;
+}
+
+export function stockPolicyLabel(policy: string): string {
+  return STOCK_POLICY_LABELS[policy] ?? policy;
+}
+
 export function posRoleLabel(role: string): string {
   return POS_ROLE_LABELS[role] ?? role;
+}
+
+export function posDeviceStatusLabel(status: string): string {
+  return POS_DEVICE_STATUS_LABELS[status] ?? status;
 }
 
 export function taskStatusLabel(status: string): string {
@@ -72,8 +109,11 @@ const GENDER_LABELS: Record<string, string> = {
 const ROLE_LABELS: Record<string, string> = {
   USER: 'Usuario',
   SUPPORT: 'Soporte',
+  SALES: 'Ventas',
   MANAGER: 'Gerente',
   ADMIN: 'Administrador',
+  POS_OPERATOR: 'Operador POS',
+  EMPLOYEE: 'Empleado',
 };
 
 const EMPLOYEE_STATUS_LABELS: Record<string, string> = {
@@ -117,10 +157,79 @@ const ITEM_STATUS_LABELS: Record<string, string> = {
   PENDING_APPROVAL: 'Pendiente de aprobación',
 };
 
+const ITEM_CATEGORY_LABELS: Record<string, string> = {
+  RAW_MATERIAL: 'Materia prima',
+  FINISHED_GOOD: 'Producto terminado',
+  CONSUMABLE: 'Consumible',
+  SPARE_PART: 'Refacción',
+  PACKAGING: 'Empaque',
+  TOOL: 'Herramienta',
+  MACHINE: 'Máquina',
+  FURNITURE: 'Mobiliario',
+  OTHER: 'Otro',
+};
+
+const ITEM_UNIT_LABELS: Record<string, string> = {
+  PIECE: 'Pieza',
+  KG: 'Kilogramo',
+  GRAM: 'Gramo',
+  LITER: 'Litro',
+  ML: 'Mililitro',
+  BOX: 'Caja',
+  DOZEN: 'Docena',
+  METER: 'Metro',
+  SQUARE_METER: 'Metro cuadrado',
+};
+
+const CATALOG_ROLE_LABELS: Record<string, string> = {
+  INVENTORY_ONLY: 'Sólo inventario',
+  POS_SELLABLE: 'Vendible en POS',
+};
+
+const INVENTORY_STATUS_LABELS: Record<string, string> = {
+  NORMAL: 'Normal',
+  LOW_STOCK: 'Stock bajo',
+  OUT_OF_STOCK: 'Agotado',
+  OVERSTOCKED: 'Sobre stock',
+};
+
+const INVENTORY_COUNT_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Borrador',
+  SUBMITTED: 'Enviado',
+  APPROVED: 'Aprobado',
+  CANCELLED: 'Cancelado',
+};
+
+const INVENTORY_COUNT_TYPE_LABELS: Record<string, string> = {
+  FULL: 'Completo',
+  PARTIAL: 'Parcial',
+};
+
+const LOCATION_TYPE_LABELS: Record<string, string> = {
+  WAREHOUSE: 'Almacén',
+  ZONE: 'Zona',
+  AISLE: 'Pasillo',
+  SHELF: 'Estante',
+  BIN: 'Contenedor',
+  POS: 'Punto de venta',
+};
+
+const STOCK_POLICY_LABELS: Record<string, string> = {
+  CONTROLLED: 'Inventariable',
+  NOT_CONTROLLED: 'Sin control de stock',
+};
+
 const POS_ROLE_LABELS: Record<string, string> = {
   CASHIER: 'Cajero',
   MANAGER: 'Gerente',
   SUPERADMIN: 'Superadmin',
+};
+
+const POS_DEVICE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente',
+  AUTHORIZED: 'Autorizado',
+  REVOKED: 'Revocado',
+  DISABLED: 'Deshabilitado',
 };
 
 const TASK_STATUS_LABELS: Record<string, string> = {

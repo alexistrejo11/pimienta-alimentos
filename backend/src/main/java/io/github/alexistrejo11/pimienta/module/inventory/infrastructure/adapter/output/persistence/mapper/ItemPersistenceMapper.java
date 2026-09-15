@@ -23,7 +23,6 @@ public final class ItemPersistenceMapper {
     e.setBrand(domain.getBrand());
     e.setBarcode(domain.getBarcode());
     e.setCostPrice(nz(domain.getCostPrice()));
-    e.setSalePrice(nz(domain.getSalePrice()));
     e.setReorderPoint(domain.getReorderPoint());
     e.setReorderQuantity(domain.getReorderQuantity());
     e.setStatus(domain.getStatus());
@@ -46,7 +45,6 @@ public final class ItemPersistenceMapper {
     item.setBrand(e.getBrand());
     item.setBarcode(e.getBarcode());
     item.setCostPrice(nz(e.getCostPrice()));
-    item.setSalePrice(nz(e.getSalePrice()));
     item.setReorderPoint(e.getReorderPoint());
     item.setReorderQuantity(e.getReorderQuantity());
     item.setStatus(e.getStatus());

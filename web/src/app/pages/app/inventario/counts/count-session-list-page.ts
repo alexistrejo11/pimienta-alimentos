@@ -5,6 +5,10 @@ import { finalize } from 'rxjs';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
+import {
+  inventoryCountStatusLabel,
+  inventoryCountTypeLabel,
+} from '../../../../core/i18n/enum-labels';
 import type { InventoryCountSessionSummaryResponse } from '../../../../core/model/inventory/inventory.dto';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
@@ -24,6 +28,9 @@ export class CountSessionListPageComponent implements OnInit {
   readonly sessions = signal<InventoryCountSessionSummaryResponse[]>([]);
 
   selectedHeadquarterId: number | null = null;
+
+  readonly inventoryCountStatusLabel = inventoryCountStatusLabel;
+  readonly inventoryCountTypeLabel = inventoryCountTypeLabel;
 
   ngOnInit(): void {
     if (!this.session.isAdmin()) {

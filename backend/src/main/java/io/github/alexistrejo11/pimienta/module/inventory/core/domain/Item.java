@@ -24,12 +24,10 @@ public class Item extends BaseDomain<Long> {
   private String barcode;
 
   // ─────────────────────────────────────────────
-  // PRECIOS
+  // COSTO
   // ─────────────────────────────────────────────
-  /** Precio de compra (costo) */
+  /** Precio de compra (costo). Sale price lives on headquarter_items. */
   private BigDecimal costPrice;
-  /** Precio de venta */
-  private BigDecimal salePrice;
 
   // ─────────────────────────────────────────────
   // STOCK — quantity se elimina de aquí:
@@ -91,7 +89,6 @@ public class Item extends BaseDomain<Long> {
     this.description = "";
     this.sku = "";
     this.costPrice = BigDecimal.ZERO;
-    this.salePrice = BigDecimal.ZERO;
     this.reorderPoint = 0;
     this.reorderQuantity = 0;
     this.unit = ItemUnit.PIECE;
@@ -106,7 +103,7 @@ public class Item extends BaseDomain<Long> {
   // ─────────────────────────────────────────────
 
   public static Item create(String sku, String name, String description,
-      BigDecimal costPrice, BigDecimal salePrice,
+      BigDecimal costPrice,
       ItemCategory category, ItemUnit unit,
       int reorderPoint, int reorderQuantity) {
     var now = LocalDateTime.now();
@@ -115,7 +112,6 @@ public class Item extends BaseDomain<Long> {
     item.name = name;
     item.description = description;
     item.costPrice = costPrice;
-    item.salePrice = salePrice;
     item.category = category;
     item.unit = unit;
     item.reorderPoint = reorderPoint;
@@ -127,7 +123,7 @@ public class Item extends BaseDomain<Long> {
   }
 
   public static Item update(Long id, String sku, String name, String description,
-      BigDecimal costPrice, BigDecimal salePrice,
+      BigDecimal costPrice,
       ItemCategory category, ItemUnit unit,
       int reorderPoint, int reorderQuantity) {
     var now = LocalDateTime.now();
@@ -137,7 +133,6 @@ public class Item extends BaseDomain<Long> {
     item.name = name;
     item.description = description;
     item.costPrice = costPrice;
-    item.salePrice = salePrice;
     item.category = category;
     item.unit = unit;
     item.reorderPoint = reorderPoint;
@@ -159,15 +154,6 @@ public class Item extends BaseDomain<Long> {
   public void activate() {
     this.status = ItemStatus.ACTIVE;
     this.updatedAt = LocalDateTime.now();
-  }
-
-  /** Margen bruto en porcentaje */
-  public BigDecimal getGrossMarginPercent() {
-    if (costPrice == null || costPrice.compareTo(BigDecimal.ZERO) == 0)
-      return BigDecimal.ZERO;
-    return salePrice.subtract(costPrice)
-        .divide(salePrice, 4, java.math.RoundingMode.HALF_UP)
-        .multiply(new BigDecimal("100"));
   }
 
   public void delete() {
@@ -244,14 +230,6 @@ public class Item extends BaseDomain<Long> {
 
   public void setCostPrice(BigDecimal costPrice) {
     this.costPrice = costPrice;
-  }
-
-  public BigDecimal getSalePrice() {
-    return salePrice;
-  }
-
-  public void setSalePrice(BigDecimal salePrice) {
-    this.salePrice = salePrice;
   }
 
   public int getReorderPoint() {

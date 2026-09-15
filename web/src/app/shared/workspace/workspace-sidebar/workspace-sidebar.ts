@@ -64,7 +64,7 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
     label: 'Punto de venta',
     roles: POS_OPERATION,
     items: [
-      { label: 'Catálogo por sede', icon: 'storefront', route: '/app/pos/catalogo', roles: ADMIN_MANAGER },
+          { label: 'Catálogo por sede', icon: 'storefront', route: '/app/pos/catalogo', roles: ADMIN_MANAGER },
       { label: 'Ventas', icon: 'receipt_long', route: '/app/pos/ventas', roles: POS_OPERATION },
       { label: 'Mermas POS', icon: 'delete_sweep', route: '/app/pos/mermas', roles: POS_OPERATION },
       { label: 'Cortes', icon: 'point_of_sale', route: '/app/pos/cortes', roles: POS_OPERATION },
@@ -73,6 +73,7 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
         icon: 'settings',
         roles: ADMIN_MANAGER,
         children: [
+          { label: 'Políticas de caja', icon: 'tune', route: '/app/pos/configuracion', roles: ADMIN_MANAGER },
           { label: 'Dispositivos', icon: 'tablet_android', route: '/app/pos/dispositivos', roles: ADMIN_MANAGER },
           { label: 'Enrolamiento', icon: 'qr_code_2', route: '/app/pos/enrolamiento', roles: ADMIN_MANAGER },
           { label: 'Operadores', icon: 'group', route: '/app/pos/operadores', roles: ADMIN_MANAGER },

@@ -4,6 +4,7 @@ import { SessionContextService } from '../../../core/auth/session-context.servic
 import { HeadquarterLookupService } from '../../../core/headquarters/headquarter-lookup.service';
 import { InventoryService } from '../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
+import { inventoryStatusLabel } from '../../../core/i18n/enum-labels';
 import type { InventoryStockResponse, StorageLocationResponse } from '../../../core/model/inventory/inventory.dto';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
@@ -27,6 +28,8 @@ export class InventarioPageComponent implements OnInit {
   selectedHeadquarterId: number | null = null;
   selectedLocationId: number | null = null;
   private initialLoad = true;
+
+  readonly inventoryStatusLabel = inventoryStatusLabel;
 
   readonly effectiveHeadquarterId = computed(() => {
     if (this.session.isAdmin()) {

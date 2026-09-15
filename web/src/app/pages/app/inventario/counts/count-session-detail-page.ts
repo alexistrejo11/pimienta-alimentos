@@ -6,6 +6,10 @@ import { forkJoin } from 'rxjs';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { parseApiError } from '../../../../core/http/parse-api-error';
+import {
+  inventoryCountStatusLabel,
+  inventoryCountTypeLabel,
+} from '../../../../core/i18n/enum-labels';
 import type { InventoryCountSessionResponse } from '../../../../core/model/inventory/inventory.dto';
 
 @Component({
@@ -23,6 +27,9 @@ export class CountSessionDetailPageComponent implements OnInit {
   readonly itemNames = signal<Record<number, string>>({});
   readonly error = signal('');
   readonly busy = signal(false);
+
+  readonly inventoryCountStatusLabel = inventoryCountStatusLabel;
+  readonly inventoryCountTypeLabel = inventoryCountTypeLabel;
 
   readonly canApprove = computed(
     () =>

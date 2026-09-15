@@ -19,7 +19,6 @@ export interface ItemResponse {
   brand: string;
   barcode: string | null;
   costPrice: number;
-  salePrice: number;
   reorderPoint: number;
   reorderQuantity: number;
   status: ItemStatus;
@@ -36,7 +35,6 @@ export interface ItemCreateRequest {
   name: string;
   description?: string;
   costPrice: number;
-  salePrice: number;
   category: ItemCategory;
   unit: ItemUnit;
   reorderPoint: number;
@@ -52,7 +50,6 @@ export interface ItemUpdateRequest {
   name: string;
   description?: string;
   costPrice: number;
-  salePrice: number;
   category: ItemCategory;
   unit: ItemUnit;
   reorderPoint: number;

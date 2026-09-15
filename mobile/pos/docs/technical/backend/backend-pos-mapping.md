@@ -18,14 +18,13 @@ aprobado por backend.
 | Existencia por sede/ubicación | `module.inventory.core.domain.Inventory` + `StorageLocation` | Requiere definir ubicación operativa |
 | Usuario | `module.account.user.core.domain.entities.User` | Requiere confirmar PIN local y roles |
 | Categoría de venta | No existe como catálogo POS; `ItemCategory` es inventario | Pendiente de contrato |
-| Precio local por sede | `Item.salePrice` es global en el modelo observado | Pendiente |
+| Precio local por sede | `headquarter_items.sale_price` (no en `Item`) | Resuelto |
 
 ## Hallazgos relevantes
 
 `Item` aporta `id`, `sku`, `name`, `barcode`, `category`, `unit`, `costPrice`,
-`salePrice`, puntos de reorden y estado. El POS necesita además
-`saleCategory`, `sellingEnabled` y precio efectivo por sede; no deben derivarse
-silenciosamente hasta acordar el contrato `pos-bootstrap`.
+puntos de reorden y estado. El precio de venta efectivo vive en
+`HeadquarterItem.salePrice` por sede.
 
 La cantidad está fuera de `Item`, en `Inventory`, junto con su
 `StorageLocation`. Esta versión del POS solo vende unidades enteras (`PIECE`).

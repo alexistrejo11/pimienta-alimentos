@@ -5,7 +5,7 @@ import { finalize } from 'rxjs';
 
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import { itemStatusLabel } from '../../../../core/i18n/enum-labels';
+import { itemCategoryLabel, itemStatusLabel, itemUnitLabel, catalogRoleLabel } from '../../../../core/i18n/enum-labels';
 import type { ItemCategory, ItemStatus, ItemUnit } from '../../../../core/model/inventory/inventory.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 
@@ -45,13 +45,15 @@ export class CatalogoFormPageComponent implements OnInit {
   readonly units = UNITS;
   readonly statuses = STATUSES;
   readonly itemStatusLabel = itemStatusLabel;
+  readonly itemCategoryLabel = itemCategoryLabel;
+  readonly itemUnitLabel = itemUnitLabel;
+  readonly catalogRoleLabel = catalogRoleLabel;
 
   readonly form = this.fb.nonNullable.group({
     sku: [''],
     name: ['', Validators.required],
     description: [''],
     costPrice: [0, [Validators.required, Validators.min(0)]],
-    salePrice: [0, [Validators.required, Validators.min(0)]],
     category: ['FINISHED_GOOD' as ItemCategory, Validators.required],
     unit: ['PIECE' as ItemUnit, Validators.required],
     reorderPoint: [0, [Validators.required, Validators.min(0)]],
@@ -78,7 +80,6 @@ export class CatalogoFormPageComponent implements OnInit {
               name: item.name,
               description: item.description ?? '',
               costPrice: item.costPrice,
-              salePrice: item.salePrice,
               category: item.category,
               unit: item.unit,
               reorderPoint: item.reorderPoint,
@@ -111,7 +112,6 @@ export class CatalogoFormPageComponent implements OnInit {
           name: v.name,
           description: v.description || undefined,
           costPrice: v.costPrice,
-          salePrice: v.salePrice,
           category: v.category,
           unit: v.unit,
           reorderPoint: v.reorderPoint,
@@ -126,7 +126,6 @@ export class CatalogoFormPageComponent implements OnInit {
           name: v.name,
           description: v.description || undefined,
           costPrice: v.costPrice,
-          salePrice: v.salePrice,
           category: v.category,
           unit: v.unit,
           reorderPoint: v.reorderPoint,

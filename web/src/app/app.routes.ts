@@ -30,6 +30,7 @@ import { SedesPageComponent } from './pages/app/sedes/sedes-page';
 import { SedeDetailPageComponent } from './pages/app/sedes/sede-detail/sede-detail-page';
 import { SedeFormPageComponent } from './pages/app/sedes/sede-form-page/sede-form-page';
 import { SedePosPageComponent } from './pages/app/sedes/sede-pos-page/sede-pos-page';
+import { PosConfigPageComponent } from './pages/app/pos/configuracion/pos-config-page';
 import { ContratosPageComponent } from './pages/app/contratos/contratos-page';
 import { NominaPageComponent } from './pages/app/nomina/nomina-page';
 import { ArchivosPageComponent } from './pages/app/archivos/archivos-page';
@@ -136,6 +137,12 @@ export const routes: Routes = [
         component: SedePosPageComponent,
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
+      },
+      {
+        path: 'pos/configuracion',
+        component: PosConfigPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER } },
       },
       { path: 'sedes/:id', component: SedeDetailPageComponent },
 

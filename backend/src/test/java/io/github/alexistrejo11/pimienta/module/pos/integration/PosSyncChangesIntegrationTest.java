@@ -284,7 +284,6 @@ class PosSyncChangesIntegrationTest {
           "name": "%s",
           "description": "IT",
           "costPrice": 10.00,
-          "salePrice": 15.00,
           "category": "CONSUMABLE",
           "unit": "PIECE",
           "reorderPoint": 0,

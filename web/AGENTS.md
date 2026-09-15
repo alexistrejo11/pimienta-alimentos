@@ -13,9 +13,17 @@ Modern Angular for **new** UI: `signal()`, `input()`, `output()`, `inject()`, bu
 
 Visual tokens and layout patterns: use the UI skill below; do not invent ad-hoc brand colors.
 
+### UI copy (Spanish)
+
+All **user-visible** text is Spanish and human-readable: labels, buttons, empty states, errors shown to the user, table headers, and **enum values**.
+
+- Wire/API codes stay English (`ACTIVE`, `POS_OPERATOR`, `FINISHED_GOOD`).
+- Templates must **never** print raw enum codes. Use helpers in `src/app/core/i18n/enum-labels.ts` (e.g. `roleLabel`, `itemCategoryLabel`, `inventoryStatusLabel`).
+- When adding a new API enum to the UI, add its Spanish label to `enum-labels.ts` in the same change.
+
 ## Skills
 
 - [angular-developer](.agents/skills/angular-developer/SKILL.md) — official Angular (signals, CLI, templates, DI)
-- [pimienta-frontend-ui](.agents/skills/pimienta-frontend-ui/SKILL.md) — brand tokens from `src/styles.css` (keep this skill in sync with that file)
+- [pimienta-frontend-ui](.agents/skills/pimienta-frontend-ui/SKILL.md) — brand tokens from `src/styles.css` (keep this skill in sync with that file); includes Spanish UI copy rules
 
 Skip `angular-new-app`; this application already exists.

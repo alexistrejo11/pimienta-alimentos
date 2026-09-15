@@ -88,7 +88,7 @@
           formControlName="unit"
         >
           @for (u of units; track u) {
-            <option [value]="u">{{ u }}</option>
+            <option [value]="u">{{ itemUnitLabel(u) }}</option>
           }
         </select></label
       >
@@ -99,7 +99,7 @@
           formControlName="category"
         >
           @for (c of inventoryCategories; track c) {
-            <option [value]="c">{{ c }}</option>
+            <option [value]="c">{{ itemCategoryLabel(c) }}</option>
           }
         </select></label
       >

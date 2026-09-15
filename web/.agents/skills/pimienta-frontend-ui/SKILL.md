@@ -3,7 +3,8 @@ name: pimienta-frontend-ui
 description: >-
   Visual UI rules for the Pimienta Alimentos Angular app: Tailwind v4 theme tokens,
   typography (Manrope / Work Sans), Material Symbols, layout and component
-  patterns (auth, marketing, workspace). Apply when styling or building pages,
+  patterns (auth, marketing, workspace), and Spanish readable UI copy (labels,
+  messages, enums via enum-labels.ts). Apply when styling or building pages,
   components, or templates in web/src.
 ---
 
@@ -100,6 +101,18 @@ Theme is toggled at runtime via `ThemeService` (`localStorage` key `pimienta-the
 
 Prefer these over Tailwind `stone-*` + `dark:` duplication.
 
+## Spanish UI copy (mandatory)
+
+User-facing text is **Spanish and readable**. That includes:
+
+- Field labels, buttons, placeholders, empty/error/loading states
+- Table headers and status chips
+- **Enum / status / role values** shown in the UI
+
+Wire values stay English (`ACTIVE`, `MANAGER`, `FINISHED_GOOD`). Never bind raw enum codes into templates.
+
+Use `src/app/core/i18n/enum-labels.ts` (`roleLabel`, `itemStatusLabel`, `itemCategoryLabel`, `inventoryStatusLabel`, `stockPolicyLabel`, …). When introducing a new enum in the UI, extend that file in the same change.
+
 ## What to avoid
 
 - `stone-*`, `bg-white` + `dark:bg-stone-*` in workspace templates — use semantic tokens or `.ui-*` classes.
@@ -117,6 +130,7 @@ Auth and marketing may use a single contained panel (`.auth-card`, philosophy bl
 |------|----------|
 | Global theme | `src/styles.css` (`@theme` + `html.dark` + `.ui-*`) |
 | Theme init script | `src/index.html` |
+| Enum Spanish labels | `src/app/core/i18n/enum-labels.ts` |
 | Theme service | `src/app/core/theme/theme.service.ts` |
 | Landing layout | `src/app/pages/home/home/home.css` |
 | Page-specific | `*.html` + optional `*.css` |

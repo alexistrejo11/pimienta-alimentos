@@ -17,7 +17,6 @@ public record ItemResponse(
     String brand,
     String barcode,
     BigDecimal costPrice,
-    BigDecimal salePrice,
     int reorderPoint,
     int reorderQuantity,
     ItemStatus status,

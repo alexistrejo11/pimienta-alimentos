@@ -11788,8 +11788,6 @@ components:
           type: string
         costPrice:
           type: number
-        salePrice:
-          type: number
         category:
           type: string
           enum:
@@ -11837,7 +11835,6 @@ components:
       - category
       - costPrice
       - name
-      - salePrice
       - sku
       - status
       - unit
@@ -11882,8 +11879,6 @@ components:
         barcode:
           type: string
         costPrice:
-          type: number
-        salePrice:
           type: number
         reorderPoint:
           type: integer
@@ -13966,8 +13961,6 @@ components:
           type: string
         costPrice:
           type: number
-        salePrice:
-          type: number
         category:
           type: string
           enum:
@@ -14008,7 +14001,6 @@ components:
       - category
       - costPrice
       - name
-      - salePrice
       - sku
       - unit
     FileAssetResponse:

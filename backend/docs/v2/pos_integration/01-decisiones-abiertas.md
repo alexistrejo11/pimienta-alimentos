@@ -59,9 +59,10 @@ Conserva datos maestros:
 - nombre;
 - SKU / barcode;
 - costo;
-- precio base (`salePrice`);
 - unidad;
 - categoría de **bodega** (`ItemCategory`).
+
+El precio de venta no vive en `Item`; se define por sede en `headquarter_items.sale_price`.
 
 ### Tabla `headquarter_items` (efectivo por sede)
 

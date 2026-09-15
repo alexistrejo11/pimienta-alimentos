@@ -31,7 +31,7 @@ public class PosProductManagementUseCasesImpl implements PosProductManagementUse
     var category = categories.findById(headquarterId, c.posSaleCategoryId())
         .filter(v -> v.isActive()).orElseThrow(() -> new PosSaleCategoryNotFoundException(c.posSaleCategoryId()));
     String sku = items.nextInternalSku();
-    Item item = Item.create(sku, c.name(), c.description(), c.costPrice(), c.salePrice(),
+    Item item = Item.create(sku, c.name(), c.description(), c.costPrice(),
         c.category() != null ? c.category() : ItemCategory.FINISHED_GOOD, c.unit(), c.reorderPoint(), c.reorderQuantity());
     item.setBrand(c.brand()); item.setBarcode(blankToNull(c.barcode()));
     Item saved = items.save(item);

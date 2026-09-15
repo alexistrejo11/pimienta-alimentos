@@ -51,7 +51,7 @@
               <td class="px-4 py-3">{{ row.itemName }}</td>
               <td class="px-4 py-3 text-on-surface-variant">{{ row.locationCode }}</td>
               <td class="px-4 py-3 tabular-nums font-semibold">{{ row.availableQuantity }}</td>
-              <td class="px-4 py-3">{{ row.status }}</td>
+              <td class="px-4 py-3">{{ inventoryStatusLabel(row.status) }}</td>
             </tr>
           }
         </tbody>

@@ -28,6 +28,6 @@ public class PosProductController {
     access.requireHeadquarterAccess(p, id);
     var result = useCases.create(id, new CreatePosProductCommand(r.name(), r.description(), r.costPrice(), r.salePrice(), r.category(), r.unit(), r.brand(), r.barcode(), r.reorderPoint(), r.reorderQuantity(), r.posSaleCategoryId(), r.available(), r.stockPolicy(), r.negativeStockLimit()));
     var item = result.item(); var row = result.catalog();
-    return new CreatedPosProductResponse(item.getId(), item.getSku(), item.getName(), item.getBarcode(), item.getCategory(), item.getUnit(), item.getCostPrice(), item.getSalePrice(), row.getHeadquarterId(), row.getPosSaleCategoryId(), row.getSaleCategory(), row.isAvailable(), row.getStockPolicy());
+    return new CreatedPosProductResponse(item.getId(), item.getSku(), item.getName(), item.getBarcode(), item.getCategory(), item.getUnit(), item.getCostPrice(), row.getSalePrice(), row.getHeadquarterId(), row.getPosSaleCategoryId(), row.getSaleCategory(), row.isAvailable(), row.getStockPolicy());
   }
 }

@@ -10,7 +10,6 @@ CREATE TABLE inventory_items (
     brand            VARCHAR(120),
     barcode          VARCHAR(64),
     cost_price       NUMERIC(19, 6) NOT NULL DEFAULT 0,
-    sale_price       NUMERIC(19, 6) NOT NULL DEFAULT 0,
     reorder_point    INTEGER      NOT NULL DEFAULT 0,
     reorder_quantity INTEGER      NOT NULL DEFAULT 0,
     status           VARCHAR(32)  NOT NULL,
@@ -41,7 +40,7 @@ CREATE INDEX idx_inventory_items_status ON inventory_items (status);
 CREATE INDEX idx_inventory_items_deleted_at ON inventory_items (deleted_at);
 CREATE INDEX idx_inventory_items_catalog_role ON inventory_items (catalog_role);
 
-COMMENT ON TABLE inventory_items IS 'Catalog of stock-keeping units (SKU) and sale metadata.';
+COMMENT ON TABLE inventory_items IS 'Catalog of stock-keeping units (SKU) and cost metadata.';
 
 CREATE SEQUENCE inventory_item_sku_seq
     AS BIGINT

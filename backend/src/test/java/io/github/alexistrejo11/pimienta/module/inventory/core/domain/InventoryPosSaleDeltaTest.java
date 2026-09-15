@@ -53,7 +53,6 @@ class InventoryPosSaleDeltaTest {
     item.setSku("SKU-1");
     item.setName("Test");
     item.setCostPrice(BigDecimal.ONE);
-    item.setSalePrice(BigDecimal.TEN);
     item.setReorderPoint(0);
     return item;
   }

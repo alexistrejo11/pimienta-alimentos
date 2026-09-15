@@ -44,7 +44,7 @@ Roles POS **no** alias de `Role` web.
 
 ### `Item` (global)
 
-Nombre, SKU, barcode (**único global si not null; no reutilizable**), costo, precio base, unidad, `ItemCategory` de bodega.
+Nombre, SKU, barcode (**único global si not null; no reutilizable**), costo, unidad, `ItemCategory` de bodega. Sin precio de venta global.
 
 ### `HeadquarterItem` → tabla `headquarter_items`
 

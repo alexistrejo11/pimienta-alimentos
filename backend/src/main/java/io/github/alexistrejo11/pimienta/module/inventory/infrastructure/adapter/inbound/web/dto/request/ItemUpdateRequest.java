@@ -14,7 +14,6 @@ public record ItemUpdateRequest(
     @NotBlank String name,
     String description,
     @NotNull BigDecimal costPrice,
-    @NotNull BigDecimal salePrice,
     @NotNull ItemCategory category,
     @NotNull ItemUnit unit,
     @Min(0) int reorderPoint,

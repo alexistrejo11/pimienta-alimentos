@@ -56,9 +56,6 @@ public class ItemJpaEntity {
   @Column(name = "cost_price", nullable = false, precision = 19, scale = 6)
   private BigDecimal costPrice;
 
-  @Column(name = "sale_price", nullable = false, precision = 19, scale = 6)
-  private BigDecimal salePrice;
-
   @Column(name = "reorder_point", nullable = false)
   private int reorderPoint;
 
@@ -155,14 +152,6 @@ public class ItemJpaEntity {
 
   public void setCostPrice(BigDecimal costPrice) {
     this.costPrice = costPrice;
-  }
-
-  public BigDecimal getSalePrice() {
-    return salePrice;
-  }
-
-  public void setSalePrice(BigDecimal salePrice) {
-    this.salePrice = salePrice;
   }
 
   public int getReorderPoint() {

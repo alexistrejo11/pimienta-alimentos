@@ -56,7 +56,7 @@ Candidato natural a `Site` del POS. Hay que extenderlo; hoy no es una sede de ca
 - Identidad: `sku` unique, `barcode` indexado **sin unique**, `name`, `description`, `brand`
 - Clasificación: `ItemCategory` de bodega (`RAW_MATERIAL`, `FINISHED_GOOD`, `CONSUMABLE`, …)
 - Unidad: `PIECE`, `KG`, `GRAM`, …
-- Precios globales: `costPrice`, `salePrice` (`NUMERIC(19,6)`)
+- Precios: `costPrice` (`NUMERIC(19,6)`). El precio de venta efectivo vive en `headquarter_items.sale_price`.
 - Reorden: `reorderPoint`, `reorderQuantity`
 - Estado: `ACTIVE`, `DISCONTINUED`, `OUT_OF_STOCK`, `PENDING_APPROVAL`
 

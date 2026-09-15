@@ -16,7 +16,6 @@ public final class InventoryItemWebMapper {
             request.name(),
             request.description() != null ? request.description() : "",
             request.costPrice(),
-            request.salePrice(),
             request.category(),
             request.unit(),
             request.reorderPoint(),
@@ -42,7 +41,6 @@ public final class InventoryItemWebMapper {
     merged.setBrand(request.brand());
     merged.setBarcode(request.barcode());
     merged.setCostPrice(request.costPrice());
-    merged.setSalePrice(request.salePrice());
     merged.setReorderPoint(request.reorderPoint());
     merged.setReorderQuantity(request.reorderQuantity());
     merged.setStatus(request.status());
@@ -61,7 +59,6 @@ public final class InventoryItemWebMapper {
         item.getBrand(),
         item.getBarcode(),
         item.getCostPrice(),
-        item.getSalePrice(),
         item.getReorderPoint(),
         item.getReorderQuantity(),
         item.getStatus(),

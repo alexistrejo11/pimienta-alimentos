@@ -9,11 +9,11 @@ import { PosCatalogService } from '../../../../core/headquarters/pos-catalog.ser
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { PosLabelPrintService } from '../../../../core/pos/pos-label-print.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
+import { stockPolicyLabel } from '../../../../core/i18n/enum-labels';
 import type { ItemResponse } from '../../../../core/model/inventory/inventory.dto';
 import type {
   HeadquarterPosCatalogItemResponse,
   PosSaleCategoryResponse,
-  PosSettingsResponse,
 } from '../../../../core/model/pos/pos.dto';
 import type { StockPolicy } from '../../../../core/model/pos/pos.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
@@ -39,30 +39,20 @@ export class SedePosPageComponent implements OnInit {
   readonly sedeName = signal('');
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
-  readonly settings = signal<PosSettingsResponse | null>(null);
   readonly catalog = signal<HeadquarterPosCatalogItemResponse[]>([]);
   readonly masterItems = signal<ItemResponse[]>([]);
   readonly posCandidates = signal<ItemResponse[]>([]);
   readonly saleCategories = signal<PosSaleCategoryResponse[]>([]);
-  readonly savingSettings = signal(false);
   readonly savingCatalogId = signal<number | null>(null);
   readonly creatingCategory = signal(false);
 
   readonly stockPolicies: StockPolicy[] = ['CONTROLLED', 'NOT_CONTROLLED'];
+  readonly stockPolicyLabel = stockPolicyLabel;
 
   lookupSku = '';
   candidateId: number | null = null;
   newCategoryName = '';
   readonly editingItemId = signal<number | null>(null);
-
-  readonly settingsForm = this.fb.nonNullable.group({
-    currency: ['MXN', Validators.required],
-    catalogStaleWarnHours: [24, [Validators.required, Validators.min(1)]],
-    catalogStaleBlockHours: [72, [Validators.required, Validators.min(1)]],
-    openAmountCategories: [''],
-    allowOpenProducts: [false],
-    defaultNegativeStockLimit: [null as number | null],
-  });
 
   readonly catalogForm = this.fb.nonNullable.group({
     saleCategory: ['', Validators.required],
@@ -96,24 +86,6 @@ export class SedePosPageComponent implements OnInit {
       error: () => {},
     });
 
-    this.posCatalog.getSettings(id).subscribe({
-      next: (s) => {
-        this.settings.set(s);
-        this.settingsForm.patchValue({
-          currency: s.currency,
-          catalogStaleWarnHours: s.catalogStaleWarnHours,
-          catalogStaleBlockHours: s.catalogStaleBlockHours,
-          openAmountCategories: (s.openAmountCategories ?? []).join(', '),
-          allowOpenProducts: s.allowOpenProducts,
-          defaultNegativeStockLimit: s.defaultNegativeStockLimit,
-        });
-      },
-      error: (err: unknown) => {
-        const parsed = parseApiError(err);
-        if (parsed.errorCode !== 'HEADQUARTER_POS_SETTINGS_NOT_FOUND') this.error.set(parsed);
-      },
-    });
-
     this.posCatalog
       .listCatalog(id, 0, 100)
       .pipe(finalize(() => this.loading.set(false)))
@@ -136,29 +108,6 @@ export class SedePosPageComponent implements OnInit {
       next: (items) => this.posCandidates.set(items),
       error: () => {},
     });
-  }
-
-  saveSettings(): void {
-    if (this.settingsForm.invalid) return;
-    const v = this.settingsForm.getRawValue();
-    this.savingSettings.set(true);
-    this.posCatalog
-      .updateSettings(this.headquarterId(), {
-        currency: v.currency,
-        catalogStaleWarnHours: v.catalogStaleWarnHours,
-        catalogStaleBlockHours: v.catalogStaleBlockHours,
-        openAmountCategories: v.openAmountCategories
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        allowOpenProducts: v.allowOpenProducts,
-        defaultNegativeStockLimit: v.defaultNegativeStockLimit,
-      })
-      .pipe(finalize(() => this.savingSettings.set(false)))
-      .subscribe({
-        next: (s) => this.settings.set(s),
-        error: (err: unknown) => this.error.set(parseApiError(err)),
-      });
   }
 
   startEditCatalog(row: HeadquarterPosCatalogItemResponse): void {
@@ -186,12 +135,14 @@ export class SedePosPageComponent implements OnInit {
       })
       .pipe(finalize(() => this.savingCatalogId.set(null)))
       .subscribe({
-         next: () => {
+        next: () => {
           this.editingItemId.set(null);
-           this.posCatalog.listCatalog(this.headquarterId(), 0, 100).subscribe({
+          this.posCatalog.listCatalog(this.headquarterId(), 0, 100).subscribe({
             next: (page) => this.catalog.set(page.items),
-           });
-          this.posCatalog.listCandidates(this.headquarterId()).subscribe({ next: (items) => this.posCandidates.set(items) });
+          });
+          this.posCatalog.listCandidates(this.headquarterId()).subscribe({
+            next: (items) => this.posCandidates.set(items),
+          });
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
@@ -203,7 +154,7 @@ export class SedePosPageComponent implements OnInit {
     this.editingItemId.set(item.id);
     this.catalogForm.reset({
       saleCategory: this.saleCategories()[0]?.name ?? '',
-      salePrice: item.salePrice,
+      salePrice: 0,
       available: true,
       stockPolicy: 'CONTROLLED',
       negativeStockLimit: null,
@@ -214,10 +165,16 @@ export class SedePosPageComponent implements OnInit {
     const name = this.newCategoryName.trim();
     if (!name) return;
     this.creatingCategory.set(true);
-    this.posCatalog.createCategory(this.headquarterId(), name, this.saleCategories().length).pipe(finalize(() => this.creatingCategory.set(false))).subscribe({
-      next: (category) => { this.saleCategories.update((items) => [...items, category]); this.newCategoryName = ''; },
-      error: (err: unknown) => this.error.set(parseApiError(err)),
-    });
+    this.posCatalog
+      .createCategory(this.headquarterId(), name, this.saleCategories().length)
+      .pipe(finalize(() => this.creatingCategory.set(false)))
+      .subscribe({
+        next: (category) => {
+          this.saleCategories.update((items) => [...items, category]);
+          this.newCategoryName = '';
+        },
+        error: (err: unknown) => this.error.set(parseApiError(err)),
+      });
   }
 
   addFromLookup(): void {
@@ -228,7 +185,7 @@ export class SedePosPageComponent implements OnInit {
         this.editingItemId.set(item.id);
         this.catalogForm.reset({
           saleCategory: 'GENERAL',
-          salePrice: item.salePrice,
+          salePrice: 0,
           available: true,
           stockPolicy: 'CONTROLLED',
           negativeStockLimit: null,
@@ -247,7 +204,15 @@ export class SedePosPageComponent implements OnInit {
   }
 
   printCatalogLabels(): void {
-    this.labelPrint.print(this.catalog().map((row) => ({ sku: this.itemSku(row.itemId), name: this.itemName(row.itemId), price: row.salePrice })).filter((label) => label.sku));
+    this.labelPrint.print(
+      this.catalog()
+        .map((row) => ({
+          sku: this.itemSku(row.itemId),
+          name: this.itemName(row.itemId),
+          price: row.salePrice,
+        }))
+        .filter((label) => label.sku),
+    );
   }
 
   printItemLabel(row: HeadquarterPosCatalogItemResponse): void {

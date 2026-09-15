@@ -111,7 +111,6 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     existing.setBrand(merged.getBrand());
     existing.setBarcode(merged.getBarcode());
     existing.setCostPrice(merged.getCostPrice());
-    existing.setSalePrice(merged.getSalePrice());
     existing.setReorderPoint(merged.getReorderPoint());
     existing.setReorderQuantity(merged.getReorderQuantity());
     existing.setStatus(merged.getStatus());

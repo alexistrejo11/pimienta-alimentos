@@ -1,14 +1,14 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
-    [title]="globalMode() ? 'Catálogo POS por sede' : 'POS — ' + (sedeName() || 'Sede')"
-    subtitle="Configuración de caja y catálogo surtido"
+    [title]="globalMode() ? 'Catálogo POS por sede' : 'Catálogo POS — ' + (sedeName() || 'Sede')"
+    subtitle="Surtido, categorías de venta y precios por sede"
     [backLink]="globalMode() ? '/app/dashboard' : '/app/sedes/' + headquarterId()"
     [backLabel]="globalMode() ? 'Dashboard' : 'Detalle de sede'"
   />
 
   @if (!canAccess()) {
     <p class="text-sm text-red-700" role="alert">
-      No tienes acceso a la configuración POS de esta sede.
+      No tienes acceso al catálogo POS de esta sede.
     </p>
   } @else {
     @if (globalMode()) {
@@ -22,72 +22,12 @@
     }
     <app-data-state [loading]="loading()" [error]="error()" [empty]="false">
       <section class="ui-panel p-6">
-        <h2 class="font-headline text-lg font-bold text-on-surface">Políticas de caja</h2>
-        <form
-          class="mt-4 grid gap-4 sm:grid-cols-2"
-          [formGroup]="settingsForm"
-          (ngSubmit)="saveSettings()"
-        >
-          <label class="flex flex-col gap-1 text-sm">
-            <span class="font-medium">Moneda</span>
-            <input
-              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-              formControlName="currency"
-            />
-          </label>
-          <label class="flex flex-col gap-1 text-sm">
-            <span class="font-medium">Aviso catálogo obsoleto (horas)</span>
-            <input
-              type="number"
-              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-              formControlName="catalogStaleWarnHours"
-            />
-          </label>
-          <label class="flex flex-col gap-1 text-sm">
-            <span class="font-medium">Bloqueo catálogo obsoleto (horas)</span>
-            <input
-              type="number"
-              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-              formControlName="catalogStaleBlockHours"
-            />
-          </label>
-          <label class="flex flex-col gap-1 text-sm sm:col-span-2">
-            <span class="font-medium">Categorías monto abierto (separadas por coma)</span>
-            <input
-              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-              formControlName="openAmountCategories"
-            />
-          </label>
-          <label class="flex items-center gap-3 text-sm sm:col-span-2">
-            <input type="checkbox" class="size-4 accent-primary" formControlName="allowOpenProducts" />
-            <span><span class="font-medium">Permitir productos abiertos</span><br /><span class="text-xs text-on-surface-variant">Requiere autorización de Manager o Superadmin y queda sujeto a revisión.</span></span>
-          </label>
-          <label class="flex flex-col gap-1 text-sm">
-            <span class="font-medium">Límite stock negativo por defecto</span>
-            <input
-              type="number"
-              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-              formControlName="defaultNegativeStockLimit"
-            />
-          </label>
-          <div class="sm:col-span-2">
-            <button
-              type="submit"
-              class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
-              [disabled]="savingSettings()"
-            >
-              {{ savingSettings() ? 'Guardando…' : 'Guardar políticas' }}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section class="mt-6 ui-panel p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 class="font-headline text-lg font-bold text-on-surface">Catálogo surtido</h2>
             <p class="mt-1 text-sm text-on-surface-variant">
-              Los productos nuevos reciben un SKU interno automáticamente.
+              Los productos nuevos reciben un SKU interno automáticamente. Las políticas de caja están
+              en Configuración POS.
             </p>
           </div>
           <button
@@ -97,32 +37,36 @@
           >
             Imprimir etiquetas
           </button>
-         </div>
-         <div class="mt-4 flex flex-wrap items-center gap-2">
-           <select
-             class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
-             [(ngModel)]="candidateId"
-             [ngModelOptions]="{ standalone: true }"
-           >
-             <option [ngValue]="null">Seleccionar artículo maestro POS</option>
-             @for (item of posCandidates(); track item.id) {
-               <option [ngValue]="item.id">{{ item.name }} · {{ item.sku }}</option>
-             }
-           </select>
-           <button type="button" class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" (click)="configureCandidate()">
-             Configurar artículo
-           </button>
-         </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <select
+            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+            [(ngModel)]="candidateId"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            <option [ngValue]="null">Seleccionar artículo maestro POS</option>
+            @for (item of posCandidates(); track item.id) {
+              <option [ngValue]="item.id">{{ item.name }} · {{ item.sku }}</option>
+            }
+          </select>
+          <button
+            type="button"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+            (click)="configureCandidate()"
+          >
+            Configurar artículo
+          </button>
+        </div>
         <div class="mt-4 flex flex-wrap gap-2">
           <input
-            class="rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"
+            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
             placeholder="SKU o código de barras"
             [(ngModel)]="lookupSku"
             [ngModelOptions]="{ standalone: true }"
           />
           <button
             type="button"
-            class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold"
+            class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
             (click)="addFromLookup()"
           >
             Agregar producto
@@ -147,7 +91,7 @@
 
         @if (editingItemId(); as editId) {
           <form
-            class="mt-4 grid gap-3 rounded-lg border border-stone-200 p-4 sm:grid-cols-2 dark:border-stone-700"
+            class="mt-4 grid gap-3 rounded-lg border border-outline-variant/30 p-4 sm:grid-cols-2"
             [formGroup]="catalogForm"
             (ngSubmit)="saveCatalogItem(editId)"
           >
@@ -183,7 +127,7 @@
                 formControlName="stockPolicy"
               >
                 @for (p of stockPolicies; track p) {
-                  <option [value]="p">{{ p }}</option>
+                  <option [value]="p">{{ stockPolicyLabel(p) }}</option>
                 }
               </select>
             </label>
@@ -207,6 +151,7 @@
                 <th class="px-3 py-2 text-left">SKU</th>
                 <th class="px-3 py-2 text-left">Categoría</th>
                 <th class="px-3 py-2 text-left">Precio</th>
+                <th class="px-3 py-2 text-left">Stock</th>
                 <th class="px-3 py-2 text-left">Disponible</th>
                 <th class="px-3 py-2"></th>
               </tr>
@@ -218,6 +163,7 @@
                   <td class="px-3 py-2 font-mono text-xs">{{ itemSku(row.itemId) }}</td>
                   <td class="px-3 py-2">{{ row.saleCategory }}</td>
                   <td class="px-3 py-2 tabular-nums">${{ row.salePrice }}</td>
+                  <td class="px-3 py-2">{{ stockPolicyLabel(row.stockPolicy) }}</td>
                   <td class="px-3 py-2">{{ row.available ? 'Sí' : 'No' }}</td>
                   <td class="px-3 py-2 text-right">
                     <button
@@ -225,8 +171,9 @@
                       class="mr-3 text-sm font-semibold text-primary"
                       (click)="printItemLabel(row)"
                     >
-                      Etiqueta</button
-                    ><button
+                      Etiqueta
+                    </button>
+                    <button
                       type="button"
                       class="text-sm font-semibold text-primary"
                       (click)="startEditCatalog(row)"

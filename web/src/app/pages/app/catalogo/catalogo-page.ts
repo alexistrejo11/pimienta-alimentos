@@ -4,7 +4,7 @@ import { finalize } from 'rxjs';
 
 import { InventoryService } from '../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
-import { itemStatusLabel } from '../../../core/i18n/enum-labels';
+import { itemCategoryLabel, itemStatusLabel } from '../../../core/i18n/enum-labels';
 import type { ItemResponse } from '../../../core/model/inventory/inventory.dto';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
@@ -22,6 +22,7 @@ export class CatalogoPageComponent implements OnInit {
   readonly items = signal<ItemResponse[]>([]);
 
   readonly itemStatusLabel = itemStatusLabel;
+  readonly itemCategoryLabel = itemCategoryLabel;
 
   ngOnInit(): void {
     this.cargar();

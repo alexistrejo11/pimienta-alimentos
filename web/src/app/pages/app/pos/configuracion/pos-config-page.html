@@ -1,0 +1,95 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <app-page-header
+    title="Políticas de caja"
+    subtitle="Configuración operativa del POS por sede"
+    backLink="/app/dashboard"
+    backLabel="Dashboard"
+  />
+
+  <section class="ui-panel p-6">
+    <app-headquarter-select
+      label="Sede a configurar"
+      [value]="headquarterId()"
+      (valueChange)="onHeadquarterChange($event)"
+    />
+  </section>
+
+  @if (!canAccess()) {
+    <p class="text-sm text-red-700" role="alert">
+      No tienes acceso a la configuración POS de esta sede.
+    </p>
+  } @else if (headquarterId() <= 0) {
+    <p class="text-sm text-on-surface-variant">Selecciona una sede para editar sus políticas de caja.</p>
+  } @else {
+    <app-data-state [loading]="loading()" [error]="error()" [empty]="false">
+      <section class="ui-panel p-6">
+        <h2 class="font-headline text-lg font-bold text-on-surface">Políticas de caja</h2>
+        <p class="mt-1 text-sm text-on-surface-variant">
+          Moneda, caducidad del catálogo, montos abiertos y límites de stock negativo.
+        </p>
+        <form
+          class="mt-4 grid gap-4 sm:grid-cols-2"
+          [formGroup]="settingsForm"
+          (ngSubmit)="saveSettings()"
+        >
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium">Moneda</span>
+            <input
+              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="currency"
+            />
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium">Aviso catálogo obsoleto (horas)</span>
+            <input
+              type="number"
+              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="catalogStaleWarnHours"
+            />
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium">Bloqueo catálogo obsoleto (horas)</span>
+            <input
+              type="number"
+              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="catalogStaleBlockHours"
+            />
+          </label>
+          <label class="flex flex-col gap-1 text-sm sm:col-span-2">
+            <span class="font-medium">Categorías monto abierto (separadas por coma)</span>
+            <input
+              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="openAmountCategories"
+            />
+          </label>
+          <label class="flex items-center gap-3 text-sm sm:col-span-2">
+            <input type="checkbox" class="size-4 accent-primary" formControlName="allowOpenProducts" />
+            <span>
+              <span class="font-medium">Permitir productos abiertos</span><br />
+              <span class="text-xs text-on-surface-variant"
+                >Requiere autorización de Gerente o Superadmin y queda sujeto a revisión.</span
+              >
+            </span>
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium">Límite stock negativo por defecto</span>
+            <input
+              type="number"
+              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="defaultNegativeStockLimit"
+            />
+          </label>
+          <div class="sm:col-span-2">
+            <button
+              type="submit"
+              class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+              [disabled]="saving()"
+            >
+              {{ saving() ? 'Guardando…' : 'Guardar políticas' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </app-data-state>
+  }
+</div>
