@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventRes
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosSyncEventJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -87,4 +88,11 @@ public interface PosSyncEventSpringDataRepository
       @Param("to") Instant to,
       @Param("eventType") String eventType,
       @Param("accepted") PosEventResultStatus accepted);
+
+  @Query(
+      """
+      SELECT e FROM PosSyncEventJpaEntity e
+      WHERE e.deletedAt IS NULL AND e.eventId IN :eventIds
+      """)
+  List<PosSyncEventJpaEntity> findByEventIds(@Param("eventIds") Collection<UUID> eventIds);
 }

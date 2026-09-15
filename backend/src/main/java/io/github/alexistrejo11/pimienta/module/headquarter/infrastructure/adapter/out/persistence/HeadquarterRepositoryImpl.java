@@ -28,7 +28,7 @@ public class HeadquarterRepositoryImpl implements HeadquarterRepository {
   public Page<Headquarter> findAll(Pageable pageable) {
     Objects.requireNonNull(pageable, "pageable");
     return jpaRepository
-        .findAll(pageable)
+        .findByDeletedAtIsNull(pageable)
         .map(mapper::toDomain);
   }
 
@@ -38,7 +38,7 @@ public class HeadquarterRepositoryImpl implements HeadquarterRepository {
       return Optional.empty();
     }
 
-    return jpaRepository.findById(id)
+    return jpaRepository.findByIdAndDeletedAtIsNull(id)
         .map(mapper::toDomain);
   }
 

@@ -15,4 +15,6 @@ public interface HeadquarterPosCatalogUseCases {
 
   HeadquarterItem upsert(long headquarterId, long itemId, UpsertHeadquarterItemCommand command);
   List<Item> candidates(long headquarterId);
+
+  HeadquarterItem softDelete(long headquarterId, long itemId);
 }

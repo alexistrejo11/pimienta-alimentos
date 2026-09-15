@@ -12,7 +12,7 @@
 
   @if (showForm()) {
     <form class="max-w-md ui-panel p-4" [formGroup]="form" (ngSubmit)="crear()">
-      <h2 class="font-semibold text-on-surface">Alta de operador</h2>
+       <h2 class="font-semibold text-on-surface">{{ editing() ? 'Editar operador' : 'Alta de operador' }}</h2>
 
       <app-api-form-error class="mt-3 block" [error]="submitError()" />
 
@@ -36,7 +36,7 @@
           </select>
         </label>
         <label class="flex flex-col gap-1 text-sm">
-          <span>PIN (solo escritura)</span>
+           <span>PIN (solo escritura{{ editing() ? ', opcional' : '' }})</span>
           <input
             type="password"
             class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
@@ -59,7 +59,7 @@
           class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
           [disabled]="creating()"
         >
-          {{ creating() ? 'Creando…' : 'Crear operador' }}
+           {{ creating() ? 'Guardando…' : editing() ? 'Guardar cambios' : 'Crear operador' }}
         </button>
       </div>
     </form>
@@ -75,7 +75,7 @@
     <div class="responsive-table rounded-xl border ui-panel">
       <table class="w-full text-sm">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
-          <tr>
+             <tr>
             <th class="px-4 py-3 text-left">Nombre</th>
             <th class="px-4 py-3 text-left">Rol</th>
             <th class="px-4 py-3 text-left">Sedes</th>
@@ -88,11 +88,19 @@
               <td class="px-4 py-3">{{ op.displayName }}</td>
               <td class="px-4 py-3">{{ posRoleLabel(op.posRole) }}</td>
               <td class="px-4 py-3">{{ hqNames(op.headquarterIds) }}</td>
-              <td class="px-4 py-3">{{ op.active ? 'Sí' : 'No' }}</td>
+               <td class="px-4 py-3">{{ op.active ? 'Sí' : 'No' }}</td>
+               <td class="px-4 py-3 text-right whitespace-nowrap">
+                 <button type="button" class="mr-3 text-sm font-semibold text-primary hover:underline" (click)="editar(op)">Editar</button>
+                 <button type="button" class="mr-3 text-sm font-semibold text-primary hover:underline" (click)="desactivar(op)">
+                   {{ op.active ? 'Desactivar' : 'Activar' }}
+                 </button>
+                 <button type="button" class="text-sm font-semibold text-error hover:underline" (click)="eliminar(op)">Retirar</button>
+               </td>
             </tr>
           }
         </tbody>
       </table>
     </div>
+    @if (metadata(); as pageInfo) { <div class="flex items-center justify-between px-2 py-3 text-sm text-on-surface-variant"><span>{{ pageInfo.totalElements }} operadores</span><div class="flex gap-2"><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="anterior()">Anterior</button><span class="px-2 py-1.5">Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="siguiente()">Siguiente</button></div></div> }
   </app-data-state>
 </div>

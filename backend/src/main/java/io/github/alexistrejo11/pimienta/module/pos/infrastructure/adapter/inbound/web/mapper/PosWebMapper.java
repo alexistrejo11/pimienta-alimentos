@@ -391,7 +391,8 @@ public final class PosWebMapper {
         incident.getCreatedAt());
   }
 
-  public static PosSaleReportResponse toSaleReportResponse(PosSale sale) {
+  public static PosSaleReportResponse toSaleReportResponse(
+      PosSale sale, io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus syncStatus) {
     return new PosSaleReportResponse(
         sale.getId(),
         sale.getEventId(),
@@ -404,6 +405,7 @@ public final class PosWebMapper {
         sale.getDiscountCentavos(),
         sale.getTotalCentavos(),
         sale.getStatus().name(),
+        syncStatus != null ? syncStatus.name() : io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus.ACCEPTED.name(),
          sale.getOccurredAt(),
          sale.getLines().stream().anyMatch(line -> line.lineType() == io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType.OPEN_AMOUNT),
          sale.getLines().stream().map(PosSaleReportResponse.PosSaleLineReportResponse::from).toList());

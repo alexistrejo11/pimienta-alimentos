@@ -73,6 +73,18 @@ export class PosAdminService {
     return this.http.put<PosOperatorResponse>(`${this.base}/operators/${id}`, body);
   }
 
+  deleteOperator(id: number): Observable<PosOperatorResponse> {
+    return this.http.delete<PosOperatorResponse>(`${this.base}/operators/${id}`);
+  }
+
+  assignOperatorHeadquarter(id: number, headquarterId: number): Observable<PosOperatorResponse> {
+    return this.http.post<PosOperatorResponse>(`${this.base}/operators/${id}/headquarters`, { headquarterId });
+  }
+
+  unassignOperatorHeadquarter(id: number, headquarterId: number): Observable<PosOperatorResponse> {
+    return this.http.delete<PosOperatorResponse>(`${this.base}/operators/${id}/headquarters/${headquarterId}`);
+  }
+
   // ── Incidencias de sync ───────────────────────────────────────────────────
 
   listSyncIncidents(params: PosAdminListParams = {}): Observable<PagedResponse<PosSyncIncidentResponse>> {
@@ -117,13 +129,6 @@ export class PosAdminService {
     });
   }
 
-  reportWasteCancellations(params: PosReportFilterParams): Observable<PagedResponse<PosLedgerEventReportResponse>> {
-    return this.http.get<PagedResponse<PosLedgerEventReportResponse>>(
-      `${this.base}/reports/waste-cancellations`,
-      { params: this.reportParams(params) },
-    );
-  }
-
   reportShiftCloses(params: PosReportFilterParams): Observable<PagedResponse<PosLedgerEventReportResponse>> {
     return this.http.get<PagedResponse<PosLedgerEventReportResponse>>(`${this.base}/reports/shift-closes`, {
       params: this.reportParams(params),
@@ -135,6 +140,9 @@ export class PosAdminService {
       .set('page', String(params.page ?? 0))
       .set('size', String(params.size ?? 20));
     if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
+    if (params.from) p = p.set('from', params.from);
+    if (params.to) p = p.set('to', params.to);
+    if (params.status) p = p.set('status', params.status);
     return this.http.get<PagedResponse<PosShiftResponse>>(`${this.base}/shifts`, { params: p });
   }
 

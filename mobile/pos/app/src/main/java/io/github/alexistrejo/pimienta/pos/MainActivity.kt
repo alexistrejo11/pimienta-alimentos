@@ -446,6 +446,7 @@ private fun Access(
     message: (String) -> Unit,
     openManagerDashboard: (LocalUserEntity) -> Unit,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var user by remember { mutableStateOf(users.first()) }
     var pin by remember { mutableStateOf("") }
@@ -494,7 +495,10 @@ private fun Access(
                                 }
                             }
                             busy = false
-                            result.onSuccess(opened).onFailure { message(it.message ?: "No se pudo abrir el turno.") }
+                            result.onSuccess { shift ->
+                                SyncWorker.enqueue(context)
+                                opened(shift)
+                            }.onFailure { message(it.message ?: "No se pudo abrir el turno.") }
                         }
                     },
                     enabled = !busy,

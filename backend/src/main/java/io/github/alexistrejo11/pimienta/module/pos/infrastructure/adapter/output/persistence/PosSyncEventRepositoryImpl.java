@@ -8,8 +8,10 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosSyncEventSpringDataRepository;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -64,5 +66,19 @@ public class PosSyncEventRepositoryImpl implements PosSyncEventRepository {
       long headquarterId, Instant from, Instant to, String eventType) {
     return jpa.findLastAcceptedEventAt(
         headquarterId, from, to, eventType, PosEventResultStatus.ACCEPTED);
+  }
+
+  @Override
+  public Map<UUID, PosEventResultStatus> findSyncStatusesByEventIds(Collection<UUID> eventIds) {
+    if (eventIds == null || eventIds.isEmpty()) {
+      return Map.of();
+    }
+    return jpa.findByEventIds(eventIds).stream()
+        .collect(
+            Collectors.toMap(
+                io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output
+                    .persistence.entity.PosSyncEventJpaEntity::getEventId,
+                e -> e.getStatus(),
+                (a, b) -> a));
   }
 }

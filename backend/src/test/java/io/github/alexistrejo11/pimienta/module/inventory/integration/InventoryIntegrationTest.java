@@ -321,9 +321,10 @@ class InventoryIntegrationTest {
         .andExpect(jsonPath("$.id").value(itemId));
 
     mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items?page=0&size=20", token))
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items?search=Flow&page=0&size=20", token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items").isArray())
+        .andExpect(jsonPath("$.items[0].name").value("Flow item " + suffix))
         .andExpect(jsonPath("$.metadata").exists());
 
     mockMvc
@@ -385,6 +386,14 @@ class InventoryIntegrationTest {
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/inventory/stock/location/" + locationId, token))
         .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/stock/summary?search=Flow&page=0&size=10", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items").isArray())
+        .andExpect(jsonPath("$.items[0].sku").value("SKU-FLOW-" + suffix))
+        .andExpect(jsonPath("$.items[0].availableQuantity").value(100))
+        .andExpect(jsonPath("$.items[0].totalQuantity").value(100));
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/inventory/stock/low-stock?page=0&size=10", token))

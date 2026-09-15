@@ -42,7 +42,6 @@ import { DispositivoDetailPageComponent } from './pages/app/pos/dispositivos/dis
 import { EnrolamientoPageComponent } from './pages/app/pos/enrolamiento/enrolamiento-page';
 import { OperadoresPageComponent } from './pages/app/pos/operadores/operadores-page';
 import { VentasPageComponent } from './pages/app/pos/ventas/ventas-page';
-import { MermasPageComponent } from './pages/app/pos/mermas/mermas-page';
 import { CortesPageComponent } from './pages/app/pos/cortes/cortes-page';
 import { IncidenciasPageComponent } from './pages/app/pos/incidencias/incidencias-page';
 import { AccessRestrictedPageComponent } from './pages/app/access-restricted/access-restricted-page';
@@ -58,6 +57,8 @@ import { CountSessionDetailPageComponent } from './pages/app/inventario/counts/c
 import { InventarioEntradasPageComponent } from './pages/app/inventario/entradas/entradas-page';
 import { InventarioMermasPageComponent } from './pages/app/inventario/mermas/mermas-hq-page';
 import { InventarioAjustesPageComponent } from './pages/app/inventario/ajustes/ajustes-page';
+import { InventarioLedgerPageComponent } from './pages/app/inventario/ledger/inventario-ledger-page';
+import { InventarioTransferPageComponent } from './pages/app/inventario/transferencias/inventario-transfer-page';
 
 const ADMIN = [AppRole.ADMIN];
 const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
@@ -189,6 +190,18 @@ export const routes: Routes = [
         data: { access: { roles: ADMIN_MANAGER } },
       },
       {
+        path: 'inventario/ledger',
+        component: InventarioLedgerPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: INVENTORY_READ } },
+      },
+      {
+        path: 'inventario/transferencias',
+        component: InventarioTransferPageComponent,
+        canActivate: [roleGuard],
+        data: { access: { roles: ADMIN_MANAGER } },
+      },
+      {
         path: 'inventario/mermas',
         component: InventarioMermasPageComponent,
         canActivate: [roleGuard],
@@ -253,12 +266,6 @@ export const routes: Routes = [
       {
         path: 'pos/ventas',
         component: VentasPageComponent,
-        canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
-      },
-      {
-        path: 'pos/mermas',
-        component: MermasPageComponent,
         canActivate: [roleGuard],
         data: { access: { roles: POS_STAFF } },
       },

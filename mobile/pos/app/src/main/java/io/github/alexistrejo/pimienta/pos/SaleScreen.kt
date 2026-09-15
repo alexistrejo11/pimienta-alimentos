@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
+import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
 import io.github.alexistrejo.pimienta.pos.domain.*
 import kotlinx.coroutines.Dispatchers
@@ -155,6 +156,7 @@ internal fun Sale(
                 completedFolio = it.folio
                 pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
                 PrintWorker.enqueue(context)
+                SyncWorker.enqueue(context)
             }
         }
     }

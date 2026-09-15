@@ -73,7 +73,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
          reportUseCases.sales(filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly), pageable.toPageable()),
-        PosWebMapper::toSaleReportResponse);
+        row -> PosWebMapper.toSaleReportResponse(row.sale(), row.syncStatus()));
   }
 
   @GetMapping("/products")

@@ -179,6 +179,114 @@ class PosSyncEventsIntegrationTest {
   }
 
   @Test
+  void shiftOpenedThenClosed_materializesShiftForAdminList() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-SHIFT-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long operatorId = createOperator(staffToken, hqId, "Cajera Shift");
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Shift");
+    UUID shiftId = UUID.randomUUID();
+    UUID openEventId = UUID.randomUUID();
+    UUID closeEventId = UUID.randomUUID();
+    UUID closeAggregateId = UUID.randomUUID();
+
+    String openBatch =
+        shiftLifecycleEventJson(
+            device,
+            hqId,
+            shiftId,
+            openEventId,
+            1L,
+            "SHIFT_OPENED",
+            shiftId,
+            """
+            {
+              "shiftId": "%s",
+              "cashierOperatorId": %d,
+              "openingCashCentavos": 50000
+            }
+            """
+                .formatted(shiftId, operatorId));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events", device.accessToken(), openBatch))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    String closeBatch =
+        shiftLifecycleEventJson(
+            device,
+            hqId,
+            shiftId,
+            closeEventId,
+            2L,
+            "SHIFT_CLOSED",
+            closeAggregateId,
+            """
+            {
+              "cashExpectedCentavos": 60000,
+              "countedCashCentavos": 60000,
+              "differenceCentavos": 0,
+              "approvedByUserId": "%d"
+            }
+            """
+                .formatted(operatorId));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events", device.accessToken(), closeBatch))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/pos/admin/shifts?headquarterId=%d&status=CLOSED&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+                    .formatted(hqId),
+                staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].shiftId").value(shiftId.toString()))
+        .andExpect(jsonPath("$.items[0].openingCashCentavos").value(50000))
+        .andExpect(jsonPath("$.items[0].expectedCashCentavos").value(60000));
+  }
+
+  @Test
+  void salesReport_listsRequiresReviewSyncStatus() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-SALE-REV-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long itemId = createItem(staffToken, "SKU-REV-REP-" + UUID.randomUUID(), "Snack");
+    putCatalog(staffToken, hqId, itemId, "Deli", "40.00", "CONTROLLED");
+    long operatorId = createOperator(staffToken, hqId, "Cajera RevRep");
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja RevRep");
+
+    UUID eventId = UUID.randomUUID();
+    UUID saleId = UUID.randomUUID();
+    String body = saleEventJson(device, hqId, eventId, saleId, itemId, operatorId, 2, 4000, true);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/pos/admin/reports/sales?headquarterId=%d&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+                    .formatted(hqId),
+                staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].saleId").value(saleId.toString()))
+        .andExpect(jsonPath("$.items[0].syncStatus").value("REQUIRES_REVIEW"));
+  }
+
+  @Test
   void openAmount_enabledWithManager_isAuditedAndDoesNotMoveInventory() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-OPEN-" + UUID.randomUUID());
@@ -218,6 +326,44 @@ class PosSyncEventsIntegrationTest {
     String access = JsonPath.read(enroll.getResponse().getContentAsString(), "$.accessToken");
     String deviceId = JsonPath.read(enroll.getResponse().getContentAsString(), "$.deviceId");
     return new EnrolledDevice(UUID.fromString(deviceId), access);
+  }
+
+  private static String shiftLifecycleEventJson(
+      EnrolledDevice device,
+      long siteId,
+      UUID shiftId,
+      UUID eventId,
+      long deviceSequence,
+      String eventType,
+      UUID aggregateId,
+      String payloadJson) {
+    return """
+        {
+          "events": [
+            {
+              "eventId": "%s",
+              "eventType": "%s",
+              "schemaVersion": 1,
+              "deviceId": "%s",
+              "siteId": "%d",
+              "deviceSequence": %d,
+              "aggregateId": "%s",
+              "shiftId": "%s",
+              "occurredAt": "2026-09-08T18:00:00Z",
+              "payload": %s
+            }
+          ]
+        }
+        """
+        .formatted(
+            eventId,
+            eventType,
+            device.deviceId(),
+            siteId,
+            deviceSequence,
+            aggregateId,
+            shiftId,
+            payloadJson);
   }
 
   private String saleEventJson(

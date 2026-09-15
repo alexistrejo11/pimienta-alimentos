@@ -23,3 +23,13 @@ No extra follow-ups blocking this pass.
 - `requireOperatorAccess` denies MANAGER when operator HQs do not contain the manager HQ (previously always allowed).
 
 No extra follow-ups from this pass.
+
+## 2026-09-15 — Sales/cortes sync visibility
+
+- Android now enqueues `SyncWorker` after sale, shift, sangría, and cash-count facts; one-time unique work uses `REPLACE` so drains are not stuck behind `KEEP`.
+- Shift materialization failures return per-event `REJECTED` (HTTP 200 batch) instead of aborting the whole ingest with `MALFORMED_PAYLOAD` 400.
+- Ventas report includes `REQUIRES_REVIEW` sales and exposes `syncStatus`; product/summary reports remain ACCEPTED-only.
+- Web Cortes reads `GET /pos/admin/shifts` with `status=CLOSED` and local-day `closedAt` filters instead of raw ledger JSON.
+- POS Mermas web route removed; HQ scrap remains at `/app/inventario/mermas`. Tablet `WASTE_RECORDED` is still ledger-only on the backend.
+
+No extra follow-ups blocking this pass.

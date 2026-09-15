@@ -6,6 +6,11 @@ import type {
   LocationType,
   InventoryCountStatus,
   InventoryCountType,
+  InventoryTransactionType,
+  InventoryTransactionStatus,
+  InventoryMovementType,
+  MovementDirection,
+  CatalogRole,
 } from './inventory.enums';
 
 /** GET /api/v1/inventory/items */
@@ -26,7 +31,7 @@ export interface ItemResponse {
   updatedAt: string;
   deletedAt: string | null;
   version: number;
-  catalogRole: 'INVENTORY_ONLY' | 'POS_SELLABLE';
+  catalogRole: CatalogRole;
 }
 
 /** POST /api/v1/inventory/items */
@@ -67,6 +72,10 @@ export interface ItemSearchParams {
   sku?: string;
   category?: ItemCategory;
   status?: ItemStatus;
+  search?: string;
+  catalogRole?: CatalogRole;
+  minCost?: number;
+  maxCost?: number;
 }
 
 /** GET /api/v1/inventory/stock */
@@ -102,6 +111,34 @@ export interface InventoryStockSearchParams {
   locationId?: number;
   status?: InventoryStatus;
   headquarterId?: number;
+}
+
+/** GET /api/v1/inventory/stock/summary */
+export interface GlobalInventoryResponse {
+  itemId: number;
+  sku: string;
+  name: string;
+  category: ItemCategory;
+  headquarterId: number | null;
+  headquarterName: string;
+  availableQuantity: number;
+  reservedQuantity: number;
+  inTransitQuantity: number;
+  totalQuantity: number;
+  unitCost: number;
+  totalValue: number;
+  status: InventoryStatus;
+}
+
+export interface GlobalInventorySearchParams {
+  page?: number;
+  size?: number;
+  search?: string;
+  category?: ItemCategory;
+  status?: InventoryStatus;
+  headquarterId?: number;
+  minCost?: number;
+  maxCost?: number;
 }
 
 /** GET /api/v1/inventory/locations */
@@ -226,6 +263,70 @@ export interface AdjustmentTransactionRequest {
 export interface InventoryTransactionResponse {
   id: number;
   transactionNumber: string;
-  type: string;
-  status: string;
+  type: InventoryTransactionType;
+  status: InventoryTransactionStatus;
+  externalReference: string | null;
+  notes: string | null;
+  initiatedById: number | null;
+  approvedById: number | null;
+  approvedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  version: number;
+  movements: InventoryMovementResponse[];
+}
+
+export interface InventoryMovementResponse {
+  id: number;
+  itemId: number;
+  itemSku: string;
+  sourceLocationId: number | null;
+  sourceLocationCode: string | null;
+  destinationLocationId: number | null;
+  destinationLocationCode: string | null;
+  quantity: number;
+  unitCost: number;
+  type: InventoryMovementType;
+  direction: MovementDirection;
+  description: string | null;
+  referenceNumber: string | null;
+  performedById: number | null;
+  stockAfterMovement: number;
+  transactionId: number | null;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface InventoryTransactionSearchParams {
+  page?: number;
+  size?: number;
+  type?: InventoryTransactionType;
+  status?: InventoryTransactionStatus;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface InventoryMovementSearchParams extends InventoryTransactionSearchParams {
+  direction?: MovementDirection;
+  itemId?: number;
+  locationId?: number;
+  search?: string;
+  category?: ItemCategory;
+}
+
+export interface TransferLineRequest {
+  itemId: number;
+  fromLocationId: number;
+  toLocationId: number;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface TransferTransactionRequest {
+  externalReference?: string;
+  notes?: string;
+  lines: TransferLineRequest[];
 }

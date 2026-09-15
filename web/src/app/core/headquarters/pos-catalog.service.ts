@@ -58,6 +58,10 @@ export class PosCatalogService {
     );
   }
 
+  deleteCatalogItem(headquarterId: number, itemId: number): Observable<HeadquarterPosCatalogItemResponse> {
+    return this.http.delete<HeadquarterPosCatalogItemResponse>(`${this.hqBase}/${headquarterId}/pos-catalog/${itemId}`);
+  }
+
   listCategories(headquarterId: number, includeInactive = false): Observable<PosSaleCategoryResponse[]> {
     const params = new HttpParams().set('includeInactive', includeInactive);
     return this.http.get<PosSaleCategoryResponse[]>(`${this.hqBase}/${headquarterId}/pos-categories`, { params });

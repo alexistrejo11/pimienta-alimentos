@@ -9,3 +9,11 @@ export function todayInstantRange(): { from: string; to: string } {
 export function formatCentavos(centavos: number): string {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(centavos / 100);
 }
+
+export function localDateStartInstant(date: string): string {
+  return new Date(`${date}T00:00:00`).toISOString();
+}
+
+export function localDateEndInstant(date: string): string {
+  return new Date(`${date}T23:59:59.999`).toISOString();
+}

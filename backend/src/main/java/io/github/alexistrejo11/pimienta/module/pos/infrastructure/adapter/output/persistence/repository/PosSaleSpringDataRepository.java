@@ -44,7 +44,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                   SELECT 1 FROM PosSyncEventJpaEntity e
                   WHERE e.eventId = s.eventId
                     AND e.deletedAt IS NULL
-                    AND e.status = :accepted
+                    AND e.status IN :syncStatuses
                 )
           """,
       countQuery =
@@ -63,7 +63,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                   SELECT 1 FROM PosSyncEventJpaEntity e
                   WHERE e.eventId = s.eventId
                     AND e.deletedAt IS NULL
-                    AND e.status = :accepted
+                    AND e.status IN :syncStatuses
                 )
           """)
   Page<PosSaleJpaEntity> findAcceptedSales(
@@ -74,7 +74,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       @Param("productId") Long productId,
       @Param("lineType") io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType lineType,
       @Param("openProductsOnly") boolean openProductsOnly,
-      @Param("accepted") PosEventResultStatus accepted,
+      @Param("syncStatuses") java.util.Collection<PosEventResultStatus> syncStatuses,
       Pageable pageable);
 
   @Query(

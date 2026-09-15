@@ -119,6 +119,9 @@ export interface PosShiftResponse {
 
 export interface PosShiftListParams {
   headquarterId?: number;
+  from?: string;
+  to?: string;
+  status?: string;
   page?: number;
   size?: number;
 }
@@ -217,12 +220,13 @@ export interface PosSaleReportResponse {
   headquarterId: number;
   deviceId: string;
   shiftId: string;
-  cashierOperatorId: number;
+  cashierOperatorId: number | null;
   folio: string;
   grossCentavos: number;
   discountCentavos: number;
   totalCentavos: number;
   status: string;
+  syncStatus: string;
   occurredAt: string;
   containsOpenProduct?: boolean;
   lines?: PosSaleLineReportResponse[];

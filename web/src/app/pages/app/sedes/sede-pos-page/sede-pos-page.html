@@ -180,12 +180,23 @@
                     >
                       Editar
                     </button>
+                    <button type="button" class="ml-3 text-sm font-semibold text-error" (click)="removeCatalogItem(row)">Retirar</button>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+        @if (catalogMetadata(); as pageInfo) {
+          <div class="mt-3 flex items-center justify-between text-sm text-on-surface-variant">
+            <span>{{ pageInfo.totalElements }} productos</span>
+            <div class="flex items-center gap-2">
+              <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="previousCatalogPage()">Anterior</button>
+              <span>Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span>
+              <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="nextCatalogPage()">Siguiente</button>
+            </div>
+          </div>
+        }
       </section>
     </app-data-state>
   }

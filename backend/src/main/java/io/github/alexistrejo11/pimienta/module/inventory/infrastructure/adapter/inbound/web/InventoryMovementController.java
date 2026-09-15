@@ -51,8 +51,9 @@ public class InventoryMovementController {
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @ParameterObject @ModelAttribute InventoryMovementSearchRequest filter) {
     Page<InventoryMovement> page =
-        inventoryMovementQueryUseCases.search(filter.toCriteria(), filter.toPageable());
-    page.forEach(m -> requireAccess(principal, m));
+         inventoryMovementQueryUseCases.search(
+             filter.toCriteria(headquarterAccessService.enforceHeadquarterScope(principal, null)),
+             filter.toPageable());
     return PagedResponse.map(page, InventoryMovementWebMapper::toResponse);
   }
 

@@ -22,6 +22,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -168,6 +170,7 @@ internal fun CashWithdrawalAuthorization(
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Records the same withdrawal from either keypad enter or the visible action.
     fun record() {
@@ -177,7 +180,10 @@ internal fun CashWithdrawalAuthorization(
         else if (user == null) error = "Selecciona un autorizador."
         else scope.launch {
             val withdrawal = withContext(Dispatchers.IO) { repository.recordWithdrawal(shift, cents, user.id, pin) }
-            if (withdrawal == null) error = "No se pudo autorizar la sangría." else onRecorded(withdrawal)
+            if (withdrawal == null) error = "No se pudo autorizar la sangría." else {
+                SyncWorker.enqueue(context)
+                onRecorded(withdrawal)
+            }
         }
     }
     Dialog(onDismissRequest = onDismiss) {

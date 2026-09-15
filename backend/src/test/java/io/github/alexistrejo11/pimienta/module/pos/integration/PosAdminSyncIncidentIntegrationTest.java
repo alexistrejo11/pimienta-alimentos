@@ -93,7 +93,9 @@ class PosAdminSyncIncidentIntegrationTest {
     mockMvc
         .perform(AccountTestRequests.getBearer(reportsUrl, admin.token()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items", hasSize(0)));
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].saleId").value(reviewSaleId.toString()))
+        .andExpect(jsonPath("$.items[0].syncStatus").value("REQUIRES_REVIEW"));
 
     mockMvc
         .perform(
@@ -125,7 +127,8 @@ class PosAdminSyncIncidentIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items", hasSize(1)))
         .andExpect(jsonPath("$.items[0].saleId").value(reviewSaleId.toString()))
-        .andExpect(jsonPath("$.items[0].totalCentavos").value(5000));
+        .andExpect(jsonPath("$.items[0].totalCentavos").value(5000))
+        .andExpect(jsonPath("$.items[0].syncStatus").value("ACCEPTED"));
 
     mockMvc
         .perform(

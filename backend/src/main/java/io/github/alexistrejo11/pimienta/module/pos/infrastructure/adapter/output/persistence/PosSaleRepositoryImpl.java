@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -55,7 +56,7 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
             filter.productId(),
             filter.lineType(),
             filter.openProductsOnly(),
-            PosEventResultStatus.ACCEPTED,
+            Set.of(PosEventResultStatus.ACCEPTED, PosEventResultStatus.REQUIRES_REVIEW),
             pageable)
         .map(PosSalePersistenceMapper::toDomain);
   }

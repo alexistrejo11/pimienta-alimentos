@@ -9,6 +9,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.port.input.OperatorManag
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosAdminOperators;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosOperatorAssignHq;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosOperatorCreate;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosOperatorDelete;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosOperatorGet;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosOperatorList;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosOperatorUnassignHq;
@@ -129,6 +130,16 @@ public class PosAdminOperatorController {
     headquarterAccessService.requireHeadquarterAccess(principal, headquarterId);
     return PosWebMapper.toOperatorResponse(
         operatorManagementUseCases.unassignHeadquarter(id, headquarterId));
+  }
+
+  @DeleteMapping("/{id}")
+  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+  @DocPosOperatorDelete
+  public PosOperatorResponse delete(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable("id") long id) {
+    PosOperator existing = operatorManagementUseCases.get(id);
+    requireOperatorAccess(principal, existing);
+    return PosWebMapper.toOperatorResponse(operatorManagementUseCases.softDelete(id));
   }
 
   private void requireOperatorAccess(JwtAuthenticationContext principal, PosOperator operator) {

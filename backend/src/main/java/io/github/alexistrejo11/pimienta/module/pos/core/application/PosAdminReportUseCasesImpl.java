@@ -3,8 +3,9 @@ package io.github.alexistrejo11.pimienta.module.pos.core.application;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquarter;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.query.PosReportFilterQuery;
-import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosSaleReportRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncEvent;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosAdminReportUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosDeviceRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSaleRepository;
@@ -13,6 +14,8 @@ import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncIncid
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
@@ -48,8 +51,19 @@ public class PosAdminReportUseCasesImpl implements PosAdminReportUseCases {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<PosSale> sales(PosReportFilterQuery filter, Pageable pageable) {
-    return saleRepository.findAcceptedSales(filter, pageable);
+  public Page<PosSaleReportRow> sales(PosReportFilterQuery filter, Pageable pageable) {
+    var salesPage = saleRepository.findAcceptedSales(filter, pageable);
+    List<UUID> eventIds =
+        salesPage.getContent().stream()
+            .map(s -> s.getEventId())
+            .distinct()
+            .toList();
+    Map<UUID, PosEventResultStatus> syncStatuses = eventRepository.findSyncStatusesByEventIds(eventIds);
+    return salesPage.map(
+        sale ->
+            new PosSaleReportRow(
+                sale,
+                syncStatuses.getOrDefault(sale.getEventId(), PosEventResultStatus.ACCEPTED)));
   }
 
   @Override

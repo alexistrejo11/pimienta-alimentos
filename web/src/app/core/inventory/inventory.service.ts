@@ -5,6 +5,10 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import type {
   AdjustmentTransactionRequest,
+  InventoryTransactionSearchParams,
+  InventoryMovementResponse,
+  InventoryMovementSearchParams,
+  TransferTransactionRequest,
   CreateInitialStockRequest,
   InventoryCountResponseRequest,
   InventoryCountSearchParams,
@@ -12,6 +16,8 @@ import type {
   InventoryCountSessionSummaryResponse,
   InventoryStockResponse,
   InventoryStockSearchParams,
+  GlobalInventoryResponse,
+  GlobalInventorySearchParams,
   InventoryTransactionResponse,
   ItemCreateRequest,
   ItemResponse,
@@ -41,8 +47,12 @@ export class InventoryService {
       .set('size', String(params.size ?? 20));
     if (params.name) p = p.set('name', params.name);
     if (params.sku) p = p.set('sku', params.sku);
+    if (params.search) p = p.set('search', params.search);
     if (params.category) p = p.set('category', params.category);
     if (params.status) p = p.set('status', params.status);
+    if (params.catalogRole) p = p.set('catalogRole', params.catalogRole);
+    if (params.minCost != null) p = p.set('minCost', String(params.minCost));
+    if (params.maxCost != null) p = p.set('maxCost', String(params.maxCost));
     return this.http.get<PagedResponse<ItemResponse>>(this.itemsBase, { params: p });
   }
 
@@ -80,6 +90,19 @@ export class InventoryService {
     if (params.status) p = p.set('status', params.status);
     if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
     return this.http.get<PagedResponse<InventoryStockResponse>>(this.stockBase, { params: p });
+  }
+
+  searchGlobalSummary(params: GlobalInventorySearchParams = {}): Observable<PagedResponse<GlobalInventoryResponse>> {
+    let p = new HttpParams()
+      .set('page', String(params.page ?? 0))
+      .set('size', String(params.size ?? 20));
+    if (params.search) p = p.set('search', params.search);
+    if (params.category) p = p.set('category', params.category);
+    if (params.status) p = p.set('status', params.status);
+    if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
+    if (params.minCost != null) p = p.set('minCost', String(params.minCost));
+    if (params.maxCost != null) p = p.set('maxCost', String(params.maxCost));
+    return this.http.get<PagedResponse<GlobalInventoryResponse>>(`${this.stockBase}/summary`, { params: p });
   }
 
   createInitialStock(body: CreateInitialStockRequest): Observable<InventoryStockResponse> {
@@ -139,5 +162,31 @@ export class InventoryService {
 
   adjustment(body: AdjustmentTransactionRequest): Observable<InventoryTransactionResponse> {
     return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/adjustment`, body);
+  }
+
+  searchTransactions(params: InventoryTransactionSearchParams = {}): Observable<PagedResponse<InventoryTransactionResponse>> {
+    let p = new HttpParams().set('page', String(params.page ?? 0)).set('size', String(params.size ?? 20));
+    if (params.type) p = p.set('type', params.type);
+    if (params.status) p = p.set('status', params.status);
+    if (params.fromDate) p = p.set('fromDate', params.fromDate);
+    if (params.toDate) p = p.set('toDate', params.toDate);
+    return this.http.get<PagedResponse<InventoryTransactionResponse>>(`${this.transactionsBase}`, { params: p });
+  }
+
+  searchMovements(params: InventoryMovementSearchParams = {}): Observable<PagedResponse<InventoryMovementResponse>> {
+    let p = new HttpParams().set('page', String(params.page ?? 0)).set('size', String(params.size ?? 20));
+    if (params.type) p = p.set('type', params.type);
+    if (params.direction) p = p.set('direction', params.direction);
+    if (params.itemId != null) p = p.set('itemId', String(params.itemId));
+    if (params.locationId != null) p = p.set('locationId', String(params.locationId));
+    if (params.search) p = p.set('search', params.search);
+    if (params.category) p = p.set('category', params.category);
+    if (params.fromDate) p = p.set('fromDate', params.fromDate);
+    if (params.toDate) p = p.set('toDate', params.toDate);
+    return this.http.get<PagedResponse<InventoryMovementResponse>>(`${API_BASE_URL}/inventory/movements`, { params: p });
+  }
+
+  transfer(body: TransferTransactionRequest): Observable<InventoryTransactionResponse> {
+    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/transfer`, body);
   }
 }

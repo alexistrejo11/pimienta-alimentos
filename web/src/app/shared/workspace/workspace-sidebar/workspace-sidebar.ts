@@ -66,7 +66,6 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
     items: [
           { label: 'Catálogo por sede', icon: 'storefront', route: '/app/pos/catalogo', roles: ADMIN_MANAGER },
       { label: 'Ventas', icon: 'receipt_long', route: '/app/pos/ventas', roles: POS_OPERATION },
-      { label: 'Mermas POS', icon: 'delete_sweep', route: '/app/pos/mermas', roles: POS_OPERATION },
       { label: 'Cortes', icon: 'point_of_sale', route: '/app/pos/cortes', roles: POS_OPERATION },
       {
         label: 'Configuración POS',
@@ -88,7 +87,9 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
     roles: INVENTORY_READ,
     items: [
       { label: 'Existencias', icon: 'warehouse', route: '/app/inventario', roles: INVENTORY_READ },
+      { label: 'Libro de movimientos', icon: 'receipt_long', route: '/app/inventario/ledger', roles: INVENTORY_READ },
       { label: 'Entradas (IN)', icon: 'add_shopping_cart', route: '/app/inventario/entradas', roles: ADMIN_MANAGER },
+      { label: 'Transferencias', icon: 'swap_horiz', route: '/app/inventario/transferencias', roles: ADMIN_MANAGER },
       { label: 'Mermas (OUT)', icon: 'delete_sweep', route: '/app/inventario/mermas', roles: ADMIN_MANAGER },
       { label: 'Ajustes', icon: 'tune', route: '/app/inventario/ajustes', roles: ADMIN_ONLY },
       { label: 'Conteos físicos', icon: 'fact_check', route: '/app/inventario/conteos', roles: ADMIN_MANAGER },

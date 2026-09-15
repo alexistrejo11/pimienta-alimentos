@@ -179,7 +179,7 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         fun enqueue(context: Context) {
             val wm = WorkManager.getInstance(context)
             val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-            wm.enqueueUniqueWork(UNIQUE_SYNC, ExistingWorkPolicy.KEEP, OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
+            wm.enqueueUniqueWork(UNIQUE_SYNC, ExistingWorkPolicy.REPLACE, OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
             wm.enqueueUniquePeriodicWork(UNIQUE_SYNC + "-periodic", ExistingPeriodicWorkPolicy.KEEP, PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setConstraints(constraints).build())
         }
     }

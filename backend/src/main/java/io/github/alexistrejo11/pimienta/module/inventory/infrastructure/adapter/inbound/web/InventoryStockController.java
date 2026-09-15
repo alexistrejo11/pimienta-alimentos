@@ -5,6 +5,7 @@ import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryGlobalSummary;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.InventorySearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.StorageLocationManagementUseCases;
@@ -19,6 +20,8 @@ import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.CreateInitialStockRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.InventoryStockSearchRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.InventoryStockResponse;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.GlobalInventoryResponse;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.GlobalInventorySearchRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.mapper.InventoryStockWebMapper;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
@@ -68,6 +71,21 @@ public class InventoryStockController {
     Page<Inventory> page =
         inventoryManagementUseCases.search(filter.toCriteria(hq), filter.toPageable());
     return PagedResponse.map(page, InventoryStockWebMapper::toResponse);
+  }
+
+  @GetMapping("/summary")
+  @RateLimit(profile = RateLimitProfile.READ_HEAVY)
+  @DocInventoryStockSearch
+  public PagedResponse<GlobalInventoryResponse> searchGlobalSummary(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @ParameterObject @ModelAttribute GlobalInventorySearchRequest filter) {
+    var scope = headquarterAccessService.enforceHeadquarterScope(principal, filter.getHeadquarterId());
+    var pageable = filter.toPageable();
+    Page<InventoryGlobalSummary> page = scope != null && scope.isEmpty()
+        ? Page.empty(pageable)
+        : inventoryManagementUseCases.searchGlobalSummary(
+            filter.getSearch(), filter.getCategory(), filter.getStatus(), filter.getMinCost(), filter.getMaxCost(), scope, pageable);
+    return PagedResponse.map(page, row -> new GlobalInventoryResponse(row.itemId(), row.sku(), row.name(), row.category(), row.headquarterId(), row.headquarterName(), row.availableQuantity(), row.reservedQuantity(), row.inTransitQuantity(), row.totalQuantity(), row.unitCost(), row.totalValue(), row.status()));
   }
 
   @GetMapping("/low-stock")

@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosCashCount;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosCashMovement;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosShift;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncEvent;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -11,7 +12,13 @@ import org.springframework.data.domain.Pageable;
 
 public interface PosShiftRepository {
   void materialize(PosSyncEvent event);
-  Page<PosShift> findByHeadquarterIds(java.util.List<Long> headquarterIds, Pageable pageable);
+
+  Page<PosShift> findByHeadquarterIds(
+      java.util.List<Long> headquarterIds,
+      Instant closedFrom,
+      Instant closedTo,
+      String status,
+      Pageable pageable);
   Optional<PosShift> findById(UUID shiftId, long headquarterId);
   java.util.List<PosCashMovement> movements(UUID shiftId);
   java.util.List<PosCashCount> counts(UUID shiftId);

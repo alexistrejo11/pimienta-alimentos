@@ -216,6 +216,7 @@ private fun MetricTile(label: String, value: String, modifier: Modifier = Modifi
 // Handles the operational cash summary, blind count, rejection, and final approval.
 @Composable
 private fun ZClosePanel(shift: ShiftEntity, manager: LocalUserEntity, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
+    val context = LocalContext.current
     var stage by remember(shift.id) { mutableStateOf(CountStage.OPEN) }
     var count by remember(shift.id) { mutableStateOf("") }
     var attempt by remember(shift.id) { mutableStateOf<CashCountAttemptEntity?>(null) }
@@ -226,7 +227,7 @@ private fun ZClosePanel(shift: ShiftEntity, manager: LocalUserEntity, summary: D
     val scope = rememberCoroutineScope()
     var expected by remember(shift.id) { mutableStateOf(0L) }
     LaunchedEffect(shift.id, summary) { expected = withContext(Dispatchers.IO) { repository.expectedCash(shift) } }
-    fun submit() { val amount = Money.fromInput(count); if (amount == null || amount < 0) message = "Captura un conteo válido." else scope.launch { attempt = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }; if (attempt == null) message = "No se pudo guardar el conteo local." else stage = CountStage.VALIDATION } }
+    fun submit() { val amount = Money.fromInput(count); if (amount == null || amount < 0) message = "Captura un conteo válido." else scope.launch { attempt = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }; if (attempt == null) message = "No se pudo guardar el conteo local." else { SyncWorker.enqueue(context); stage = CountStage.VALIDATION } } }
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("Caja y Corte Z", style = MaterialTheme.typography.headlineSmall)
@@ -240,7 +241,7 @@ private fun ZClosePanel(shift: ShiftEntity, manager: LocalUserEntity, summary: D
             message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }
-    if (pinRequested && attempt != null) ManagerPinDialog(manager, "Firmar y cerrar turno", { pinRequested = false }) { pin -> scope.launch { val closed = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, attempt!!, manager, pin) }; pinRequested = false; if (closed) { refresh(); onShiftClosed() } else message = "No se pudo aprobar el Corte Z." } }
+    if (pinRequested && attempt != null) ManagerPinDialog(manager, "Firmar y cerrar turno", { pinRequested = false }) { pin -> scope.launch { val closed = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, attempt!!, manager, pin) }; pinRequested = false; if (closed) { SyncWorker.enqueue(context); refresh(); onShiftClosed() } else message = "No se pudo aprobar el Corte Z." } }
     if (withdrawalsOpen) Dialog(onDismissRequest = { withdrawalsOpen = false }) {
         Surface(Modifier.widthIn(max = 720.dp), color = MaterialTheme.colorScheme.surface) {
             WithdrawalsPanel(shift, repository, Modifier.fillMaxWidth().padding(8.dp))
@@ -317,6 +318,7 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
     var pin by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
             Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -330,7 +332,7 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
                     PosButton("Cerrar", onDismiss, modifier = Modifier.weight(1f))
                     PosButton("Confirmar cancelación", {
                         if (reason.isBlank() || pin.length < 4) message = "Captura motivo y PIN de cuatro dígitos."
-                        else scope.launch { val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }; if (ok) onDone("Venta ${sale.folio} cancelada y auditada.") else message = "No se pudo cancelar la venta." }
+                        else scope.launch { val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }; if (ok) { SyncWorker.enqueue(context); onDone("Venta ${sale.folio} cancelada y auditada.") } else message = "No se pudo cancelar la venta." }
                     }, primary = true, modifier = Modifier.weight(1f))
                 }
             }

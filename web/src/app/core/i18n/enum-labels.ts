@@ -68,12 +68,40 @@ export function stockPolicyLabel(policy: string): string {
   return STOCK_POLICY_LABELS[policy] ?? policy;
 }
 
+export function inventoryTransactionTypeLabel(type: string): string {
+  return INVENTORY_TRANSACTION_TYPE_LABELS[type] ?? type;
+}
+
+export function inventoryTransactionStatusLabel(status: string): string {
+  return INVENTORY_TRANSACTION_STATUS_LABELS[status] ?? status;
+}
+
+export function inventoryMovementTypeLabel(type: string): string {
+  return INVENTORY_MOVEMENT_TYPE_LABELS[type] ?? type;
+}
+
+export function movementDirectionLabel(direction: string): string {
+  return MOVEMENT_DIRECTION_LABELS[direction] ?? direction;
+}
+
 export function posRoleLabel(role: string): string {
   return POS_ROLE_LABELS[role] ?? role;
 }
 
 export function posDeviceStatusLabel(status: string): string {
   return POS_DEVICE_STATUS_LABELS[status] ?? status;
+}
+
+export function posSaleTicketStatusLabel(status: string): string {
+  return POS_SALE_TICKET_STATUS_LABELS[status] ?? status;
+}
+
+export function posSyncEventStatusLabel(status: string): string {
+  return POS_SYNC_EVENT_STATUS_LABELS[status] ?? status;
+}
+
+export function posShiftStatusLabel(status: string): string {
+  return POS_SHIFT_STATUS_LABELS[status] ?? status;
 }
 
 export function taskStatusLabel(status: string): string {
@@ -219,6 +247,24 @@ const STOCK_POLICY_LABELS: Record<string, string> = {
   NOT_CONTROLLED: 'Sin control de stock',
 };
 
+const INVENTORY_TRANSACTION_TYPE_LABELS: Record<string, string> = {
+  PURCHASE_RECEIPT: 'Entrada por compra', SALE_DISPATCH: 'Salida por venta', INTERNAL_TRANSFER: 'Transferencia interna',
+  PHYSICAL_COUNT: 'Conteo físico', RETURN_FROM_CLIENT: 'Devolución de cliente', RETURN_TO_SUPPLIER: 'Devolución a proveedor',
+  PRODUCTION_ISSUE: 'Consumo de producción', SCRAP_WRITE_OFF: 'Merma',
+};
+
+const INVENTORY_TRANSACTION_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Borrador', PENDING: 'Pendiente', APPROVED: 'Aprobado', IN_PROGRESS: 'En proceso', COMPLETED: 'Completado', CANCELLED: 'Cancelado',
+};
+
+const INVENTORY_MOVEMENT_TYPE_LABELS: Record<string, string> = {
+  PURCHASE: 'Compra', RETURN_FROM_CLIENT: 'Devolución de cliente', INITIAL_STOCK: 'Existencia inicial', SALE: 'Venta',
+  RETURN_TO_SUPPLIER: 'Devolución a proveedor', USAGE: 'Consumo', SCRAP: 'Merma', TRANSFER: 'Transferencia',
+  ADJUSTMENT_PLUS: 'Ajuste positivo', ADJUSTMENT_MINUS: 'Ajuste negativo',
+};
+
+const MOVEMENT_DIRECTION_LABELS: Record<string, string> = { IN: 'Entrada', OUT: 'Salida', NEUTRAL: 'Ajuste' };
+
 const POS_ROLE_LABELS: Record<string, string> = {
   CASHIER: 'Cajero',
   MANAGER: 'Gerente',
@@ -230,6 +276,23 @@ const POS_DEVICE_STATUS_LABELS: Record<string, string> = {
   AUTHORIZED: 'Autorizado',
   REVOKED: 'Revocado',
   DISABLED: 'Deshabilitado',
+};
+
+const POS_SALE_TICKET_STATUS_LABELS: Record<string, string> = {
+  CONFIRMED: 'Confirmada',
+  CANCELLED: 'Cancelada',
+};
+
+const POS_SYNC_EVENT_STATUS_LABELS: Record<string, string> = {
+  ACCEPTED: 'Sincronizada',
+  REQUIRES_REVIEW: 'Pendiente de revisión',
+  REJECTED: 'Rechazada',
+  DUPLICATE: 'Duplicada',
+};
+
+const POS_SHIFT_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Abierto',
+  CLOSED: 'Cerrado',
 };
 
 const TASK_STATUS_LABELS: Record<string, string> = {

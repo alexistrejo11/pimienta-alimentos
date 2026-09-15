@@ -113,6 +113,12 @@ public class PosSyncEvent extends BaseDomain<UUID> {
     touch();
   }
 
+  public void markRejected(String message) {
+    this.status = PosEventResultStatus.REJECTED;
+    this.message = message;
+    touch();
+  }
+
   public void touch() {
     this.updatedAt = LocalDateTime.now();
   }

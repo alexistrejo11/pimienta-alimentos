@@ -119,6 +119,18 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
     return saved;
   }
 
+  @Override
+  @Transactional
+  public PosOperator softDelete(long operatorId) {
+    PosOperator operator = get(operatorId);
+    operator.softDelete();
+    PosOperator saved = operatorRepository.save(operator);
+    for (Long headquarterId : operator.getHeadquarterIds()) {
+      tombstoneRepository.save(PosSyncTombstone.operator(headquarterId, operatorId));
+    }
+    return saved;
+  }
+
   private void ensureHeadquarter(long headquarterId) {
     headquarterRepository
         .findById(headquarterId)

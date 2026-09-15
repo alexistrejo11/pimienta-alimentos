@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
-  <app-page-header title="Cortes de turno" subtitle="Cierres de caja registrados en POS" />
+  <app-page-header title="Cortes de turno" subtitle="Cierres de caja sincronizados desde POS" />
 
   <div class="flex flex-wrap gap-3">
     <app-headquarter-select
@@ -36,7 +36,7 @@
   <app-data-state
     [loading]="loading()"
     [error]="error()"
-    [empty]="events().length === 0"
+    [empty]="shifts().length === 0"
     emptyMessage="Sin cortes en el periodo."
     (retry)="cargar()"
   >
@@ -44,19 +44,33 @@
       <table class="w-full text-sm">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
-            <th class="px-4 py-3 text-left">Turno</th>
-            <th class="px-4 py-3 text-left">Fecha</th>
-            <th class="px-4 py-3 text-left">Payload</th>
+            <th class="px-4 py-3 text-left">Operador</th>
+            <th class="px-4 py-3 text-left">Apertura</th>
+            <th class="px-4 py-3 text-left">Cierre</th>
+            <th class="px-4 py-3 text-left">Fondo inicial</th>
+            <th class="px-4 py-3 text-left">Esperado</th>
+            <th class="px-4 py-3 text-left">Contado</th>
+            <th class="px-4 py-3 text-left">Diferencia</th>
+            <th class="px-4 py-3 text-left">Estado</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant/15">
-          @for (e of events(); track e.eventId) {
+          @for (s of shifts(); track s.shiftId) {
             <tr>
-              <td class="px-4 py-3 font-mono text-xs">{{ e.shiftId }}</td>
-              <td class="px-4 py-3">{{ e.occurredAt | date: 'short' }}</td>
-              <td class="max-w-[20rem] break-all px-4 py-3 font-mono text-xs">
-                {{ e.payload | json }}
+              <td class="px-4 py-3">{{ operatorLabel(s.cashierOperatorId) }}</td>
+              <td class="px-4 py-3">{{ s.openedAt | date: 'short' }}</td>
+              <td class="px-4 py-3">{{ s.closedAt | date: 'short' }}</td>
+              <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.openingCashCentavos) }}</td>
+              <td class="px-4 py-3 tabular-nums">
+                {{ s.expectedCashCentavos != null ? formatCentavos(s.expectedCashCentavos) : '—' }}
               </td>
+              <td class="px-4 py-3 tabular-nums">
+                {{ s.countedCashCentavos != null ? formatCentavos(s.countedCashCentavos) : '—' }}
+              </td>
+              <td class="px-4 py-3 tabular-nums">
+                {{ s.differenceCentavos != null ? formatCentavos(s.differenceCentavos) : '—' }}
+              </td>
+              <td class="px-4 py-3">{{ shiftStatusLabel(s.status) }}</td>
             </tr>
           }
         </tbody>

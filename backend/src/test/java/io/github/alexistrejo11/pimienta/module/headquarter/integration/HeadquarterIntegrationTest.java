@@ -209,7 +209,7 @@ class HeadquarterIntegrationTest {
   }
 
   @Test
-  void softDelete_getByIdStillReturnsRecord_getByNameReturns404() throws Exception {
+  void softDelete_hidesRecordFromDefaultQueries() throws Exception {
     String token = obtainAdminToken();
     String name = "IT-DEL-" + UUID.randomUUID();
     MvcResult created =
@@ -228,8 +228,8 @@ class HeadquarterIntegrationTest {
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + id, token))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.deletedAt").exists());
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.errorCode").value("HEADQUARTER_NOT_FOUND"));
 
     mockMvc
         .perform(

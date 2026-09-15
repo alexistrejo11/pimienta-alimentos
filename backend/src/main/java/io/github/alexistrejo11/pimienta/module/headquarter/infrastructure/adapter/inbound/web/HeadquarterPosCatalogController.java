@@ -8,6 +8,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquart
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.input.HeadquarterPosCatalogUseCases;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosCatalog;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosCatalogGet;
+import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosCatalogDelete;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosCatalogList;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosCatalogPut;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.HeadquarterPosCatalogItemRequest;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -93,5 +95,16 @@ public class HeadquarterPosCatalogController {
     HeadquarterItem saved =
         posCatalogUseCases.upsert(headquarterId, itemId, HeadquarterPosWebMapper.toCommand(request));
     return HeadquarterPosWebMapper.toResponse(saved);
+  }
+
+  @DeleteMapping("/{itemId}")
+  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+  @DocHeadquarterPosCatalogDelete
+  public HeadquarterPosCatalogItemResponse delete(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable("id") Long headquarterId,
+      @PathVariable Long itemId) {
+    headquarterAccessService.requireHeadquarterAccess(principal, headquarterId);
+    return HeadquarterPosWebMapper.toResponse(posCatalogUseCases.softDelete(headquarterId, itemId));
   }
 }

@@ -13,6 +13,19 @@
     </a>
   </div>
 
+  <div class="flex flex-col gap-3 rounded-xl ui-panel p-4 sm:flex-row">
+    <input class="min-w-0 flex-1 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" placeholder="Buscar por nombre o SKU" (input)="buscar($any($event.target).value)" [value]="search()" />
+    <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [value]="category()" (change)="cambiarCategoria($any($event.target).value)">
+      <option value="">Todas las categorías</option>
+      @for (value of categories; track value) { <option [value]="value">{{ itemCategoryLabel(value) }}</option> }
+    </select>
+    <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [value]="status()" (change)="cambiarEstado($any($event.target).value)">
+      <option value="">Todos los estados</option>
+      @for (value of statuses; track value) { <option [value]="value">{{ itemStatusLabel(value) }}</option> }
+    </select>
+    <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [value]="role()" (change)="cambiarRol($any($event.target).value)"><option value="">Todos los catálogos</option><option value="INVENTORY_ONLY">Inventario</option><option value="POS_SELLABLE">POS</option></select>
+  </div>
+
   <app-data-state
     [loading]="loading()"
     [error]="error()"
@@ -40,18 +53,31 @@
               <td class="px-4 py-3 text-on-surface-variant">{{ itemCategoryLabel(item.category) }}</td>
               <td class="px-4 py-3 tabular-nums">{{ formatMoney(item.costPrice) }}</td>
               <td class="px-4 py-3">{{ itemStatusLabel(item.status) }}</td>
-              <td class="px-4 py-3 text-right">
+               <td class="px-4 py-3 text-right">
                 <a
                   [routerLink]="['/app/catalogo', item.id, 'editar']"
                   class="text-sm font-semibold text-primary hover:underline"
-                >
-                  Editar
-                </a>
+                 >
+                   Editar
+                 </a>
+                 <button type="button" class="ml-3 text-sm font-semibold text-primary hover:underline" (click)="cambiarEstadoItem(item)">
+                   {{ item.status === 'ACTIVE' ? 'Descontinuar' : 'Activar' }}
+                 </button>
               </td>
             </tr>
           }
         </tbody>
       </table>
-    </div>
-  </app-data-state>
+     </div>
+     @if (metadata(); as pageInfo) {
+       <div class="flex items-center justify-between px-2 py-3 text-sm text-on-surface-variant">
+         <span>{{ pageInfo.totalElements }} productos</span>
+         <div class="flex gap-2">
+           <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="anterior()">Anterior</button>
+           <span class="px-2 py-1.5">Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span>
+           <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="siguiente()">Siguiente</button>
+         </div>
+       </div>
+     }
+   </app-data-state>
 </div>

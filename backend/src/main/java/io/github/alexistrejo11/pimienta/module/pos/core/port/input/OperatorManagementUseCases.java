@@ -19,4 +19,6 @@ public interface OperatorManagementUseCases {
   PosOperator assignHeadquarter(long operatorId, long headquarterId);
 
   PosOperator unassignHeadquarter(long operatorId, long headquarterId);
+
+  PosOperator softDelete(long operatorId);
 }

@@ -16,6 +16,7 @@ import type {
   PosSaleCategoryResponse,
 } from '../../../../core/model/pos/pos.dto';
 import type { StockPolicy } from '../../../../core/model/pos/pos.enums';
+import type { PageMetadata } from '../../../../core/model/common/pagination';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
@@ -40,6 +41,8 @@ export class SedePosPageComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly catalog = signal<HeadquarterPosCatalogItemResponse[]>([]);
+  readonly catalogMetadata = signal<PageMetadata | null>(null);
+  readonly catalogPage = signal(0);
   readonly masterItems = signal<ItemResponse[]>([]);
   readonly posCandidates = signal<ItemResponse[]>([]);
   readonly saleCategories = signal<PosSaleCategoryResponse[]>([]);
@@ -73,6 +76,7 @@ export class SedePosPageComponent implements OnInit {
 
   onHeadquarterChange(value: number | number[] | null): void {
     if (!this.globalMode() || typeof value !== 'number' || value === this.headquarterId()) return;
+    this.catalogPage.set(0);
     this.headquarterId.set(value);
     this.cargar(value);
   }
@@ -87,10 +91,10 @@ export class SedePosPageComponent implements OnInit {
     });
 
     this.posCatalog
-      .listCatalog(id, 0, 100)
+      .listCatalog(id, this.catalogPage(), 20)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (page) => this.catalog.set(page.items),
+        next: (page) => { this.catalog.set(page.items); this.catalogMetadata.set(page.metadata); },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
 
@@ -99,7 +103,7 @@ export class SedePosPageComponent implements OnInit {
       error: () => {},
     });
 
-    this.inventory.searchItems({ page: 0, size: 100 }).subscribe({
+    this.inventory.searchItems({ page: 0, size: 20 }).subscribe({
       next: (page) => this.masterItems.set(page.items),
       error: () => {},
     });
@@ -107,6 +111,28 @@ export class SedePosPageComponent implements OnInit {
     this.posCatalog.listCandidates(id).subscribe({
       next: (items) => this.posCandidates.set(items),
       error: () => {},
+    });
+  }
+
+  previousCatalogPage(): void {
+    if (this.catalogMetadata()?.hasPrevious) {
+      this.catalogPage.update((page) => page - 1);
+      this.cargar(this.headquarterId());
+    }
+  }
+
+  nextCatalogPage(): void {
+    if (this.catalogMetadata()?.hasNext) {
+      this.catalogPage.update((page) => page + 1);
+      this.cargar(this.headquarterId());
+    }
+  }
+
+  removeCatalogItem(row: HeadquarterPosCatalogItemResponse): void {
+    if (!confirm(`¿Retirar ${this.itemName(row.itemId)} del catálogo POS?`)) return;
+    this.posCatalog.deleteCatalogItem(this.headquarterId(), row.itemId).subscribe({
+      next: () => this.cargar(this.headquarterId()),
+      error: (err: unknown) => this.error.set(parseApiError(err)),
     });
   }
 

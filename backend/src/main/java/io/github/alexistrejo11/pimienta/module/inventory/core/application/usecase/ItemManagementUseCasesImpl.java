@@ -30,13 +30,12 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     ItemSearchCriteria effective = criteria != null ? criteria : ItemSearchCriteria.empty();
 
     log.debug(
-        "search items query start page={} size={} category={} status={} nameLen={} skuLen={}",
+        "search items query start page={} size={} category={} status={} searchLen={}",
         pageable != null ? pageable.getPageNumber() : null,
         pageable != null ? pageable.getPageSize() : null,
         effective.category(),
         effective.status(),
-        effective.name() != null ? effective.name().length() : 0,
-        effective.sku() != null ? effective.sku().length() : 0);
+        effective.search() != null ? effective.search().length() : 0);
 
     Page<Item> page = itemRepository.search(effective, pageable);
 

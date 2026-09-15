@@ -22,6 +22,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLine
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosRole;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceNotFoundException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceRevokedException;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosShiftMaterializationException;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncEventsUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosDeviceRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSaleRepository;
@@ -170,7 +171,19 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
             .register();
     PosSyncEvent saved = syncEventRepository.save(event);
     if (SHIFT_EVENTS.contains(item.eventType())) {
-      shiftRepository.materialize(saved);
+      try {
+        shiftRepository.materialize(saved);
+      } catch (PosShiftMaterializationException ex) {
+        saved.markRejected(ex.getMessage());
+        PosSyncEvent rejected = syncEventRepository.save(saved);
+        bumpDeviceSequence(device, item.deviceSequence());
+        return new EventIngestResult(
+            rejected.getId(),
+            PosEventResultStatus.REJECTED,
+            rejected.getServerReceivedAt(),
+            null,
+            ex.getMessage());
+      }
     }
     eventStockProjector.project(
         device.getHeadquarterId(),

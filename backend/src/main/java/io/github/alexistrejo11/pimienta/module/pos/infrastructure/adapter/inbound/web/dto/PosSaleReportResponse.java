@@ -19,6 +19,7 @@ public record PosSaleReportResponse(
     long discountCentavos,
     long totalCentavos,
     String status,
+    String syncStatus,
     Instant occurredAt,
     boolean containsOpenProduct,
     List<PosSaleLineReportResponse> lines) {

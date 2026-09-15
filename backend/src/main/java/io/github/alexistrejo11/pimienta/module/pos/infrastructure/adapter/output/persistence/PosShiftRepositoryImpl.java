@@ -35,7 +35,16 @@ public class PosShiftRepositoryImpl implements PosShiftRepository {
       default -> throw invalid("Tipo de evento de turno no soportado", "Unsupported POS materialization event: "+event.getEventType(), null);
     }
   }
-  @Override public Page<PosShift> findByHeadquarterIds(List<Long> hqs,Pageable page){return (hqs==null?shifts.findAllByOrderByOpenedAtDesc(page):shifts.findByHeadquarterIdInOrderByOpenedAtDesc(hqs,page)).map(PosShiftRepositoryImpl::shift);}
+  @Override public Page<PosShift> findByHeadquarterIds(List<Long> hqs, Instant closedFrom, Instant closedTo, String status, Pageable page){
+    boolean filtered = closedFrom != null || closedTo != null || status != null;
+    if (!filtered) {
+      return (hqs == null ? shifts.findAllByOrderByOpenedAtDesc(page) : shifts.findByHeadquarterIdInOrderByOpenedAtDesc(hqs, page)).map(PosShiftRepositoryImpl::shift);
+    }
+    if (hqs == null) {
+      return shifts.findAllFiltered(closedFrom, closedTo, status, page).map(PosShiftRepositoryImpl::shift);
+    }
+    return shifts.findFilteredByHeadquarterIds(hqs, closedFrom, closedTo, status, page).map(PosShiftRepositoryImpl::shift);
+  }
   @Override public Optional<PosShift> findById(UUID id,long hq){return shifts.findByShiftIdAndHeadquarterId(id,hq).map(PosShiftRepositoryImpl::shift);}
   @Override public List<PosCashMovement> movements(UUID id){return movements.findByShiftIdOrderByOccurredAtAsc(id).stream().map(x->new PosCashMovement(x.getMovementId(),x.getShiftId(),x.getMovementType(),x.getAmountCentavos(),x.getFolio(),x.getReason(),x.getOccurredAt())).toList();}
   @Override public List<PosCashCount> counts(UUID id){return counts.findByShiftIdOrderBySubmittedAtAsc(id).stream().map(x->new PosCashCount(x.getCountId(),x.getShiftId(),x.getTotalCentavos(),x.getDenominations(),x.getSubmittedAt())).toList();}

@@ -17,13 +17,9 @@ public final class ItemSpecifications {
       List<Predicate> parts = new ArrayList<>();
       parts.add(cb.isNull(root.get("deletedAt")));
       if (criteria != null) {
-        if (criteria.name() != null && !criteria.name().isBlank()) {
-          parts.add(
-              cb.like(cb.lower(root.get("name")), "%" + criteria.name().trim().toLowerCase() + "%"));
-        }
-        if (criteria.sku() != null && !criteria.sku().isBlank()) {
-          parts.add(
-              cb.like(cb.lower(root.get("sku")), "%" + criteria.sku().trim().toLowerCase() + "%"));
+        if (criteria.search() != null && !criteria.search().isBlank()) {
+          String term = "%" + criteria.search().trim().toLowerCase() + "%";
+          parts.add(cb.or(cb.like(cb.lower(root.get("name")), term), cb.like(cb.lower(root.get("sku")), term), cb.like(cb.lower(root.get("barcode")), term), cb.like(cb.lower(root.get("category")), term)));
         }
         if (criteria.category() != null) {
           parts.add(cb.equal(root.get("category"), criteria.category()));
@@ -31,6 +27,9 @@ public final class ItemSpecifications {
         if (criteria.status() != null) {
           parts.add(cb.equal(root.get("status"), criteria.status()));
         }
+        if (criteria.catalogRole() != null) parts.add(cb.equal(root.get("catalogRole"), criteria.catalogRole()));
+        if (criteria.minCost() != null) parts.add(cb.greaterThanOrEqualTo(root.get("costPrice"), criteria.minCost()));
+        if (criteria.maxCost() != null) parts.add(cb.lessThanOrEqualTo(root.get("costPrice"), criteria.maxCost()));
       }
       return cb.and(parts.toArray(Predicate[]::new));
     };

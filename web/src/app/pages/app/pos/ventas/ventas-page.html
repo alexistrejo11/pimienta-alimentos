@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
-  <app-page-header title="Ventas POS" subtitle="Tickets aceptados por sede y periodo" />
+  <app-page-header title="Ventas POS" subtitle="Tickets sincronizados por sede y periodo" />
 
   <div class="flex flex-wrap gap-3">
     <app-headquarter-select
@@ -50,8 +50,10 @@
           <tr>
             <th class="px-4 py-3 text-left">Folio</th>
             <th class="px-4 py-3 text-left">Fecha</th>
+            <th class="px-4 py-3 text-left">Cajero</th>
             <th class="px-4 py-3 text-left">Total</th>
-            <th class="px-4 py-3 text-left">Estado</th>
+            <th class="px-4 py-3 text-left">Ticket</th>
+            <th class="px-4 py-3 text-left">Sincronización</th>
             <th class="px-4 py-3 text-left">Auditoría</th>
           </tr>
         </thead>
@@ -62,8 +64,16 @@
                 @if (expandedSaleId() === s.saleId) { <div class="mt-2 space-y-1 font-sans text-xs text-on-surface-variant">@for (line of s.lines ?? []; track line.lineId) { <div><span class="font-medium text-on-surface">{{ line.productName }}</span> · {{ line.saleCategory ?? 'Sin categoría' }} · {{ formatCentavos(line.subtotalCentavos) }} @if (line.lineType === 'OPEN_AMOUNT') { <span class="ui-badge-warning">Abierto</span> }</div> }</div> }
               </td>
               <td class="px-4 py-3">{{ s.occurredAt | date: 'short' }}</td>
+              <td class="px-4 py-3">{{ operatorLabel(s.cashierOperatorId) }}</td>
               <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.totalCentavos) }}</td>
-              <td class="px-4 py-3">{{ s.status }}</td>
+              <td class="px-4 py-3">{{ ticketStatusLabel(s.status) }}</td>
+              <td class="px-4 py-3">
+                @if (s.syncStatus === 'REQUIRES_REVIEW') {
+                  <a class="ui-badge-warning underline" routerLink="/app/pos/incidencias">{{ syncStatusLabel(s.syncStatus) }}</a>
+                } @else {
+                  {{ syncStatusLabel(s.syncStatus) }}
+                }
+              </td>
               <td class="px-4 py-3">@if (s.containsOpenProduct) { <span class="ui-badge-warning">Producto abierto</span> } @else { <span class="text-on-surface-variant">Catálogo</span> }</td>
             </tr>
           }
@@ -71,4 +81,5 @@
       </table>
     </div>
   </app-data-state>
+  @if (metadata(); as pageInfo) { <div class="flex items-center justify-between px-2 py-3 text-sm text-on-surface-variant"><span>{{ pageInfo.totalElements }} ventas</span><div class="flex gap-2"><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="anterior()">Anterior</button><span class="px-2 py-1.5">Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="siguiente()">Siguiente</button></div></div> }
 </div>

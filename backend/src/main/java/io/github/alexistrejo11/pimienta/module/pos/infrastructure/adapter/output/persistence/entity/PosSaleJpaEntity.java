@@ -65,15 +65,13 @@ public class PosSaleJpaEntity implements Persistable<UUID> {
 
   @OneToMany(
       mappedBy = "sale",
-      cascade = CascadeType.ALL,
-      orphanRemoval = true,
+       cascade = {CascadeType.PERSIST, CascadeType.MERGE},
       fetch = FetchType.LAZY)
   private List<PosSaleLineJpaEntity> lines = new ArrayList<>();
 
   @OneToMany(
       mappedBy = "sale",
-      cascade = CascadeType.ALL,
-      orphanRemoval = true,
+       cascade = {CascadeType.PERSIST, CascadeType.MERGE},
       fetch = FetchType.LAZY)
   private List<PosSalePaymentJpaEntity> payments = new ArrayList<>();
 

@@ -8,6 +8,7 @@ import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import { posRoleLabel } from '../../../../core/i18n/enum-labels';
 import type { PosOperatorResponse } from '../../../../core/model/pos/pos.dto';
+import type { PageMetadata } from '../../../../core/model/common/pagination';
 import type { PosRole } from '../../../../core/model/pos/pos.enums';
 import { ApiFormErrorComponent } from '../../../../shared/ui/api-form-error/api-form-error';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
@@ -41,8 +42,12 @@ export class OperadoresPageComponent implements OnInit {
   readonly loadError = signal<ParsedApiError | null>(null);
   readonly submitError = signal<ParsedApiError | null>(null);
   readonly operators = signal<PosOperatorResponse[]>([]);
+  readonly metadata = signal<PageMetadata | null>(null);
+  readonly page = signal(0);
   readonly creating = signal(false);
   readonly showForm = signal(false);
+  readonly editing = signal<PosOperatorResponse | null>(null);
+  readonly saving = signal(false);
 
   readonly posRoles = POS_ROLES;
   readonly posRoleLabel = posRoleLabel;
@@ -63,20 +68,27 @@ export class OperadoresPageComponent implements OnInit {
     this.cargar();
   }
 
-  cargar(): void {
+  cargar(page = this.page()): void {
+    this.page.set(page);
     this.loadError.set(null);
     this.loading.set(true);
     this.posAdmin
-      .listOperators({ page: 0, size: 50 })
+       .listOperators({ page, size: 20 })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (page) => this.operators.set(page.items),
+        next: (result) => { this.operators.set(result.items); this.metadata.set(result.metadata); },
         error: (err: unknown) => this.loadError.set(parseApiError(err)),
       });
   }
 
+  siguiente(): void { if (this.metadata()?.hasNext) this.cargar(this.page() + 1); }
+  anterior(): void { if (this.metadata()?.hasPrevious) this.cargar(this.page() - 1); }
+
   toggleForm(): void {
     this.showForm.update((v) => !v);
+    this.editing.set(null);
+    this.form.controls.pin.setValidators([Validators.required, Validators.minLength(4)]);
+    this.form.controls.pin.updateValueAndValidity();
     if (!this.showForm()) {
       this.submitError.set(null);
     }
@@ -96,15 +108,23 @@ export class OperadoresPageComponent implements OnInit {
 
     const v = this.form.getRawValue();
     this.submitError.set(null);
-    this.creating.set(true);
-    this.posAdmin
-      .createOperator({
-        displayName: v.displayName,
-        posRole: v.posRole,
-        pin: v.pin,
-        headquarterIds: v.headquarterIds,
-      })
-      .pipe(finalize(() => this.creating.set(false)))
+    this.saving.set(true);
+    const editing = this.editing();
+    const request = editing
+      ? this.posAdmin.updateOperator(editing.id, {
+          displayName: v.displayName,
+          posRole: v.posRole,
+          pin: v.pin || undefined,
+          active: editing.active,
+        })
+      : this.posAdmin.createOperator({
+          displayName: v.displayName,
+          posRole: v.posRole,
+          pin: v.pin,
+          headquarterIds: v.headquarterIds,
+        });
+    request
+      .pipe(finalize(() => { this.creating.set(false); this.saving.set(false); }))
       .subscribe({
         next: () => {
           this.form.reset({
@@ -114,9 +134,43 @@ export class OperadoresPageComponent implements OnInit {
             headquarterIds: this.isAdmin() ? [] : v.headquarterIds,
           });
           this.showForm.set(false);
+          this.editing.set(null);
           this.cargar();
         },
-        error: (err: unknown) => this.submitError.set(parseApiError(err)),
+        error: (err: unknown) => {
+          this.submitError.set(parseApiError(err));
+        },
       });
+  }
+
+  editar(operator: PosOperatorResponse): void {
+    this.editing.set(operator);
+    this.showForm.set(true);
+    this.submitError.set(null);
+    this.form.reset({
+      displayName: operator.displayName,
+      posRole: operator.posRole,
+      pin: '',
+      headquarterIds: operator.headquarterIds,
+    });
+    this.form.controls.pin.clearValidators();
+    this.form.controls.pin.addValidators(Validators.minLength(4));
+    this.form.controls.pin.updateValueAndValidity();
+  }
+
+  desactivar(operator: PosOperatorResponse): void {
+    if (operator.active && !confirm(`¿Desactivar a ${operator.displayName}?`)) return;
+    this.posAdmin.updateOperator(operator.id, { active: !operator.active }).subscribe({
+      next: () => this.cargar(),
+      error: (err: unknown) => this.loadError.set(parseApiError(err)),
+    });
+  }
+
+  eliminar(operator: PosOperatorResponse): void {
+    if (!confirm(`¿Retirar a ${operator.displayName} de los operadores POS?`)) return;
+    this.posAdmin.deleteOperator(operator.id).subscribe({
+      next: () => this.cargar(),
+      error: (err: unknown) => this.loadError.set(parseApiError(err)),
+    });
   }
 }

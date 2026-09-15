@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncTombstone;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncTombstoneRepository;
 
 @Service
 public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogUseCases {
@@ -24,14 +26,17 @@ public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogU
   private final HeadquarterRepository headquarterRepository;
   private final HeadquarterItemRepository headquarterItemRepository;
   private final ItemRepository itemRepository;
+  private final PosSyncTombstoneRepository tombstoneRepository;
 
   public HeadquarterPosCatalogUseCasesImpl(
       HeadquarterRepository headquarterRepository,
       HeadquarterItemRepository headquarterItemRepository,
-      ItemRepository itemRepository) {
+      ItemRepository itemRepository,
+      PosSyncTombstoneRepository tombstoneRepository) {
     this.headquarterRepository = headquarterRepository;
     this.headquarterItemRepository = headquarterItemRepository;
     this.itemRepository = itemRepository;
+    this.tombstoneRepository = tombstoneRepository;
   }
 
   @Override
@@ -98,6 +103,17 @@ public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogU
   public List<Item> candidates(long headquarterId) {
     assertHeadquarterExists(headquarterId);
     return itemRepository.findPosCandidates(headquarterId);
+  }
+
+  @Override
+  @Transactional
+  public HeadquarterItem softDelete(long headquarterId, long itemId) {
+    assertHeadquarterExists(headquarterId);
+    HeadquarterItem item = get(headquarterId, itemId);
+    item.softDelete();
+    HeadquarterItem saved = headquarterItemRepository.save(item);
+    tombstoneRepository.save(PosSyncTombstone.product(headquarterId, itemId));
+    return saved;
   }
 
   private void assertHeadquarterExists(long headquarterId) {
