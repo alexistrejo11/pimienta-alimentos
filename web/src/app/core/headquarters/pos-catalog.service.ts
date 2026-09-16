@@ -71,6 +71,22 @@ export class PosCatalogService {
     return this.http.post<PosSaleCategoryResponse>(`${this.hqBase}/${headquarterId}/pos-categories`, { name, displayOrder });
   }
 
+  updateCategory(
+    headquarterId: number,
+    categoryId: number,
+    name: string,
+    displayOrder: number,
+  ): Observable<PosSaleCategoryResponse> {
+    return this.http.put<PosSaleCategoryResponse>(
+      `${this.hqBase}/${headquarterId}/pos-categories/${categoryId}`,
+      { name, displayOrder },
+    );
+  }
+
+  archiveCategory(headquarterId: number, categoryId: number): Observable<void> {
+    return this.http.delete<void>(`${this.hqBase}/${headquarterId}/pos-categories/${categoryId}`);
+  }
+
   createPosProduct(headquarterId: number, body: CreatePosProductRequest): Observable<CreatedPosProductResponse> {
     return this.http.post<CreatedPosProductResponse>(`${this.hqBase}/${headquarterId}/pos-products`, body);
   }

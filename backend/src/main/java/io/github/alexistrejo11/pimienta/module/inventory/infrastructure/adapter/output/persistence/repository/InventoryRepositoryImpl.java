@@ -7,6 +7,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.Storag
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.specification.InventorySpecifications;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.InventoryJpaEntity;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.mapper.InventoryPersistenceMapper;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosChangeLogService;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,14 +22,17 @@ public class InventoryRepositoryImpl implements InventoryRepository {
   private final InventoryJpaRepository jpaRepository;
   private final InventoryPersistenceMapper mapper;
   private final StorageLocationRepository storageLocationRepository;
+  private final PosChangeLogService posChangeLogService;
 
   public InventoryRepositoryImpl(
       InventoryJpaRepository jpaRepository,
       InventoryPersistenceMapper mapper,
-      StorageLocationRepository storageLocationRepository) {
+      StorageLocationRepository storageLocationRepository,
+      PosChangeLogService posChangeLogService) {
     this.jpaRepository = jpaRepository;
     this.mapper = mapper;
     this.storageLocationRepository = storageLocationRepository;
+    this.posChangeLogService = posChangeLogService;
   }
 
   @Override
@@ -85,6 +89,8 @@ public class InventoryRepositoryImpl implements InventoryRepository {
     if (inventory.getLocation() != null) {
       storageLocationRepository.save(inventory.getLocation());
     }
-    return mapper.toDomain(saved);
+    Inventory result = mapper.toDomain(saved);
+    posChangeLogService.appendInventoryStock(result);
+    return result;
   }
 }

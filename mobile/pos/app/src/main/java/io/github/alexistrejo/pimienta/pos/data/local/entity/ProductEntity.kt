@@ -21,5 +21,6 @@ data class ProductEntity(
     val stockMin: String,
     val stockPolicy: String,
     val negativeStockLimit: Int?,
-    val legacyUpdatedAt: Long?
+    val legacyUpdatedAt: Long?,
+    val centralStock: String = stock,
 )

@@ -15,6 +15,8 @@ import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosChangeLogJpaEntity;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosChangeLogSpringDataRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
@@ -40,6 +42,7 @@ class PosSyncChangesIntegrationTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private UserJpaRepository userJpaRepository;
   @Autowired private HeadquarterItemRepository headquarterItemRepository;
+  @Autowired private PosChangeLogSpringDataRepository posChangeLogRepository;
 
   @Test
   void changes_afterBootstrap_emptyThenUpsertOnCatalogMutation() throws Exception {
@@ -57,7 +60,7 @@ class PosSyncChangesIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.schemaVersion").value(1))
         .andExpect(jsonPath("$.operations", hasSize(0)))
-        .andExpect(jsonPath("$.nextCursor").value(matchesPattern("cursor-hq-" + hqId + "-v\\d+")));
+        .andExpect(jsonPath("$.nextCursor").value(matchesPattern("cursor-hq-" + hqId + "-s\\d+")));
 
     Thread.sleep(15);
     putCatalog(staffToken, hqId, itemId, "Bebidas", "28.00");
@@ -69,7 +72,7 @@ class PosSyncChangesIntegrationTest {
         .andExpect(jsonPath("$.operations[?(@.entity=='product')].id").value(String.valueOf(itemId)))
         .andExpect(
             jsonPath("$.operations[?(@.entity=='product')].data.priceCentavos").value(2800))
-        .andExpect(jsonPath("$.nextCursor").value(matchesPattern("cursor-hq-" + hqId + "-v\\d+")));
+        .andExpect(jsonPath("$.nextCursor").value(matchesPattern("cursor-hq-" + hqId + "-s\\d+")));
   }
 
   @Test
@@ -163,7 +166,7 @@ class PosSyncChangesIntegrationTest {
         .andExpect(jsonPath("$.errorCode").value("POS_SYNC_CURSOR_INVALID"));
 
     mockMvc
-        .perform(AccountTestRequests.getBearer(changesUrl("cursor-hq-" + hqB + "-v1"), access))
+        .perform(AccountTestRequests.getBearer(changesUrl("cursor-hq-" + hqB + "-s1"), access))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.errorCode").value("POS_SYNC_CURSOR_INVALID"));
   }
@@ -196,6 +199,32 @@ class PosSyncChangesIntegrationTest {
         .perform(AccountTestRequests.getBearer(changesUrl(cursor), access))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.errorCode").value("POS_DEVICE_REVOKED"));
+  }
+
+  @Test
+  void changes_cursorOlderThanRetainedHistory_returns409() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-B5-RET-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long itemId = createItem(staffToken, "SKU-B5-RET-" + UUID.randomUUID(), "Retention item");
+    putCatalog(staffToken, hqId, itemId, "Otros", "10.00");
+    putCatalog(staffToken, hqId, itemId, "Otros", "11.00");
+    String access = enrollDevice(staffToken, hqId, "Caja Ret");
+
+    PosChangeLogJpaEntity firstRetained =
+        posChangeLogRepository
+            .findFirstByHeadquarterIdOrderBySequenceAsc(hqId)
+            .orElseThrow(() -> new AssertionError("change log is empty"));
+    long oldCursorSequence = Math.max(0L, firstRetained.getSequence() - 2L);
+    posChangeLogRepository.deleteById(firstRetained.getSequence());
+    posChangeLogRepository.flush();
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                changesUrl("cursor-hq-" + hqId + "-s" + oldCursorSequence), access))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.errorCode").value("POS_SYNC_CURSOR_INVALID"));
   }
 
   private static String changesUrl(String cursor) {

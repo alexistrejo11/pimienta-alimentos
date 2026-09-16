@@ -66,7 +66,8 @@ class HeadquarterPosCatalogIntegrationTest {
           "currency": "MXN",
           "catalogStaleWarnHours": 24,
           "catalogStaleBlockHours": 72,
-          "openAmountCategories": ["MISC"],
+          "openAmountCategories": [" MISC ", "misc", "SERVICE", ""],
+          "allowOpenProducts": true,
           "defaultNegativeStockLimit": 10
         }
         """;
@@ -79,13 +80,36 @@ class HeadquarterPosCatalogIntegrationTest {
         .andExpect(jsonPath("$.headquarterId").value(hqId))
         .andExpect(jsonPath("$.currency").value("MXN"))
         .andExpect(jsonPath("$.catalogStaleWarnHours").value(24))
+        .andExpect(jsonPath("$.openAmountCategories", hasSize(2)))
         .andExpect(jsonPath("$.openAmountCategories[0]").value("MISC"))
+        .andExpect(jsonPath("$.openAmountCategories[1]").value("SERVICE"))
+        .andExpect(jsonPath("$.allowOpenProducts").value(true))
         .andExpect(jsonPath("$.defaultNegativeStockLimit").value(10));
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hqId + "/pos-settings", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.currency").value("MXN"));
+        .andExpect(jsonPath("$.currency").value("MXN"))
+        .andExpect(jsonPath("$.allowOpenProducts").value(true));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"allowOpenProducts\":false}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.allowOpenProducts").value(false))
+        .andExpect(jsonPath("$.openAmountCategories", hasSize(2)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"allowOpenProducts\":true,\"openAmountCategories\":[]}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"));
 
     String expectedCode = "POS-" + hqId;
     MvcResult locations =

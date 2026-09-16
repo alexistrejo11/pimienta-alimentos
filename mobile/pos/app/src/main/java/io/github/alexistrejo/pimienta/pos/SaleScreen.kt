@@ -25,6 +25,8 @@ internal fun Sale(
     cashier: String,
     users: List<LocalUserEntity>,
     products: List<ProductEntity>,
+    policy: PosPolicyEntity? = null,
+    syncState: SyncStateEntity? = null,
     dark: Boolean,
     onTheme: (Boolean) -> Unit,
     onShiftClosed: () -> Unit,
@@ -48,13 +50,22 @@ internal fun Sale(
     var discountRequested by remember { mutableStateOf(false) }
     var withdrawalRequested by remember { mutableStateOf(false) }
     var pendingCatalogBarcode by remember { mutableStateOf<String?>(null) }
+    var openAmountRequested by remember { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     val mode = repository.mode()
     val (printerLabel, printerAlert) = rememberLivePrinterStatus(context, mode)
+    val openAmountAllowed = policy?.allowOpenProducts ?: repository.allowOpenProducts()
+    val openAmountCategories = remember(policy) {
+        policy?.let {
+            runCatching {
+                kotlinx.serialization.json.Json.decodeFromString<List<String>>(it.openAmountCategoriesJson)
+            }.getOrDefault(emptyList())
+        } ?: repository.openAmountCategories()
+    }
 
-    LaunchedEffect(Unit) {
-        pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
+    LaunchedEffect(repository) {
+        repository.observePendingEvents().collect { pending = it }
     }
 
     val categories = listOf("Todos") + products.map { it.saleCategory }.distinct()
@@ -115,6 +126,37 @@ internal fun Sale(
             checkout = false
             portraitPanel = PortraitPanel.CART
             scope.launch { feedbackHost.showSnackbar("Se agregó producto pendiente. Total actualizado.") }
+        }
+    }
+
+    // Verifies the manager PIN before adding the auditable open amount line.
+    fun addOpenAmountLine(category: String, centavos: Long, authorizer: LocalUserEntity, pin: String) {
+        if (busy || !openAmountAllowed) return
+        scope.launch {
+            val approved = withContext(Dispatchers.IO) {
+                authorizer.active &&
+                    (authorizer.role == "MANAGER" || authorizer.role == "SUPERADMIN") &&
+                    authorizer.id.toLongOrNull() != null &&
+                    repository.authenticate(authorizer.id, pin)
+            }
+            if (!approved) {
+                feedbackHost.showSnackbar("PIN inválido o autorizador inactivo.")
+                return@launch
+            }
+            cart = cart + CartLine(
+                null,
+                "Producto abierto · ${category.trim()}",
+                category.trim(),
+                centavos,
+                "NOT_CONTROLLED",
+                1,
+                SaleLineType.OPEN_AMOUNT,
+                null,
+                authorizer.id.toLong(),
+                System.currentTimeMillis(),
+            )
+            openAmountRequested = false
+            discount = null
         }
     }
 
@@ -186,6 +228,7 @@ internal fun Sale(
             StatusBar(
                 cashier = cashier,
                 pending = pending,
+                syncLabel = inventorySyncLabel(syncState, pending),
                 dark = dark,
                 onTheme = onTheme,
                 landscape = landscape,
@@ -227,17 +270,35 @@ internal fun Sale(
             pendingCatalogBarcode?.let { barcode ->
                 PendingCatalogDialog(
                     barcode = barcode,
+                    openAmountAvailable = openAmountAllowed,
                     onDismiss = { pendingCatalogBarcode = null },
                     onConfirm = { addPendingCatalogLine(barcode, it) },
+                    onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
+                )
+            }
+            if (openAmountRequested) {
+                OpenAmountDialog(
+                    categories = openAmountCategories,
+                    users = users,
+                    verifyPin = { user, pin ->
+                        withContext(Dispatchers.IO) {
+                            user.active &&
+                                (user.role == "MANAGER" || user.role == "SUPERADMIN") &&
+                                user.id.toLongOrNull() != null &&
+                                repository.authenticate(user.id, pin)
+                        }
+                    },
+                    onDismiss = { openAmountRequested = false },
+                    onConfirm = ::addOpenAmountLine,
                 )
             }
 
             if (landscape) {
                 Row(Modifier.weight(1f).fillMaxWidth()) {
-                    CatalogPanel(
-                        Modifier.weight(0.6f).fillMaxHeight(), categories, category, { category = it }, search,
-                        { search = it }, filtered, ::add,
-                    )
+                        CatalogPanel(
+                            Modifier.weight(0.6f).fillMaxHeight(), categories, category, { category = it }, search,
+                            { search = it }, filtered, ::add, openAmountAllowed, { openAmountRequested = true },
+                        )
                     if (checkout) {
                         Checkout(
                             modifier = Modifier.weight(0.4f).fillMaxHeight().padding(12.dp),
@@ -273,7 +334,7 @@ internal fun Sale(
                 if (portraitPanel == PortraitPanel.CATALOG) {
                     CatalogPanel(
                         Modifier.weight(1f).fillMaxWidth(), categories, category, { category = it }, search,
-                        { search = it }, filtered, ::add,
+                        { search = it }, filtered, ::add, openAmountAllowed, { openAmountRequested = true },
                     )
                 } else {
                     CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; discount = null }, { discountRequested = true }) { checkout = true }
@@ -296,5 +357,20 @@ internal fun Sale(
             hostState = feedbackHost,
             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
         )
+    }
+}
+
+// Describes stock freshness without claiming that an offline tablet has global real-time stock.
+internal fun inventorySyncLabel(state: SyncStateEntity?, pending: Int, now: Long = System.currentTimeMillis()): String {
+    val pendingText = if (pending == 1) "1 cambio local pendiente" else "$pending cambios locales pendientes"
+    if (state == null) return "Inventario local · $pendingText"
+    if (state.status != "ONLINE" || state.lastSuccessfulAtEpochMillis == null) {
+        return "Inventario puede estar desactualizado · $pendingText"
+    }
+    val minutes = ((now - state.lastSuccessfulAtEpochMillis).coerceAtLeast(0) / 60_000)
+    return if (pending > 0) {
+        "Base sincronizada hace ${minutes} min · $pendingText"
+    } else {
+        "Inventario sincronizado hace ${minutes} min"
     }
 }

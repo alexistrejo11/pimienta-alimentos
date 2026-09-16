@@ -13,12 +13,14 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDevi
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosDeviceRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosOperatorRepository;
-import java.time.Instant;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 @Service
 public class PosSyncBootstrapUseCasesImpl implements PosSyncBootstrapUseCases {
@@ -32,6 +34,7 @@ public class PosSyncBootstrapUseCasesImpl implements PosSyncBootstrapUseCases {
   private final PosOperatorRepository operatorRepository;
   private final HeadquarterItemRepository headquarterItemRepository;
   private final PosSyncCatalogProjector projector;
+  private final PosChangeLogRepository changeLogRepository;
 
   public PosSyncBootstrapUseCasesImpl(
       PosDeviceRepository deviceRepository,
@@ -39,17 +42,19 @@ public class PosSyncBootstrapUseCasesImpl implements PosSyncBootstrapUseCases {
       PosOperationalConfigRepository posOperationalConfigRepository,
       PosOperatorRepository operatorRepository,
       HeadquarterItemRepository headquarterItemRepository,
-      PosSyncCatalogProjector projector) {
+      PosSyncCatalogProjector projector,
+      PosChangeLogRepository changeLogRepository) {
     this.deviceRepository = deviceRepository;
     this.headquarterRepository = headquarterRepository;
     this.posOperationalConfigRepository = posOperationalConfigRepository;
     this.operatorRepository = operatorRepository;
     this.headquarterItemRepository = headquarterItemRepository;
     this.projector = projector;
+    this.changeLogRepository = changeLogRepository;
   }
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public BootstrapSnapshot bootstrap(UUID deviceId) {
     PosDevice device =
         deviceRepository.findById(deviceId).orElseThrow(() -> new PosDeviceNotFoundException(deviceId));
@@ -58,6 +63,8 @@ public class PosSyncBootstrapUseCasesImpl implements PosSyncBootstrapUseCases {
     }
 
     long hqId = device.getHeadquarterId();
+    long watermark =
+        changeLogRepository.findLastByHeadquarterId(hqId).map(e -> e.sequence()).orElse(0L);
     Headquarter hq =
         headquarterRepository
             .findById(hqId)
@@ -83,7 +90,6 @@ public class PosSyncBootstrapUseCasesImpl implements PosSyncBootstrapUseCases {
       projector.toProductRow(row).ifPresent(products::add);
     }
 
-    long watermark = Instant.now().toEpochMilli();
     return new BootstrapSnapshot(
         SCHEMA_VERSION,
         KIND,

@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
@@ -156,6 +157,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     val mode = repository.mode()
     var users by remember { mutableStateOf<List<LocalUserEntity>>(emptyList()) }
     var products by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
+    var policy by remember { mutableStateOf<PosPolicyEntity?>(null) }
     var shift by remember { mutableStateOf<ShiftEntity?>(null) }
     var managerReadOnly by remember { mutableStateOf<LocalUserEntity?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -259,6 +261,13 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
 
     LaunchedEffect(Unit) { reload() }
 
+    // Room flows keep catalog and policy state live after every committed sync transaction.
+    LaunchedEffect(repository) {
+        launch { repository.observeProducts().collect { products = it } }
+        launch { repository.observePolicy().collect { policy = it } }
+        launch { repository.observeSyncState().collect { syncState = it } }
+    }
+
     // When production is enrolled but catalog/operators are empty, pull bootstrap once.
     LaunchedEffect(initialized, mode, syncState?.baseUrl, syncState?.status) {
         if (!initialized) return@LaunchedEffect
@@ -292,6 +301,10 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 requiresPinForSwitch = requiresPinForSwitch,
                 onSwitchRequested = ::switchMode,
                 onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
+                onForceSync = {
+                    SyncWorker.enqueue(context)
+                    notice = "Sincronización solicitada."
+                },
             )
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -383,6 +396,8 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                         cashier = users.firstOrNull { it.id == shift!!.cashierId }?.displayName ?: "Cajero",
                         users = users,
                         products = products,
+                        policy = policy,
+                        syncState = syncState,
                         dark = dark,
                         onTheme = onTheme,
                         onShiftClosed = { shift = null },

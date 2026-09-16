@@ -10,6 +10,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SiteEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.CatalogCategoryEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 import java.math.BigDecimal
 import java.util.UUID
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -199,26 +201,65 @@ class ProvisioningRepository(private val context: Context, private val provider:
     }
 
     // Applies catalog/operator delta operations atomically and advances the cursor after commit.
-    fun applyChanges(changes: ChangesResponse) {
+    fun applyChanges(changes: ChangesResponse, syncedEvents: List<EventResult> = emptyList()) {
         db.runInTransaction {
+            val siteId = db.siteDao().current()?.id
+                ?: throw IllegalStateException("Cannot apply POS changes without a local site")
             changes.operations.forEach { op ->
                 when (op.entity.lowercase()) {
                     "product" -> when (op.op.lowercase()) {
                         "deactivate" -> db.productDao().deleteById(op.id)
-                        else -> op.data?.let { db.productDao().insertAll(listOf(json.decodeFromJsonElement(ProductDto.serializer(), it).toProduct())) }
+                        "upsert" -> {
+                            val product = op.data?.let { json.decodeFromJsonElement(ProductDto.serializer(), it).toProduct() }
+                                ?: throw IllegalArgumentException("Product upsert has no payload")
+                            db.productDao().insertAll(listOf(product))
+                            db.syncProjectionDao().insertCategories(
+                                listOf(CatalogCategoryEntity(siteId, product.saleCategory)),
+                            )
+                        }
+                        else -> throw IllegalArgumentException("Unsupported product operation: ${op.op}")
                     }
                     "operator", "user" -> when (op.op.lowercase()) {
                         "deactivate" -> db.userDao().deleteById(op.id)
-                        else -> op.data?.let { db.userDao().insertAll(listOf(json.decodeFromJsonElement(OperatorDto.serializer(), it).toUser())) }
+                        "upsert" -> {
+                            val operator = op.data?.let { json.decodeFromJsonElement(OperatorDto.serializer(), it).toUser() }
+                                ?: throw IllegalArgumentException("Operator upsert has no payload")
+                            db.userDao().insertAll(listOf(operator))
+                        }
+                        else -> throw IllegalArgumentException("Unsupported operator operation: ${op.op}")
+                    }
+                    "policies", "policy" -> when (op.op.lowercase()) {
+                        "upsert" -> {
+                            val policy = op.data?.let {
+                                json.decodeFromJsonElement(PoliciesDto.serializer(), it)
+                            } ?: throw IllegalArgumentException("Policy upsert has no payload")
+                            db.syncProjectionDao().insertPolicy(policy.toEntity(siteId))
+                            db.syncProjectionDao().insertCategories(
+                                policy.openAmountCategories.filter(String::isNotBlank).distinct()
+                                    .map { CatalogCategoryEntity(siteId, it) },
+                            )
+                        }
+                        "deactivate" -> {
+                            db.syncProjectionDao().clearPolicy()
+                            db.syncProjectionDao().clearCategories()
+                        }
+                        else -> throw IllegalArgumentException("Unsupported policy operation: ${op.op}")
                     }
                     "site" -> when (op.op.lowercase()) {
                         "deactivate" -> db.siteDao().deleteById(op.id)
-                        else -> op.data?.let { db.siteDao().insert(json.decodeFromJsonElement(SiteDto.serializer(), it).toSite()) }
+                        "upsert" -> {
+                            val site = op.data?.let { json.decodeFromJsonElement(SiteDto.serializer(), it).toSite() }
+                                ?: throw IllegalArgumentException("Site upsert has no payload")
+                            db.siteDao().insert(site)
+                        }
+                        else -> throw IllegalArgumentException("Unsupported site operation: ${op.op}")
                     }
+                    else -> throw IllegalArgumentException("Unsupported POS change entity: ${op.entity}")
                 }
             }
             val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()
             db.syncDao().saveState(current.copy(changesCursor = changes.nextCursor, lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
+            syncedEvents.forEach { db.syncDao().markSynced(it.eventId, it.status, it.incidentId, it.message) }
         }
     }
     private fun ProductDto.toProduct() = ProductEntity(
@@ -242,22 +283,48 @@ class ProvisioningRepository(private val context: Context, private val provider:
     private fun OperatorDto.toUser() = LocalUserEntity(id, displayName, role, pinHash, active)
     private fun SiteDto.toSite() = SiteEntity(id, name, address, currency)
 
+    private fun PoliciesDto.toEntity(siteId: String) = PosPolicyEntity(
+        siteId = siteId,
+        allowNegativeStock = allowNegativeStock,
+        allowOpenProducts = allowOpenProducts,
+        defaultNegativeStockLimit = defaultNegativeStockLimit,
+        staleCatalogWarnHours = staleCatalogWarnHours,
+        staleCatalogBlockHours = staleCatalogBlockHours,
+        openAmountCategoriesJson = json.encodeToString(openAmountCategories.filter(String::isNotBlank).distinct()),
+    )
+
     private fun retrofit(url: String, access: String?): DeviceApi {
         val normalized = if (url.endsWith("/")) url else "$url/"
         val client = okhttp3.OkHttpClient.Builder().apply { if (access != null) addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("Authorization", "Bearer $access").build()) } }.build()
         return retrofit2.Retrofit.Builder().baseUrl(normalized).client(client).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
     }
 
-    fun applyBootstrap(snapshot: BootstrapResponse) {
+    fun applyBootstrap(snapshot: BootstrapResponse, syncedEvents: List<EventResult> = emptyList()) {
         db.runInTransaction {
             db.siteDao().clear()
             db.productDao().clear()
             db.userDao().clear()
+            db.syncProjectionDao().clearCategories()
+            db.syncProjectionDao().clearPolicy()
             db.siteDao().insert(SiteEntity(snapshot.site.id, snapshot.site.name, snapshot.site.address, snapshot.site.currency))
             db.productDao().insertAll(snapshot.products.map { it.toProduct() })
             db.userDao().insertAll(snapshot.operators.map { it.toUser() })
+            val categories = (snapshot.products.map { it.saleCategory } + snapshot.openAmountCategories)
+                .filter(String::isNotBlank)
+                .distinct()
+                .map { CatalogCategoryEntity(snapshot.site.id, it) }
+            db.syncProjectionDao().insertCategories(categories)
+            db.syncProjectionDao().insertPolicy(
+                snapshot.policies.toEntity(snapshot.site.id).copy(
+                    openAmountCategoriesJson = json.encodeToString(
+                        snapshot.openAmountCategories.filter(String::isNotBlank).distinct(),
+                    ),
+                ),
+            )
             db.bootstrapDao().insert(BootstrapEntity(snapshot.snapshotId, snapshot.schemaVersion, System.currentTimeMillis()))
             db.syncDao().saveState((db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()).copy(changesCursor = snapshot.cursors.changes, bootstrapSnapshotId = snapshot.snapshotId, status = "ONLINE"))
+            syncedEvents.forEach { db.syncDao().markSynced(it.eventId, it.status, it.incidentId, it.message) }
         }
     }
+
 }

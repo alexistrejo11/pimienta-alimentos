@@ -12,9 +12,10 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 // Distinguishes catalog lines from unknown-barcode exceptions captured at the register.
-enum class SaleLineType { CATALOG, PENDING_CATALOG }
+enum class SaleLineType { CATALOG, PENDING_CATALOG, OPEN_AMOUNT }
 
 // Represents an editable sale line before it becomes an immutable database snapshot.
 data class CartLine(
@@ -26,12 +27,15 @@ data class CartLine(
     val quantity: Int,
     val lineType: SaleLineType = SaleLineType.CATALOG,
     val sourceBarcode: String? = null,
+    val authorizedByOperatorId: Long? = null,
+    val authorizedAtEpochMillis: Long? = null,
 ) {
     // Stable cart identity for catalog ids or pending barcodes.
     val lineKey: String
         get() = when (lineType) {
             SaleLineType.CATALOG -> productId.orEmpty()
             SaleLineType.PENDING_CATALOG -> "pending:${sourceBarcode.orEmpty()}:${unitPriceCentavos}"
+            SaleLineType.OPEN_AMOUNT -> "open:$category:$unitPriceCentavos"
         }
 }
 
@@ -77,9 +81,20 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun syncState() = database.syncDao().state()
     fun users() = database.userDao().activeUsers()
     fun products() = database.productDao().getAll()
+    fun observeProducts(): Flow<List<ProductEntity>> = database.productDao().observeAll()
+    fun observePolicy(): Flow<PosPolicyEntity?> = database.syncProjectionDao().observePolicy()
+    fun observeSyncState(): Flow<SyncStateEntity?> = database.syncDao().observeState()
+    fun observePendingEvents(): Flow<Int> = database.operationsDao().observePendingEventCount()
     fun findProductByCode(code: String): ProductEntity? = database.productDao().findByCode(code.trim())
     fun activeShift() = database.operationsDao().activeShift()
     fun pendingEvents() = database.operationsDao().pendingEventCount()
+    // Reads the locally cached open-amount policy without contacting the server.
+    fun openAmountCategories(): List<String> = database.syncProjectionDao().policy()?.let {
+        runCatching {
+            kotlinx.serialization.json.Json.decodeFromString<List<String>>(it.openAmountCategoriesJson)
+        }.getOrDefault(emptyList())
+    } ?: emptyList()
+    fun allowOpenProducts(): Boolean = database.syncProjectionDao().policy()?.allowOpenProducts == true
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }
     fun withdrawals(shiftId: String) = database.operationsDao().withdrawals(shiftId)
     fun withdrawalTotal(shiftId: String) = database.operationsDao().withdrawalsForShift(shiftId)
@@ -154,18 +169,15 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             if (liveShift.id != shift.id) return@runInTransaction false
             val device = operations.device() ?: return@runInTransaction false
             val movementId = UUID.randomUUID().toString()
+            val eventId = UUID.randomUUID().toString()
             val createdAt = System.currentTimeMillis()
             val delta = if (type == "WASTE") -quantity else quantity
-            val movement = InventoryMovementEntity(movementId, movementId, product.id, delta, createdAt, type)
+            val movement = InventoryMovementEntity(movementId, movementId, product.id, delta, createdAt, type, eventId)
             operations.insertMovements(listOf(movement))
-            if (product.stockPolicy == "CONTROLLED") {
-                val current = product.stock.toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO
-                database.productDao().updateStock(product.id, current.add(java.math.BigDecimal.valueOf(delta.toLong())).toPlainString())
-            }
             val eventType = if (type == "WASTE") "WASTE_RECORDED" else "RESTOCK_RECORDED"
             val payload = if (type == "WASTE") OutboxPayloadBuilder.wasteRecorded(movement, product, reason.trim())
             else OutboxPayloadBuilder.restockRecorded(movement, product, reason.trim())
-            enqueueOutbox(operations, device, liveShift.siteId, liveShift.id, eventType, movementId, payload, createdAt)
+            enqueueOutbox(operations, device, liveShift.siteId, liveShift.id, eventType, movementId, payload, createdAt, eventId)
             true
         }
     }
@@ -232,18 +244,17 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val lines = operations.linesForSale(sale.id)
             val device = operations.device() ?: return@runInTransaction false
             val cancelledAt = System.currentTimeMillis()
+            val eventId = UUID.randomUUID().toString()
             operations.markSaleCancelled(sale.id)
             val cancellation = SaleCancellationEntity(UUID.randomUUID().toString(), sale.id, sale.shiftId, reason.trim(), manager.id, manager.role, cancelledAt)
             operations.insertCancellation(cancellation)
             operations.insertMovements(
                 lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
-                    .map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId!!, line.quantity, cancelledAt, "SALE_CANCELLATION") }
+                    .map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId!!, line.quantity, cancelledAt, "SALE_CANCELLATION", eventId) }
             )
-            lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
-                .forEach { line -> adjustStock(line.productId!!, line.quantity) }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CANCELLED", sale.id,
-                OutboxPayloadBuilder.saleCancelled(sale, cancellation), cancelledAt
+                OutboxPayloadBuilder.saleCancelled(sale, cancellation), cancelledAt, eventId
             )
             true
         }
@@ -251,6 +262,30 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
 
     fun confirmSale(shift: ShiftEntity, lines: List<CartLine>, method: PaymentMethod, tenderedCentavos: Long, discount: SaleDiscountDraft? = null): SaleEntity? {
         if (lines.isEmpty()) return null
+        if (lines.any { it.quantity <= 0 || it.unitPriceCentavos <= 0 }) return null
+        val policy = database.syncProjectionDao().policy()
+        val allowedOpenCategories = openAmountCategories().toSet()
+        if (lines.any { line ->
+                when (line.lineType) {
+                    SaleLineType.CATALOG -> {
+                        val product = line.productId?.let { database.productDao().findById(it) } ?: return@any true
+                        if (!product.available) return@any true
+                        if (product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
+                            (product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO) < BigDecimal.valueOf(line.quantity.toLong())
+                        } else false
+                    }
+                    SaleLineType.PENDING_CATALOG -> false
+                    SaleLineType.OPEN_AMOUNT -> {
+                        val authorizer = line.authorizedByOperatorId?.toString()?.let { database.userDao().find(it) }
+                        !allowOpenProducts() || line.quantity != 1 || line.unitPriceCentavos <= 0 ||
+                            line.category.trim() !in allowedOpenCategories || line.productId != null ||
+                            !line.sourceBarcode.isNullOrBlank() || line.stockPolicy != "NOT_CONTROLLED" ||
+                            line.name != "Producto abierto · ${line.category.trim()}" ||
+                            line.authorizedAtEpochMillis == null || authorizer == null || !authorizer.active ||
+                            (authorizer.role != "MANAGER" && authorizer.role != "SUPERADMIN")
+                    }
+                }
+            }) return null
         val gross = lines.sumOf { it.unitPriceCentavos * it.quantity }
         if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || (discount.authorizedBy.role != "MANAGER" && discount.authorizedBy.role != "SUPERADMIN"))) return null
         val total = gross - (discount?.amountCentavos ?: 0)
@@ -263,6 +298,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             if (liveShift.id != shift.id) return@runInTransaction null
             val device = operations.device() ?: return@runInTransaction null
             val saleId = UUID.randomUUID().toString()
+            val eventId = UUID.randomUUID().toString()
             val confirmedAt = System.currentTimeMillis()
             val change = if (method == PaymentMethod.CASH) tenderedCentavos - total else 0
             val folio = "${device.visibleCode}-${liveShift.id.take(4).uppercase()}-${liveShift.nextFolioNumber.toString().padStart(4, '0')}"
@@ -285,6 +321,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     line.stockPolicy,
                     line.lineType.name,
                     line.sourceBarcode,
+                    line.authorizedByOperatorId,
+                    line.authorizedAtEpochMillis,
                 )
             }
             operations.insertLines(saleLines)
@@ -293,27 +331,19 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val controlledLines = lines.filter { it.lineType == SaleLineType.CATALOG && it.stockPolicy == "CONTROLLED" && it.productId != null }
             operations.insertMovements(
                 controlledLines.map { line ->
-                    InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId!!, -line.quantity, confirmedAt)
+                    InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId!!, -line.quantity, confirmedAt, syncEventId = eventId)
                 }
             )
-            controlledLines.forEach { line -> adjustStock(line.productId!!, -line.quantity) }
             val products = lines.mapNotNull { line -> line.productId?.let { database.productDao().findById(it) } }.associateBy { it.id }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CONFIRMED", saleId,
-                OutboxPayloadBuilder.saleConfirmed(sale, saleLines, payment, discountEntity, products), confirmedAt
+                OutboxPayloadBuilder.saleConfirmed(sale, saleLines, payment, discountEntity, products), confirmedAt, eventId
             )
             operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, confirmedAt))
             operations.updateFolioNumber(liveShift.id, liveShift.nextFolioNumber + 1)
             sale
         }
     }
-    // Applies a local stock delta while preserving decimal quantities in the catalog snapshot.
-    private fun adjustStock(productId: String, delta: Int) {
-        val product = database.productDao().findById(productId) ?: return
-        val current = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
-        database.productDao().updateStock(productId, current.add(BigDecimal.valueOf(delta.toLong())).toPlainString())
-    }
-
     // Persists one outbox row with envelope metadata and advances the device sequence.
     private fun enqueueOutbox(
         operations: OperationsDao,
@@ -324,10 +354,11 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         aggregateId: String,
         payloadJson: String,
         occurredAt: Long,
+        eventId: String = UUID.randomUUID().toString(),
     ) {
         operations.insertOutbox(
             OutboxEventEntity(
-                UUID.randomUUID().toString(), device.nextEventSequence, type, aggregateId, "PENDING", occurredAt,
+                eventId, device.nextEventSequence, type, aggregateId, "PENDING", occurredAt,
                 schemaVersion = 1, deviceId = device.id, siteId = siteId, shiftId = shiftId,
                 occurredAtEpochMillis = occurredAt, payloadJson = payloadJson
             )

@@ -7,12 +7,15 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.I
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemSkuConflictException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.ItemManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosChangeLogService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
@@ -20,9 +23,16 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
   private static final Logger log = LoggerFactory.getLogger(ItemManagementUseCasesImpl.class);
 
   private final ItemRepository itemRepository;
+  private final HeadquarterItemRepository headquarterItemRepository;
+  private final PosChangeLogService posChangeLogService;
 
-  public ItemManagementUseCasesImpl(ItemRepository itemRepository) {
+  public ItemManagementUseCasesImpl(
+      ItemRepository itemRepository,
+      HeadquarterItemRepository headquarterItemRepository,
+      PosChangeLogService posChangeLogService) {
     this.itemRepository = itemRepository;
+    this.headquarterItemRepository = headquarterItemRepository;
+    this.posChangeLogService = posChangeLogService;
   }
 
   @Override
@@ -70,6 +80,7 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
   }
 
   @Override
+  @Transactional
   public Item create(Item item) {
     if (item.getSku() == null || item.getSku().isBlank()) {
       item.setSku(itemRepository.nextInternalSku());
@@ -87,12 +98,14 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     assertBarcodeUnique(item.getBarcode(), null);
 
     Item saved = itemRepository.save(item);
+    appendCatalogChanges(saved.getId());
 
     log.info("create item complete itemId={} sku={}", saved.getId(), saved.getSku());
     return saved;
   }
 
   @Override
+  @Transactional
   public Item update(Long id, Item merged) {
     log.info("update item start itemId={} sku={}", id, merged.getSku());
 
@@ -115,12 +128,14 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     existing.setStatus(merged.getStatus());
 
     Item saved = itemRepository.save(existing);
+    appendCatalogChanges(saved.getId());
 
     log.info("update item complete itemId={}", saved.getId());
     return saved;
   }
 
   @Override
+  @Transactional
   public Item discontinue(Long id) {
     log.info("discontinue item start itemId={}", id);
 
@@ -128,11 +143,13 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     item.discontinue();
 
     Item saved = itemRepository.save(item);
+    appendCatalogChanges(saved.getId());
     log.info("discontinue item complete itemId={}", saved.getId());
     return saved;
   }
 
   @Override
+  @Transactional
   public Item activate(Long id) {
     log.info("activate item start itemId={}", id);
 
@@ -140,18 +157,21 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     item.activate();
 
     Item saved = itemRepository.save(item);
+    appendCatalogChanges(saved.getId());
     log.info("activate item complete itemId={}", saved.getId());
     return saved;
   }
 
   @Override
+  @Transactional
   public void delete(Long id) {
     log.info("delete item start itemId={}", id);
 
     Item item = getById(id);
     item.delete();
 
-    itemRepository.save(item);
+    Item saved = itemRepository.save(item);
+    appendCatalogChanges(saved.getId());
     log.info("delete item complete itemId={}", id);
   }
 
@@ -162,5 +182,10 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     if (itemRepository.existsByBarcodeIgnoreCaseExcludingId(barcode, excludeId)) {
       throw new ItemBarcodeConflictException(barcode.trim());
     }
+  }
+
+  private void appendCatalogChanges(Long itemId) {
+    posChangeLogService.appendCatalogItemsForGlobalItem(
+        itemId, headquarterItemRepository.findAllByItemId(itemId));
   }
 }

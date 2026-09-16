@@ -31,6 +31,7 @@ import kotlinx.serialization.Serializable
     val defaultNegativeStockLimit: Int? = null,
     val staleCatalogWarnHours: Int = 24,
     val staleCatalogBlockHours: Int = 72,
+    val openAmountCategories: List<String> = emptyList(),
 )
 @Serializable data class CursorsDto(val changes: String)
 @Serializable data class BootstrapResponse(val schemaVersion: Int, val kind: String, val snapshotId: String, val generatedAt: String, val site: SiteDto, val device: DeviceDto, val operators: List<OperatorDto>, val products: List<ProductDto>, val openAmountCategories: List<String>, val policies: PoliciesDto, val cursors: CursorsDto)

@@ -29,13 +29,18 @@ import androidx.room.PrimaryKey
     val stockPolicy: String,
     val lineType: String = "CATALOG",
     val sourceBarcode: String? = null,
+    val authorizedByOperatorId: Long? = null,
+    val authorizedAtEpochMillis: Long? = null,
 )
 // Stores the selected payment type and its applied amount.
 @Entity(tableName = "payment") data class PaymentEntity(@PrimaryKey val id: String, val saleId: String, val method: String, val amountCentavos: Long)
 // Records only controlled-stock deductions created by a sale.
-@Entity(tableName = "inventory_movement") data class InventoryMovementEntity(@PrimaryKey val id: String, val saleId: String, val productId: String, val quantityDelta: Int, val createdAtEpochMillis: Long, val movementType: String = "SALE")
+@Entity(tableName = "inventory_movement", indices = [Index("productId"), Index("syncEventId")]) data class InventoryMovementEntity(@PrimaryKey val id: String, val saleId: String, val productId: String, val quantityDelta: Int, val createdAtEpochMillis: Long, val movementType: String = "SALE", val syncEventId: String? = null)
 // Keeps a durable event until a future sync implementation delivers it.
-@Entity(tableName = "outbox_event", indices = [Index(value = ["sequence"], unique = true)]) data class OutboxEventEntity(@PrimaryKey val id: String, val sequence: Long, val type: String, val aggregateId: String, val status: String, val createdAtEpochMillis: Long, val schemaVersion: Int = 1, val deviceId: String? = null, val siteId: String? = null, val shiftId: String? = null, val occurredAtEpochMillis: Long = createdAtEpochMillis, val payloadJson: String? = null, val attemptCount: Int = 0, val nextAttemptAtEpochMillis: Long = 0, val lastError: String? = null, val resultStatus: String? = null, val incidentId: String? = null)
+@Entity(tableName = "outbox_event", indices = [Index(value = ["sequence"], unique = true)]) data class OutboxEventEntity(@PrimaryKey val id: String, val sequence: Long, val type: String, val aggregateId: String, val status: String, val createdAtEpochMillis: Long, val schemaVersion: Int = 1, val deviceId: String? = null, val siteId: String? = null, val shiftId: String? = null, val occurredAtEpochMillis: Long = createdAtEpochMillis, val payloadJson: String? = null, val attemptCount: Int = 0, val nextAttemptAtEpochMillis: Long = 0, val lastError: String? = null, val resultStatus: String? = null, val incidentId: String? = null) {
+    // Reuses the immutable event id as the backend idempotency key.
+    val idempotencyKey: String get() = id
+}
 @Entity(tableName = "sync_state") data class SyncStateEntity(@PrimaryKey val id: Int = 1, val baseUrl: String? = null, val changesCursor: String? = null, val bootstrapSnapshotId: String? = null, val lastSuccessfulAtEpochMillis: Long? = null, val lastError: String? = null, val status: String = "NOT_CONFIGURED")
 
 // Keeps bounded diagnostic events until the next successful telemetry upload.

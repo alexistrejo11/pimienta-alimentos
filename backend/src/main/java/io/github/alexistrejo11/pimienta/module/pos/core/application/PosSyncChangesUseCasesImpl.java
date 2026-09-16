@@ -1,14 +1,10 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.application;
 
-import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator;
-import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncTombstone;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceNotFoundException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceRevokedException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosSyncCursorInvalidException;
@@ -17,48 +13,45 @@ import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootst
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.ProductRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncChangesUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosDeviceRepository;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosOperatorRepository;
-import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosSyncTombstoneRepository;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
 
   private static final int SCHEMA_VERSION = 1;
+  private static final int MAX_BATCH_SIZE = 500;
 
   private final PosDeviceRepository deviceRepository;
   private final HeadquarterItemRepository headquarterItemRepository;
   private final PosOperatorRepository operatorRepository;
   private final PosOperationalConfigRepository posOperationalConfigRepository;
-  private final PosSyncTombstoneRepository tombstoneRepository;
   private final PosSyncCatalogProjector projector;
+  private final PosChangeLogRepository changeLogRepository;
 
   public PosSyncChangesUseCasesImpl(
       PosDeviceRepository deviceRepository,
       HeadquarterItemRepository headquarterItemRepository,
       PosOperatorRepository operatorRepository,
       PosOperationalConfigRepository posOperationalConfigRepository,
-      PosSyncTombstoneRepository tombstoneRepository,
-      PosSyncCatalogProjector projector) {
+      PosSyncCatalogProjector projector,
+      PosChangeLogRepository changeLogRepository) {
     this.deviceRepository = deviceRepository;
     this.headquarterItemRepository = headquarterItemRepository;
     this.operatorRepository = operatorRepository;
     this.posOperationalConfigRepository = posOperationalConfigRepository;
-    this.tombstoneRepository = tombstoneRepository;
     this.projector = projector;
+    this.changeLogRepository = changeLogRepository;
   }
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public ChangesBatch changes(UUID deviceId, String cursorRaw) {
     PosDevice device =
         deviceRepository.findById(deviceId).orElseThrow(() -> new PosDeviceNotFoundException(deviceId));
@@ -74,110 +67,50 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
     }
 
     long hqId = device.getHeadquarterId();
-    LocalDateTime since = cursor.since();
-    long nextWatermark = Math.max(cursor.watermarkMillis(), Instant.now().toEpochMilli());
-    List<ChangeOperation> operations = new ArrayList<>();
-    Set<String> deactivatedProductIds = new HashSet<>();
-    Set<String> deactivatedOperatorIds = new HashSet<>();
-
-    for (HeadquarterItem deleted :
-        headquarterItemRepository.findDeletedByHeadquarterIdAndDeletedAtAfter(hqId, since)) {
-      String id = String.valueOf(deleted.getItemId());
-      deactivatedProductIds.add(id);
-      operations.add(ChangeOperation.deactivate(PosSyncTombstone.ENTITY_PRODUCT, id));
-      nextWatermark = Math.max(nextWatermark, PosSyncCursor.toMillis(deleted.getDeletedAt()));
+    long upperBound =
+        changeLogRepository.findLastByHeadquarterId(hqId).map(e -> e.sequence()).orElse(0L);
+    long firstSequence =
+        changeLogRepository.findFirstByHeadquarterId(hqId).map(e -> e.sequence()).orElse(0L);
+    if (cursor.sequence() > upperBound
+        || (firstSequence > 0 && cursor.sequence() < firstSequence - 1)) {
+      throw new PosSyncCursorInvalidException(cursorRaw);
     }
 
-    for (PosOperator deletedOp :
-        operatorRepository.findDeletedByHeadquarterIdUpdatedAfter(hqId, since)) {
-      String id = String.valueOf(deletedOp.getId());
-      deactivatedOperatorIds.add(id);
-      operations.add(ChangeOperation.deactivate(PosSyncTombstone.ENTITY_OPERATOR, id));
-      nextWatermark = Math.max(nextWatermark, PosSyncCursor.toMillis(deletedOp.getUpdatedAt()));
-    }
+    List<PosChangeLogRepository.PosChangeLogEntry> entries =
+        changeLogRepository.findAfterSequence(hqId, cursor.sequence(), upperBound, MAX_BATCH_SIZE);
+    List<ChangeOperation> operations = entries.stream().map(entry -> project(hqId, entry)).toList();
+    long nextSequence = entries.isEmpty() ? cursor.sequence() : entries.get(entries.size() - 1).sequence();
+    return new ChangesBatch(
+        SCHEMA_VERSION, PosSyncCursor.of(hqId, nextSequence).format(), operations);
+  }
 
-    for (PosSyncTombstone tombstone :
-        tombstoneRepository.findByHeadquarterIdAndCreatedAtAfter(hqId, since)) {
-      if (PosSyncTombstone.ENTITY_PRODUCT.equals(tombstone.entity())) {
-        if (deactivatedProductIds.add(tombstone.entityId())) {
-          operations.add(
-              ChangeOperation.deactivate(PosSyncTombstone.ENTITY_PRODUCT, tombstone.entityId()));
-        }
-      } else if (PosSyncTombstone.ENTITY_OPERATOR.equals(tombstone.entity())) {
-        if (deactivatedOperatorIds.add(tombstone.entityId())) {
-          operations.add(
-              ChangeOperation.deactivate(PosSyncTombstone.ENTITY_OPERATOR, tombstone.entityId()));
-        }
+  private ChangeOperation project(long hqId, PosChangeLogRepository.PosChangeLogEntry entry) {
+    boolean deactivate = "DEACTIVATE".equals(entry.operation());
+    if ("OPERATOR".equals(entry.entityType())) {
+      if (deactivate) return ChangeOperation.deactivate("operator", entry.entityId());
+      Optional<PosOperator> operator = operatorRepository.findById(Long.parseLong(entry.entityId()));
+      if (operator.isEmpty() || !operator.get().getHeadquarterIds().contains(hqId)) {
+        return ChangeOperation.deactivate("operator", entry.entityId());
       }
-      nextWatermark = Math.max(nextWatermark, PosSyncCursor.toMillis(tombstone.createdAt()));
+      OperatorRow row = projector.toOperatorRow(operator.get());
+      return ChangeOperation.upsert(
+          "operator", row.id(), new OperatorData(row.id(), row.displayName(), row.role(), row.pinHash(), row.active()));
     }
-
-    for (HeadquarterItem row : headquarterItemRepository.findAllByHeadquarterId(hqId)) {
-      boolean hiChanged = isAfter(row.getUpdatedAt(), since);
-      Optional<Item> itemOpt = projector.findItem(row.getItemId());
-      boolean itemChanged =
-          itemOpt.map(item -> isAfter(item.getUpdatedAt(), since)).orElse(false);
-      Optional<Inventory> invOpt = projector.findPosInventory(hqId, row.getItemId());
-      boolean stockChanged =
-          invOpt.map(inv -> isAfter(inv.getUpdatedAt(), since)).orElse(false);
-      if (!hiChanged && !itemChanged && !stockChanged) {
-        continue;
-      }
-      Optional<ProductRow> productOpt = projector.toProductRow(row);
-      if (productOpt.isEmpty()) {
-        continue;
-      }
-      ProductRow product = productOpt.get();
-      if (deactivatedProductIds.contains(product.id())) {
-        continue;
-      }
-      operations.add(
-          ChangeOperation.upsert(
-              PosSyncTombstone.ENTITY_PRODUCT, product.id(), toProductData(product)));
-      nextWatermark =
-          Math.max(
-              nextWatermark,
-              maxMillis(
-                  row.getUpdatedAt(),
-                  itemOpt.map(Item::getUpdatedAt).orElse(null),
-                  invOpt.map(Inventory::getUpdatedAt).orElse(null)));
-    }
-
-    for (PosOperator op : operatorRepository.findByHeadquarterId(hqId)) {
-      if (!isAfter(op.getUpdatedAt(), since)
-          || deactivatedOperatorIds.contains(String.valueOf(op.getId()))) {
-        continue;
-      }
-      OperatorRow row = projector.toOperatorRow(op);
-      operations.add(
-          ChangeOperation.upsert(
-              PosSyncTombstone.ENTITY_OPERATOR,
-              row.id(),
-              new OperatorData(
-                  row.id(), row.displayName(), row.role(), row.pinHash(), row.active())));
-      nextWatermark = Math.max(nextWatermark, PosSyncCursor.toMillis(op.getUpdatedAt()));
-    }
-
-    PosOperationalConfig config =
-        posOperationalConfigRepository.findByHeadquarterId(hqId).orElse(null);
-    if (config != null && isAfter(config.getUpdatedAt(), since)) {
+    if ("POLICY".equals(entry.entityType())) {
+      PosOperationalConfig config = posOperationalConfigRepository.findByHeadquarterId(hqId).orElse(null);
+      if (config == null) return ChangeOperation.deactivate("policies", entry.entityId());
       Policies policies = projector.toPolicies(config);
-      operations.add(
-          ChangeOperation.upsert(
-              "policies",
-              String.valueOf(hqId),
-              new PoliciesData(
-                   policies.allowNegativeStock(),
-                   policies.allowOpenProducts(),
-                  policies.defaultNegativeStockLimit(),
-                  policies.staleCatalogWarnHours(),
-                  policies.staleCatalogBlockHours(),
-                  config.getOpenAmountCategories())));
-      nextWatermark = Math.max(nextWatermark, PosSyncCursor.toMillis(config.getUpdatedAt()));
+      return ChangeOperation.upsert(
+          "policies", entry.entityId(), new PoliciesData(policies.allowNegativeStock(), policies.allowOpenProducts(),
+              policies.defaultNegativeStockLimit(), policies.staleCatalogWarnHours(), policies.staleCatalogBlockHours(),
+              config.getOpenAmountCategories()));
     }
-
-    PosSyncCursor next = PosSyncCursor.of(hqId, nextWatermark);
-    return new ChangesBatch(SCHEMA_VERSION, next.format(), List.copyOf(operations));
+    long itemId = Long.parseLong(entry.entityId());
+    if (deactivate) return ChangeOperation.deactivate("product", entry.entityId());
+    return headquarterItemRepository.findByHeadquarterIdAndItemId(hqId, itemId)
+        .flatMap(projector::toProductRow)
+        .map(row -> ChangeOperation.upsert("product", row.id(), toProductData(row)))
+        .orElseGet(() -> ChangeOperation.deactivate("product", entry.entityId()));
   }
 
   private static ProductData toProductData(ProductRow product) {
@@ -197,15 +130,4 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
         product.negativeStockLimit());
   }
 
-  private static boolean isAfter(LocalDateTime value, LocalDateTime since) {
-    return value != null && value.isAfter(since);
-  }
-
-  private static long maxMillis(LocalDateTime a, LocalDateTime b, LocalDateTime c) {
-    long max = 0L;
-    max = Math.max(max, PosSyncCursor.toMillis(a));
-    max = Math.max(max, PosSyncCursor.toMillis(b));
-    max = Math.max(max, PosSyncCursor.toMillis(c));
-    return max;
-  }
 }

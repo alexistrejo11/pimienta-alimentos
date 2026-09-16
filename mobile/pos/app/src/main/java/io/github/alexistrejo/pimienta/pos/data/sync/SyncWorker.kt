@@ -48,26 +48,36 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             return refreshAccessTokenOrRetry(state, baseUrl)
         }
         val api = api(baseUrl)
+        var inFlightIds = emptyList<String>()
+        var acceptedResults = emptyList<EventResult>()
         return try {
+            db.syncDao().recoverInFlight(System.currentTimeMillis())
             val events = db.syncDao().eligible(System.currentTimeMillis(), 50)
             if (events.isNotEmpty()) {
+                inFlightIds = events.map { it.id }
+                db.syncDao().markInFlight(inFlightIds)
                 val siteId = device.siteId ?: return Result.success()
                 val response = api.events(EventsRequest(events.map { it.toEnvelope(device.id, siteId, json) }))
+                val received = response.results.map { it.eventId }.toSet()
+                acceptedResults = response.results.filter { it.status.uppercase() in setOf("ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW") }
                 response.results.forEach { result ->
                     when (result.status.uppercase()) {
-                        "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> db.syncDao().terminal(result.eventId, "ACKNOWLEDGED", result.status, result.incidentId, result.message)
-                        "REJECTED" -> db.syncDao().terminal(result.eventId, "BLOCKED", result.status, result.incidentId, result.message)
-                        else -> db.syncDao().retry(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
+                        "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> Unit
+                        "REJECTED" -> db.syncDao().markRejected(result.eventId, result.message ?: "event rejected")
+                        else -> db.syncDao().markFailedRetryable(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
                     }
+                }
+                events.filter { it.id !in received }.forEach {
+                    db.syncDao().markFailedRetryable(it.id, System.currentTimeMillis() + backoff(1), "server did not return a result")
                 }
             }
             val current = db.syncDao().state() ?: state
             val localIncomplete = db.productDao().count() == 0 || db.userDao().count() == 0
             if (current.changesCursor == null || localIncomplete) {
-                ProvisioningRepository(applicationContext, provider).applyBootstrap(api.bootstrap())
+                ProvisioningRepository(applicationContext, provider).applyBootstrap(api.bootstrap(), acceptedResults)
             } else {
                 val changes = api.changes(current.changesCursor)
-                ProvisioningRepository(applicationContext, provider).applyChanges(changes)
+                ProvisioningRepository(applicationContext, provider).applyChanges(changes, acceptedResults)
             }
             uploadTelemetry(api, device.id, device.siteId, state)
             db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
@@ -80,10 +90,10 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
                 ProvisioningRepository(applicationContext, provider)
                     .resetForReenrollment(DeviceSessionPolicy.revokedDeviceMessage())
                 Result.failure()
-            } else if (e.code() == 409) {
+            } else if (PosSyncErrorPolicy.requiresBootstrap(e)) {
                 // Invalid sync cursor: replace local catalog snapshot from a fresh bootstrap.
                 try {
-                    ProvisioningRepository(applicationContext, provider).applyBootstrap(api(baseUrl).bootstrap())
+                    ProvisioningRepository(applicationContext, provider).applyBootstrap(api(baseUrl).bootstrap(), acceptedResults)
                     db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
                     Result.success()
                 } catch (bootstrapError: Exception) {
@@ -91,11 +101,15 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
                     Result.retry()
                 }
             } else {
+                inFlightIds.forEach { db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message ?: "sync failed") }
                 db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message()))
                 Result.retry()
             }
         } catch (e: Exception) {
             recordDiagnostic("ERROR", "sync_failure", "POS sync ${e.javaClass.simpleName}")
+            inFlightIds.forEach {
+                db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message ?: "sync failed")
+            }
             db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message ?: e.javaClass.simpleName))
             Result.retry()
         }
@@ -185,11 +199,15 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
     }
 }
 
+// Names the existing WorkManager worker according to the Phase 4 sales-sync role.
+typealias SyncSalesWorker = SyncWorker
+
 // Maps a stored outbox row to the wire envelope, preferring persisted device/site/shift metadata.
 private fun OutboxEventEntity.toEnvelope(defaultDeviceId: String, defaultSiteId: String, json: Json): EventEnvelope {
     val payload = payloadJson?.let { runCatching { json.parseToJsonElement(it).jsonObject }.getOrNull() }
         ?: buildJsonObject { put("aggregateId", aggregateId) }
     return EventEnvelope(
+        // eventId is the backend idempotency key and remains stable across retries.
         id, type, schemaVersion, deviceId ?: defaultDeviceId, siteId ?: defaultSiteId, sequence,
         aggregateId, shiftId, Instant.ofEpochMilli(occurredAtEpochMillis).toString(), payload
     )
