@@ -285,13 +285,15 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
 
     // Insets once at the root so Sale (and siblings) do not add a second black status-bar gap under the banner.
     Column(Modifier.fillMaxSize().systemBarsPadding()) {
-        RuntimeModeBanner(
-            mode = mode,
-            isDebug = BuildConfig.DEBUG,
-            requiresPinForSwitch = requiresPinForSwitch,
-            onSwitchRequested = ::switchMode,
-            onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
-        )
+        if (shift == null) {
+            RuntimeModeBanner(
+                mode = mode,
+                isDebug = BuildConfig.DEBUG,
+                requiresPinForSwitch = requiresPinForSwitch,
+                onSwitchRequested = ::switchMode,
+                onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
+            )
+        }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (!initialized) {
                 Loading(loadingMessage(mode, null), ::reload)
@@ -374,7 +376,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                         )
                     }
                     shift == null && managerReadOnly != null -> ManagerReadOnlyPanel(managerReadOnly!!, repository) { managerReadOnly = null }
-                    shift == null -> Access(users, repository, notice, { shift = it }, { notice = it }) { managerReadOnly = it }
+                    shift == null -> Access(users, repository, notice, mode, { shift = it }, { notice = it }) { managerReadOnly = it }
                     else -> Sale(
                         repository = repository,
                         shift = shift!!,
@@ -442,6 +444,7 @@ private fun Access(
     users: List<LocalUserEntity>,
     repository: PosRepository,
     notice: String?,
+    mode: RuntimeMode,
     opened: (ShiftEntity) -> Unit,
     message: (String) -> Unit,
     openManagerDashboard: (LocalUserEntity) -> Unit,
@@ -465,6 +468,17 @@ private fun Access(
             ) {
                 Text("Abrir turno", style = MaterialTheme.typography.headlineSmall)
                 Text("Selecciona tu perfil e ingresa tu PIN.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                
+                // Red text warning before opening shift about not being able to exit sale mode.
+                Text(
+                    text = if (mode == RuntimeMode.SANDBOX) {
+                        "Modo capacitación: Una vez abierto el turno, el sistema permanecerá en modo de venta hasta completar el corte de caja."
+                    } else {
+                        "Una vez abierto el turno, no se podrá salir del punto de venta ni cambiar de modo hasta completar el corte de caja."
+                    },
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(users, key = { it.id }) { profile ->

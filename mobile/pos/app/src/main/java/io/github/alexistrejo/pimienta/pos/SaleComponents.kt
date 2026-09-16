@@ -90,14 +90,15 @@ internal fun StatusBar(
             )
             Text("Punto de Venta", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
-            PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled)
+            val headerBtnPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
             Spacer(Modifier.width(8.dp))
-            PosButton("Bloquear caja", lockCashRegister)
+            PosButton("Bloquear caja", lockCashRegister, contentPadding = headerBtnPadding)
             Spacer(Modifier.width(8.dp))
-            PosButton("Panel Manager", openManager)
+            PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
             Spacer(Modifier.width(8.dp))
             if (BuildConfig.DEBUG) {
-                PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) })
+                PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
             }
         }
         Row(
@@ -188,7 +189,14 @@ internal fun CashWithdrawalAuthorization(
     }
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Allows the dialog content to scroll when multiple manager profiles are present
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text("Registrar sangría", style = MaterialTheme.typography.titleLarge)
                 Text("Motivo: Resguardo de efectivo", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -839,13 +847,15 @@ internal fun PosButton(
     enabled: Boolean = true,
     primary: Boolean = false,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues? = null,
 ) {
     val emphasized = primary || selected
     Button(
         onClick = click,
-        modifier = modifier.heightIn(min = 42.dp),
+        modifier = modifier.heightIn(min = if (contentPadding != null) 36.dp else 42.dp),
         enabled = enabled,
         shape = MaterialTheme.shapes.extraSmall,
+        contentPadding = contentPadding ?: ButtonDefaults.ContentPadding,
         border = if (!emphasized) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)) else null,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (emphasized) MaterialTheme.colorScheme.primary else Color.Transparent,
