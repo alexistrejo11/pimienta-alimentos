@@ -112,7 +112,7 @@ class PosSyncBootstrapIntegrationTest {
         .andExpect(jsonPath("$.policies.staleCatalogWarnHours").value(24))
         .andExpect(
             jsonPath("$.cursors.changes")
-                .value(org.hamcrest.Matchers.matchesPattern("cursor-hq-" + hqA + "-v\\d+")));
+                .value(org.hamcrest.Matchers.matchesPattern("cursor-hq-" + hqA + "-s\\d+")));
   }
 
   @Test

@@ -7,13 +7,13 @@ import io.github.alexistrejo.pimienta.pos.ui.theme.PosTheme
 import org.junit.Rule
 import org.junit.Test
 
-// Verifies the operational folio indicator remains visible in the register header.
+    // Verifies the operational register header remains visible before checkout.
 class Phase1ComposeTest {
     @get:Rule
     val composeRule = createComposeRule()
 
     @Test
-    fun statusBarShowsNextFolioBeforeCheckout() {
+    fun statusBarShowsRegisterHeaderBeforeCheckout() {
         composeRule.setContent {
             PosTheme(darkTheme = true) {
                 StatusBar(
@@ -29,11 +29,10 @@ class Phase1ComposeTest {
                     printerLabel = "Impresora lista",
                     printerAlert = false,
                     scannerLabel = "Lector HID",
-                    nextFolio = "T1-ABCD-0001",
                 )
             }
         }
 
-        composeRule.onNodeWithText("Próximo folio · T1-ABCD-0001").assertIsDisplayed()
+        composeRule.onNodeWithText("Punto de Venta").assertIsDisplayed()
     }
 }

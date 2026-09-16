@@ -117,8 +117,10 @@ internal fun StatusBar(
 @Composable
 internal fun PendingCatalogDialog(
     barcode: String,
+    openAmountAvailable: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (Long) -> Unit,
+    onOpenAmount: () -> Unit = {},
 ) {
     var amount by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -149,6 +151,74 @@ internal fun PendingCatalogDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
                     PosButton("Agregar al carrito", ::submit, primary = true, modifier = Modifier.weight(1f))
+                }
+                if (openAmountAvailable) {
+                    PosButton("Usar Monto abierto", onOpenAmount, modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
+    }
+}
+
+// Captures an authorized open-amount line without inventing a catalog product.
+@Composable
+internal fun OpenAmountDialog(
+    categories: List<String>,
+    users: List<LocalUserEntity>,
+    verifyPin: suspend (LocalUserEntity, String) -> Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Long, LocalUserEntity, String) -> Unit,
+) {
+    var amount by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf(categories.firstOrNull().orEmpty()) }
+    var selectedAuthorizer by remember { mutableStateOf(users.firstOrNull { it.role == "MANAGER" || it.role == "SUPERADMIN" }) }
+    var pin by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var verifying by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun submit() {
+        val cents = Money.fromInput(amount)
+        when {
+            selectedCategory.isBlank() -> error = "Selecciona una categoría."
+            cents == null || cents <= 0 -> error = "Captura un importe válido."
+            selectedAuthorizer == null -> error = "Selecciona un Manager o Superadmin."
+            pin.length < 4 -> error = "Captura los cuatro dígitos del PIN."
+            else -> {
+                verifying = true
+                scope.launch {
+                    val authorizer = selectedAuthorizer!!
+                    val valid = verifyPin(authorizer, pin)
+                    verifying = false
+                    if (valid) onConfirm(selectedCategory.trim(), cents, authorizer, pin)
+                    else error = "PIN inválido o autorizador inactivo."
+                }
+            }
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Monto abierto", style = MaterialTheme.typography.titleLarge)
+                Text("Categoría permitida", style = MaterialTheme.typography.labelLarge)
+                categories.forEach { category ->
+                    PosButton(category, { selectedCategory = category }, selected = selectedCategory == category, modifier = Modifier.fillMaxWidth())
+                }
+                Text("Descripción generada", style = MaterialTheme.typography.labelLarge)
+                Text("Producto abierto · ${selectedCategory.ifBlank { "categoría" }}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Importe", style = MaterialTheme.typography.labelLarge)
+                Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
+                Numpad(amount, { amount = it }, onSubmit = ::submit)
+                users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }.forEach { user ->
+                    PosButton(user.displayName, { selectedAuthorizer = user }, selected = selectedAuthorizer?.id == user.id, modifier = Modifier.fillMaxWidth())
+                }
+                Text("PIN de autorización", style = MaterialTheme.typography.labelLarge)
+                Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit)
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
+                    PosButton("Autorizar y agregar", ::submit, primary = true, enabled = !verifying, modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -321,10 +391,15 @@ internal fun CatalogPanel(
     onSearch: (String) -> Unit,
     products: List<ProductEntity>,
     onProduct: (ProductEntity) -> Unit,
+    openAmountEnabled: Boolean = false,
+    onOpenAmount: () -> Unit = {},
 ) {
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(12.dp)) {
             Text("Catálogo", style = MaterialTheme.typography.titleLarge)
+            if (openAmountEnabled) {
+                PosButton("Monto abierto", onOpenAmount, modifier = Modifier.fillMaxWidth())
+            }
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = search,
@@ -346,7 +421,12 @@ internal fun CatalogPanel(
 
             if (products.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay productos para esta búsqueda.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("No hay productos para esta búsqueda.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (openAmountEnabled && search.isNotBlank()) {
+                            PosButton("¿Agregar como Producto Abierto?", onOpenAmount, primary = true)
+                        }
+                    }
                 }
             } else {
                 LazyVerticalGrid(

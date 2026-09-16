@@ -8,7 +8,12 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.port.input.Headq
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosLocationUseCases;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosChangeLogService;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,14 +23,17 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
   private final HeadquarterRepository headquarterRepository;
   private final PosOperationalConfigRepository posOperationalConfigRepository;
   private final PosLocationUseCases posLocationUseCases;
+  private final PosChangeLogService posChangeLogService;
 
   public HeadquarterPosSettingsUseCasesImpl(
       HeadquarterRepository headquarterRepository,
       PosOperationalConfigRepository posOperationalConfigRepository,
-      PosLocationUseCases posLocationUseCases) {
+      PosLocationUseCases posLocationUseCases,
+      PosChangeLogService posChangeLogService) {
     this.headquarterRepository = headquarterRepository;
     this.posOperationalConfigRepository = posOperationalConfigRepository;
     this.posLocationUseCases = posLocationUseCases;
+    this.posChangeLogService = posChangeLogService;
   }
 
   @Override
@@ -57,10 +65,14 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                 resolveInt(
                                     command.catalogStaleBlockHours(),
                                     existing.getCatalogStaleBlockHours()))
+                            .withAllowOpenProducts(
+                                resolveBoolean(command.allowOpenProducts(), existing.isAllowOpenProducts()))
                             .withOpenAmountCategories(
                                 resolveCategories(
                                     command.openAmountCategories(),
-                                    existing.getOpenAmountCategories()))
+                                    existing.getOpenAmountCategories(),
+                                    resolveBoolean(
+                                        command.allowOpenProducts(), existing.isAllowOpenProducts())))
                             .withDefaultNegativeStockLimit(
                                 command.defaultNegativeStockLimit() != null
                                     ? command.defaultNegativeStockLimit()
@@ -76,12 +88,23 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                 resolveInt(command.catalogStaleWarnHours(), 24))
                             .withCatalogStaleBlockHours(
                                 resolveInt(command.catalogStaleBlockHours(), 72))
+                            .withAllowOpenProducts(resolveBoolean(command.allowOpenProducts(), false))
                             .withOpenAmountCategories(
-                                resolveCategories(command.openAmountCategories(), List.of()))
+                                resolveCategories(
+                                    command.openAmountCategories(),
+                                    List.of(),
+                                    resolveBoolean(command.allowOpenProducts(), false)))
                             .withDefaultNegativeStockLimit(command.defaultNegativeStockLimit())
                             .register()));
 
     posLocationUseCases.ensurePosLocation(headquarterId);
+    Map<String, Object> policyProjection = new LinkedHashMap<>();
+    policyProjection.put("allowOpenProducts", saved.isAllowOpenProducts());
+    policyProjection.put("openAmountCategories", saved.getOpenAmountCategories());
+    policyProjection.put("catalogStaleWarnHours", saved.getCatalogStaleWarnHours());
+    policyProjection.put("catalogStaleBlockHours", saved.getCatalogStaleBlockHours());
+    policyProjection.put("defaultNegativeStockLimit", saved.getDefaultNegativeStockLimit());
+    posChangeLogService.appendPolicy(headquarterId, policyProjection);
     return saved;
   }
 
@@ -102,7 +125,26 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
     return incoming != null ? incoming : fallback;
   }
 
-  private static List<String> resolveCategories(List<String> incoming, List<String> fallback) {
+  private static List<String> resolveCategories(
+      List<String> incoming, List<String> fallback, boolean allowOpenProducts) {
+    List<String> source = incoming != null ? incoming : fallback;
+    Map<String, String> normalized = new LinkedHashMap<>();
+    for (String category : source) {
+      if (category == null || category.isBlank()) {
+        continue;
+      }
+      String value = category.strip();
+      normalized.putIfAbsent(value.toLowerCase(Locale.ROOT), value);
+    }
+    List<String> result = List.copyOf(normalized.values());
+    if (allowOpenProducts && result.isEmpty()) {
+      throw new IllegalArgumentException(
+          "At least one open product category is required when open products are enabled");
+    }
+    return result;
+  }
+
+  private static boolean resolveBoolean(Boolean incoming, boolean fallback) {
     return incoming != null ? incoming : fallback;
   }
 }

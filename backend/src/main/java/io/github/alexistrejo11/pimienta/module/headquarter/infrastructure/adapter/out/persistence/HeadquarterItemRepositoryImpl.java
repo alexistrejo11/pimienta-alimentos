@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquart
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.out.persistence.jpa.HeadquarterItemJpaEntity;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.out.persistence.jpa.HeadquarterItemJpaRepository;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.PosChangeLogService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,9 +16,12 @@ import org.springframework.stereotype.Repository;
 public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository {
 
   private final HeadquarterItemJpaRepository jpaRepository;
+  private final PosChangeLogService posChangeLogService;
 
-  public HeadquarterItemRepositoryImpl(HeadquarterItemJpaRepository jpaRepository) {
+  public HeadquarterItemRepositoryImpl(
+      HeadquarterItemJpaRepository jpaRepository, PosChangeLogService posChangeLogService) {
     this.jpaRepository = jpaRepository;
+    this.posChangeLogService = posChangeLogService;
   }
 
   @Override
@@ -42,6 +46,13 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
   }
 
   @Override
+  public List<HeadquarterItem> findAllByItemId(long itemId) {
+    return jpaRepository.findByItemIdAndDeletedAtIsNull(itemId).stream()
+        .map(HeadquarterItemPersistenceMapper::toDomain)
+        .toList();
+  }
+
+  @Override
   public List<HeadquarterItem> findDeletedByHeadquarterIdAndDeletedAtAfter(
       long headquarterId, LocalDateTime since) {
     return jpaRepository
@@ -55,6 +66,8 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
   public HeadquarterItem save(HeadquarterItem item) {
     HeadquarterItemJpaEntity saved =
         jpaRepository.save(HeadquarterItemPersistenceMapper.toEntity(item));
-    return HeadquarterItemPersistenceMapper.toDomain(saved);
+    HeadquarterItem result = HeadquarterItemPersistenceMapper.toDomain(saved);
+    posChangeLogService.appendCatalogItem(result);
+    return result;
   }
 }

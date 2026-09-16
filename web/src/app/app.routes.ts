@@ -217,6 +217,11 @@ export const routes: Routes = [
         data: { access: { roles: POS_STAFF } },
       },
       {
+        path: 'pos/sedes',
+        redirectTo: 'pos/configuracion',
+        pathMatch: 'full',
+      },
+      {
         path: 'pos/configuracion',
         loadComponent: () =>
           import('./pages/app/pos/configuracion/pos-config-page').then((m) => m.PosConfigPageComponent),

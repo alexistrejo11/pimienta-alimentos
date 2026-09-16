@@ -14,7 +14,7 @@ import java.time.ZoneId
 import java.util.UUID
 
 // Distinguishes catalog lines from unknown-barcode exceptions captured at the register.
-enum class SaleLineType { CATALOG, PENDING_CATALOG }
+enum class SaleLineType { CATALOG, PENDING_CATALOG, OPEN_AMOUNT }
 
 // Represents an editable sale line before it becomes an immutable database snapshot.
 data class CartLine(
@@ -26,12 +26,15 @@ data class CartLine(
     val quantity: Int,
     val lineType: SaleLineType = SaleLineType.CATALOG,
     val sourceBarcode: String? = null,
+    val authorizedByOperatorId: Long? = null,
+    val authorizedAtEpochMillis: Long? = null,
 ) {
     // Stable cart identity for catalog ids or pending barcodes.
     val lineKey: String
         get() = when (lineType) {
             SaleLineType.CATALOG -> productId.orEmpty()
             SaleLineType.PENDING_CATALOG -> "pending:${sourceBarcode.orEmpty()}:${unitPriceCentavos}"
+            SaleLineType.OPEN_AMOUNT -> "open:$category:$unitPriceCentavos"
         }
 }
 
@@ -80,6 +83,13 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun findProductByCode(code: String): ProductEntity? = database.productDao().findByCode(code.trim())
     fun activeShift() = database.operationsDao().activeShift()
     fun pendingEvents() = database.operationsDao().pendingEventCount()
+    // Reads the locally cached open-amount policy without contacting the server.
+    fun openAmountCategories(): List<String> = database.syncProjectionDao().policy()?.let {
+        runCatching {
+            kotlinx.serialization.json.Json.decodeFromString<List<String>>(it.openAmountCategoriesJson)
+        }.getOrDefault(emptyList())
+    } ?: emptyList()
+    fun allowOpenProducts(): Boolean = database.syncProjectionDao().policy()?.allowOpenProducts == true
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }
     fun withdrawals(shiftId: String) = database.operationsDao().withdrawals(shiftId)
     fun withdrawalTotal(shiftId: String) = database.operationsDao().withdrawalsForShift(shiftId)
@@ -251,6 +261,30 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
 
     fun confirmSale(shift: ShiftEntity, lines: List<CartLine>, method: PaymentMethod, tenderedCentavos: Long, discount: SaleDiscountDraft? = null): SaleEntity? {
         if (lines.isEmpty()) return null
+        if (lines.any { it.quantity <= 0 || it.unitPriceCentavos <= 0 }) return null
+        val policy = database.syncProjectionDao().policy()
+        val allowedOpenCategories = openAmountCategories().toSet()
+        if (lines.any { line ->
+                when (line.lineType) {
+                    SaleLineType.CATALOG -> {
+                        val product = line.productId?.let { database.productDao().findById(it) } ?: return@any true
+                        if (!product.available) return@any true
+                        if (product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
+                            (product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO) < BigDecimal.valueOf(line.quantity.toLong())
+                        } else false
+                    }
+                    SaleLineType.PENDING_CATALOG -> false
+                    SaleLineType.OPEN_AMOUNT -> {
+                        val authorizer = line.authorizedByOperatorId?.toString()?.let { database.userDao().find(it) }
+                        !allowOpenProducts() || line.quantity != 1 || line.unitPriceCentavos <= 0 ||
+                            line.category.trim() !in allowedOpenCategories || line.productId != null ||
+                            !line.sourceBarcode.isNullOrBlank() || line.stockPolicy != "NOT_CONTROLLED" ||
+                            line.name != "Producto abierto · ${line.category.trim()}" ||
+                            line.authorizedAtEpochMillis == null || authorizer == null || !authorizer.active ||
+                            (authorizer.role != "MANAGER" && authorizer.role != "SUPERADMIN")
+                    }
+                }
+            }) return null
         val gross = lines.sumOf { it.unitPriceCentavos * it.quantity }
         if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || (discount.authorizedBy.role != "MANAGER" && discount.authorizedBy.role != "SUPERADMIN"))) return null
         val total = gross - (discount?.amountCentavos ?: 0)
@@ -285,6 +319,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     line.stockPolicy,
                     line.lineType.name,
                     line.sourceBarcode,
+                    line.authorizedByOperatorId,
+                    line.authorizedAtEpochMillis,
                 )
             }
             operations.insertLines(saleLines)

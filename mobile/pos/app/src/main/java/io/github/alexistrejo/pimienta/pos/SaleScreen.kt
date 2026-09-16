@@ -48,6 +48,7 @@ internal fun Sale(
     var discountRequested by remember { mutableStateOf(false) }
     var withdrawalRequested by remember { mutableStateOf(false) }
     var pendingCatalogBarcode by remember { mutableStateOf<String?>(null) }
+    var openAmountRequested by remember { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     val mode = repository.mode()
@@ -115,6 +116,37 @@ internal fun Sale(
             checkout = false
             portraitPanel = PortraitPanel.CART
             scope.launch { feedbackHost.showSnackbar("Se agregó producto pendiente. Total actualizado.") }
+        }
+    }
+
+    // Verifies the manager PIN before adding the auditable open amount line.
+    fun addOpenAmountLine(category: String, centavos: Long, authorizer: LocalUserEntity, pin: String) {
+        if (busy || !repository.allowOpenProducts()) return
+        scope.launch {
+            val approved = withContext(Dispatchers.IO) {
+                authorizer.active &&
+                    (authorizer.role == "MANAGER" || authorizer.role == "SUPERADMIN") &&
+                    authorizer.id.toLongOrNull() != null &&
+                    repository.authenticate(authorizer.id, pin)
+            }
+            if (!approved) {
+                feedbackHost.showSnackbar("PIN inválido o autorizador inactivo.")
+                return@launch
+            }
+            cart = cart + CartLine(
+                null,
+                "Producto abierto · ${category.trim()}",
+                category.trim(),
+                centavos,
+                "NOT_CONTROLLED",
+                1,
+                SaleLineType.OPEN_AMOUNT,
+                null,
+                authorizer.id.toLong(),
+                System.currentTimeMillis(),
+            )
+            openAmountRequested = false
+            discount = null
         }
     }
 
@@ -227,17 +259,35 @@ internal fun Sale(
             pendingCatalogBarcode?.let { barcode ->
                 PendingCatalogDialog(
                     barcode = barcode,
+                    openAmountAvailable = repository.allowOpenProducts(),
                     onDismiss = { pendingCatalogBarcode = null },
                     onConfirm = { addPendingCatalogLine(barcode, it) },
+                    onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
+                )
+            }
+            if (openAmountRequested) {
+                OpenAmountDialog(
+                    categories = repository.openAmountCategories(),
+                    users = users,
+                    verifyPin = { user, pin ->
+                        withContext(Dispatchers.IO) {
+                            user.active &&
+                                (user.role == "MANAGER" || user.role == "SUPERADMIN") &&
+                                user.id.toLongOrNull() != null &&
+                                repository.authenticate(user.id, pin)
+                        }
+                    },
+                    onDismiss = { openAmountRequested = false },
+                    onConfirm = ::addOpenAmountLine,
                 )
             }
 
             if (landscape) {
                 Row(Modifier.weight(1f).fillMaxWidth()) {
-                    CatalogPanel(
-                        Modifier.weight(0.6f).fillMaxHeight(), categories, category, { category = it }, search,
-                        { search = it }, filtered, ::add,
-                    )
+                        CatalogPanel(
+                            Modifier.weight(0.6f).fillMaxHeight(), categories, category, { category = it }, search,
+                            { search = it }, filtered, ::add, repository.allowOpenProducts(), { openAmountRequested = true },
+                        )
                     if (checkout) {
                         Checkout(
                             modifier = Modifier.weight(0.4f).fillMaxHeight().padding(12.dp),
@@ -273,7 +323,7 @@ internal fun Sale(
                 if (portraitPanel == PortraitPanel.CATALOG) {
                     CatalogPanel(
                         Modifier.weight(1f).fillMaxWidth(), categories, category, { category = it }, search,
-                        { search = it }, filtered, ::add,
+                        { search = it }, filtered, ::add, repository.allowOpenProducts(), { openAmountRequested = true },
                     )
                 } else {
                     CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; discount = null }, { discountRequested = true }) { checkout = true }

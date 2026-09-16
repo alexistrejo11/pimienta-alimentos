@@ -26,16 +26,19 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
   private final PosOperatorRepository operatorRepository;
   private final HeadquarterRepository headquarterRepository;
   private final PosSyncTombstoneRepository tombstoneRepository;
+  private final PosChangeLogService posChangeLogService;
   private final PasswordEncoder pinPasswordEncoder;
 
   public OperatorManagementUseCasesImpl(
       PosOperatorRepository operatorRepository,
       HeadquarterRepository headquarterRepository,
       PosSyncTombstoneRepository tombstoneRepository,
+      PosChangeLogService posChangeLogService,
       @Qualifier("pinPasswordEncoder") PasswordEncoder pinPasswordEncoder) {
     this.operatorRepository = operatorRepository;
     this.headquarterRepository = headquarterRepository;
     this.tombstoneRepository = tombstoneRepository;
+    this.posChangeLogService = posChangeLogService;
     this.pinPasswordEncoder = pinPasswordEncoder;
   }
 
@@ -71,7 +74,9 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
             .withActive(true)
             .withHeadquarterIds(hqIds)
             .register();
-    return operatorRepository.save(operator);
+    PosOperator saved = operatorRepository.save(operator);
+    hqIds.forEach(hqId -> posChangeLogService.appendOperator(hqId, saved.getId(), "UPSERT"));
+    return saved;
   }
 
   @Override
@@ -94,7 +99,10 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
       operator.setActive(command.active());
     }
     operator.touch();
-    return operatorRepository.save(operator);
+    PosOperator saved = operatorRepository.save(operator);
+    saved.getHeadquarterIds()
+        .forEach(hqId -> posChangeLogService.appendOperator(hqId, saved.getId(), "UPSERT"));
+    return saved;
   }
 
   @Override
@@ -103,7 +111,10 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
     ensureHeadquarter(headquarterId);
     PosOperator operator = get(operatorId);
     operator.assignHeadquarter(headquarterId);
-    return operatorRepository.save(operator);
+    PosOperator saved = operatorRepository.save(operator);
+    saved.getHeadquarterIds()
+        .forEach(hqId -> posChangeLogService.appendOperator(hqId, saved.getId(), "UPSERT"));
+    return saved;
   }
 
   @Override
@@ -115,6 +126,7 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
     PosOperator saved = operatorRepository.save(operator);
     if (wasAssigned) {
       tombstoneRepository.save(PosSyncTombstone.operator(headquarterId, operatorId));
+      posChangeLogService.appendOperator(headquarterId, operatorId, "DEACTIVATE");
     }
     return saved;
   }
@@ -127,6 +139,7 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
     PosOperator saved = operatorRepository.save(operator);
     for (Long headquarterId : operator.getHeadquarterIds()) {
       tombstoneRepository.save(PosSyncTombstone.operator(headquarterId, operatorId));
+      posChangeLogService.appendOperator(headquarterId, operatorId, "DEACTIVATE");
     }
     return saved;
   }

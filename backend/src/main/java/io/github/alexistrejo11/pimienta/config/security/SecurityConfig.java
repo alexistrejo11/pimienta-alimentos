@@ -115,12 +115,25 @@ public class SecurityConfig {
                                                                  .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
                                                                  .requestMatchers(BASE + "/pos/admin/**")
                                                                  .hasAnyRole("ADMIN", "MANAGER")
-                                                                 .requestMatchers(
+                                                                  .requestMatchers(
                                                                                   BASE + "/headquarters/*/pos-settings",
-                                                                                 BASE + "/headquarters/*/pos-settings/**",
-                                                                                 BASE + "/headquarters/*/pos-catalog",
-                                                                                 BASE + "/headquarters/*/pos-catalog/**")
-                                                                 .hasAnyRole("ADMIN", "MANAGER")
+                                                                                 BASE + "/headquarters/*/pos-settings/**")
+                                                                  .hasAnyRole("ADMIN", "MANAGER")
+                                                                   .requestMatchers(
+                                                                                   HttpMethod.GET,
+                                                                                   BASE + "/headquarters/*/pos-catalog",
+                                                                                   BASE + "/headquarters/*/pos-catalog/**",
+                                                                                   BASE + "/headquarters/*/pos-categories",
+                                                                                   BASE + "/headquarters/*/pos-categories/**")
+                                                                   .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
+                                                                   .requestMatchers(
+                                                                                   BASE + "/headquarters/*/pos-categories",
+                                                                                   BASE + "/headquarters/*/pos-categories/**")
+                                                                   .hasAnyRole("ADMIN", "MANAGER")
+                                                                   .requestMatchers(
+                                                                                   BASE + "/headquarters/*/pos-catalog",
+                                                                                  BASE + "/headquarters/*/pos-catalog/**")
+                                                                  .hasAnyRole("ADMIN", "MANAGER")
                                                                  // POS operators may inspect stock only; inventory writes stay with staff roles.
                                                                  .requestMatchers(HttpMethod.GET, BASE + "/inventory/**")
                                                                  .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")

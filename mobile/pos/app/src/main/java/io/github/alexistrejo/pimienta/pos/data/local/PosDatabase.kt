@@ -29,6 +29,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleCancellationEnti
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
 import io.github.alexistrejo.pimienta.pos.data.local.dao.SyncDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.TelemetryEventEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.CatalogCategoryEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 
 // Defines the first local schema for catalog bootstrap data.
 @Database(
@@ -36,9 +38,10 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.TelemetryEventEntity
         SiteEntity::class, ProductEntity::class, BootstrapEntity::class, LocalUserEntity::class,
         DeviceEntity::class, ShiftEntity::class, SaleEntity::class, SaleLineEntity::class,
         PaymentEntity::class, SaleDiscountEntity::class, CashWithdrawalEntity::class, InventoryMovementEntity::class, OutboxEventEntity::class, PrintJobEntity::class,
-        CashCountAttemptEntity::class, ShiftCloseEntity::class, SaleCancellationEntity::class, SyncStateEntity::class, TelemetryEventEntity::class
+         CashCountAttemptEntity::class, ShiftCloseEntity::class, SaleCancellationEntity::class, SyncStateEntity::class, TelemetryEventEntity::class,
+         CatalogCategoryEntity::class, PosPolicyEntity::class
     ],
-     version = 10,
+      version = 13,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {
@@ -48,6 +51,7 @@ abstract class PosDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun operationsDao(): OperationsDao
     abstract fun syncDao(): SyncDao
+    abstract fun syncProjectionDao(): io.github.alexistrejo.pimienta.pos.data.local.dao.SyncProjectionDao
 
     companion object {
         // Builds the SQLite database owned by Room.
@@ -58,7 +62,7 @@ abstract class PosDatabase : RoomDatabase() {
          ).addMigrations(
             Migrations.V1_TO_V2, Migrations.V2_TO_V3, Migrations.V3_TO_V4, Migrations.V4_TO_V5,
             Migrations.V5_TO_V6, Migrations.V6_TO_V7, Migrations.V7_TO_V8, Migrations.V8_TO_V9,
-            Migrations.V9_TO_V10,
+              Migrations.V9_TO_V10, Migrations.V10_TO_V11, Migrations.V11_TO_V12, Migrations.V12_TO_V13,
         ).build()
     }
 }

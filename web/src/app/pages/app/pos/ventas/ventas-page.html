@@ -18,7 +18,7 @@
     </label>
     <label class="flex items-center gap-2 self-end pb-2 text-sm">
       <input type="checkbox" class="size-4 accent-primary" [(ngModel)]="openProductsOnly" />
-      Solo productos abiertos
+      Solo montos abiertos
     </label>
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-medium">Hasta</span>
@@ -74,7 +74,7 @@
                   {{ syncStatusLabel(s.syncStatus) }}
                 }
               </td>
-              <td class="px-4 py-3">@if (s.containsOpenProduct) { <span class="ui-badge-warning">Producto abierto</span> } @else { <span class="text-on-surface-variant">Catálogo</span> }</td>
+              <td class="px-4 py-3">@if (s.containsOpenProduct) { <span class="ui-badge-warning">Monto abierto</span> } @else { <span class="text-on-surface-variant">Catálogo</span> }</td>
             </tr>
           }
         </tbody>

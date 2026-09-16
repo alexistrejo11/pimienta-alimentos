@@ -28,3 +28,14 @@ Non-fatal behaviors, consistency gaps, and product decisions to revisit. **Resol
 
 - No extra follow-ups from this pass for headquarters POS settings/catalog endpoints.
 - GET `pos-settings` returns `HEADQUARTER_POS_SETTINGS_NOT_FOUND` until the first PUT (by design: settings are created on upsert, not on HQ create).
+
+## POS Open Product settings (2026-09-16)
+
+- `allowOpenProducts` is now preserved on create and update.
+- Open Product categories are normalized by trimming, dropping blanks, and
+  deduplicating case-insensitively. Enabling the policy without a category is
+  rejected with `INVALID_ARGUMENT`.
+## POS durable change feed concurrency tests
+
+- Added deterministic bootstrap watermark concurrency coverage and retained-history cursor coverage.
+- No additional non-fatal follow-ups surfaced from this test pass.

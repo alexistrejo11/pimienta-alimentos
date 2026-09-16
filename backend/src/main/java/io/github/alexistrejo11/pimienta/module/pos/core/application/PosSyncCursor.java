@@ -1,48 +1,36 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.application;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Opaque HQ-scoped watermark: {@code cursor-hq-{id}-v{epochMillis}}. */
+/** Opaque HQ-scoped sequence cursor: {@code cursor-hq-{id}-s{sequence}}. */
 public final class PosSyncCursor {
 
-  private static final Pattern PATTERN = Pattern.compile("^cursor-hq-(\\d+)-v(\\d+)$");
-  private static final ZoneId ZONE = ZoneId.systemDefault();
+  private static final Pattern PATTERN = Pattern.compile("^cursor-hq-(\\d+)-s(\\d+)$");
 
   private final long headquarterId;
-  private final long watermarkMillis;
+  private final long sequence;
 
-  private PosSyncCursor(long headquarterId, long watermarkMillis) {
+  private PosSyncCursor(long headquarterId, long sequence) {
     this.headquarterId = headquarterId;
-    this.watermarkMillis = watermarkMillis;
+    this.sequence = sequence;
   }
 
   public long headquarterId() {
     return headquarterId;
   }
 
-  public long watermarkMillis() {
-    return watermarkMillis;
-  }
-
-  public LocalDateTime since() {
-    return LocalDateTime.ofInstant(Instant.ofEpochMilli(watermarkMillis), ZONE);
+  public long sequence() {
+    return sequence;
   }
 
   public String format() {
-    return "cursor-hq-" + headquarterId + "-v" + watermarkMillis;
+    return "cursor-hq-" + headquarterId + "-s" + sequence;
   }
 
-  public static PosSyncCursor of(long headquarterId, long watermarkMillis) {
-    return new PosSyncCursor(headquarterId, Math.max(0L, watermarkMillis));
-  }
-
-  public static PosSyncCursor now(long headquarterId) {
-    return of(headquarterId, Instant.now().toEpochMilli());
+  public static PosSyncCursor of(long headquarterId, long sequence) {
+    return new PosSyncCursor(headquarterId, Math.max(0L, sequence));
   }
 
   public static Optional<PosSyncCursor> tryParse(String raw) {
@@ -55,21 +43,14 @@ public final class PosSyncCursor {
     }
     try {
       long hqId = Long.parseLong(m.group(1));
-      long watermark = Long.parseLong(m.group(2));
-      return Optional.of(of(hqId, watermark));
+      long sequence = Long.parseLong(m.group(2));
+      return Optional.of(of(hqId, sequence));
     } catch (NumberFormatException ex) {
       return Optional.empty();
     }
   }
 
-  public static long toMillis(LocalDateTime dateTime) {
-    if (dateTime == null) {
-      return 0L;
-    }
-    return dateTime.atZone(ZONE).toInstant().toEpochMilli();
-  }
-
-  public PosSyncCursor advanceTo(long candidateMillis) {
-    return of(headquarterId, Math.max(watermarkMillis, candidateMillis));
+  public PosSyncCursor advanceTo(long candidateSequence) {
+    return of(headquarterId, Math.max(sequence, candidateSequence));
   }
 }

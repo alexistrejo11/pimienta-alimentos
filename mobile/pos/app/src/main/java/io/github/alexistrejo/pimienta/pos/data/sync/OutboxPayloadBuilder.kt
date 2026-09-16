@@ -17,6 +17,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.Instant
 
 // Builds sync event payload JSON matching backend POS contracts.
 object OutboxPayloadBuilder {
@@ -116,6 +117,8 @@ object OutboxPayloadBuilder {
         put("stockPolicy", line.stockPolicy)
         put("soldWithNegativeStock", false)
         put("soldWhileUnavailable", product?.available == false)
+        if (line.authorizedByOperatorId != null) put("authorizedByOperatorId", line.authorizedByOperatorId) else put("authorizedByOperatorId", JsonNull)
+        if (line.authorizedAtEpochMillis != null) put("authorizedAt", Instant.ofEpochMilli(line.authorizedAtEpochMillis).toString()) else put("authorizedAt", JsonNull)
         when {
             !line.sourceBarcode.isNullOrBlank() -> put("rawBarcode", line.sourceBarcode)
             product?.barcode?.isNotBlank() == true -> put("rawBarcode", product.barcode)

@@ -15,6 +15,8 @@ public interface HeadquarterItemRepository {
 
   List<HeadquarterItem> findAllByHeadquarterId(long headquarterId);
 
+  List<HeadquarterItem> findAllByItemId(long itemId);
+
   /** Soft-deleted catalog rows for POS deactivate deltas. */
   List<HeadquarterItem> findDeletedByHeadquarterIdAndDeletedAtAfter(
       long headquarterId, LocalDateTime since);

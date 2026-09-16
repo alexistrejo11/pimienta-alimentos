@@ -130,4 +130,32 @@ object Migrations {
             database.execSQL("ALTER TABLE `sale_line_new` RENAME TO `sale_line`")
         }
     }
+
+    // Adds durable catalog categories and POS policies without touching offline sales or outbox data.
+    val V10_TO_V11 = object : Migration(10, 11) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `catalog_category` (`siteId` TEXT NOT NULL, `name` TEXT NOT NULL, `active` INTEGER NOT NULL, PRIMARY KEY(`siteId`, `name`))",
+            )
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `pos_policy` (`id` INTEGER NOT NULL, `siteId` TEXT NOT NULL, `allowNegativeStock` INTEGER NOT NULL, `allowOpenProducts` INTEGER NOT NULL, `defaultNegativeStockLimit` INTEGER, `staleCatalogWarnHours` INTEGER NOT NULL, `staleCatalogBlockHours` INTEGER NOT NULL, `openAmountCategoriesJson` TEXT NOT NULL, PRIMARY KEY(`id`))",
+            )
+        }
+    }
+
+    // Renames retry lifecycle values while preserving every queued offline operation.
+    val V11_TO_V12 = object : Migration(11, 12) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("UPDATE `outbox_event` SET `status` = 'FAILED_RETRYABLE' WHERE `status` = 'RETRY'")
+            database.execSQL("UPDATE `outbox_event` SET `status` = 'FAILED_RETRYABLE' WHERE `status` = 'IN_FLIGHT'")
+        }
+    }
+
+    // Adds nullable authorization evidence without rewriting historical sale lines.
+    val V12_TO_V13 = object : Migration(12, 13) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `sale_line` ADD COLUMN `authorizedByOperatorId` INTEGER")
+            database.execSQL("ALTER TABLE `sale_line` ADD COLUMN `authorizedAtEpochMillis` INTEGER")
+        }
+    }
 }

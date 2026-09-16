@@ -18,6 +18,8 @@ public interface HeadquarterItemJpaRepository
 
   List<HeadquarterItemJpaEntity> findByHeadquarterIdAndDeletedAtIsNull(Long headquarterId);
 
+  List<HeadquarterItemJpaEntity> findByItemIdAndDeletedAtIsNull(Long itemId);
+
   List<HeadquarterItemJpaEntity> findByHeadquarterIdAndDeletedAtIsNotNullAndDeletedAtAfter(
       Long headquarterId, LocalDateTime deletedAt);
 }

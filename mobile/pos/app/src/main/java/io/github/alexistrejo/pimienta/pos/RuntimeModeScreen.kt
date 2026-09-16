@@ -30,6 +30,7 @@ internal fun RuntimeModeBanner(
     requiresPinForSwitch: Boolean,
     onSwitchRequested: (RuntimeMode, String?) -> Unit,
     onResetDemo: (() -> Unit)? = null,
+    onForceSync: () -> Unit = {},
 ) {
     var open by remember { mutableStateOf(false) }
     var pin by remember { mutableStateOf("") }
@@ -46,6 +47,12 @@ internal fun RuntimeModeBanner(
     ) {
         Text(label, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Button(
+                onClick = onForceSync,
+                modifier = Modifier.heightIn(min = 36.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                shape = MaterialTheme.shapes.extraSmall,
+            ) { Text("Forzar sincronización") }
             if (mode == RuntimeMode.SANDBOX && isDebug && onResetDemo != null) {
                 Button(
                     onClick = onResetDemo,
