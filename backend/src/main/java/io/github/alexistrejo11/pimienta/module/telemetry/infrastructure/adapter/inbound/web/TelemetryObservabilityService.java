@@ -44,23 +44,34 @@ public class TelemetryObservabilityService {
   }
 
   public PosTelemetryDashboardResponse dashboard(Long hq) {
+    PosFleetSnapshot fleet = fleet(hq);
+    return new PosTelemetryDashboardResponse(fleet.totalDevices(), fleet.onlineDevices(), fleet.degradedDevices(),
+        fleet.offlineDevices(), fleet.devicesWithoutSnapshot(), fleet.pendingEvents(), fleet.openStaleDevices());
+  }
+
+  /** Bounded fleet totals for Prometheus gauges; never includes device or user identifiers. */
+  public PosFleetSnapshot fleet(Long hq) {
     List<PosDevice> devices = hq == null
         ? deviceRepository.findAll(Pageable.ofSize(500)).getContent()
         : deviceRepository.findByHeadquarterId(hq, Pageable.ofSize(500)).getContent();
     var latest = snapshotRepository.findLatest(hq).stream().collect(java.util.stream.Collectors.toMap(
         io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.output.persistence.repository.PosHealthSnapshotSpringDataRepository.LatestHealthProjection::getDeviceId, x -> x));
-    long online = 0, degraded = 0, offline = 0, pending = 0;
+    long online = 0, degraded = 0, offline = 0, pending = 0, maxAge = 0;
     Instant cutoff = Instant.now().minus(ONLINE_WINDOW);
     for (PosDevice device : devices) {
       var snapshot = latest.get(device.getId());
       if (snapshot == null || snapshot.getReceivedAt().isBefore(cutoff)) { offline++; continue; }
       pending += snapshot.getPendingEvents();
+      maxAge = Math.max(maxAge, snapshot.getOldestPendingAgeSeconds());
       if ("ONLINE".equals(snapshot.getSyncState()) && snapshot.getPendingEvents() == 0) online++;
       else degraded++;
     }
-    return new PosTelemetryDashboardResponse(devices.size(), online, degraded, offline,
-        devices.size() - latest.size(), pending, offline);
+    return new PosFleetSnapshot(devices.size(), online, degraded, offline,
+        devices.size() - latest.size(), pending, offline, maxAge);
   }
+
+  public record PosFleetSnapshot(long totalDevices, long onlineDevices, long degradedDevices, long offlineDevices,
+      long devicesWithoutSnapshot, long pendingEvents, long openStaleDevices, long maxOldestPendingAgeSeconds) {}
 
   public PosTelemetryActivityResponse activity(Long hq, String cursor, int limit) {
     Cursor parsed = decode(cursor);

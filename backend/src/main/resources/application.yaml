@@ -153,5 +153,9 @@ logging:
     format:
       console: logstash
       file: logstash
+    json:
+      add:
+        service: backend
+        source: application
   level:
     org.springframework.web: INFO

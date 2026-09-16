@@ -2,7 +2,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpBackend, HttpClient } from '@angular/common/http';
 import { ErrorHandler, inject, Injectable, PLATFORM_ID } from '@angular/core';
 
-import { API_BASE_URL } from '../config/api.config';
+import { API_BASE_URL, WEB_RELEASE } from '../config/api.config';
 
 type WebTelemetryPayload = {
   schemaVersion: number;
@@ -33,6 +33,7 @@ export class WebTelemetryService {
       message: normalized.message,
       stack: normalized.stack,
       route: window.location.pathname,
+      release: WEB_RELEASE,
       userAgent: truncateUserAgent(navigator.userAgent),
       occurredAt: new Date().toISOString(),
     });
@@ -47,6 +48,7 @@ export class WebTelemetryService {
       message: `API ${method} ${path} failed (${status || 'network'})`,
       route: window.location.pathname,
       traceId: traceId ? truncate(traceId, 120) : undefined,
+      release: WEB_RELEASE,
       userAgent: truncateUserAgent(navigator.userAgent),
       occurredAt: new Date().toISOString(),
     });

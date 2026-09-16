@@ -1,0 +1,38 @@
+groups:
+  - name: pimienta-local
+    rules:
+      - alert: PimientaApiScrapeDown
+        expr: up{job="pimienta-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Prometheus cannot scrape the Pimienta API.
+
+      - alert: PimientaApiHigh5xx
+        expr: |
+          sum(rate(http_server_requests_seconds_count{application="pimienta",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_server_requests_seconds_count{application="pimienta"}[5m])), 0.001)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: API 5xx rate is above 5% for 5 minutes.
+
+      - alert: PimientaTelemetryRejectsHigh
+        expr: sum(rate(pimienta_telemetry_events_rejected_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Telemetry ingestion is rejecting an unusual volume of payloads.
+
+      - alert: PimientaPosOfflineDevices
+        expr: pimienta_pos_devices{state="offline"} > 0
+        for: 45m
+        labels:
+          severity: warning
+        annotations:
+          summary: At least one POS device has not reported a fresh health snapshot.

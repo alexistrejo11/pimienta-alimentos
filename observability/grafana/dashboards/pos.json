@@ -1,0 +1,72 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "POS devices by state",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pimienta_pos_devices",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "POS pending outbox events",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pimienta_pos_pending_events",
+          "legendFormat": "pending",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "title": "Oldest pending POS event age",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pimienta_pos_oldest_pending_age_seconds",
+          "legendFormat": "max age",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "title": "POS client events",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{service=\"backend\", source=\"pos-client\"}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 41,
+  "tags": ["pimienta", "pos"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "Pimienta POS Fleet",
+  "uid": "pimienta-pos",
+  "version": 1
+}

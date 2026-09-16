@@ -1,41 +1,59 @@
-// Discovers local Docker containers and forwards their stdout logs to Loki.
+// Collects only Compose `api` and `web` stdout and forwards JSON logs to Loki.
 discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
 }
 
-discovery.relabel "containers" {
+discovery.relabel "pimienta" {
   targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "^(api|web)$"
+    action        = "keep"
+  }
 
   rule {
     source_labels = ["__meta_docker_container_name"]
     regex         = "/(.*)"
     target_label  = "container"
   }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "^api$"
+    replacement   = "backend"
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "^web$"
+    replacement   = "web-ssr"
+    target_label  = "service"
+  }
 }
 
-loki.source.docker "containers" {
+loki.source.docker "pimienta" {
   host       = "unix:///var/run/docker.sock"
-  targets    = discovery.relabel.containers.output
-  labels     = { job = "docker" }
+  targets    = discovery.relabel.pimienta.output
+  labels     = { job = "pimienta", environment = "local" }
   forward_to = [loki.process.application.receiver]
 }
 
-// Extracts stable fields from Spring and SSR JSON without turning IDs into labels.
+// Labels `service` and `environment` come from Docker/Compose, not from JSON `service`
+// (audit events reuse that field for the Spring application name).
 loki.process "application" {
   stage.json {
     expressions = {
-      level     = "level",
-      service   = "service",
-      source    = "source",
-      trace_id  = "traceId",
+      level  = "level",
+      source = "source",
     }
   }
 
   stage.labels {
     values = {
-      level   = "level",
-      service = "service",
-      source  = "source",
+      level  = "level",
+      source = "source",
     }
   }
 

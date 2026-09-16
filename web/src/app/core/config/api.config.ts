@@ -7,6 +7,7 @@
  */
 export type PimientaRuntimeConfig = {
   apiBaseUrl: string;
+  release?: string;
 };
 
 declare global {
@@ -29,3 +30,17 @@ function resolveApiBaseUrl(): string {
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
+export const WEB_RELEASE = resolveRelease();
+
+function resolveRelease(): string {
+  const fromEnv =
+    typeof process !== 'undefined' ? process.env?.['WEB_RELEASE']?.trim() : undefined;
+  if (fromEnv) {
+    return fromEnv;
+  }
+  const fromWindow = globalThis.__PIMIENTA_CONFIG__?.release?.trim();
+  if (fromWindow) {
+    return fromWindow;
+  }
+  return '2.1.0';
+}

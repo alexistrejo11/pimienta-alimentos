@@ -4,6 +4,8 @@ import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.TelemetryAcceptedResponse;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.WebTelemetryEventRequest;
+import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.doc.DocTelemetry;
+import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.doc.DocWebTelemetryEvent;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import jakarta.validation.Valid;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(BASE + "/telemetry")
 @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+@DocTelemetry
 public class TelemetryController {
 
   private final TelemetryIngestionService ingestionService;
@@ -25,6 +28,7 @@ public class TelemetryController {
   }
 
   @PostMapping("/web/events")
+  @DocWebTelemetryEvent
   public TelemetryAcceptedResponse webEvent(@Valid @RequestBody WebTelemetryEventRequest request) {
     ingestionService.ingestWeb(request);
     return new TelemetryAcceptedResponse(1);

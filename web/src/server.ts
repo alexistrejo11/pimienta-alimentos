@@ -9,6 +9,22 @@ import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
+function logJson(level: string, message: string, extra: Record<string, unknown> = {}): void {
+  const line = JSON.stringify({
+    '@timestamp': new Date().toISOString(),
+    level,
+    service: 'web-ssr',
+    source: 'application',
+    message,
+    ...extra,
+  });
+  if (level === 'ERROR') {
+    console.error(line);
+  } else {
+    console.log(line);
+  }
+}
+
 function parseAllowedHosts(): string[] {
   const raw = process.env['ALLOWED_HOSTS'] ?? process.env['NG_ALLOWED_HOSTS'] ?? '';
   return raw
@@ -20,7 +36,7 @@ function parseAllowedHosts(): string[] {
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) {
-    console.error(`Missing required environment variable: ${name}`);
+    logJson('ERROR', 'missing_required_env', { name });
     process.exit(1);
   }
   return value;
@@ -51,7 +67,10 @@ app.get('/runtime-config.js', (_req, res) => {
     .type('application/javascript; charset=utf-8')
     .set('Cache-Control', 'no-store')
     .send(
-      `window.__PIMIENTA_CONFIG__=${JSON.stringify({ apiBaseUrl })};`,
+      `window.__PIMIENTA_CONFIG__=${JSON.stringify({
+        apiBaseUrl,
+        release: process.env['WEB_RELEASE']?.trim() || '2.1.0',
+      })};`,
     );
 });
 
@@ -75,7 +94,14 @@ app.use((req, res, next) => {
     .then((response) =>
       response ? writeResponseToNodeResponse(response, res) : next(),
     )
-    .catch(next);
+    .catch((error: unknown) => {
+      logJson('ERROR', 'ssr_render_failed', {
+        method: req.method,
+        path: req.path,
+        cause: error instanceof Error ? error.message : 'unknown',
+      });
+      next(error);
+    });
 });
 
 /**
@@ -92,7 +118,7 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
       throw error;
     }
 
-    console.log(`Node Express server listening on http://localhost:${port}`);
+    logJson('INFO', 'ssr_listening', { port: Number(port) });
   });
 }
 

@@ -5,6 +5,8 @@ import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 import io.github.alexistrejo11.pimienta.config.security.DeviceAuthenticationContext;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.PosTelemetryBatchRequest;
 import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.dto.TelemetryAcceptedResponse;
+import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.doc.DocPosTelemetryDevice;
+import io.github.alexistrejo11.pimienta.module.telemetry.infrastructure.adapter.inbound.web.doc.DocPosTelemetryIngest;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import jakarta.validation.Valid;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(BASE + "/pos/telemetry")
 @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+@DocPosTelemetryDevice
 public class PosTelemetryController {
 
   private final TelemetryIngestionService ingestionService;
@@ -27,6 +30,7 @@ public class PosTelemetryController {
   }
 
   @PostMapping("/events")
+  @DocPosTelemetryIngest
   public TelemetryAcceptedResponse events(
       @AuthenticationPrincipal DeviceAuthenticationContext device,
       @Valid @RequestBody PosTelemetryBatchRequest request) {

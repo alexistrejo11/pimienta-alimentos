@@ -49,7 +49,7 @@ Status: planned. The target architecture is documented in [observability.md](obs
 - [x] Add failure-safe behavior: telemetry ingestion errors never fail a business request or POS sync event batch.
 - [x] Add Micrometer counters for ingestion outcomes and bounded POS health states.
 - [x] Add unit coverage for client event metric emission and bounded source handling.
-- [ ] Add integration tests for authorization, validation, rate limits, identity derivation, redaction, and metric aggregation.
+- [x] Add integration tests for authorization, validation, rate limits, identity derivation, redaction, and metric aggregation.
 
 **Exit condition:** clients have secure server-owned endpoints and the backend exposes ingestion and fleet-health metrics without high-cardinality labels.
 
@@ -81,8 +81,8 @@ Status: planned. The target architecture is documented in [observability.md](obs
 
 ## Phase 6: Dashboards, Alerts, and Production Rollout
 
-- [ ] Provision API, backend error, browser error, POS fleet-health, and telemetry-ingestion Grafana dashboards.
-- [ ] Create alert rules for unavailable API scrape, elevated 5xx rate, stale POS synchronization, aging POS outbox, and abnormal telemetry rejection rate.
+- [x] Provision API, backend error, browser error, POS fleet-health, and telemetry-ingestion Grafana dashboards.
+- [x] Create alert rules for unavailable API scrape, elevated 5xx rate, stale POS synchronization, aging POS outbox, and abnormal telemetry rejection rate.
 - [ ] Configure production Loki/Prometheus retention, persistent storage, backup, TLS, and role-restricted Grafana access.
 - [ ] Deploy observability infrastructure separately from application services with production-specific secrets and endpoints.
 - [ ] Run a production smoke test: scrape API metrics, inspect a redacted backend error, receive a browser event, and receive a POS event.

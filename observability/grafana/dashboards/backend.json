@@ -45,6 +45,19 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "id": 4,
+      "title": "SSR errors",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{service=\"web-ssr\", level=~\"ERROR|WARN\"}",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "schemaVersion": 41,
@@ -53,5 +66,5 @@
   "time": { "from": "now-6h", "to": "now" },
   "title": "Pimienta Backend",
   "uid": "pimienta-backend",
-  "version": 1
+  "version": 2
 }

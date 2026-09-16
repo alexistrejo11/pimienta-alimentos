@@ -106,6 +106,8 @@ public class SecurityConfig {
                                                                 .requestMatchers(POS_DEVICE_PUBLIC_PATHS).permitAll()
                                                                  .requestMatchers(BASE + "/users/me", BASE + "/users/me/**")
                                                                  .access(staffJwtOnly())
+                                                                 .requestMatchers(HttpMethod.POST, BASE + "/telemetry/web/events")
+                                                                 .access(staffJwtOnly())
                                                                  // POS operator read/report and sale access is deliberately narrower than POS admin.
                                                                  .requestMatchers(
                                                                                   BASE + "/pos/admin/reports/sales",

@@ -56,7 +56,10 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             if (events.isNotEmpty()) {
                 inFlightIds = events.map { it.id }
                 db.syncDao().markInFlight(inFlightIds)
-                val siteId = device.siteId ?: return Result.success()
+                val siteId = device.siteId ?: run {
+                    uploadTelemetry(api, device.id, null, state)
+                    return Result.success()
+                }
                 val response = api.events(EventsRequest(events.map { it.toEnvelope(device.id, siteId, json) }))
                 val received = response.results.map { it.eventId }.toSet()
                 acceptedResults = response.results.filter { it.status.uppercase() in setOf("ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW") }
@@ -84,6 +87,11 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             Result.success()
         } catch (e: HttpException) {
             recordDiagnostic("ERROR", "sync_http_failure", "POS sync HTTP ${e.code()}")
+            // Keep pushing health while retrying; skip only when the session is no longer usable.
+            if (e.code() != 401 && e.code() != 403) {
+                val retrying = (db.syncDao().state() ?: state).copy(status = "RETRYING")
+                uploadTelemetry(api, device.id, device.siteId, retrying)
+            }
             if (e.code() == 401) {
                 return refreshAccessTokenOrRetry(state, baseUrl)
             } else if (e.code() == 403) {
@@ -107,6 +115,8 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             }
         } catch (e: Exception) {
             recordDiagnostic("ERROR", "sync_failure", "POS sync ${e.javaClass.simpleName}")
+            val retrying = (db.syncDao().state() ?: state).copy(status = "RETRYING")
+            uploadTelemetry(api, device.id, device.siteId, retrying)
             inFlightIds.forEach {
                 db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message ?: "sync failed")
             }

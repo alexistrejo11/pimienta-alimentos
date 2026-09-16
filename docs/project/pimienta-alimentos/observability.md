@@ -44,8 +44,8 @@ Production runs a separate observability instance with its own persistent volume
 
 Spring Boot and the Angular SSR Node process write JSON logs to stdout. Alloy parses the JSON and attaches only stable infrastructure labels:
 
-- `service`: `backend` or `web-ssr`
-- `environment`: deployment environment
+- `service`: `backend` or `web-ssr` (from the Compose service, not from JSON fields)
+- `environment`: deployment environment (`local` on the development stack)
 - `level`: log severity
 - `source`: `application`, `audit`, `web-client`, or `pos-client`
 
@@ -69,12 +69,10 @@ POS logs cover unexpected errors, retrying or blocked synchronization, enrollmen
 
 Prometheus collects standard Spring Boot, JVM, HTTP server, database-pool, and process metrics from Actuator. The API also exposes bounded custom metrics for POS and telemetry ingestion, including:
 
-- received telemetry batches and rejected payloads;
-- POS devices by synchronization health state;
-- aggregate pending POS outbox count and age buckets;
-- synchronization attempt, success, and failure totals;
-- synchronization duration histogram;
-- printer error total after the hardware adapter exists.
+- received telemetry batches and rejected payloads (`pimienta_telemetry_events_received_total`, `pimienta_telemetry_events_rejected_total`);
+- POS devices by synchronization health state (`pimienta_pos_devices{state}`);
+- aggregate pending POS outbox count and oldest pending age (`pimienta_pos_pending_events`, `pimienta_pos_oldest_pending_age_seconds`);
+- POS health snapshot receipts (`pimienta_telemetry_health_received_total`);
 
 Client reports are state snapshots or counters received by the API. The API retains the latest valid device health state and exports aggregate metrics. Prometheus labels must remain low-cardinality: application, environment, route template, HTTP method/status, and a small fixed outcome or state set are allowed. Device ID, user ID, request ID, sale ID, URL query string, exception message, and stack trace are never metric labels.
 
