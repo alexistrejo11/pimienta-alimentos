@@ -6,12 +6,15 @@ import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 data class PrinterStatusPresentation(val label: String, val alert: Boolean)
 
 fun printerStatusPresentation(mode: RuntimeMode, status: PeripheralStatus): PrinterStatusPresentation {
-    return when (mode) {
-        RuntimeMode.SANDBOX -> PrinterStatusPresentation("Impresora simulada", alert = false)
-        RuntimeMode.PRODUCTION -> when (status) {
-            PeripheralStatus.READY -> PrinterStatusPresentation("Impresora en línea", alert = false)
-            PeripheralStatus.PERMISSION_REQUIRED -> PrinterStatusPresentation("Impresora: permiso USB", alert = true)
-            else -> PrinterStatusPresentation("Impresora fuera de línea", alert = true)
+    return when (status) {
+        PeripheralStatus.READY -> PrinterStatusPresentation("Impresora en línea", alert = false)
+        PeripheralStatus.PERMISSION_REQUIRED -> PrinterStatusPresentation("Impresora: permiso USB", alert = true)
+        else -> {
+            if (mode == RuntimeMode.SANDBOX) {
+                PrinterStatusPresentation("Impresora simulada", alert = false)
+            } else {
+                PrinterStatusPresentation("Impresora fuera de línea", alert = true)
+            }
         }
     }
 }

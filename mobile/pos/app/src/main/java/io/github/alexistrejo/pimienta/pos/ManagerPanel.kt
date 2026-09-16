@@ -408,10 +408,7 @@ private fun StatusPanel(
                     val failed = printJobs.value.count { it.status == "FAILED" }
                     Text("${printJobs.value.size} trabajos pendientes · $failed fallidos", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        when (mode) {
-                            RuntimeMode.SANDBOX -> "Impresora simulada · perfil POS-5890A 58 mm"
-                            RuntimeMode.PRODUCTION -> printerStatusPresentation(mode, printerStatus).label
-                        },
+                        printerStatusPresentation(mode, printerStatus).label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     PosButton("Procesar cola de impresión", {

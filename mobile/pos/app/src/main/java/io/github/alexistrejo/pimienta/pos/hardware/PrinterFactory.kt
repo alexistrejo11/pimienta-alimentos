@@ -9,21 +9,21 @@ import kotlinx.coroutines.flow.asStateFlow
 // Selects the printer implementation for the active runtime mode.
 object PrinterFactory {
     fun create(context: Context, mode: RuntimeMode): TicketPrinter {
-        return when (mode) {
-            RuntimeMode.SANDBOX -> FakeTicketPrinter(profile = PrinterProfiles.pos5890A)
-            RuntimeMode.PRODUCTION -> UsbTicketPrinter.open(context)
-                ?: when (UsbTicketPrinter.status(context)) {
-                    PeripheralStatus.PERMISSION_REQUIRED -> PermissionPendingTicketPrinter
-                    else -> UnavailableTicketPrinter
-                }
+        val real = UsbTicketPrinter.open(context)
+        if (real != null) return real
+
+        val status = UsbTicketPrinter.status(context)
+        if (status == PeripheralStatus.PERMISSION_REQUIRED) return PermissionPendingTicketPrinter
+
+        return if (mode == RuntimeMode.SANDBOX) {
+            FakeTicketPrinter(profile = PrinterProfiles.pos5890A)
+        } else {
+            UnavailableTicketPrinter
         }
     }
 
     fun printerStatus(context: Context, mode: RuntimeMode): PeripheralStatus {
-        return when (mode) {
-            RuntimeMode.SANDBOX -> PeripheralStatus.READY
-            RuntimeMode.PRODUCTION -> UsbTicketPrinter.status(context)
-        }
+        return UsbTicketPrinter.status(context)
     }
 }
 

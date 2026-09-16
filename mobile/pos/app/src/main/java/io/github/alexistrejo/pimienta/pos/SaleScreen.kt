@@ -55,13 +55,13 @@ internal fun Sale(
     val context = LocalContext.current
     val mode = repository.mode()
     val (printerLabel, printerAlert) = rememberLivePrinterStatus(context, mode)
-    val openAmountAllowed = policy?.allowOpenProducts ?: repository.allowOpenProducts()
+    val openAmountAllowed = policy?.allowOpenProducts ?: false
     val openAmountCategories = remember(policy) {
         policy?.let {
             runCatching {
                 kotlinx.serialization.json.Json.decodeFromString<List<String>>(it.openAmountCategoriesJson)
             }.getOrDefault(emptyList())
-        } ?: repository.openAmountCategories()
+        } ?: emptyList()
     }
 
     LaunchedEffect(repository) {
