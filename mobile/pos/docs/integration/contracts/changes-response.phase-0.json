@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "nextCursor": "opaque-site-sequence",
+  "operations": [
+    {
+      "op": "upsert",
+      "entity": "policies",
+      "id": "42",
+      "data": {
+        "allowNegativeStock": true,
+        "allowOpenProducts": true,
+        "defaultNegativeStockLimit": -50,
+        "staleCatalogWarnHours": 24,
+        "staleCatalogBlockHours": 72,
+        "openAmountCategories": ["Bebidas", "Alimentos"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "lineType": "OPEN_AMOUNT",
+  "productId": null,
+  "productName": "Producto abierto · Bebidas",
+  "saleCategory": "Bebidas",
+  "quantity": 1,
+  "unit": "PIECE",
+  "unitPriceCentavos": 4000,
+  "subtotalCentavos": 4000,
+  "stockPolicy": "NOT_CONTROLLED",
+  "rawBarcode": null,
+  "authorizedByOperatorId": "102",
+  "authorizedAt": "2026-09-16T17:00:00Z"
+}
