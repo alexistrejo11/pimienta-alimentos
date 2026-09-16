@@ -8,6 +8,7 @@ import { CrmService } from '../../../core/crm/crm.service';
 import { EmployeeLookupService } from '../../../core/employees/employee-lookup.service';
 import { EmployeeService } from '../../../core/employees/employee.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
+import { contractCategoryLabel, employeeStatusLabel } from '../../../core/i18n/enum-labels';
 import type { ContractCategory, ContractTermKind } from '../../../core/model/contract/contract.enums';
 import type { ContractResponse, CreateOrUpdateContractRequest } from '../../../core/model/contract/contract.dto';
 import type { EmployeeListItemResponse } from '../../../core/model/employee/employee.dto';
@@ -43,6 +44,8 @@ export class ContratosPageComponent implements OnInit {
   readonly employeeOptions = signal<EmployeeListItemResponse[]>([]);
   readonly opportunityOptions = signal<OpportunityResponse[]>([]);
   readonly projectOptions = signal<ProjectResponse[]>([]);
+  readonly contractCategoryLabel = contractCategoryLabel;
+  readonly employeeStatusLabel = employeeStatusLabel;
 
   readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -83,7 +86,24 @@ export class ContratosPageComponent implements OnInit {
   }
 
   toggleCreate(): void {
-    this.showCreate.update((v) => !v);
+    if (this.showCreate()) this.cancelCreate();
+    else this.openCreate();
+  }
+
+  openCreate(): void {
+    this.form.reset();
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+    this.formError.set(null);
+    this.showCreate.set(true);
+  }
+
+  cancelCreate(): void {
+    if (this.saving()) return;
+    this.showCreate.set(false);
+    this.form.reset();
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
     this.formError.set(null);
   }
 

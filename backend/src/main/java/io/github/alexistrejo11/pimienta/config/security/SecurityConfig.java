@@ -156,7 +156,7 @@ public class SecurityConfig {
                                                                                   BASE + "/tasks/**",
                                                                                   BASE + "/employees/**",
                                                                                   BASE + "/contracts/**",
-                                                                                  BASE + "/payroll/**",
+                                                                                   BASE + "/payroll/**",
                                                                                   BASE + "/inventory/**")
                                                                  .hasAnyRole("ADMIN", "MANAGER")
                                                                  .requestMatchers(BASE + "/pos/**")

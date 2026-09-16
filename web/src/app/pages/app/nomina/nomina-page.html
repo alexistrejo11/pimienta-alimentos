@@ -322,7 +322,8 @@
                   <td class="px-3 py-3">
                     <button
                       type="button"
-                      class="text-sm font-semibold text-[var(--color-primary)] hover:underline"
+                      class="min-h-11 min-w-11 text-sm font-semibold text-[var(--color-primary)] hover:underline disabled:opacity-50"
+                      [disabled]="adjustmentSaving()"
                       (click)="toggleAdjust(r.id)"
                     >
                       {{ adjustingRecordId() === r.id ? 'Cerrar' : 'Ajuste' }}
@@ -501,7 +502,7 @@
                   <td class="px-3 py-3">{{ frequencyLabel(p.frequency) }}</td>
                   <td class="px-3 py-3">{{ formatDate(p.startDate) }}</td>
                   <td class="px-3 py-3">{{ formatDate(p.endDate) }}</td>
-                  <td class="px-3 py-3">{{ p.status }}</td>
+                  <td class="px-3 py-3">{{ statusLabel(p.status) }}</td>
                 </tr>
               }
             </tbody>

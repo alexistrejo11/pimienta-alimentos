@@ -32,6 +32,7 @@ export class InventarioAjustesPageComponent implements OnInit {
   }
 
   ajustar(): void {
+    if (this.loading()) return;
     if (this.itemId == null || this.locationId == null || !this.reason.trim()) return;
     this.loading.set(true);
     this.error.set(null);
@@ -49,7 +50,7 @@ export class InventarioAjustesPageComponent implements OnInit {
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: () => this.success.set('Ajuste registrado.'),
+        next: () => { this.success.set('Ajuste registrado.'); this.itemId = null; this.locationId = null; this.newQuantity = 0; this.reason = ''; },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
   }

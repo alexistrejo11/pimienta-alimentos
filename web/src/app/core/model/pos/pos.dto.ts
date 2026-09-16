@@ -72,6 +72,9 @@ export interface HeadquarterPosCatalogItemResponse {
   id: number;
   headquarterId: number;
   itemId: number;
+  itemName: string;
+  itemSku: string;
+  itemBarcode: string | null;
   saleCategory: string;
   salePrice: number;
   available: boolean;
@@ -218,6 +221,7 @@ export interface UpdatePosOperatorRequest {
   pin?: string;
   userId?: number | null;
   active?: boolean;
+  headquarterIds?: number[];
 }
 
 /** GET /api/v1/pos/admin/sync-incidents */

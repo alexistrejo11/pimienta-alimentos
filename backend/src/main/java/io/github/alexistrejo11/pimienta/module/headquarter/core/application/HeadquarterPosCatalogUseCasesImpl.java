@@ -46,6 +46,14 @@ public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogU
   }
 
   @Override
+  public Page<HeadquarterItem> search(long headquarterId, String search, String saleCategory,
+      Boolean available, StockPolicy stockPolicy, Pageable pageable) {
+    assertHeadquarterExists(headquarterId);
+    return headquarterItemRepository.search(headquarterId, search, saleCategory, available,
+        stockPolicy, pageable);
+  }
+
+  @Override
   public HeadquarterItem get(long headquarterId, long itemId) {
     assertHeadquarterExists(headquarterId);
     return headquarterItemRepository

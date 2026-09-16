@@ -86,7 +86,23 @@ export class ArchivosPageComponent implements OnInit {
   }
 
   toggleUpload(): void {
-    this.showUpload.update((v) => !v);
+    if (this.showUpload()) this.cancelUpload();
+    else this.openUpload();
+  }
+
+  openUpload(): void {
+    this.showUpload.set(true);
+    this.uploadError.set(null);
+    this.uploadSuccess.set(null);
+  }
+
+  cancelUpload(): void {
+    if (this.uploading()) return;
+    this.showUpload.set(false);
+    this.selectedFile = null;
+    this.uploadCategory = 'COMPANY';
+    this.uploadModule = 'crm';
+    this.uploadDescription = '';
     this.uploadError.set(null);
     this.uploadSuccess.set(null);
   }

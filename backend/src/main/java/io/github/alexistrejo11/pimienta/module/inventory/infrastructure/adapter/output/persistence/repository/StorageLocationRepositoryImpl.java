@@ -32,6 +32,11 @@ public class StorageLocationRepositoryImpl implements StorageLocationRepository 
   }
 
   @Override
+  public Optional<StorageLocation> findByIdForUpdate(long id) {
+    return jpaRepository.findByIdForUpdate(id).map(StorageLocationPersistenceMapper::toDomain);
+  }
+
+  @Override
   public List<StorageLocation> findAllNonDeleted() {
     return jpaRepository.findByDeletedAtIsNullOrderByCodeAsc().stream()
         .map(StorageLocationPersistenceMapper::toDomain)

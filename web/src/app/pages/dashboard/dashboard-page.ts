@@ -73,7 +73,7 @@ export class DashboardPageComponent implements OnInit {
     {
       key: 'totalPendingPersonalTasks',
       label: 'Tareas personales pendientes',
-      hint: 'Estado PENDING',
+      hint: 'Estado pendiente',
     },
     {
       key: 'totalActiveEmployeesTasks',
@@ -82,7 +82,7 @@ export class DashboardPageComponent implements OnInit {
     },
     {
       key: 'totalEmployeePending',
-      label: 'Trabajo pendiente (PENDING)',
+      label: 'Trabajo pendiente',
       hint: 'Tareas de equipo en espera',
     },
   ];

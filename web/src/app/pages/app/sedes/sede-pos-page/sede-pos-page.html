@@ -53,6 +53,7 @@
             type="button"
             class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
             (click)="configureCandidate()"
+            [disabled]="!canEditCatalog()"
           >
             Configurar artículo
           </button>
@@ -68,6 +69,7 @@
             type="button"
             class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
             (click)="addFromLookup()"
+            [disabled]="!canEditCatalog()"
           >
             Agregar producto
           </button>
@@ -83,10 +85,25 @@
             type="button"
             class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
             (click)="createCategory()"
-            [disabled]="creatingCategory()"
+            [disabled]="creatingCategory() || !canEditCatalog()"
           >
             {{ creatingCategory() ? 'Creando…' : 'Crear categoría' }}
           </button>
+        </div>
+
+        <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <input class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" placeholder="Buscar nombre, SKU o código" [ngModel]="catalogSearch()" (ngModelChange)="onCatalogSearchChange($event)" [ngModelOptions]="{ standalone: true }" />
+          <select class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" [ngModel]="catalogCategory()" (ngModelChange)="catalogCategory.set($event); onCatalogFilterChange()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Todas las categorías</option>
+            @for (category of saleCategories(); track category.id) { <option [value]="category.name">{{ category.name }}</option> }
+          </select>
+          <select class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" [ngModel]="catalogAvailability()" (ngModelChange)="catalogAvailability.set($event); onCatalogFilterChange()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Cualquier disponibilidad</option><option value="true">Disponible</option><option value="false">No disponible</option>
+          </select>
+          <select class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" [ngModel]="catalogStockPolicy()" (ngModelChange)="catalogStockPolicy.set($event); onCatalogFilterChange()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Todas las políticas</option>
+            @for (policy of stockPolicies; track policy) { <option [value]="policy">{{ stockPolicyLabel(policy) }}</option> }
+          </select>
         </div>
 
         @if (editingItemId(); as editId) {
@@ -135,10 +152,11 @@
               <button
                 type="submit"
                 class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
-                [disabled]="savingCatalogId() === editId"
+                 [disabled]="savingCatalogId() === editId || !canEditCatalog()"
               >
-                Guardar en catálogo
-              </button>
+                 Guardar en catálogo
+               </button>
+               <button type="button" class="ml-2 rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold" [disabled]="savingCatalogId() === editId" (click)="cancelCatalogEdit()">Cancelar</button>
             </div>
           </form>
         }
@@ -159,8 +177,8 @@
             <tbody class="divide-y divide-outline-variant/15">
               @for (row of catalog(); track row.id) {
                 <tr>
-                  <td class="px-3 py-2">{{ itemName(row.itemId) }}</td>
-                  <td class="px-3 py-2 font-mono text-xs">{{ itemSku(row.itemId) }}</td>
+                  <td class="px-3 py-2">{{ row.itemName || itemName(row.itemId) }}</td>
+                  <td class="px-3 py-2 font-mono text-xs">{{ row.itemSku || itemSku(row.itemId) }}</td>
                   <td class="px-3 py-2">{{ row.saleCategory }}</td>
                   <td class="px-3 py-2 tabular-nums">${{ row.salePrice }}</td>
                   <td class="px-3 py-2">{{ stockPolicyLabel(row.stockPolicy) }}</td>
@@ -177,10 +195,11 @@
                       type="button"
                       class="text-sm font-semibold text-primary"
                       (click)="startEditCatalog(row)"
+                      [disabled]="!canEditCatalog()"
                     >
                       Editar
                     </button>
-                    <button type="button" class="ml-3 text-sm font-semibold text-error" (click)="removeCatalogItem(row)">Retirar</button>
+                    <button type="button" class="ml-3 text-sm font-semibold text-error" [disabled]="!canEditCatalog()" (click)="removeCatalogItem(row)">Retirar</button>
                   </td>
                 </tr>
               }

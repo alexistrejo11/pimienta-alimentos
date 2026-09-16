@@ -8,6 +8,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapte
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.HeadquarterPosCatalogItemResponse;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.PosSettingsRequest;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.PosSettingsResponse;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 
 public final class HeadquarterPosWebMapper {
 
@@ -52,6 +53,9 @@ public final class HeadquarterPosWebMapper {
         item.getId(),
         item.getHeadquarterId(),
         item.getItemId(),
+        "",
+        "",
+        null,
         item.getSaleCategory(),
         item.getSalePrice(),
         item.isAvailable(),
@@ -60,5 +64,12 @@ public final class HeadquarterPosWebMapper {
         item.getCreatedAt(),
         item.getUpdatedAt(),
         item.getVersion());
+  }
+
+  public static HeadquarterPosCatalogItemResponse toResponse(HeadquarterItem row, Item item) {
+    return new HeadquarterPosCatalogItemResponse(row.getId(), row.getHeadquarterId(), row.getItemId(),
+        item.getName(), item.getSku(), item.getBarcode(), row.getSaleCategory(), row.getSalePrice(),
+        row.isAvailable(), row.getStockPolicy(), row.getNegativeStockLimit(), row.getCreatedAt(),
+        row.getUpdatedAt(), row.getVersion());
   }
 }

@@ -118,7 +118,7 @@
               <option [ngValue]="null">Selecciona…</option>
               @for (e of employeeOptions(); track e.id) {
                 <option [ngValue]="e.id">
-                  {{ e.fullName }} — {{ e.department }} ({{ e.status }})
+                  {{ e.fullName }} — {{ e.department }} ({{ employeeStatusLabel(e.status) }})
                 </option>
               }
             </select>
@@ -329,7 +329,7 @@
           @for (c of items(); track c.id) {
             <tr>
               <td class="px-4 py-3 font-medium text-on-surface">{{ c.name }}</td>
-              <td class="px-4 py-3 text-on-surface-variant">{{ c.category }}</td>
+              <td class="px-4 py-3 text-on-surface-variant">{{ contractCategoryLabel(c.category) }}</td>
               <td class="px-4 py-3 text-xs text-on-surface-variant">
                 @if (c.employeeId != null) {
                   <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">{{

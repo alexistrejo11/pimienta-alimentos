@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 public interface InventoryJpaRepository
     extends JpaRepository<InventoryJpaEntity, Long>, JpaSpecificationExecutor<InventoryJpaEntity> {
@@ -16,6 +18,10 @@ public interface InventoryJpaRepository
   Optional<InventoryJpaEntity> findByIdAndDeletedAtIsNull(Long id);
 
   Optional<InventoryJpaEntity> findByItemIdAndLocationIdAndDeletedAtIsNull(Long itemId, Long locationId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select i from InventoryJpaEntity i where i.itemId = :itemId and i.locationId = :locationId and i.deletedAt is null")
+  Optional<InventoryJpaEntity> findForUpdate(@Param("itemId") Long itemId, @Param("locationId") Long locationId);
 
   long countByLocationIdAndDeletedAtIsNull(Long locationId);
 

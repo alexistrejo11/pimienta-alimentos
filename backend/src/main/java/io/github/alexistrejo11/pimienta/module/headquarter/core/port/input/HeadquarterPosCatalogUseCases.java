@@ -6,10 +6,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem.StockPolicy;
 
 public interface HeadquarterPosCatalogUseCases {
 
   Page<HeadquarterItem> list(long headquarterId, Pageable pageable);
+  Page<HeadquarterItem> search(long headquarterId, String search, String saleCategory,
+      Boolean available, StockPolicy stockPolicy, Pageable pageable);
 
   HeadquarterItem get(long headquarterId, long itemId);
 

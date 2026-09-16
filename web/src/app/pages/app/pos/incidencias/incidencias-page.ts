@@ -55,7 +55,14 @@ export class IncidenciasPageComponent implements OnInit {
     this.acceptForm.reset({ label: '', note: '' });
   }
 
+  cancel(): void {
+    if (this.acceptingId()) return;
+    this.selectedId.set(null);
+    this.acceptForm.reset({ label: '', note: '' });
+  }
+
   accept(incidentId: string): void {
+    if (this.acceptingId()) return;
     if (this.acceptForm.invalid) {
       this.acceptForm.markAllAsTouched();
       return;

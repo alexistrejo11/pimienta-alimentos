@@ -48,6 +48,11 @@ public class InventoryRepositoryImpl implements InventoryRepository {
   }
 
   @Override
+  public Optional<Inventory> findByItemIdAndLocationIdForUpdate(long itemId, long locationId) {
+    return jpaRepository.findForUpdate(itemId, locationId).map(mapper::toDomain);
+  }
+
+  @Override
   public Page<Inventory> search(InventorySearchCriteria criteria, Pageable pageable) {
     Specification<InventoryJpaEntity> spec = InventorySpecifications.fromCriteria(criteria);
     return jpaRepository.findAll(spec, pageable).map(mapper::toDomain);

@@ -4,7 +4,7 @@
     <button
       type="button"
       class="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
-      (click)="toggleForm()"
+      (click)="openCreate()"
     >
       Nuevo operador
     </button>
@@ -57,10 +57,11 @@
         <button
           type="submit"
           class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
-          [disabled]="creating()"
+           [disabled]="saving()"
         >
-           {{ creating() ? 'Guardando…' : editing() ? 'Guardar cambios' : 'Crear operador' }}
-        </button>
+           {{ saving() ? 'Guardando…' : editing() ? 'Guardar cambios' : 'Crear operador' }}
+         </button>
+         <button type="button" class="rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold" [disabled]="saving()" (click)="cancelEditor()">Cancelar</button>
       </div>
     </form>
   }
@@ -72,7 +73,7 @@
     emptyMessage="No hay operadores POS."
     (retry)="cargar()"
   >
-    <div class="responsive-table rounded-xl border ui-panel">
+    <div class="hidden responsive-table rounded-xl border ui-panel md:block">
       <table class="w-full text-sm">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
              <tr>
@@ -100,6 +101,21 @@
           }
         </tbody>
       </table>
+    </div>
+    <div class="space-y-3 md:hidden">
+      @for (op of operators(); track op.id) {
+        <article class="ui-panel rounded-xl p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div><h3 class="font-semibold">{{ op.displayName }}</h3><p class="text-sm text-on-surface-variant">{{ posRoleLabel(op.posRole) }} · {{ op.active ? 'Activo' : 'Inactivo' }}</p></div>
+            <span class="text-right text-xs text-on-surface-variant">{{ hqNames(op.headquarterIds) }}</span>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button type="button" class="min-h-11 rounded-lg bg-surface-container px-3 text-sm font-semibold" (click)="editar(op)">Editar</button>
+            <button type="button" class="min-h-11 rounded-lg bg-surface-container px-3 text-sm font-semibold" (click)="desactivar(op)">{{ op.active ? 'Desactivar' : 'Activar' }}</button>
+            <button type="button" class="min-h-11 rounded-lg bg-error/10 px-3 text-sm font-semibold text-error" (click)="eliminar(op)">Retirar</button>
+          </div>
+        </article>
+      }
     </div>
     @if (metadata(); as pageInfo) { <div class="flex items-center justify-between px-2 py-3 text-sm text-on-surface-variant"><span>{{ pageInfo.totalElements }} operadores</span><div class="flex gap-2"><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="anterior()">Anterior</button><span class="px-2 py-1.5">Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="siguiente()">Siguiente</button></div></div> }
   </app-data-state>

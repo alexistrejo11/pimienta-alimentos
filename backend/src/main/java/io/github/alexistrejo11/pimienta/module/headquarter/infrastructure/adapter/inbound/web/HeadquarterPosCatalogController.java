@@ -13,6 +13,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapte
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosCatalogPut;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.HeadquarterPosCatalogItemRequest;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.HeadquarterPosCatalogItemResponse;
+import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.HeadquarterPosCatalogSearchRequest;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.mapper.InventoryItemWebMapper;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.ItemResponse;
 import java.util.List;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
 
 @RestController
 @RequestMapping(BASE + "/headquarters/{id}/pos-catalog")
@@ -40,12 +42,14 @@ public class HeadquarterPosCatalogController {
 
   private final HeadquarterPosCatalogUseCases posCatalogUseCases;
   private final HeadquarterAccessService headquarterAccessService;
+  private final ItemRepository itemRepository;
 
   public HeadquarterPosCatalogController(
       HeadquarterPosCatalogUseCases posCatalogUseCases,
-      HeadquarterAccessService headquarterAccessService) {
+      HeadquarterAccessService headquarterAccessService, ItemRepository itemRepository) {
     this.posCatalogUseCases = posCatalogUseCases;
     this.headquarterAccessService = headquarterAccessService;
+    this.itemRepository = itemRepository;
   }
 
   @GetMapping
@@ -54,11 +58,14 @@ public class HeadquarterPosCatalogController {
   public PagedResponse<HeadquarterPosCatalogItemResponse> list(
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @PathVariable("id") Long headquarterId,
-      @ModelAttribute PageableRequest pageable) {
+       @ModelAttribute HeadquarterPosCatalogSearchRequest filter) {
     headquarterAccessService.requireHeadquarterAccess(principal, headquarterId);
     Page<HeadquarterItem> page =
-        posCatalogUseCases.list(headquarterId, pageable.toPageable());
-    return PagedResponse.map(page, HeadquarterPosWebMapper::toResponse);
+         posCatalogUseCases.search(headquarterId, filter.getSearch(), filter.getSaleCategory(),
+             filter.getAvailable(), filter.getStockPolicy(), filter.toPageable());
+    return PagedResponse.map(page, row -> itemRepository.findById(row.getItemId())
+        .map(item -> HeadquarterPosWebMapper.toResponse(row, item))
+        .orElseGet(() -> HeadquarterPosWebMapper.toResponse(row)));
   }
 
   @GetMapping("/candidates")

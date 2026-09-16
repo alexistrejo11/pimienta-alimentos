@@ -16,7 +16,7 @@
     emptyMessage="No hay dispositivos registrados."
     (retry)="cargar()"
   >
-    <div class="responsive-table rounded-xl border ui-panel">
+    <div class="hidden responsive-table rounded-xl border ui-panel md:block">
       <table class="w-full text-sm">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
           <tr>
@@ -35,12 +35,12 @@
               <td class="px-4 py-3">{{ d.deviceName || '—' }}</td>
               <td class="px-4 py-3">{{ hqName(d.headquarterId) }}</td>
               <td class="px-4 py-3">{{ d.appVersion || '—' }}</td>
-              <td class="px-4 py-3">{{ d.status }}</td>
+              <td class="px-4 py-3">{{ posDeviceStatusLabel(d.status) }}</td>
               <td class="px-4 py-3 text-right">
                 @if (d.status !== 'REVOKED') {
                   <button
                     type="button"
-                    class="text-sm font-semibold text-red-700 disabled:opacity-50"
+                    class="min-h-11 min-w-11 text-sm font-semibold text-red-700 disabled:opacity-50"
                     [disabled]="revokingId() === d.id"
                     (click)="revoke(d)"
                   >
@@ -52,6 +52,15 @@
           }
         </tbody>
       </table>
+    </div>
+    <div class="space-y-3 md:hidden">
+      @for (d of devices(); track d.id) {
+        <article class="ui-panel rounded-xl p-4">
+          <div class="flex items-start justify-between gap-3"><a class="font-mono font-semibold text-primary" [routerLink]="['/app/pos/dispositivos', d.id]">{{ d.visibleCode }}</a><span class="text-sm text-on-surface-variant">{{ posDeviceStatusLabel(d.status) }}</span></div>
+          <p class="mt-2 text-sm">{{ d.deviceName || 'Sin nombre' }}</p><p class="text-xs text-on-surface-variant">{{ hqName(d.headquarterId) }} · {{ d.appVersion || 'Sin versión' }}</p>
+          @if (d.status !== 'REVOKED') { <button type="button" class="mt-3 min-h-11 rounded-lg bg-error/10 px-3 text-sm font-semibold text-error" [disabled]="revokingId() === d.id" (click)="revoke(d)">Revocar</button> }
+        </article>
+      }
     </div>
   </app-data-state>
 </div>

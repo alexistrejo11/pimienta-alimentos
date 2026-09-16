@@ -85,6 +85,14 @@ public class PosOperator extends BaseDomain<Long> {
     }
   }
 
+  public void replaceHeadquarters(Set<Long> ids) {
+    headquarterIds.clear();
+    if (ids != null) {
+      headquarterIds.addAll(ids);
+    }
+    touch();
+  }
+
   public void softDelete() {
     this.deletedAt = LocalDateTime.now();
     this.active = false;

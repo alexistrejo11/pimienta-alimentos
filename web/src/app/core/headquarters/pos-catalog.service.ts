@@ -29,8 +29,17 @@ export class PosCatalogService {
     return this.http.put<PosSettingsResponse>(`${this.hqBase}/${headquarterId}/pos-settings`, body);
   }
 
-  listCatalog(headquarterId: number, page = 0, size = 20): Observable<PagedResponse<HeadquarterPosCatalogItemResponse>> {
-    const params = new HttpParams().set('page', page).set('size', size);
+  listCatalog(headquarterId: number, page = 0, size = 20, filters: {
+    search?: string;
+    saleCategory?: string;
+    available?: boolean;
+    stockPolicy?: string;
+  } = {}): Observable<PagedResponse<HeadquarterPosCatalogItemResponse>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (filters.search?.trim()) params = params.set('search', filters.search.trim());
+    if (filters.saleCategory) params = params.set('saleCategory', filters.saleCategory);
+    if (filters.available != null) params = params.set('available', filters.available);
+    if (filters.stockPolicy) params = params.set('stockPolicy', filters.stockPolicy);
     return this.http.get<PagedResponse<HeadquarterPosCatalogItemResponse>>(
       `${this.hqBase}/${headquarterId}/pos-catalog`,
       { params },

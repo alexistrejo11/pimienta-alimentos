@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbou
 
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosRole;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Set;
 
 @Schema(name = "UpdatePosOperatorRequest")
 public record UpdatePosOperatorRequest(
@@ -9,4 +10,5 @@ public record UpdatePosOperatorRequest(
     PosRole posRole,
     @Schema(description = "Write-only PIN; omit to keep current") String pin,
     Long userId,
-    Boolean active) {}
+    Boolean active,
+    Set<Long> headquarterIds) {}

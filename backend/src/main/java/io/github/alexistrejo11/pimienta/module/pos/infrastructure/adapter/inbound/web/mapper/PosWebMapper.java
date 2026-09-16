@@ -340,7 +340,8 @@ public final class PosWebMapper {
         request.posRole(),
         request.pin(),
         request.userId(),
-        request.active());
+        request.active(),
+        request.headquarterIds());
   }
 
   public static PosOperatorResponse toOperatorResponse(PosOperator operator) {

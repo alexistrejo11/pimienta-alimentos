@@ -1,6 +1,6 @@
 <!-- Overlay oscuro -->
 <div
-  class="fixed inset-0 z-50 flex items-start justify-end"
+  class="fixed inset-0 z-50 flex items-start justify-end overscroll-none"
   role="dialog"
   aria-modal="true"
   aria-label="Mi perfil"
@@ -10,7 +10,7 @@
 
   <!-- Panel lateral -->
   <div
-    class="relative z-10 flex h-full w-full max-w-md flex-col bg-surface-container-lowest shadow-2xl"
+     class="relative z-10 flex h-dvh max-h-dvh min-h-0 w-full max-w-md flex-col bg-surface-container-lowest shadow-2xl"
   >
     <!-- Cabecera -->
     <div
@@ -34,7 +34,7 @@
       <button
         type="button"
         (click)="cerrar.emit()"
-        class="rounded-lg p-1.5 text-on-surface-variant transition hover:bg-surface-container"
+        class="min-h-11 min-w-11 rounded-lg p-1.5 text-on-surface-variant transition hover:bg-surface-container"
         aria-label="Cerrar"
       >
         <span class="material-symbols-outlined text-xl" aria-hidden="true">close</span>
@@ -42,7 +42,7 @@
     </div>
 
     <!-- Contenido -->
-    <div class="flex-1 overflow-y-auto px-6 py-5">
+    <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
       @if (loading()) {
         <div class="flex items-center justify-center py-16 text-on-surface-variant">
           <span class="material-symbols-outlined animate-spin text-2xl" aria-hidden="true"

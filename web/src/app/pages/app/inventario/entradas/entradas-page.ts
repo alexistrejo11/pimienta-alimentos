@@ -50,6 +50,11 @@ export class InventarioEntradasPageComponent implements OnInit {
   onHeadquarterChange(id: number | number[] | null): void {
     this.selectedHeadquarterId = Array.isArray(id) ? (id[0] ?? null) : id;
     this.session.selectHeadquarter(this.selectedHeadquarterId);
+    this.itemId = null;
+    this.locationId = null;
+    this.unitCost = 0;
+    this.error.set(null);
+    this.success.set('');
     this.loadCatalog();
   }
 
@@ -63,6 +68,7 @@ export class InventarioEntradasPageComponent implements OnInit {
   }
 
   guardar(): void {
+    if (this.loading()) return;
     if (this.itemId == null || this.locationId == null || this.quantity <= 0) return;
     this.error.set(null);
     this.success.set('');
@@ -75,7 +81,7 @@ export class InventarioEntradasPageComponent implements OnInit {
         .subscribe({
           next: () => {
             this.success.set('Stock inicial registrado.');
-            this.quantity = 1;
+             this.resetForm();
           },
           error: (err: unknown) => this.error.set(parseApiError(err)),
         });
@@ -91,11 +97,18 @@ export class InventarioEntradasPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.success.set('Entrada de compra registrada.');
-          this.quantity = 1;
-          this.reference = '';
-          this.notes = '';
+             this.resetForm();
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
+  }
+
+  private resetForm(): void {
+    this.itemId = null;
+    this.locationId = null;
+    this.quantity = 1;
+    this.unitCost = 0;
+    this.reference = '';
+    this.notes = '';
   }
 }

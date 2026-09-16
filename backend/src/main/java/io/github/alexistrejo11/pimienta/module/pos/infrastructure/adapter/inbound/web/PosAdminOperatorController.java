@@ -104,6 +104,9 @@ public class PosAdminOperatorController {
       @Valid @RequestBody UpdatePosOperatorRequest request) {
     PosOperator existing = operatorManagementUseCases.get(id);
     requireOperatorAccess(principal, existing);
+    if (request.headquarterIds() != null) {
+      request.headquarterIds().forEach(hqId -> headquarterAccessService.requireHeadquarterAccess(principal, hqId));
+    }
     return PosWebMapper.toOperatorResponse(
         operatorManagementUseCases.update(id, PosWebMapper.toUpdateOperatorCommand(request)));
   }

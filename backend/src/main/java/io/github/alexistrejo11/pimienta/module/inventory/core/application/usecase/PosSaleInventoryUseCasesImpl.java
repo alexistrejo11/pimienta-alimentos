@@ -51,14 +51,20 @@ public class PosSaleInventoryUseCasesImpl implements PosSaleInventoryUseCases {
       throw new IllegalArgumentException("quantityOut must be non-zero");
     }
 
-    StorageLocation posLocation =
+    StorageLocation resolvedPosLocation =
         posLocationUseCases
             .findPosLocation(command.headquarterId())
             .orElseGet(() -> posLocationUseCases.ensurePosLocation(command.headquarterId()));
 
-    if (!posLocation.isPos()) {
+    if (!resolvedPosLocation.isPos()) {
       throw new PosLocationNotFoundException(command.headquarterId());
     }
+
+    // Lock the stable parent row so concurrent first-time stock creation is also serialized.
+    StorageLocation posLocation =
+        storageLocationRepository
+            .findByIdForUpdate(resolvedPosLocation.getId())
+            .orElseThrow(() -> new PosLocationNotFoundException(command.headquarterId()));
 
     Item item =
         itemRepository
@@ -67,7 +73,7 @@ public class PosSaleInventoryUseCasesImpl implements PosSaleInventoryUseCases {
 
     Inventory inv =
         inventoryRepository
-            .findByItemIdAndLocationId(item.getId(), posLocation.getId())
+            .findByItemIdAndLocationIdForUpdate(item.getId(), posLocation.getId())
             .orElseGet(
                 () -> {
                   Inventory created = Inventory.create(item, posLocation, 0);

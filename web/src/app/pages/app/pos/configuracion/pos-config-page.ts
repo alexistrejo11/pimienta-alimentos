@@ -66,6 +66,9 @@ export class PosConfigPageComponent implements OnInit {
   onHeadquarterChange(value: number | number[] | null): void {
     if (typeof value !== 'number' || value === this.headquarterId()) return;
     this.headquarterId.set(value);
+    this.cancelCategoryEdit();
+    this.categoryError.set(null);
+    this.settings.set(null);
     this.cargar(value);
   }
 
@@ -109,6 +112,7 @@ export class PosConfigPageComponent implements OnInit {
   }
 
   saveSettings(): void {
+    if (this.saving()) return;
     if (this.settingsForm.invalid || this.headquarterId() <= 0) return;
     const v = this.settingsForm.getRawValue();
     this.saving.set(true);
@@ -179,9 +183,11 @@ export class PosConfigPageComponent implements OnInit {
   cancelCategoryEdit(): void {
     this.editingCategoryId.set(null);
     this.editingCategoryName.set('');
+    this.categoryError.set(null);
   }
 
   saveCategoryEdit(category: PosSaleCategoryResponse): void {
+    if (this.categorySaving()) return;
     const name = this.editingCategoryName().trim();
     if (!name || name.length > 64) {
       this.categoryError.set('La categoría debe tener entre 1 y 64 caracteres.');
@@ -209,6 +215,7 @@ export class PosConfigPageComponent implements OnInit {
   }
 
   archiveCategory(category: PosSaleCategoryResponse): void {
+    if (this.categorySaving()) return;
     if (typeof globalThis.confirm === 'function' && !globalThis.confirm(`¿Archivar la categoría ${category.name}?`)) return;
     this.categorySaving.set(true);
     this.posCatalog
@@ -227,6 +234,7 @@ export class PosConfigPageComponent implements OnInit {
   }
 
   moveCategory(category: PosSaleCategoryResponse, direction: -1 | 1): void {
+    if (this.categorySaving()) return;
     const active = this.activeCategories();
     const index = active.findIndex((item) => item.id === category.id);
     const target = active[index + direction];

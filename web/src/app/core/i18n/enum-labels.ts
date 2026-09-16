@@ -128,6 +128,10 @@ export function projectStatusLabel(status: string): string {
   return PROJECT_STATUS_LABELS[status] ?? status;
 }
 
+export function contractCategoryLabel(category: string): string {
+  return CONTRACT_CATEGORY_LABELS[category] ?? category;
+}
+
 export function milestoneStatusLabel(status: string): string {
   return MILESTONE_STATUS_LABELS[status] ?? status;
 }
@@ -342,4 +346,12 @@ const MILESTONE_STATUS_LABELS: Record<string, string> = {
   COMPLETED: 'Completado',
   DELAYED: 'Retrasado',
   CANCELLED: 'Cancelado',
+};
+
+const CONTRACT_CATEGORY_LABELS: Record<string, string> = {
+  SUPPLIER: 'Proveedor',
+  CUSTOMER: 'Cliente',
+  EMPLOYEE: 'Colaborador',
+  PARTNER: 'Socio',
+  OTHER: 'Otro',
 };

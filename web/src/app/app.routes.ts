@@ -2,12 +2,14 @@ import { Routes } from '@angular/router';
 
 import { workspaceAuthGuard } from './core/auth/workspace-auth.guard';
 import { roleGuard } from './core/auth/role.guard';
+import { dirtyFormGuard } from './core/auth/dirty-form.guard';
 import { AppRole } from './core/model/account/enums';
 
 const ADMIN = [AppRole.ADMIN];
 const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
 const INVENTORY_READ = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
 const POS_STAFF = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
+const POS_ADMIN = [AppRole.ADMIN, AppRole.MANAGER];
 
 export const routes: Routes = [
   {
@@ -20,7 +22,7 @@ export const routes: Routes = [
   },
   {
     path: 'auth/pendiente-aprobacion',
-    loadComponent: () =>
+         loadComponent: () =>
       import('./pages/auth/pending-approval/pending-approval').then((m) => m.PendingApprovalPage),
   },
   {
@@ -39,14 +41,14 @@ export const routes: Routes = [
       },
       {
         path: 'acceso-restringido',
-        loadComponent: () =>
+         loadComponent: () =>
           import('./pages/app/access-restricted/access-restricted-page').then(
             (m) => m.AccessRestrictedPageComponent,
           ),
       },
       {
         path: 'usuarios',
-        loadComponent: () =>
+         loadComponent: () =>
           import('./pages/app/usuarios/usuarios-page').then((m) => m.UsuariosPageComponent),
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
@@ -89,28 +91,30 @@ export const routes: Routes = [
           import('./pages/app/empleados/empleado-form-page/empleado-form-page').then(
             (m) => m.EmpleadoFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
       {
         path: 'empleados/:id/editar',
-        loadComponent: () =>
+         loadComponent: () =>
           import('./pages/app/empleados/empleado-form-page/empleado-form-page').then(
             (m) => m.EmpleadoFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
       {
         path: 'empleados/:id',
-        loadComponent: () =>
+         loadComponent: () =>
           import('./pages/app/empleados/empleado-detail/empleado-detail-page').then(
             (m) => m.EmpleadoDetailPageComponent,
           ),
       },
       {
         path: 'empleados',
-        loadComponent: () =>
+         loadComponent: () =>
           import('./pages/app/empleados/empleados-page').then((m) => m.EmpleadosPageComponent),
       },
 
@@ -121,6 +125,7 @@ export const routes: Routes = [
           import('./pages/app/crm/oportunidades/oportunidad-form-page/oportunidad-form-page').then(
             (m) => m.OportunidadFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
       },
       {
         path: 'crm/oportunidades/:id/editar',
@@ -128,6 +133,7 @@ export const routes: Routes = [
           import('./pages/app/crm/oportunidades/oportunidad-form-page/oportunidad-form-page').then(
             (m) => m.OportunidadFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
       },
       {
         path: 'crm/oportunidades/:id',
@@ -151,6 +157,7 @@ export const routes: Routes = [
           import('./pages/app/crm/proyectos/proyecto-form-page/proyecto-form-page').then(
             (m) => m.ProyectoFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
       },
       {
         path: 'crm/proyectos/:id/editar',
@@ -158,6 +165,7 @@ export const routes: Routes = [
           import('./pages/app/crm/proyectos/proyecto-form-page/proyecto-form-page').then(
             (m) => m.ProyectoFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
       },
       {
         path: 'crm/proyectos/:id',
@@ -177,6 +185,7 @@ export const routes: Routes = [
         path: 'tareas/nueva',
         loadComponent: () =>
           import('./pages/app/tareas/tarea-form/tarea-form-page').then((m) => m.TareaFormPageComponent),
+        canDeactivate: [dirtyFormGuard],
       },
       {
         path: 'tareas/:id',
@@ -199,6 +208,7 @@ export const routes: Routes = [
         path: 'sedes/nueva',
         loadComponent: () =>
           import('./pages/app/sedes/sede-form-page/sede-form-page').then((m) => m.SedeFormPageComponent),
+        canDeactivate: [dirtyFormGuard],
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
@@ -206,6 +216,7 @@ export const routes: Routes = [
         path: 'sedes/:id/editar',
         loadComponent: () =>
           import('./pages/app/sedes/sede-form-page/sede-form-page').then((m) => m.SedeFormPageComponent),
+        canDeactivate: [dirtyFormGuard],
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
@@ -214,7 +225,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/app/sedes/sede-pos-page/sede-pos-page').then((m) => m.SedePosPageComponent),
         canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
+         data: { access: { roles: POS_STAFF } },
       },
       {
         path: 'pos/sedes',
@@ -261,6 +272,7 @@ export const routes: Routes = [
           import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
             (m) => m.CatalogoFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
@@ -270,6 +282,7 @@ export const routes: Routes = [
           import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
             (m) => m.CatalogoFormPageComponent,
           ),
+        canDeactivate: [dirtyFormGuard],
         canActivate: [roleGuard],
         data: { access: { roles: ADMIN } },
       },
@@ -379,7 +392,7 @@ export const routes: Routes = [
             (m) => m.DispositivosPageComponent,
           ),
         canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
+         data: { access: { roles: POS_ADMIN } },
       },
       {
         path: 'pos/dispositivos/:id',
@@ -388,7 +401,7 @@ export const routes: Routes = [
             (m) => m.DispositivoDetailPageComponent,
           ),
         canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
+         data: { access: { roles: POS_ADMIN } },
       },
       {
         path: 'pos/enrolamiento',
@@ -397,14 +410,14 @@ export const routes: Routes = [
             (m) => m.EnrolamientoPageComponent,
           ),
         canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
+         data: { access: { roles: POS_ADMIN } },
       },
       {
         path: 'pos/operadores',
         loadComponent: () =>
           import('./pages/app/pos/operadores/operadores-page').then((m) => m.OperadoresPageComponent),
         canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
+        data: { access: { roles: POS_ADMIN } },
       },
       {
         path: 'pos/ventas',
@@ -418,7 +431,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/app/pos/turnos/turnos-page').then((m) => m.TurnosPageComponent),
         canActivate: [roleGuard],
-        data: { access: { roles: POS_STAFF } },
+        data: { access: { roles: POS_ADMIN } },
       },
       {
         path: 'pos/cortes',

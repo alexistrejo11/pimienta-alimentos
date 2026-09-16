@@ -247,6 +247,7 @@ export class NominaPageComponent implements OnInit {
   }
 
   toggleAdjust(recordId: number): void {
+    if (this.adjustmentSaving()) return;
     this.adjustmentError.set(null);
     this.adjustingRecordId.update((id) => (id === recordId ? null : recordId));
     this.adjustmentForm.reset({
@@ -257,6 +258,7 @@ export class NominaPageComponent implements OnInit {
   }
 
   submitAdjustment(recordId: number): void {
+    if (this.adjustmentSaving()) return;
     this.adjustmentError.set(null);
     if (this.adjustmentForm.invalid) {
       this.adjustmentForm.markAllAsTouched();
@@ -457,7 +459,7 @@ export class NominaPageComponent implements OnInit {
     return `${d}/${m}/${y}`;
   }
 
-  statusLabel(status: PayrollRecordStatus): string {
+  statusLabel(status: string): string {
     return payrollRecordStatusLabel(status);
   }
 

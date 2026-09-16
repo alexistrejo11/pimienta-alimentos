@@ -13,6 +13,8 @@ public interface InventoryRepository {
 
   Optional<Inventory> findByItemIdAndLocationId(long itemId, long locationId);
 
+  Optional<Inventory> findByItemIdAndLocationIdForUpdate(long itemId, long locationId);
+
   Page<Inventory> search(InventorySearchCriteria criteria, Pageable pageable);
 
   List<Inventory> findByItemId(long itemId);

@@ -11,6 +11,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem.StockPolicy;
 
 @Repository
 public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository {
@@ -36,6 +37,17 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
     return jpaRepository
         .findByHeadquarterIdAndDeletedAtIsNull(headquarterId, pageable)
         .map(HeadquarterItemPersistenceMapper::toDomain);
+  }
+
+  @Override
+  public Page<HeadquarterItem> search(long headquarterId, String search, String saleCategory,
+      Boolean available, StockPolicy stockPolicy, Pageable pageable) {
+    return jpaRepository.search(headquarterId, blankToNull(search), blankToNull(saleCategory),
+        available, stockPolicy, pageable).map(HeadquarterItemPersistenceMapper::toDomain);
+  }
+
+  private static String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.strip();
   }
 
   @Override

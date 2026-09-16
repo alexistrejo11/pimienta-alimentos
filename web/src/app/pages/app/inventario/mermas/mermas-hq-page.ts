@@ -61,6 +61,11 @@ export class InventarioMermasPageComponent implements OnInit {
   onHeadquarterChange(id: number | number[] | null): void {
     this.selectedHeadquarterId = Array.isArray(id) ? (id[0] ?? null) : id;
     this.session.selectHeadquarter(this.selectedHeadquarterId);
+    this.itemId = null;
+    this.locationId = null;
+    this.unitCost = 0;
+    this.error.set(null);
+    this.success.set('');
     this.loadCatalog();
   }
 
@@ -74,6 +79,7 @@ export class InventarioMermasPageComponent implements OnInit {
   }
 
   registrar(): void {
+    if (this.loading()) return;
     if (this.itemId == null || this.locationId == null || this.quantity <= 0 || !this.exitReason) return;
     this.loading.set(true);
     this.error.set(null);
@@ -88,10 +94,17 @@ export class InventarioMermasPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.success.set('Merma registrada en inventario HQ.');
-          this.detailNotes = '';
-          this.quantity = 1;
+           this.resetForm();
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
+  }
+
+  private resetForm(): void {
+    this.itemId = null;
+    this.locationId = null;
+    this.quantity = 1;
+    this.unitCost = 0;
+    this.detailNotes = '';
   }
 }

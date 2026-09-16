@@ -7,14 +7,14 @@
     <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Información del dispositivo">
       <div class="ui-panel p-5"><p class="text-on-surface-variant text-xs uppercase">Código</p><p class="mt-2 font-mono font-semibold">{{ d.visibleCode }}</p></div>
       <div class="ui-panel p-5"><p class="text-on-surface-variant text-xs uppercase">Sede</p><p class="mt-2 font-semibold">{{ hqName(d.headquarterId) }}</p></div>
-      <div class="ui-panel p-5"><p class="text-on-surface-variant text-xs uppercase">Estado</p><p class="mt-2 font-semibold">{{ d.status }}</p></div>
+       <div class="ui-panel p-5"><p class="text-on-surface-variant text-xs uppercase">Estado</p><p class="mt-2 font-semibold">{{ posDeviceStatusLabel(d.status) }}</p></div>
       <div class="ui-panel p-5"><p class="text-on-surface-variant text-xs uppercase">Versión</p><p class="mt-2 font-semibold">{{ d.appVersion || 'No reportada' }}</p></div>
     </section>
 
     @if (shifts().length > 0) {
       @let shift = shifts()[0];
       <section class="ui-panel flex flex-wrap items-center justify-between gap-4 p-5">
-        <div><p class="text-on-surface-variant text-xs uppercase">Último turno</p><p class="mt-1 font-semibold">{{ shift.status }} · {{ shift.openedAt | date: 'short' }}</p></div>
+         <div><p class="text-on-surface-variant text-xs uppercase">Último turno</p><p class="mt-1 font-semibold">{{ posShiftStatusLabel(shift.status) }} · {{ shift.openedAt | date: 'short' }}</p></div>
         <div><p class="text-on-surface-variant text-xs uppercase">Diferencia de corte</p><p class="mt-1 font-semibold tabular-nums">{{ shift.differenceCentavos === null ? 'Pendiente' : formatCentavos(shift.differenceCentavos) }}</p></div>
       </section>
     }
@@ -26,7 +26,7 @@
       } @else {
         <div class="responsive-table ui-panel">
           <table class="w-full text-sm"><thead class="ui-panel-muted"><tr><th class="px-4 py-3 text-left">Folio</th><th class="px-4 py-3 text-left">Hora</th><th class="px-4 py-3 text-right">Total</th><th class="px-4 py-3 text-left">Estado</th></tr></thead>
-            <tbody class="divide-y divide-outline-variant/15">@for (sale of sales(); track sale.saleId) {<tr><td class="px-4 py-3 font-mono">{{ sale.folio }}</td><td class="px-4 py-3">{{ sale.occurredAt | date: 'short' }}</td><td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(sale.totalCentavos) }}</td><td class="px-4 py-3">{{ sale.status }}</td></tr>}</tbody>
+             <tbody class="divide-y divide-outline-variant/15">@for (sale of sales(); track sale.saleId) {<tr><td class="px-4 py-3 font-mono">{{ sale.folio }}</td><td class="px-4 py-3">{{ sale.occurredAt | date: 'short' }}</td><td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(sale.totalCentavos) }}</td><td class="px-4 py-3">{{ posSaleTicketStatusLabel(sale.status) }}</td></tr>}</tbody>
           </table>
         </div>
       }

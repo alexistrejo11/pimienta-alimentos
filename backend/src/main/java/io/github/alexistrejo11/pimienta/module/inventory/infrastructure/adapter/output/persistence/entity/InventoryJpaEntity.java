@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 
 @Entity
@@ -55,6 +56,7 @@ public class InventoryJpaEntity {
   @Column(name = "deleted_at")
   private LocalDateTime deletedAt;
 
+  @Version
   @Column(nullable = false)
   private Long version;
 

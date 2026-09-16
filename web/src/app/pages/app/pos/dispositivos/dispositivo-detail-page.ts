@@ -7,6 +7,7 @@ import { HeadquarterLookupService } from '../../../../core/headquarters/headquar
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { PosDeviceAdminResponse, PosSaleReportResponse, PosShiftResponse } from '../../../../core/model/pos/pos.dto';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
+import { posDeviceStatusLabel, posShiftStatusLabel, posSaleTicketStatusLabel } from '../../../../core/i18n/enum-labels';
 import { todayInstantRange, formatCentavos } from '../../../../core/pos/pos-date.util';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
@@ -28,6 +29,9 @@ export class DispositivoDetailPageComponent implements OnInit {
   readonly shifts = signal<PosShiftResponse[]>([]);
   readonly formatCentavos = formatCentavos;
   readonly hqName = this.lookup.name.bind(this.lookup);
+  readonly posDeviceStatusLabel = posDeviceStatusLabel;
+  readonly posShiftStatusLabel = posShiftStatusLabel;
+  readonly posSaleTicketStatusLabel = posSaleTicketStatusLabel;
 
   ngOnInit(): void {
     void this.lookup.ensureLoaded();

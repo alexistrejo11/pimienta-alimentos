@@ -13,6 +13,7 @@ import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosLocationUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosChangeLogSpringDataRepository;
 import java.net.URLEncoder;
@@ -50,6 +51,7 @@ class PosSyncConcurrencyIntegrationTest {
   @Autowired private PosSaleInventoryUseCases posSaleInventoryUseCases;
   @Autowired private PosLocationUseCases posLocationUseCases;
   @Autowired private PosChangeLogSpringDataRepository posChangeLogRepository;
+  @Autowired private InventoryRepository inventoryRepository;
 
   @AfterEach
   void releaseGate() {
@@ -136,6 +138,44 @@ class PosSyncConcurrencyIntegrationTest {
       GATE.disable();
       GATE.release.countDown();
       executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void concurrentTabletSales_createInitialStockOnceWithoutLosingUpdates() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-STOCK-LOCK-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long itemId = createItem(staffToken, "SKU-STOCK-LOCK-" + UUID.randomUUID(), "Locked stock item");
+    putCatalog(staffToken, hqId, itemId, "Bebidas", "25.00");
+    var location = posLocationUseCases.ensurePosLocation(hqId);
+
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+    CountDownLatch start = new CountDownLatch(1);
+    try {
+      Future<?> first = executor.submit(() -> applyConcurrentSale(start, hqId, itemId, "tablet-a"));
+      Future<?> second = executor.submit(() -> applyConcurrentSale(start, hqId, itemId, "tablet-b"));
+      start.countDown();
+      first.get(10, TimeUnit.SECONDS);
+      second.get(10, TimeUnit.SECONDS);
+    } finally {
+      executor.shutdownNow();
+    }
+
+    var stock = inventoryRepository.findByItemIdAndLocationId(itemId, location.getId()).orElseThrow();
+    org.junit.jupiter.api.Assertions.assertEquals(-2, stock.getAvailableQuantity());
+  }
+
+  private void applyConcurrentSale(CountDownLatch start, long hqId, long itemId, String eventId) {
+    try {
+      if (!start.await(5, TimeUnit.SECONDS)) {
+        throw new AssertionError("concurrent stock start was not released");
+      }
+      posSaleInventoryUseCases.applySaleStock(
+          new ApplyPosSaleStockCommand(hqId, itemId, 1, eventId, null, null));
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(ex);
     }
   }
 

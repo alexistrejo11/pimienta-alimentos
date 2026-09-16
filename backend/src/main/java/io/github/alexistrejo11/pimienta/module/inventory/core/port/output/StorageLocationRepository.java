@@ -11,6 +11,8 @@ public interface StorageLocationRepository {
 
   Optional<StorageLocation> findById(long id);
 
+  Optional<StorageLocation> findByIdForUpdate(long id);
+
   List<StorageLocation> findAllNonDeleted();
 
   List<StorageLocation> findByParentId(Long parentId);

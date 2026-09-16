@@ -105,11 +105,43 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
     this.checkoutPhoto = input.files?.[0] ?? null;
   }
 
+  cancelCheckin(): void {
+    if (this.actionLoading()) return;
+    this.checkinOpen.set(false);
+    this.checkinPhoto = null;
+    this.headquarterId = null;
+    this.actionError.set(null);
+  }
+
+  cancelCheckout(): void {
+    if (this.actionLoading()) return;
+    this.checkoutOpen.set(false);
+    this.checkoutPhoto = null;
+    this.actionError.set(null);
+  }
+
+  openCheckin(): void {
+    if (this.actionLoading()) return;
+    this.checkoutOpen.set(false);
+    this.checkoutPhoto = null;
+    this.checkinOpen.set(true);
+    this.actionError.set(null);
+  }
+
+  openCheckout(): void {
+    if (this.actionLoading()) return;
+    this.checkinOpen.set(false);
+    this.checkinPhoto = null;
+    this.checkoutOpen.set(true);
+    this.actionError.set(null);
+  }
+
   onHeadquarterChange(value: number | number[] | null): void {
     this.headquarterId = Array.isArray(value) ? value[0] ?? null : value;
   }
 
   registrarEntrada(): void {
+    if (this.actionLoading()) return;
     if (this.headquarterId == null || this.headquarterId <= 0) {
       this.actionError.set({
         message: 'Selecciona la sede donde registras la entrada.',
@@ -144,6 +176,7 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
   }
 
   registrarSalida(): void {
+    if (this.actionLoading()) return;
     this.actionLoading.set(true);
     this.actionError.set(null);
     this.service

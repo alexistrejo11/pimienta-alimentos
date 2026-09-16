@@ -44,10 +44,10 @@ export class OperadoresPageComponent implements OnInit {
   readonly operators = signal<PosOperatorResponse[]>([]);
   readonly metadata = signal<PageMetadata | null>(null);
   readonly page = signal(0);
-  readonly creating = signal(false);
-  readonly showForm = signal(false);
+  readonly editorState = signal<'closed' | 'create' | 'edit'>('closed');
   readonly editing = signal<PosOperatorResponse | null>(null);
   readonly saving = signal(false);
+  readonly showForm = () => this.editorState() !== 'closed';
 
   readonly posRoles = POS_ROLES;
   readonly posRoleLabel = posRoleLabel;
@@ -84,14 +84,32 @@ export class OperadoresPageComponent implements OnInit {
   siguiente(): void { if (this.metadata()?.hasNext) this.cargar(this.page() + 1); }
   anterior(): void { if (this.metadata()?.hasPrevious) this.cargar(this.page() - 1); }
 
-  toggleForm(): void {
-    this.showForm.update((v) => !v);
+  openCreate(): void {
     this.editing.set(null);
+    this.editorState.set('create');
+    this.resetForm();
+    this.submitError.set(null);
     this.form.controls.pin.setValidators([Validators.required, Validators.minLength(4)]);
     this.form.controls.pin.updateValueAndValidity();
-    if (!this.showForm()) {
-      this.submitError.set(null);
-    }
+  }
+
+  cancelEditor(): void {
+    if (this.saving()) return;
+    this.editorState.set('closed');
+    this.editing.set(null);
+    this.resetForm();
+    this.submitError.set(null);
+  }
+
+  private resetForm(): void {
+    this.form.reset({
+      displayName: '',
+      posRole: 'CASHIER',
+      pin: '',
+      headquarterIds: this.isAdmin() ? [] : this.session.assignedHeadquarterIds().slice(0, 1),
+    });
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 
   onHeadquartersChange(value: number | number[] | null): void {
@@ -108,6 +126,7 @@ export class OperadoresPageComponent implements OnInit {
 
     const v = this.form.getRawValue();
     this.submitError.set(null);
+    if (this.saving()) return;
     this.saving.set(true);
     const editing = this.editing();
     const request = editing
@@ -115,7 +134,7 @@ export class OperadoresPageComponent implements OnInit {
           displayName: v.displayName,
           posRole: v.posRole,
           pin: v.pin || undefined,
-          active: editing.active,
+           headquarterIds: v.headquarterIds,
         })
       : this.posAdmin.createOperator({
           displayName: v.displayName,
@@ -124,7 +143,7 @@ export class OperadoresPageComponent implements OnInit {
           headquarterIds: v.headquarterIds,
         });
     request
-      .pipe(finalize(() => { this.creating.set(false); this.saving.set(false); }))
+       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
         next: () => {
           this.form.reset({
@@ -133,8 +152,10 @@ export class OperadoresPageComponent implements OnInit {
             pin: '',
             headquarterIds: this.isAdmin() ? [] : v.headquarterIds,
           });
-          this.showForm.set(false);
+          this.editorState.set('closed');
           this.editing.set(null);
+          this.resetForm();
+          this.submitError.set(null);
           this.cargar();
         },
         error: (err: unknown) => {
@@ -145,7 +166,7 @@ export class OperadoresPageComponent implements OnInit {
 
   editar(operator: PosOperatorResponse): void {
     this.editing.set(operator);
-    this.showForm.set(true);
+    this.editorState.set('edit');
     this.submitError.set(null);
     this.form.reset({
       displayName: operator.displayName,
@@ -156,6 +177,8 @@ export class OperadoresPageComponent implements OnInit {
     this.form.controls.pin.clearValidators();
     this.form.controls.pin.addValidators(Validators.minLength(4));
     this.form.controls.pin.updateValueAndValidity();
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 
   desactivar(operator: PosOperatorResponse): void {

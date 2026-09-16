@@ -98,6 +98,10 @@ public class OperatorManagementUseCasesImpl implements OperatorManagementUseCase
     if (command.active() != null) {
       operator.setActive(command.active());
     }
+    if (command.headquarterIds() != null) {
+      command.headquarterIds().forEach(this::ensureHeadquarter);
+      operator.replaceHeadquarters(command.headquarterIds());
+    }
     operator.touch();
     PosOperator saved = operatorRepository.save(operator);
     saved.getHeadquarterIds()

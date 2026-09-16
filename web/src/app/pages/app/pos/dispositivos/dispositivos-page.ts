@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
+import { posDeviceStatusLabel } from '../../../../core/i18n/enum-labels';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { PosDeviceAdminResponse } from '../../../../core/model/pos/pos.dto';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
@@ -28,6 +29,7 @@ export class DispositivosPageComponent implements OnInit {
 
   readonly isAdmin = this.session.isAdmin;
   readonly hqName = this.lookup.name.bind(this.lookup);
+  readonly posDeviceStatusLabel = posDeviceStatusLabel;
 
   filterHeadquarterId: number | null = null;
 
