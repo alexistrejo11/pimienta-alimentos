@@ -19,6 +19,7 @@ class Phase1ComposeTest {
                 StatusBar(
                     cashier = "Cajera",
                     pending = 0,
+                    syncLabel = "Inventario sincronizado hace 0 min",
                     dark = true,
                     onTheme = {},
                     landscape = false,

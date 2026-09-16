@@ -158,4 +158,49 @@ object Migrations {
             database.execSQL("ALTER TABLE `sale_line` ADD COLUMN `authorizedAtEpochMillis` INTEGER")
         }
     }
+
+    // Keeps the server snapshot separate from unsynced local stock effects.
+    val V13_TO_V14 = object : Migration(13, 14) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `product` ADD COLUMN `centralStock` TEXT NOT NULL DEFAULT '0'")
+            database.execSQL("UPDATE `product` SET `centralStock` = `stock`")
+        }
+    }
+
+    // Links each stock movement to its exact outbox event for deterministic reconciliation.
+    val V14_TO_V15 = object : Migration(14, 15) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `inventory_movement` ADD COLUMN `syncEventId` TEXT")
+            database.execSQL("""
+                UPDATE `inventory_movement`
+                SET `syncEventId` = (
+                    SELECT e.id FROM `outbox_event` e
+                    WHERE e.aggregateId = `inventory_movement`.saleId
+                      AND e.type = CASE `inventory_movement`.movementType
+                        WHEN 'SALE' THEN 'SALE_CONFIRMED'
+                        WHEN 'SALE_CANCELLATION' THEN 'SALE_CANCELLED'
+                        WHEN 'WASTE' THEN 'WASTE_RECORDED'
+                        WHEN 'RESTOCK' THEN 'RESTOCK_RECORDED'
+                      END
+                    ORDER BY e.sequence DESC LIMIT 1
+                )
+            """.trimIndent())
+            database.execSQL("""
+                UPDATE `product`
+                SET `centralStock` = CAST(
+                    CAST(`stock` AS REAL) - COALESCE((
+                        SELECT SUM(m.quantityDelta)
+                        FROM `inventory_movement` m
+                        JOIN `outbox_event` e ON e.id = m.syncEventId
+                        WHERE m.productId = `product`.id
+                          AND e.status NOT IN ('SYNCED', 'REJECTED')
+                    ), 0)
+                    AS TEXT
+                )
+                WHERE `stockPolicy` = 'CONTROLLED'
+            """.trimIndent())
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_inventory_movement_productId` ON `inventory_movement` (`productId`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_inventory_movement_syncEventId` ON `inventory_movement` (`syncEventId`)")
+        }
+    }
 }

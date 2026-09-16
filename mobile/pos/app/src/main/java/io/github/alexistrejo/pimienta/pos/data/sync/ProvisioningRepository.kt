@@ -201,7 +201,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
     }
 
     // Applies catalog/operator delta operations atomically and advances the cursor after commit.
-    fun applyChanges(changes: ChangesResponse) {
+    fun applyChanges(changes: ChangesResponse, syncedEvents: List<EventResult> = emptyList()) {
         db.runInTransaction {
             val siteId = db.siteDao().current()?.id
                 ?: throw IllegalStateException("Cannot apply POS changes without a local site")
@@ -259,6 +259,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
             }
             val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()
             db.syncDao().saveState(current.copy(changesCursor = changes.nextCursor, lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
+            syncedEvents.forEach { db.syncDao().markSynced(it.eventId, it.status, it.incidentId, it.message) }
         }
     }
     private fun ProductDto.toProduct() = ProductEntity(
@@ -298,7 +299,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
         return retrofit2.Retrofit.Builder().baseUrl(normalized).client(client).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
     }
 
-    fun applyBootstrap(snapshot: BootstrapResponse) {
+    fun applyBootstrap(snapshot: BootstrapResponse, syncedEvents: List<EventResult> = emptyList()) {
         db.runInTransaction {
             db.siteDao().clear()
             db.productDao().clear()
@@ -322,6 +323,8 @@ class ProvisioningRepository(private val context: Context, private val provider:
             )
             db.bootstrapDao().insert(BootstrapEntity(snapshot.snapshotId, snapshot.schemaVersion, System.currentTimeMillis()))
             db.syncDao().saveState((db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()).copy(changesCursor = snapshot.cursors.changes, bootstrapSnapshotId = snapshot.snapshotId, status = "ONLINE"))
+            syncedEvents.forEach { db.syncDao().markSynced(it.eventId, it.status, it.incidentId, it.message) }
         }
     }
+
 }

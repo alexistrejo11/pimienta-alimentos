@@ -67,6 +67,7 @@ internal fun rememberLivePrinterStatus(context: Context, mode: RuntimeMode): Pai
 internal fun StatusBar(
     cashier: String,
     pending: Int,
+    syncLabel: String,
     dark: Boolean,
     onTheme: (Boolean) -> Unit,
     landscape: Boolean,
@@ -104,7 +105,7 @@ internal fun StatusBar(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            StatusChip("Sin conexión · $pending pendientes")
+            StatusChip(syncLabel, alert = syncLabel.contains("desactualizado", ignoreCase = true))
             StatusChip("Tablet T1")
             StatusChip(if (landscape) "Turno abierto · $cashier" else "Turno abierto")
             StatusChip(printerLabel, alert = printerAlert)

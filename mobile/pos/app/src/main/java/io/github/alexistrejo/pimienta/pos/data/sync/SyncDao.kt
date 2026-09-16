@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
+import kotlinx.coroutines.flow.Flow
 
 // Persists queue transitions and sync diagnostics.
 @Dao
@@ -18,10 +19,13 @@ interface SyncDao {
     fun markInFlight(ids: List<String>)
     @Query("UPDATE outbox_event SET status = 'SYNCED', resultStatus = :result, incidentId = :incident, lastError = :message WHERE id = :id")
     fun markSynced(id: String, result: String?, incident: String?, message: String?)
-    @Query("UPDATE outbox_event SET status = 'FAILED_RETRYABLE', attemptCount = attemptCount + 1, nextAttemptAtEpochMillis = :next, lastError = :message WHERE id = :id")
+    @Query("UPDATE outbox_event SET status = 'REJECTED', resultStatus = 'REJECTED', lastError = :message WHERE id = :id")
+    fun markRejected(id: String, message: String?)
+    @Query("UPDATE outbox_event SET status = 'FAILED_RETRYABLE', attemptCount = attemptCount + 1, nextAttemptAtEpochMillis = :next, lastError = :message WHERE id = :id AND status != 'REJECTED'")
     fun markFailedRetryable(id: String, next: Long, message: String)
     @Query("UPDATE outbox_event SET status = 'FAILED_RETRYABLE', nextAttemptAtEpochMillis = :next WHERE status = 'IN_FLIGHT'")
     fun recoverInFlight(next: Long)
     @Insert(onConflict = OnConflictStrategy.REPLACE) fun saveState(state: SyncStateEntity)
     @Query("SELECT * FROM sync_state WHERE id = 1") fun state(): SyncStateEntity?
+    @Query("SELECT * FROM sync_state WHERE id = 1") fun observeState(): Flow<SyncStateEntity?>
 }

@@ -49,6 +49,7 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         }
         val api = api(baseUrl)
         var inFlightIds = emptyList<String>()
+        var acceptedResults = emptyList<EventResult>()
         return try {
             db.syncDao().recoverInFlight(System.currentTimeMillis())
             val events = db.syncDao().eligible(System.currentTimeMillis(), 50)
@@ -58,10 +59,11 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
                 val siteId = device.siteId ?: return Result.success()
                 val response = api.events(EventsRequest(events.map { it.toEnvelope(device.id, siteId, json) }))
                 val received = response.results.map { it.eventId }.toSet()
+                acceptedResults = response.results.filter { it.status.uppercase() in setOf("ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW") }
                 response.results.forEach { result ->
                     when (result.status.uppercase()) {
-                        "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> db.syncDao().markSynced(result.eventId, result.status, result.incidentId, result.message)
-                        "REJECTED" -> db.syncDao().markFailedRetryable(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "event rejected")
+                        "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> Unit
+                        "REJECTED" -> db.syncDao().markRejected(result.eventId, result.message ?: "event rejected")
                         else -> db.syncDao().markFailedRetryable(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
                     }
                 }
@@ -72,10 +74,10 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             val current = db.syncDao().state() ?: state
             val localIncomplete = db.productDao().count() == 0 || db.userDao().count() == 0
             if (current.changesCursor == null || localIncomplete) {
-                ProvisioningRepository(applicationContext, provider).applyBootstrap(api.bootstrap())
+                ProvisioningRepository(applicationContext, provider).applyBootstrap(api.bootstrap(), acceptedResults)
             } else {
                 val changes = api.changes(current.changesCursor)
-                ProvisioningRepository(applicationContext, provider).applyChanges(changes)
+                ProvisioningRepository(applicationContext, provider).applyChanges(changes, acceptedResults)
             }
             uploadTelemetry(api, device.id, device.siteId, state)
             db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
@@ -91,7 +93,7 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             } else if (PosSyncErrorPolicy.requiresBootstrap(e)) {
                 // Invalid sync cursor: replace local catalog snapshot from a fresh bootstrap.
                 try {
-                    ProvisioningRepository(applicationContext, provider).applyBootstrap(api(baseUrl).bootstrap())
+                    ProvisioningRepository(applicationContext, provider).applyBootstrap(api(baseUrl).bootstrap(), acceptedResults)
                     db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
                     Result.success()
                 } catch (bootstrapError: Exception) {

@@ -25,6 +25,8 @@ internal fun Sale(
     cashier: String,
     users: List<LocalUserEntity>,
     products: List<ProductEntity>,
+    policy: PosPolicyEntity? = null,
+    syncState: SyncStateEntity? = null,
     dark: Boolean,
     onTheme: (Boolean) -> Unit,
     onShiftClosed: () -> Unit,
@@ -53,9 +55,17 @@ internal fun Sale(
     val context = LocalContext.current
     val mode = repository.mode()
     val (printerLabel, printerAlert) = rememberLivePrinterStatus(context, mode)
+    val openAmountAllowed = policy?.allowOpenProducts ?: repository.allowOpenProducts()
+    val openAmountCategories = remember(policy) {
+        policy?.let {
+            runCatching {
+                kotlinx.serialization.json.Json.decodeFromString<List<String>>(it.openAmountCategoriesJson)
+            }.getOrDefault(emptyList())
+        } ?: repository.openAmountCategories()
+    }
 
-    LaunchedEffect(Unit) {
-        pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
+    LaunchedEffect(repository) {
+        repository.observePendingEvents().collect { pending = it }
     }
 
     val categories = listOf("Todos") + products.map { it.saleCategory }.distinct()
@@ -121,7 +131,7 @@ internal fun Sale(
 
     // Verifies the manager PIN before adding the auditable open amount line.
     fun addOpenAmountLine(category: String, centavos: Long, authorizer: LocalUserEntity, pin: String) {
-        if (busy || !repository.allowOpenProducts()) return
+        if (busy || !openAmountAllowed) return
         scope.launch {
             val approved = withContext(Dispatchers.IO) {
                 authorizer.active &&
@@ -218,6 +228,7 @@ internal fun Sale(
             StatusBar(
                 cashier = cashier,
                 pending = pending,
+                syncLabel = inventorySyncLabel(syncState, pending),
                 dark = dark,
                 onTheme = onTheme,
                 landscape = landscape,
@@ -259,7 +270,7 @@ internal fun Sale(
             pendingCatalogBarcode?.let { barcode ->
                 PendingCatalogDialog(
                     barcode = barcode,
-                    openAmountAvailable = repository.allowOpenProducts(),
+                    openAmountAvailable = openAmountAllowed,
                     onDismiss = { pendingCatalogBarcode = null },
                     onConfirm = { addPendingCatalogLine(barcode, it) },
                     onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
@@ -267,7 +278,7 @@ internal fun Sale(
             }
             if (openAmountRequested) {
                 OpenAmountDialog(
-                    categories = repository.openAmountCategories(),
+                    categories = openAmountCategories,
                     users = users,
                     verifyPin = { user, pin ->
                         withContext(Dispatchers.IO) {
@@ -286,7 +297,7 @@ internal fun Sale(
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                         CatalogPanel(
                             Modifier.weight(0.6f).fillMaxHeight(), categories, category, { category = it }, search,
-                            { search = it }, filtered, ::add, repository.allowOpenProducts(), { openAmountRequested = true },
+                            { search = it }, filtered, ::add, openAmountAllowed, { openAmountRequested = true },
                         )
                     if (checkout) {
                         Checkout(
@@ -323,7 +334,7 @@ internal fun Sale(
                 if (portraitPanel == PortraitPanel.CATALOG) {
                     CatalogPanel(
                         Modifier.weight(1f).fillMaxWidth(), categories, category, { category = it }, search,
-                        { search = it }, filtered, ::add, repository.allowOpenProducts(), { openAmountRequested = true },
+                        { search = it }, filtered, ::add, openAmountAllowed, { openAmountRequested = true },
                     )
                 } else {
                     CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; discount = null }, { discountRequested = true }) { checkout = true }
@@ -346,5 +357,20 @@ internal fun Sale(
             hostState = feedbackHost,
             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
         )
+    }
+}
+
+// Describes stock freshness without claiming that an offline tablet has global real-time stock.
+internal fun inventorySyncLabel(state: SyncStateEntity?, pending: Int, now: Long = System.currentTimeMillis()): String {
+    val pendingText = if (pending == 1) "1 cambio local pendiente" else "$pending cambios locales pendientes"
+    if (state == null) return "Inventario local · $pendingText"
+    if (state.status != "ONLINE" || state.lastSuccessfulAtEpochMillis == null) {
+        return "Inventario puede estar desactualizado · $pendingText"
+    }
+    val minutes = ((now - state.lastSuccessfulAtEpochMillis).coerceAtLeast(0) / 60_000)
+    return if (pending > 0) {
+        "Base sincronizada hace ${minutes} min · $pendingText"
+    } else {
+        "Inventario sincronizado hace ${minutes} min"
     }
 }

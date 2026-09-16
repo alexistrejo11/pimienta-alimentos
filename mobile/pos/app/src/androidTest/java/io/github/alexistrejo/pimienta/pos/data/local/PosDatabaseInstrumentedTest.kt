@@ -7,6 +7,11 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CatalogCategoryEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import io.github.alexistrejo.pimienta.pos.data.telemetry.PosTelemetryLogger
 import org.junit.*
 import org.junit.runner.RunWith
@@ -44,4 +49,42 @@ class PosDatabaseInstrumentedTest {
    Assert.assertEquals(1726358400000L, line.authorizedAtEpochMillis)
    Assert.assertTrue(db.operationsDao().movementsBetween(0, Long.MAX_VALUE).isEmpty())
   }
-}
+
+  // Verifies that catalog changes emit immediately to the Compose-facing Room flow.
+  @Test fun productFlowEmitsRemoteCatalogChanges() = runBlocking {
+   Assert.assertTrue(db.productDao().observeAll().first().isEmpty())
+   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "UNLIMITED", null, null)))
+   Assert.assertEquals("Agua", db.productDao().observeAll().first().single().name)
+  }
+
+  // Verifies that unsynced local deductions remain visible over a newer central snapshot.
+  @Test fun pendingStockDeltaIsKeptSeparateFromCentralSnapshot(){
+   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "CONTROLLED", null, null, "10")))
+   db.operationsDao().insertOutbox(OutboxEventEntity("event-1", 1, "SALE_CONFIRMED", "sale-1", "PENDING", 1))
+   db.operationsDao().insertMovements(listOf(InventoryMovementEntity("movement-1", "sale-1", "p1", -2, 1, syncEventId="event-1")))
+   Assert.assertEquals(8, db.productDao().getAll().single().stock.toBigDecimal().toInt())
+   Assert.assertEquals("10", db.productDao().getAll().single().centralStock)
+   db.syncDao().markRejected("event-1", "invalid device")
+   Assert.assertEquals(10, db.productDao().getAll().single().stock.toBigDecimal().toInt())
+  }
+
+  // Verifies that a pending cancellation reverses only its own sale movement.
+  @Test fun cancellationUsesItsOwnOutboxEvent(){
+   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "8", "0", "CONTROLLED", null, null, "8")))
+   db.operationsDao().insertOutbox(OutboxEventEntity("sale-event", 1, "SALE_CONFIRMED", "sale-1", "SYNCED", 1))
+   db.operationsDao().insertOutbox(OutboxEventEntity("cancel-event", 2, "SALE_CANCELLED", "sale-1", "PENDING", 2))
+   db.operationsDao().insertMovements(listOf(
+    InventoryMovementEntity("sale-movement", "sale-1", "p1", -2, 1, syncEventId="sale-event"),
+    InventoryMovementEntity("cancel-movement", "sale-1", "p1", 2, 2, "SALE_CANCELLATION", "cancel-event"),
+   ))
+   Assert.assertEquals(10, db.productDao().getAll().single().stock.toBigDecimal().toInt())
+  }
+
+  // Verifies that operational movements do not alter products whose stock is not controlled.
+  @Test fun pendingMovementDoesNotAlterUnlimitedStock(){
+   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "UNLIMITED", null, null, "10")))
+   db.operationsDao().insertOutbox(OutboxEventEntity("event-1", 1, "RESTOCK_RECORDED", "movement-1", "PENDING", 1))
+   db.operationsDao().insertMovements(listOf(InventoryMovementEntity("movement-1", "movement-1", "p1", 5, 1, "RESTOCK", "event-1")))
+   Assert.assertEquals(10, db.productDao().getAll().single().stock.toBigDecimal().toInt())
+  }
+ }

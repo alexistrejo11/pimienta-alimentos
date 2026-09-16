@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
+import kotlinx.coroutines.flow.Flow
 
 // Groups low-level persistence calls used by the transactional POS repository.
 @Dao interface OperationsDao {
@@ -29,6 +30,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.*
     @Query("UPDATE cash_count_attempt SET status = :status, note = :note WHERE id = :id") fun updateCashCountStatus(id: String, status: String, note: String?)
     @Query("UPDATE sale SET status = 'CANCELLED' WHERE id = :saleId") fun markSaleCancelled(saleId: String)
      @Query("SELECT COUNT(*) FROM outbox_event WHERE status IN ('PENDING', 'IN_FLIGHT', 'FAILED_RETRYABLE', 'RETRY')") fun pendingEventCount(): Int
+    @Query("SELECT COUNT(*) FROM outbox_event WHERE status IN ('PENDING', 'IN_FLIGHT', 'FAILED_RETRYABLE', 'RETRY')") fun observePendingEventCount(): Flow<Int>
     @Query("SELECT COALESCE(SUM(grossCentavos), 0) FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED'") fun grossForShift(shiftId: String): Long
     @Query("SELECT COALESCE(SUM(discountCentavos), 0) FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED'") fun discountsForShift(shiftId: String): Long
     @Query("SELECT COALESCE(SUM(totalCentavos), 0) FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED'") fun netForShift(shiftId: String): Long

@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CatalogCategoryEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
+import kotlinx.coroutines.flow.Flow
 
 // Replaces and reads the locally cached catalog configuration projections.
 @Dao
@@ -27,4 +28,7 @@ interface SyncProjectionDao {
 
     @Query("SELECT * FROM pos_policy WHERE id = 1")
     fun policy(): PosPolicyEntity?
+
+    @Query("SELECT * FROM pos_policy WHERE id = 1")
+    fun observePolicy(): Flow<PosPolicyEntity?>
 }

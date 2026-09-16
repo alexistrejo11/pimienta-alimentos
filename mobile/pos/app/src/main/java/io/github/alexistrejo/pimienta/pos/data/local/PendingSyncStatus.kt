@@ -6,6 +6,7 @@ enum class PendingSyncStatus {
     IN_FLIGHT,
     SYNCED,
     FAILED_RETRYABLE,
+    REJECTED,
 }
 
 // Keeps the existing outbox table as the Phase 4 pending-sync queue.
