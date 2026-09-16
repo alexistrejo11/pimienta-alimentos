@@ -33,3 +33,9 @@ No extra follow-ups from this pass.
 - POS Mermas web route removed; HQ scrap remains at `/app/inventario/mermas`. Tablet `WASTE_RECORDED` is still ledger-only on the backend.
 
 No extra follow-ups blocking this pass.
+
+## 2026-09-16 — Admin shift list on PostgreSQL
+
+- `GET /pos/admin/shifts?status=OPEN` 500’d with `could not determine data type of parameter $7`. JPQL still bound unused `Instant` filters (`openedFrom`/`closedFrom`) as untyped nulls. Criteria now adds date predicates only when those values are present. H2 ITs did not catch it.
+
+No extra follow-ups blocking this pass.

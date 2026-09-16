@@ -172,6 +172,14 @@ class HeadquarterPosCatalogIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items", hasSize(1)))
         .andExpect(jsonPath("$.items[0].itemId").value(itemId));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-catalog?page=0&size=20&search=SKU", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].itemId").value(itemId));
   }
 
   @Test

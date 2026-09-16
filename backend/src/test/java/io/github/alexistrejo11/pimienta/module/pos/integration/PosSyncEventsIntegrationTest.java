@@ -215,6 +215,15 @@ class PosSyncEventsIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
 
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/pos/admin/shifts?headquarterId=%d&status=OPEN".formatted(hqId),
+                staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].shiftId").value(shiftId.toString()));
+
     String closeBatch =
         shiftLifecycleEventJson(
             device,

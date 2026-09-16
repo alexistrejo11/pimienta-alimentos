@@ -29,6 +29,10 @@ Non-fatal behaviors, consistency gaps, and product decisions to revisit. **Resol
 - No extra follow-ups from this pass for headquarters POS settings/catalog endpoints.
 - GET `pos-settings` returns `HEADQUARTER_POS_SETTINGS_NOT_FOUND` until the first PUT (by design: settings are created on upsert, not on HQ create).
 
+## POS catalog list on PostgreSQL (2026-09-16)
+
+- `GET /headquarters/{id}/pos-catalog` 500’d on PostgreSQL with `function lower(bytea) does not exist`. Hibernate 6 binds unused JPQL `String` params (`search`, `saleCategory`) and `''` in `coalesce` as `bytea`. H2 ITs did not catch it. List search now uses Criteria and only adds predicates when filters are present.
+
 ## POS Open Product settings (2026-09-16)
 
 - `allowOpenProducts` is now preserved on create and update.
