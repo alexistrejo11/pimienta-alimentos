@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -38,7 +37,9 @@ public class SecurityConfig {
   private static final String[] ACTUATOR_PUBLIC_PATHS = {
       "/actuator/health",
       "/actuator/health/**",
-      "/actuator/info"
+      "/actuator/info",
+      // Scraped by Prometheus on the Docker network (same port as API in prod).
+      "/actuator/prometheus"
   };
 
   private static final String[] AUTH_PUBLIC_PATHS = {
@@ -84,9 +85,7 @@ public class SecurityConfig {
       HttpSecurity http,
       JwtAuthenticationFilter jwtAuthenticationFilter,
       PimientaAuthenticationEntryPoint authenticationEntryPoint,
-      PimientaAccessDeniedHandler accessDeniedHandler,
-      Environment environment) throws Exception {
-    boolean localDevelopment = environment.matchesProfiles("dev");
+      PimientaAccessDeniedHandler accessDeniedHandler) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
         .cors(Customizer.withDefaults())
         .sessionManagement(
@@ -98,8 +97,6 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             auth -> auth.requestMatchers(SWAGGER_PUBLIC_PATHS).permitAll()
                 .requestMatchers(ACTUATOR_PUBLIC_PATHS).permitAll()
-                .requestMatchers(localDevelopment ? "/actuator/prometheus" : "/actuator/prometheus-disabled")
-                .permitAll()
                 .requestMatchers(HEALTH_PUBLIC_PATHS).permitAll()
                 .requestMatchers(AUTH_PUBLIC_PATHS).permitAll()
                 .requestMatchers(POS_DEVICE_PUBLIC_PATHS).permitAll()
