@@ -420,6 +420,68 @@ class PosSyncEventsIntegrationTest {
         .andExpect(jsonPath("$.results[0].message").value(org.hamcrest.Matchers.containsString("OPEN_PRODUCT")));
   }
 
+  @Test
+  void reusedDeviceSequence_differentEventId_returnsRejected() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-SEQ-CONFLICT-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Seq");
+
+    UUID firstEventId = UUID.randomUUID();
+    String first =
+        """
+        {
+          "events": [
+            {
+              "eventId": "%s",
+              "eventType": "DEVICE_HEARTBEAT",
+              "schemaVersion": 1,
+              "deviceId": "%s",
+              "siteId": "%d",
+              "deviceSequence": 6,
+              "occurredAt": "2026-09-08T18:00:00Z",
+              "payload": {}
+            }
+          ]
+        }
+        """
+            .formatted(firstEventId, device.deviceId(), hqId);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events", device.accessToken(), first))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    String conflict =
+        """
+        {
+          "events": [
+            {
+              "eventId": "%s",
+              "eventType": "DEVICE_HEARTBEAT",
+              "schemaVersion": 1,
+              "deviceId": "%s",
+              "siteId": "%d",
+              "deviceSequence": 6,
+              "occurredAt": "2026-09-08T18:01:00Z",
+              "payload": {}
+            }
+          ]
+        }
+        """
+            .formatted(UUID.randomUUID(), device.deviceId(), hqId);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events", device.accessToken(), conflict))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("REJECTED"))
+        .andExpect(jsonPath("$.results[0].message").value(org.hamcrest.Matchers.containsString("deviceSequence")));
+  }
+
   private Inventory stockAtPos(long hqId, long itemId) {
     var loc = posLocationUseCases.findPosLocation(hqId).orElseThrow();
     return inventoryRepository

@@ -15,4 +15,9 @@ public record DeviceEnrollResponse(
     long refreshTokenExpiresInSeconds,
     long refreshTokenMaxExpiresInSeconds,
     String minAppVersion,
-    Map<String, Integer> eventSchemaVersions) {}
+    Map<String, Integer> eventSchemaVersions,
+    @Schema(
+            description =
+                "Highest deviceSequence already accepted for this device; null if none. "
+                    + "Tablet must continue from lastDeviceSequence + 1 after re-enrollment.")
+        Long lastDeviceSequence) {}

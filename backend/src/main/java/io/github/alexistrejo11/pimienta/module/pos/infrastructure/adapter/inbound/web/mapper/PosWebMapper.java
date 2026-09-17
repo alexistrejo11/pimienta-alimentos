@@ -296,7 +296,8 @@ public final class PosWebMapper {
         t.refreshTokenExpiresInSeconds(),
         t.refreshTokenMaxExpiresInSeconds(),
         d.getMinAppVersion(),
-        DEFAULT_SCHEMAS);
+        DEFAULT_SCHEMAS,
+        d.getLastDeviceSequence());
   }
 
   public static DeviceTokenPairResponse toTokenPair(DeviceIssuedTokens tokens) {
@@ -317,7 +318,8 @@ public final class PosWebMapper {
         d.getDeviceName(),
         toSite(result.site()),
         d.getMinAppVersion(),
-        result.eventSchemaVersions());
+        result.eventSchemaVersions(),
+        d.getLastDeviceSequence());
   }
 
   public static PosSiteResponse toSite(SiteSummary site) {
@@ -455,7 +457,8 @@ public final class PosWebMapper {
             snapshot.device().id(),
             snapshot.device().name(),
             snapshot.device().visibleCode(),
-            snapshot.device().status().name()),
+            snapshot.device().status().name(),
+            snapshot.device().lastDeviceSequence()),
         snapshot.operators().stream().map(PosWebMapper::toBootstrapOperator).toList(),
         snapshot.products().stream().map(PosWebMapper::toBootstrapProduct).toList(),
         snapshot.openAmountCategories(),

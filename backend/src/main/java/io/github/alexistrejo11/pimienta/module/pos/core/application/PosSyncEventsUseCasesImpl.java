@@ -42,6 +42,7 @@ import java.util.UUID;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -110,12 +111,49 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
 
     List<EventIngestResult> results = new ArrayList<>(ordered.size());
     for (IngestPosEventItem item : ordered) {
-      EventIngestResult result =
-          Objects.requireNonNull(
-              transactionTemplate.execute(status -> processOne(device, item)));
+      EventIngestResult result;
+      try {
+        result =
+            Objects.requireNonNull(
+                transactionTemplate.execute(status -> processOne(device, item)));
+      } catch (DataIntegrityViolationException ex) {
+        // Concurrent insert raced past the pre-check; classify without leaving a 500.
+        result = resolveIntegrityConflict(device.getId(), item);
+      }
       results.add(result);
     }
     return List.copyOf(results);
+  }
+
+  private EventIngestResult resolveIntegrityConflict(UUID deviceId, IngestPosEventItem item) {
+    Optional<PosSyncEvent> byEventId = syncEventRepository.findByEventId(item.eventId());
+    if (byEventId.isPresent()) {
+      PosSyncEvent prior = byEventId.get();
+      return new EventIngestResult(
+          prior.getId(),
+          PosEventResultStatus.DUPLICATE,
+          prior.getServerReceivedAt(),
+          prior.getIncidentId(),
+          "Event already processed");
+    }
+    Optional<PosSyncEvent> bySequence =
+        syncEventRepository.findByDeviceIdAndDeviceSequence(deviceId, item.deviceSequence());
+    if (bySequence.isPresent()) {
+      PosSyncEvent prior = bySequence.get();
+      return new EventIngestResult(
+          item.eventId(),
+          PosEventResultStatus.REJECTED,
+          Instant.now(),
+          null,
+          "deviceSequence "
+              + item.deviceSequence()
+              + " already used by eventId="
+              + prior.getId()
+              + "; continue from a higher sequence after re-enrollment");
+    }
+    throw new IllegalStateException(
+        "POS sync integrity conflict without matching eventId or deviceSequence for eventId="
+            + item.eventId());
   }
 
   private EventIngestResult processOne(PosDevice device, IngestPosEventItem item) {
@@ -128,6 +166,22 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
           prior.getServerReceivedAt(),
           prior.getIncidentId(),
           "Event already processed");
+    }
+
+    Optional<PosSyncEvent> sequenceTaken =
+        syncEventRepository.findByDeviceIdAndDeviceSequence(device.getId(), item.deviceSequence());
+    if (sequenceTaken.isPresent()) {
+      PosSyncEvent prior = sequenceTaken.get();
+      return new EventIngestResult(
+          item.eventId(),
+          PosEventResultStatus.REJECTED,
+          Instant.now(),
+          null,
+          "deviceSequence "
+              + item.deviceSequence()
+              + " already used by eventId="
+              + prior.getId()
+              + "; continue from a higher sequence after re-enrollment");
     }
 
     if (!device.getId().equals(item.deviceId())

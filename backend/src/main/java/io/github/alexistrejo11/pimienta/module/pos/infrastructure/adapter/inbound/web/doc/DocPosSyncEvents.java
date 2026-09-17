@@ -21,7 +21,8 @@ import java.lang.annotation.Target;
     summary = "Ingest POS sync events",
     description =
         "Ordered batch ingest by deviceSequence. Per-event results may mix ACCEPTED, DUPLICATE, "
-            + "REQUIRES_REVIEW, and REJECTED (siteId/deviceId mismatch). Idempotent on eventId. "
+            + "REQUIRES_REVIEW, and REJECTED. A reused deviceSequence with a different eventId is "
+            + "REJECTED (not HTTP 500). Idempotent retries keep the same eventId. "
             + "SALE_CONFIRMED persists sale snapshot and applies POS inventory for CONTROLLED lines. "
             + "Requires device JWT (typ=device, scope=pos:sync).")
 @ApiResponse(

@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class EnrollRequest(val enrollmentCode: String, val devicePublicId: String, val deviceName: String, val appVersion: String)
 @Serializable data class SiteDto(val id: String, val name: String, val address: String = "", val currency: String = "MXN")
-@Serializable data class EnrollResponse(val deviceId: String, val visibleCode: String, val status: String, val site: SiteDto, val accessToken: String, val refreshToken: String, val accessTokenExpiresInSeconds: Long, val refreshTokenExpiresInSeconds: Long, val refreshTokenMaxExpiresInSeconds: Long, val minAppVersion: String? = null, val eventSchemaVersions: Map<String, Int> = emptyMap())
+@Serializable data class EnrollResponse(val deviceId: String, val visibleCode: String, val status: String, val site: SiteDto, val accessToken: String, val refreshToken: String, val accessTokenExpiresInSeconds: Long, val refreshTokenExpiresInSeconds: Long, val refreshTokenMaxExpiresInSeconds: Long, val minAppVersion: String? = null, val eventSchemaVersions: Map<String, Int> = emptyMap(), val lastDeviceSequence: Long? = null)
 @Serializable data class TokenPair(val accessToken: String, val refreshToken: String, val accessTokenExpiresInSeconds: Long, val refreshTokenExpiresInSeconds: Long, val refreshTokenMaxExpiresInSeconds: Long)
 @Serializable data class RefreshRequest(val refreshToken: String)
 @Serializable data class OperatorDto(val id: String, val displayName: String, val role: String, val pinHash: String, val active: Boolean)
@@ -35,7 +35,7 @@ import kotlinx.serialization.Serializable
 )
 @Serializable data class CursorsDto(val changes: String)
 @Serializable data class BootstrapResponse(val schemaVersion: Int, val kind: String, val snapshotId: String, val generatedAt: String, val site: SiteDto, val device: DeviceDto, val operators: List<OperatorDto>, val products: List<ProductDto>, val openAmountCategories: List<String>, val policies: PoliciesDto, val cursors: CursorsDto)
-@Serializable data class DeviceDto(val id: String, val name: String, val visibleCode: String, val status: String)
+@Serializable data class DeviceDto(val id: String, val name: String, val visibleCode: String, val status: String, val lastDeviceSequence: Long? = null)
 @Serializable data class ChangeOp(val op: String, val entity: String, val id: String, val data: kotlinx.serialization.json.JsonElement? = null)
 @Serializable data class ChangesResponse(val schemaVersion: Int, val nextCursor: String, val operations: List<ChangeOp>)
 @Serializable data class EventEnvelope(val eventId: String, val eventType: String, val schemaVersion: Int, val deviceId: String, val siteId: String, val deviceSequence: Long, val aggregateId: String? = null, val shiftId: String? = null, val occurredAt: String, val payload: kotlinx.serialization.json.JsonObject)

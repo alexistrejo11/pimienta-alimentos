@@ -84,7 +84,21 @@ class ProvisioningRepository(private val context: Context, private val provider:
         val api = retrofit(baseUrl, null)
         val result = api.enroll(EnrollRequest(code, publicId, name, BuildConfig.VERSION_NAME))
         credentials.save(result.accessToken, result.refreshToken)
-        val device = DeviceEntity(result.deviceId, name, result.visibleCode, 1, result.site.id, result.status, result.minAppVersion, json.encodeToString(result.eventSchemaVersions))
+        // Same tablet keeps its causal clock: never restart at 1 after revoke/re-enroll.
+        val nextSequence = DeviceSequenceClock.next(
+            localNext = db.operationsDao().device()?.nextEventSequence,
+            serverLast = result.lastDeviceSequence,
+        )
+        val device = DeviceEntity(
+            result.deviceId,
+            name,
+            result.visibleCode,
+            nextSequence,
+            result.site.id,
+            result.status,
+            result.minAppVersion,
+            json.encodeToString(result.eventSchemaVersions),
+        )
         db.runInTransaction {
             db.siteDao().clear()
             db.siteDao().insert(SiteEntity(result.site.id, result.site.name, result.site.address, result.site.currency))
@@ -307,6 +321,20 @@ class ProvisioningRepository(private val context: Context, private val provider:
             db.syncProjectionDao().clearCategories()
             db.syncProjectionDao().clearPolicy()
             db.siteDao().insert(SiteEntity(snapshot.site.id, snapshot.site.name, snapshot.site.address, snapshot.site.currency))
+            // Reconcile the causal clock with the server without wiping operational outbox rows.
+            db.operationsDao().device()?.let { existing ->
+                val nextSequence = DeviceSequenceClock.next(existing.nextEventSequence, snapshot.device.lastDeviceSequence)
+                db.operationsDao().insertDevice(
+                    existing.copy(
+                        id = snapshot.device.id,
+                        name = snapshot.device.name,
+                        visibleCode = snapshot.device.visibleCode,
+                        nextEventSequence = nextSequence,
+                        siteId = snapshot.site.id,
+                        status = snapshot.device.status,
+                    ),
+                )
+            }
             db.productDao().insertAll(snapshot.products.map { it.toProduct() })
             db.userDao().insertAll(snapshot.operators.map { it.toUser() })
             val categories = (snapshot.products.map { it.saleCategory } + snapshot.openAmountCategories)

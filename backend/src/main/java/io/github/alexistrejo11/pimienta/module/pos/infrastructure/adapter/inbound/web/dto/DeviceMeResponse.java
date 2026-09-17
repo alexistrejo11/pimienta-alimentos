@@ -11,4 +11,6 @@ public record DeviceMeResponse(
     String deviceName,
     PosSiteResponse site,
     String minAppVersion,
-    Map<String, Integer> eventSchemaVersions) {}
+    Map<String, Integer> eventSchemaVersions,
+    @Schema(description = "Highest deviceSequence already accepted for this device; null if none.")
+        Long lastDeviceSequence) {}

@@ -18,6 +18,9 @@ public interface PosSyncEventSpringDataRepository
 
   Optional<PosSyncEventJpaEntity> findByEventIdAndDeletedAtIsNull(UUID eventId);
 
+  Optional<PosSyncEventJpaEntity> findByDeviceIdAndDeviceSequenceAndDeletedAtIsNull(
+      UUID deviceId, long deviceSequence);
+
   boolean existsByEventIdAndDeletedAtIsNull(UUID eventId);
 
   @Query(

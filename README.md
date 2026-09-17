@@ -48,8 +48,14 @@ npm start
 
 ```bash
 cd backend
-cp .env.example .env
 docker compose up --build
+```
+
+Production-shaped API on this host (`backend/.env` + local `Dockerfile`):
+
+```bash
+cd backend
+docker compose -f docker-compose.prod.yml up --build
 ```
 
 ### Android POS

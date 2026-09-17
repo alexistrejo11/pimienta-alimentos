@@ -26,7 +26,8 @@ public interface PosSyncBootstrapUseCases {
 
   record SiteRow(String id, String name, String address, String currency) {}
 
-  record DeviceRow(String id, String name, String visibleCode, PosDeviceStatus status) {}
+  record DeviceRow(
+      String id, String name, String visibleCode, PosDeviceStatus status, Long lastDeviceSequence) {}
 
   record OperatorRow(
       String id, String displayName, PosRole role, String pinHash, boolean active) {}

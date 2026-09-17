@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.pos.integration;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -59,6 +60,7 @@ class PosDeviceAuthIntegrationTest {
             .andExpect(jsonPath("$.site.id").value(String.valueOf(hqId)))
             .andExpect(jsonPath("$.accessToken", not(nullValue())))
             .andExpect(jsonPath("$.refreshToken", not(nullValue())))
+            .andExpect(jsonPath("$.lastDeviceSequence", nullValue()))
             .andReturn();
 
     String access = JsonPath.read(enroll.getResponse().getContentAsString(), "$.accessToken");
@@ -68,7 +70,8 @@ class PosDeviceAuthIntegrationTest {
         .perform(AccountTestRequests.getBearer("/api/v1/pos/devices/me", access))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.deviceId").value(deviceId.toString()))
-        .andExpect(jsonPath("$.status").value("AUTHORIZED"));
+        .andExpect(jsonPath("$.status").value("AUTHORIZED"))
+        .andExpect(jsonPath("$.lastDeviceSequence", nullValue()));
 
     MvcResult refreshed =
         mockMvc
@@ -135,6 +138,75 @@ class PosDeviceAuthIntegrationTest {
                 "/api/v1/pos/devices/enroll", enrollJson(code, UUID.randomUUID(), "Late")))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("POS_ENROLLMENT_CODE_EXPIRED"));
+  }
+
+  @Test
+  void revoke_thenReenroll_returnsLastDeviceSequence() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-SEQ-" + UUID.randomUUID());
+    UUID deviceId = UUID.randomUUID();
+    String code = createEnrollmentCode(staffToken, hqId);
+
+    MvcResult enroll =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll", enrollJson(code, deviceId, "SeqCaja")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lastDeviceSequence", nullValue()))
+            .andReturn();
+    String access = JsonPath.read(enroll.getResponse().getContentAsString(), "$.accessToken");
+
+    String eventBody =
+        """
+        {
+          "events": [
+            {
+              "eventId": "%s",
+              "eventType": "DEVICE_HEARTBEAT",
+              "schemaVersion": 1,
+              "deviceId": "%s",
+              "siteId": "%d",
+              "deviceSequence": 3,
+              "occurredAt": "2026-09-08T18:00:00Z",
+              "payload": {}
+            }
+          ]
+        }
+        """
+            .formatted(UUID.randomUUID(), deviceId, hqId);
+
+    mockMvc
+        .perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", access, eventBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postBearer(
+                "/api/v1/pos/admin/devices/" + deviceId + "/revoke", staffToken))
+        .andExpect(status().isOk());
+
+    String code2 = createEnrollmentCode(staffToken, hqId);
+    MvcResult reenroll =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll", enrollJson(code2, deviceId, "SeqCaja")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lastDeviceSequence", is(3)))
+            .andReturn();
+    String access2 = JsonPath.read(reenroll.getResponse().getContentAsString(), "$.accessToken");
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/sync/bootstrap", access2))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.device.lastDeviceSequence", is(3)));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/devices/me", access2))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.lastDeviceSequence", is(3)));
   }
 
   @Test

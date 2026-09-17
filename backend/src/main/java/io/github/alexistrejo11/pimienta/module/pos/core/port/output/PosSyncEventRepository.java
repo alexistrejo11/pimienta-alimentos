@@ -15,6 +15,8 @@ public interface PosSyncEventRepository {
 
   Optional<PosSyncEvent> findByEventId(UUID eventId);
 
+  Optional<PosSyncEvent> findByDeviceIdAndDeviceSequence(UUID deviceId, long deviceSequence);
+
   PosSyncEvent save(PosSyncEvent event);
 
   Page<PosSyncEvent> findAcceptedByEventTypes(

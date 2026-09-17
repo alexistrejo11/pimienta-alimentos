@@ -32,6 +32,12 @@ public class PosSyncEventRepositoryImpl implements PosSyncEventRepository {
   }
 
   @Override
+  public Optional<PosSyncEvent> findByDeviceIdAndDeviceSequence(UUID deviceId, long deviceSequence) {
+    return jpa.findByDeviceIdAndDeviceSequenceAndDeletedAtIsNull(deviceId, deviceSequence)
+        .map(PosSyncEventPersistenceMapper::toDomain);
+  }
+
+  @Override
   public PosSyncEvent save(PosSyncEvent event) {
     boolean exists = jpa.existsById(event.getId());
     var entity = PosSyncEventPersistenceMapper.toEntity(event);

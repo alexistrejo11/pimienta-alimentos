@@ -17,7 +17,7 @@ COPY --from=build /workspace/target/*.jar /app/app.jar
 RUN mkdir -p /app/logs && chown -R spring:spring /app
 
 USER spring:spring
-EXPOSE 8080
+EXPOSE 8027
 
 ENV SPRING_PROFILES_ACTIVE=prod
 

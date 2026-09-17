@@ -24,7 +24,8 @@ Local Docker Compose provides PostgreSQL 16, Redis 7, and LocalStack for S3-comp
 
 ```sh
 cd backend
-cp .env.example .env
 docker network create pimienta-net
 docker compose up --build
 ```
+
+Production-shaped local run uses `docker-compose.prod.yml` and `backend/.env`.
