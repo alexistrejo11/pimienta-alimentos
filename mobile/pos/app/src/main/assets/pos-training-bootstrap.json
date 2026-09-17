@@ -2228,6 +2228,9 @@
   ],
   "openAmountCategories": [
     "Apoyo escolar",
+    "Comida",
+    "Bebida",
+    "Snack",
     "Otro"
   ],
   "notes": [

@@ -5,8 +5,10 @@ import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.entity.BootstrapEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SiteEntity
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 
@@ -42,15 +44,33 @@ class TrainingBootstrapImporter(private val context: Context) {
             siteId = site.id,
             status = deviceJson.optString("status", "SANDBOX"),
         )
+        val openAmountCategoriesArray = root.optJSONArray("openAmountCategories")
+        val openAmountCategoriesList = if (openAmountCategoriesArray != null) {
+            (0 until openAmountCategoriesArray.length()).map { openAmountCategoriesArray.getString(it) }
+        } else {
+            listOf("Apoyo escolar", "Comida", "Bebida", "Snack", "Otro")
+        }
+        val policy = PosPolicyEntity(
+            id = 1,
+            siteId = site.id,
+            allowNegativeStock = true,
+            allowOpenProducts = true,
+            defaultNegativeStockLimit = 10,
+            staleCatalogWarnHours = 24,
+            staleCatalogBlockHours = 72,
+            openAmountCategoriesJson = JSONArray(openAmountCategoriesList).toString(),
+        )
 
         database.runInTransaction {
             database.siteDao().clear()
             database.productDao().clear()
             database.userDao().clear()
+            database.syncProjectionDao().clearPolicy()
             database.siteDao().insert(site)
             database.productDao().insertAll(products)
             database.userDao().insertAll(users)
             database.operationsDao().insertDevice(device)
+            database.syncProjectionDao().insertPolicy(policy)
             database.bootstrapDao().insert(
                 BootstrapEntity(snapshotId, root.getInt("schemaVersion"), System.currentTimeMillis()),
             )

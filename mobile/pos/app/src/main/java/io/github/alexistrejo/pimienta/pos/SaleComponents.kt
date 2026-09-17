@@ -170,9 +170,10 @@ internal fun OpenAmountDialog(
     verifyPin: suspend (LocalUserEntity, String) -> Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, Long, LocalUserEntity, String) -> Unit,
+    initialCategory: String? = null,
 ) {
     var amount by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(categories.firstOrNull().orEmpty()) }
+    var selectedCategory by remember { mutableStateOf(initialCategory ?: categories.firstOrNull().orEmpty()) }
     var selectedAuthorizer by remember { mutableStateOf(users.firstOrNull { it.role == "MANAGER" || it.role == "SUPERADMIN" }) }
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -201,19 +202,38 @@ internal fun OpenAmountDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                Modifier
+                    .widthIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text("Monto abierto", style = MaterialTheme.typography.titleLarge)
-                Text("Categoría permitida", style = MaterialTheme.typography.labelLarge)
-                categories.forEach { category ->
-                    PosButton(category, { selectedCategory = category }, selected = selectedCategory == category, modifier = Modifier.fillMaxWidth())
+                if (initialCategory == null) {
+                    Text("Categoría permitida", style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        categories.forEach { category ->
+                            PosButton(category, { selectedCategory = category }, selected = selectedCategory == category)
+                        }
+                    }
                 }
                 Text("Descripción generada", style = MaterialTheme.typography.labelLarge)
                 Text("Producto abierto · ${selectedCategory.ifBlank { "categoría" }}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Importe", style = MaterialTheme.typography.labelLarge)
                 Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
                 Numpad(amount, { amount = it }, onSubmit = ::submit)
-                users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }.forEach { user ->
-                    PosButton(user.displayName, { selectedAuthorizer = user }, selected = selectedAuthorizer?.id == user.id, modifier = Modifier.fillMaxWidth())
+                Text("Autorizador (Manager)", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }.forEach { user ->
+                        PosButton(user.displayName, { selectedAuthorizer = user }, selected = selectedAuthorizer?.id == user.id)
+                    }
                 }
                 Text("PIN de autorización", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit)
@@ -222,6 +242,45 @@ internal fun OpenAmountDialog(
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
                     PosButton("Autorizar y agregar", ::submit, primary = true, enabled = !verifying, modifier = Modifier.weight(1f))
                 }
+            }
+        }
+    }
+}
+
+// Shows a vertical list of categories to jump quickly between sections.
+@Composable
+internal fun SectionsDialog(
+    categories: List<String>,
+    selected: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 400.dp)
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("Secciones del catálogo", style = MaterialTheme.typography.titleLarge)
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categories) { category ->
+                        PosButton(
+                            label = category,
+                            click = {
+                                onSelect(category)
+                                onDismiss()
+                            },
+                            selected = selected == category,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                PosButton("Cerrar", onDismiss, modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -402,13 +461,13 @@ internal fun CatalogPanel(
     onProduct: (ProductEntity) -> Unit,
     openAmountEnabled: Boolean = false,
     onOpenAmount: () -> Unit = {},
+    openAmountCategories: List<String> = emptyList(),
+    onOpenAmountCategory: (String) -> Unit = {},
+    onOpenSections: () -> Unit = {},
 ) {
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(12.dp)) {
             Text("Catálogo", style = MaterialTheme.typography.titleLarge)
-            if (openAmountEnabled) {
-                PosButton("Monto abierto", onOpenAmount, modifier = Modifier.fillMaxWidth())
-            }
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = search,
@@ -419,16 +478,26 @@ internal fun CatalogPanel(
                 colors = catalogFieldColors(),
             )
             Spacer(Modifier.height(8.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(categories, key = { it }) { item ->
-                    PosButton(item, { onCategory(item) }, selected = selectedCategory == item)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PosButton("☰", onOpenSections, modifier = Modifier.padding(end = 8.dp))
+                LazyRow(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categories, key = { it }) { item ->
+                        PosButton(item, { onCategory(item) }, selected = selectedCategory == item)
+                    }
                 }
             }
             Spacer(Modifier.height(10.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
             Spacer(Modifier.height(10.dp))
 
-            if (products.isEmpty()) {
+            val openCategoriesFiltered = remember(openAmountCategories, search) {
+                if (search.isBlank()) openAmountCategories else openAmountCategories.filter { it.contains(search, ignoreCase = true) }
+            }
+
+            if ((products.isEmpty() && selectedCategory != "Monto Abierto") || (selectedCategory == "Monto Abierto" && openCategoriesFiltered.isEmpty())) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("No hay productos para esta búsqueda.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -444,8 +513,37 @@ internal fun CatalogPanel(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(products, key = { it.id }) { ProductTile(it) { onProduct(it) } }
+                    if (selectedCategory == "Monto Abierto") {
+                        items(openCategoriesFiltered) { cat ->
+                            OpenProductTile(cat) { onOpenAmountCategory(cat) }
+                        }
+                    } else {
+                        items(products, key = { it.id }) { ProductTile(it) { onProduct(it) } }
+                    }
                 }
+            }
+        }
+    }
+}
+
+// Shows a virtual product tile for open amount categories.
+@Composable
+internal fun OpenProductTile(category: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 116.dp),
+        shape = MaterialTheme.shapes.small,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+    ) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+            Text("$category (Abierto)", style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Column {
+                Text("Capturar precio", fontWeight = FontWeight.Bold)
+                Text("Requiere autorización", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

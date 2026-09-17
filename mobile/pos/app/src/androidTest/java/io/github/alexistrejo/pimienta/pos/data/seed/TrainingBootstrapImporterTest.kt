@@ -38,6 +38,7 @@ class TrainingBootstrapImporterTest {
         assertEquals("site-debug-001", database.operationsDao().device()?.siteId)
         assertTrue(database.productDao().getAll().isNotEmpty())
         assertTrue(database.userDao().count() >= 2)
+        assertTrue(database.syncProjectionDao().policy()?.allowOpenProducts == true)
         database.openHelper.writableDatabase.query("SELECT snapshotId FROM bootstrap_snapshot LIMIT 1").use { cursor ->
             assertTrue(cursor.moveToFirst())
             assertEquals("training-catalog-001", cursor.getString(0))

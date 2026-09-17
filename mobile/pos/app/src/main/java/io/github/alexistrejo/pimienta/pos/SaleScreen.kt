@@ -51,6 +51,8 @@ internal fun Sale(
     var withdrawalRequested by remember { mutableStateOf(false) }
     var pendingCatalogBarcode by remember { mutableStateOf<String?>(null) }
     var openAmountRequested by remember { mutableStateOf(false) }
+    var selectedOpenCategory by remember { mutableStateOf<String?>(null) }
+    var sectionsRequested by remember { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     val mode = repository.mode()
@@ -68,9 +70,11 @@ internal fun Sale(
         repository.observePendingEvents().collect { pending = it }
     }
 
-    val categories = listOf("Todos") + products.map { it.saleCategory }.distinct()
+    val categories = remember(products, openAmountAllowed) {
+        val base = listOf("Todos") + products.map { it.saleCategory }.distinct()
+        if (openAmountAllowed) base + "Monto Abierto" else base
+    }
     val filtered = products.filter {
-        (category == "Todos" || it.saleCategory == category) &&
             (it.name.contains(search, true) || it.sku.contains(search, true) || it.barcode?.contains(search, true) == true)
     }
 
@@ -288,16 +292,43 @@ internal fun Sale(
                                 repository.authenticate(user.id, pin)
                         }
                     },
-                    onDismiss = { openAmountRequested = false },
+                    onDismiss = { 
+                        openAmountRequested = false
+                        selectedOpenCategory = null
+                    },
                     onConfirm = ::addOpenAmountLine,
+                    initialCategory = selectedOpenCategory
+                )
+            }
+
+            if (sectionsRequested) {
+                SectionsDialog(
+                    categories = categories,
+                    selected = category,
+                    onDismiss = { sectionsRequested = false },
+                    onSelect = { category = it }
                 )
             }
 
             if (landscape) {
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                         CatalogPanel(
-                            Modifier.weight(0.6f).fillMaxHeight(), categories, category, { category = it }, search,
-                            { search = it }, filtered, ::add, openAmountAllowed, { openAmountRequested = true },
+                            modifier = Modifier.weight(0.6f).fillMaxHeight(),
+                            categories = categories,
+                            selectedCategory = category,
+                            onCategory = { category = it },
+                            search = search,
+                            onSearch = { search = it },
+                            products = filtered,
+                            onProduct = ::add,
+                            openAmountEnabled = openAmountAllowed,
+                            onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
+                            openAmountCategories = openAmountCategories,
+                            onOpenAmountCategory = { cat ->
+                                selectedOpenCategory = cat
+                                openAmountRequested = true
+                            },
+                            onOpenSections = { sectionsRequested = true }
                         )
                     if (checkout) {
                         Checkout(
@@ -333,8 +364,22 @@ internal fun Sale(
                 PortraitTabs(portraitPanel, cart.sumOf { it.quantity }) { portraitPanel = it }
                 if (portraitPanel == PortraitPanel.CATALOG) {
                     CatalogPanel(
-                        Modifier.weight(1f).fillMaxWidth(), categories, category, { category = it }, search,
-                        { search = it }, filtered, ::add, openAmountAllowed, { openAmountRequested = true },
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        categories = categories,
+                        selectedCategory = category,
+                        onCategory = { category = it },
+                        search = search,
+                        onSearch = { search = it },
+                        products = filtered,
+                        onProduct = ::add,
+                        openAmountEnabled = openAmountAllowed,
+                        onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
+                        openAmountCategories = openAmountCategories,
+                        onOpenAmountCategory = { cat ->
+                            selectedOpenCategory = cat
+                            openAmountRequested = true
+                        },
+                        onOpenSections = { sectionsRequested = true }
                     )
                 } else {
                     CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; discount = null }, { discountRequested = true }) { checkout = true }
