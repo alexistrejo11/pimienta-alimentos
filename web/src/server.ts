@@ -69,19 +69,28 @@ app.get('/runtime-config.js', (_req, res) => {
     .send(
       `window.__PIMIENTA_CONFIG__=${JSON.stringify({
         apiBaseUrl,
-        release: process.env['WEB_RELEASE']?.trim() || '2.1.0',
+        release: process.env['WEB_RELEASE']?.trim() || '2.2.0',
       })};`,
     );
 });
 
 /**
- * Serve static files from /browser
+ * Serve static files from /browser.
+ * Bundles are content-hashed → long cache. favicon.ico is not hashed; a 1y TTL
+ * kept the old Angular icon after it was replaced.
  */
 app.use(
   express.static(browserDistFolder, {
-    maxAge: '1y',
     index: false,
     redirect: false,
+    setHeaders: (res, filePath) => {
+      const base = filePath.split(/[/\\]/).pop() ?? '';
+      if (base === 'favicon.ico' || base.endsWith('.ico')) {
+        res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+        return;
+      }
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    },
   }),
 );
 

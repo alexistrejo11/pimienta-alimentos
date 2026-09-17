@@ -84,16 +84,16 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
   @Override
   public PosSalesSummary summarizeAcceptedSales(long headquarterId, Instant from, Instant to) {
     Object[] row =
-        jpa.summarizeAcceptedSales(
-            headquarterId, from, to, PosEventResultStatus.ACCEPTED);
-    long salesCentavos = row[0] != null ? ((Number) row[0]).longValue() : 0L;
-    long ticketCount = row[1] != null ? ((Number) row[1]).longValue() : 0L;
-    return new PosSalesSummary(salesCentavos, ticketCount);
+        firstAggregateRow(
+            jpa.summarizeAcceptedSales(headquarterId, from, to, PosEventResultStatus.ACCEPTED), 2);
+    return new PosSalesSummary(number(row[0]), number(row[1]));
   }
 
   @Override
   public PosOpenProductSummary summarizeOpenProducts(long headquarterId, Instant from, Instant to) {
-    Object[] row = jpa.summarizeOpenProducts(headquarterId, from, to, PosEventResultStatus.ACCEPTED);
+    Object[] row =
+        firstAggregateRow(
+            jpa.summarizeOpenProducts(headquarterId, from, to, PosEventResultStatus.ACCEPTED), 4);
     return new PosOpenProductSummary(
         number(row[0]), number(row[1]), number(row[2]), number(row[3]));
   }
@@ -115,6 +115,13 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
       }
     }
     return new PosShiftSalesSummary(ticketCount, cash, card, courtesy);
+  }
+
+  private static Object[] firstAggregateRow(List<Object[]> rows, int columns) {
+    if (rows == null || rows.isEmpty() || rows.getFirst() == null) {
+      return new Object[columns];
+    }
+    return rows.getFirst();
   }
 
   private static long number(Object value) {

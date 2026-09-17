@@ -17,15 +17,12 @@
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2">
-      <label class="flex flex-col gap-1 text-sm sm:col-span-2">
-        <span class="font-semibold">Artículo</span>
-        <select class="rounded-lg bg-surface-container px-3 py-2.5" [(ngModel)]="itemId">
-          <option [ngValue]="null">Selecciona…</option>
-          @for (item of items(); track item.id) {
-            <option [ngValue]="item.id">{{ item.sku }} · {{ item.name }}</option>
-          }
-        </select>
-      </label>
+      <app-item-select
+        class="sm:col-span-2"
+        [value]="itemId"
+        (valueChange)="onItemChange($event)"
+        (itemChange)="onItemPicked($event)"
+      />
       <label class="flex flex-col gap-1 text-sm sm:col-span-2">
         <span class="font-semibold">Ubicación</span>
         <select class="rounded-lg bg-surface-container px-3 py-2.5" [(ngModel)]="locationId">

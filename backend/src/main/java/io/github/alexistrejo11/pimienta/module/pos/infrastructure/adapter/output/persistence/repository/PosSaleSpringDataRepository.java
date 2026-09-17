@@ -131,7 +131,8 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                 AND e.status = :accepted
             )
       """)
-  Object[] summarizeAcceptedSales(
+  /** Prefer {@code List} — Spring Data treats a bare {@code Object[]} as “array of rows”. */
+  List<Object[]> summarizeAcceptedSales(
       @Param("headquarterId") long headquarterId,
       @Param("from") Instant from,
       @Param("to") Instant to,
@@ -153,7 +154,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
         AND s.occurredAt >= :from AND s.occurredAt < :to
         AND e.deletedAt IS NULL
       """)
-  Object[] summarizeOpenProducts(
+  List<Object[]> summarizeOpenProducts(
       @Param("headquarterId") long headquarterId,
       @Param("from") Instant from,
       @Param("to") Instant to,

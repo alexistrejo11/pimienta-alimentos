@@ -11,6 +11,7 @@ import { inventoryExitReasonLabel } from '../../../../core/i18n/enum-labels';
 import type { InventoryExitReason } from '../../../../core/model/inventory/inventory.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
+import { ItemSelectComponent } from '../../../../shared/ui/item-select/item-select';
 
 const EXIT_REASONS: InventoryExitReason[] = [
   'SCRAP',
@@ -22,7 +23,7 @@ const EXIT_REASONS: InventoryExitReason[] = [
 
 @Component({
   selector: 'app-inventario-mermas-page',
-  imports: [PageHeaderComponent, HeadquarterSelectComponent, FormsModule],
+  imports: [PageHeaderComponent, HeadquarterSelectComponent, ItemSelectComponent, FormsModule],
   templateUrl: './mermas-hq-page.html',
 })
 export class InventarioMermasPageComponent implements OnInit {
@@ -33,7 +34,6 @@ export class InventarioMermasPageComponent implements OnInit {
   readonly loading = signal(false);
   readonly error = signal<ParsedApiError | null>(null);
   readonly success = signal('');
-  readonly items = signal<ItemResponse[]>([]);
   readonly locations = signal<StorageLocationResponse[]>([]);
   readonly exitReasons = EXIT_REASONS;
   readonly exitReasonLabel = inventoryExitReasonLabel;
@@ -54,7 +54,7 @@ export class InventarioMermasPageComponent implements OnInit {
     void this.hqLookup.ensureLoaded();
     if (!this.session.isAdmin()) {
       this.selectedHeadquarterId = this.session.activeHeadquarterId();
-      this.loadCatalog();
+      this.loadLocations();
     }
   }
 
@@ -66,13 +66,20 @@ export class InventarioMermasPageComponent implements OnInit {
     this.unitCost = 0;
     this.error.set(null);
     this.success.set('');
-    this.loadCatalog();
+    this.loadLocations();
   }
 
-  loadCatalog(): void {
+  onItemChange(id: number | null): void {
+    this.itemId = id;
+  }
+
+  onItemPicked(item: ItemResponse | null): void {
+    if (item && this.unitCost === 0) this.unitCost = item.costPrice;
+  }
+
+  loadLocations(): void {
     const hqId = this.effectiveHeadquarterId();
     if (hqId == null) return;
-    this.inventory.searchItems({ page: 0, size: 100 }).subscribe((page) => this.items.set(page.items));
     this.inventory
       .searchLocations({ headquarterId: hqId, page: 0, size: 100 })
       .subscribe((page) => this.locations.set(page.items));

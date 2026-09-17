@@ -6,7 +6,7 @@ files, notifications, headquarters, and Android POS synchronization.
 
 ## Status
 
-Version `2.1.0`. The production API domain is acquired and configured. The
+Version `2.2.0`. The production API domain is acquired and configured. The
 production container is published and deployed through GitHub Actions after
 changes are merged into `main`.
 

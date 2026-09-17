@@ -1,0 +1,60 @@
+<label class="flex flex-col gap-1 text-sm">
+  <span class="font-semibold text-on-surface">{{ label() }}</span>
+  <div class="relative">
+    <div class="flex gap-2">
+      <input
+        type="search"
+        class="min-w-0 flex-1 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2.5"
+        [placeholder]="placeholder()"
+        [disabled]="disabled()"
+        [ngModel]="query()"
+        (ngModelChange)="onQueryInput($event)"
+        (focus)="onFocus()"
+        (keydown)="onKeydown($event)"
+        autocomplete="off"
+        role="combobox"
+        [attr.aria-expanded]="open()"
+        aria-autocomplete="list"
+      />
+      @if (allowNull() && value() != null) {
+        <button
+          type="button"
+          class="rounded-lg border border-outline-variant/30 px-3 text-sm font-semibold text-on-surface-variant"
+          [disabled]="disabled()"
+          (click)="clear()"
+        >
+          Limpiar
+        </button>
+      }
+    </div>
+
+    @if (open()) {
+      <ul
+        class="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-outline-variant/30 bg-surface-container-lowest shadow-md"
+        role="listbox"
+      >
+        @if (loading()) {
+          <li class="px-3 py-2.5 text-sm text-on-surface-variant">Buscando…</li>
+        } @else if (options().length === 0) {
+          <li class="px-3 py-2.5 text-sm text-on-surface-variant">
+            Sin resultados. Prueba SKU (p. ej. CAF-104) o Enter para lookup exacto.
+          </li>
+        } @else {
+          @for (item of options(); track item.id) {
+            <li role="option">
+              <button
+                type="button"
+                class="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left text-sm hover:bg-surface-container"
+                [class.bg-surface-container]="value() === item.id"
+                (click)="select(item)"
+              >
+                <span class="font-medium text-on-surface">{{ item.name }}</span>
+                <span class="font-mono text-xs text-on-surface-variant">{{ item.sku }}</span>
+              </button>
+            </li>
+          }
+        }
+      </ul>
+    }
+  </div>
+</label>

@@ -26,15 +26,33 @@
         </label>
       </div>
     </fieldset>
-    @if (type === 'PARTIAL' && items().length > 0) {
-      <div class="grid gap-2 sm:grid-cols-2">
-        @for (item of items(); track item.id) {
-          <label class="flex cursor-pointer gap-2 rounded-lg bg-surface-container-low p-3">
-            <input type="checkbox" [checked]="selected.has(item.id)" (change)="toggle(item.id)" />
-            <span>{{ item.name }} <small class="block text-on-surface-variant">{{ item.sku }}</small></span>
-          </label>
-        }
-      </div>
+    @if (type === 'PARTIAL') {
+      <label class="flex flex-col gap-2">
+        <span class="font-semibold">Buscar productos</span>
+        <input
+          class="rounded-lg bg-surface-container px-3 py-3"
+          placeholder="SKU, nombre o código…"
+          [ngModel]="itemQuery()"
+          (ngModelChange)="onItemQueryChange($event)"
+        />
+      </label>
+      @if (loadingItems()) {
+        <p class="text-sm text-on-surface-variant">Buscando productos…</p>
+      } @else if (items().length === 0) {
+        <p class="text-sm text-on-surface-variant">Sin resultados para esa búsqueda.</p>
+      } @else {
+        <div class="grid gap-2 sm:grid-cols-2">
+          @for (item of items(); track item.id) {
+            <label class="flex cursor-pointer gap-2 rounded-lg bg-surface-container-low p-3">
+              <input type="checkbox" [checked]="selected.has(item.id)" (change)="toggle(item.id)" />
+              <span>{{ item.name }} <small class="block text-on-surface-variant">{{ item.sku }}</small></span>
+            </label>
+          }
+        </div>
+      }
+      @if (selected.size > 0) {
+        <p class="text-sm text-on-surface-variant">{{ selected.size }} producto(s) seleccionado(s).</p>
+      }
     }
     @if (error()) {
       <p class="text-sm text-error">{{ error() }}</p>

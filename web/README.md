@@ -6,7 +6,7 @@ administration tools.
 
 ## Status
 
-Version `2.1.0`. The production domain is acquired and configured. Production
+Version `2.2.0`. The production domain is acquired and configured. Production
 deployment is performed by GitHub Actions after changes are merged into `main`.
 
 ## Features

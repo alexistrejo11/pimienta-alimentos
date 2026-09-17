@@ -4,12 +4,13 @@ import { finalize } from 'rxjs';
 
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import type { ItemResponse, StorageLocationResponse } from '../../../../core/model/inventory/inventory.dto';
+import type { StorageLocationResponse } from '../../../../core/model/inventory/inventory.dto';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
+import { ItemSelectComponent } from '../../../../shared/ui/item-select/item-select';
 
 @Component({
   selector: 'app-inventario-ajustes-page',
-  imports: [PageHeaderComponent, FormsModule],
+  imports: [PageHeaderComponent, ItemSelectComponent, FormsModule],
   templateUrl: './ajustes-page.html',
 })
 export class InventarioAjustesPageComponent implements OnInit {
@@ -18,7 +19,6 @@ export class InventarioAjustesPageComponent implements OnInit {
   readonly loading = signal(false);
   readonly error = signal<ParsedApiError | null>(null);
   readonly success = signal('');
-  readonly items = signal<ItemResponse[]>([]);
   readonly locations = signal<StorageLocationResponse[]>([]);
 
   itemId: number | null = null;
@@ -27,8 +27,11 @@ export class InventarioAjustesPageComponent implements OnInit {
   reason = '';
 
   ngOnInit(): void {
-    this.inventory.searchItems({ page: 0, size: 100 }).subscribe((page) => this.items.set(page.items));
     this.inventory.searchLocations({ page: 0, size: 100 }).subscribe((page) => this.locations.set(page.items));
+  }
+
+  onItemChange(id: number | null): void {
+    this.itemId = id;
   }
 
   ajustar(): void {

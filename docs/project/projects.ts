@@ -76,7 +76,7 @@ export const PROJECTS: ProjectModel[] = [
       repositoryLink,
       deploymentLink: "https://pimienta-alimentos.com",
       license: "Apache-2.0",
-      version: "2.1.0",
+      version: "2.2.0",
       recentCommits,
       metrics: [
         { label: "Platforms", value: 3 },
@@ -135,7 +135,7 @@ export const PROJECTS: ProjectModel[] = [
           repositoryLink,
           deploymentLink: "https://pimienta-alimentos.com",
           license: "Apache-2.0",
-          version: "2.1.0",
+          version: "2.2.0",
           recentCommits,
           metrics: [
             { label: "TypeScript files", value: 133 },
@@ -197,7 +197,7 @@ export const PROJECTS: ProjectModel[] = [
           repositoryLink,
           deploymentLink: "https://api.pimienta-alimentos.com",
           license: "Apache-2.0",
-          version: "2.1.0",
+          version: "2.2.0",
           recentCommits,
           metrics: [
             { label: "Java source files", value: 1015 },
@@ -256,7 +256,7 @@ export const PROJECTS: ProjectModel[] = [
         metadata: {
           repositoryLink,
           license: "Apache-2.0",
-          version: "2.1.0",
+          version: "2.2.0",
           recentCommits,
           metrics: [
             { label: "Kotlin source files", value: 34 },

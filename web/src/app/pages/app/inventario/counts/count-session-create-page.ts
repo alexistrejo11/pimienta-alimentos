@@ -1,6 +1,9 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
+
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import type { ItemResponse, StorageLocationResponse } from '../../../../core/model/inventory/inventory.dto';
@@ -15,11 +18,15 @@ export class CountSessionCreatePageComponent implements OnInit {
   private readonly inventory = inject(InventoryService);
   private readonly session = inject(SessionContextService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly itemSearch$ = new Subject<string>();
 
   readonly locations = signal<StorageLocationResponse[]>([]);
   readonly items = signal<ItemResponse[]>([]);
   readonly busy = signal(false);
+  readonly loadingItems = signal(false);
   readonly error = signal('');
+  readonly itemQuery = signal('');
 
   locationId: number | null = null;
   type: InventoryCountType = 'FULL';
@@ -31,17 +38,35 @@ export class CountSessionCreatePageComponent implements OnInit {
       next: (p) => this.locations.set(p.items),
       error: () => this.error.set('No se pudieron cargar las ubicaciones.'),
     });
-    this.inventory.searchItems({ page: 0, size: 100 }).subscribe({
-      next: (p) => this.items.set(p.items),
-    });
+
+    this.itemSearch$
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        tap(() => this.loadingItems.set(true)),
+        switchMap((term) =>
+          this.inventory
+            .searchItems({ page: 0, size: 50, search: term.trim() || undefined, status: 'ACTIVE' })
+            .pipe(
+              catchError(() => of({ items: [] as ItemResponse[] })),
+              tap(() => this.loadingItems.set(false)),
+            ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((page) => this.items.set(page.items));
+
+    this.itemSearch$.next('');
+  }
+
+  onItemQueryChange(value: string): void {
+    this.itemQuery.set(value);
+    this.itemSearch$.next(value);
   }
 
   toggle(id: number): void {
-    if (this.selected.has(id)) {
-      this.selected.delete(id);
-    } else {
-      this.selected.add(id);
-    }
+    if (this.selected.has(id)) this.selected.delete(id);
+    else this.selected.add(id);
   }
 
   open(): void {

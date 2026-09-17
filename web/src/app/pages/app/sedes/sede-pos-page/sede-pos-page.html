@@ -38,40 +38,24 @@
             Imprimir etiquetas
           </button>
         </div>
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-          <select
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
-            [(ngModel)]="candidateId"
-            [ngModelOptions]="{ standalone: true }"
-          >
-            <option [ngValue]="null">Seleccionar artículo maestro POS</option>
-            @for (item of posCandidates(); track item.id) {
-              <option [ngValue]="item.id">{{ item.name }} · {{ item.sku }}</option>
-            }
-          </select>
-          <button
-            type="button"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
-            (click)="configureCandidate()"
+        <div class="mt-4 flex flex-wrap items-end gap-2">
+          <app-item-select
+            class="min-w-[16rem] flex-1"
+            label="Agregar artículo al catálogo"
+            placeholder="Buscar CAF-104, nombre…"
+            catalogRole="POS_SELLABLE"
+            [value]="pendingItemId()"
+            (valueChange)="onPendingItemChange($event)"
+            (itemChange)="onPendingItemPicked($event)"
             [disabled]="!canEditCatalog()"
-          >
-            Configurar artículo
-          </button>
-        </div>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <input
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
-            placeholder="SKU o código de barras"
-            [(ngModel)]="lookupSku"
-            [ngModelOptions]="{ standalone: true }"
           />
           <button
             type="button"
-            class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
-            (click)="addFromLookup()"
-            [disabled]="!canEditCatalog()"
+            class="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+            (click)="configurePendingItem()"
+            [disabled]="!canEditCatalog() || pendingItemId() == null"
           >
-            Agregar producto
+            Configurar artículo
           </button>
         </div>
         <div class="mt-3 flex flex-wrap gap-2">

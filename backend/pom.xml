@@ -13,7 +13,7 @@
 	<!-- Group ID, Artifact ID, Version -->
 	<groupId>io.github.alexistrejo11</groupId>
 	<artifactId>pimienta</artifactId>
-	<version>2.1.0</version>
+	<version>2.2.0</version>
 	
 	<!-- Name, description, url, licenses, developers, scm -->
 	<name>Pimienta Alimentos</name>

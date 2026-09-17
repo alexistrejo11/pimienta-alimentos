@@ -102,7 +102,7 @@ class TelemetryIngestionIntegrationTest {
                     "syncState": "RETRYING",
                     "pendingEvents": 2,
                     "oldestPendingAgeSeconds": 30,
-                    "appVersion": "2.1.0"
+                    "appVersion": "2.2.0"
                   }
                 }
                 """))

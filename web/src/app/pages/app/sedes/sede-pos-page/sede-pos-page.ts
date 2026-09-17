@@ -6,7 +6,6 @@ import { finalize } from 'rxjs';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
 import { PosCatalogService } from '../../../../core/headquarters/pos-catalog.service';
-import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { PosLabelPrintService } from '../../../../core/pos/pos-label-print.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import { stockPolicyLabel } from '../../../../core/i18n/enum-labels';
@@ -20,10 +19,18 @@ import type { PageMetadata } from '../../../../core/model/common/pagination';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
+import { ItemSelectComponent } from '../../../../shared/ui/item-select/item-select';
 
 @Component({
   selector: 'app-sede-pos-page',
-  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, FormsModule, HeadquarterSelectComponent],
+  imports: [
+    PageHeaderComponent,
+    DataStateComponent,
+    ReactiveFormsModule,
+    FormsModule,
+    HeadquarterSelectComponent,
+    ItemSelectComponent,
+  ],
   templateUrl: './sede-pos-page.html',
 })
 export class SedePosPageComponent implements OnInit {
@@ -31,7 +38,6 @@ export class SedePosPageComponent implements OnInit {
   private readonly session = inject(SessionContextService);
   private readonly hqService = inject(HeadquarterService);
   private readonly posCatalog = inject(PosCatalogService);
-  private readonly inventory = inject(InventoryService);
   private readonly fb = inject(FormBuilder);
   private readonly labelPrint = inject(PosLabelPrintService);
 
@@ -43,8 +49,6 @@ export class SedePosPageComponent implements OnInit {
   readonly catalog = signal<HeadquarterPosCatalogItemResponse[]>([]);
   readonly catalogMetadata = signal<PageMetadata | null>(null);
   readonly catalogPage = signal(0);
-  readonly masterItems = signal<ItemResponse[]>([]);
-  readonly posCandidates = signal<ItemResponse[]>([]);
   readonly saleCategories = signal<PosSaleCategoryResponse[]>([]);
   readonly savingCatalogId = signal<number | null>(null);
   readonly creatingCategory = signal(false);
@@ -58,10 +62,10 @@ export class SedePosPageComponent implements OnInit {
   readonly canEditCatalog = computed(() => this.session.isAdmin() || this.session.isManager());
   private catalogSearchTimer: ReturnType<typeof setTimeout> | undefined;
 
-  lookupSku = '';
-  candidateId: number | null = null;
   newCategoryName = '';
   readonly editingItemId = signal<number | null>(null);
+  readonly pendingItemId = signal<number | null>(null);
+  readonly pendingItemLabel = signal('');
 
   readonly catalogForm = this.fb.nonNullable.group({
     saleCategory: ['', Validators.required],
@@ -106,22 +110,15 @@ export class SedePosPageComponent implements OnInit {
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (page) => { this.catalog.set(page.items); this.catalogMetadata.set(page.metadata); },
+        next: (page) => {
+          this.catalog.set(page.items);
+          this.catalogMetadata.set(page.metadata);
+        },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
 
     this.posCatalog.listCategories(id).subscribe({
       next: (categories) => this.saleCategories.set(categories),
-      error: () => {},
-    });
-
-    this.inventory.searchItems({ page: 0, size: 20 }).subscribe({
-      next: (page) => this.masterItems.set(page.items),
-      error: () => {},
-    });
-
-    this.posCatalog.listCandidates(id).subscribe({
-      next: (items) => this.posCandidates.set(items),
       error: () => {},
     });
   }
@@ -153,8 +150,15 @@ export class SedePosPageComponent implements OnInit {
 
   cancelCatalogEdit(): void {
     this.editingItemId.set(null);
-    this.candidateId = null;
-    this.catalogForm.reset({ saleCategory: '', salePrice: 0, available: true, stockPolicy: 'CONTROLLED', negativeStockLimit: null });
+    this.pendingItemId.set(null);
+    this.pendingItemLabel.set('');
+    this.catalogForm.reset({
+      saleCategory: '',
+      salePrice: 0,
+      available: true,
+      stockPolicy: 'CONTROLLED',
+      negativeStockLimit: null,
+    });
     this.catalogForm.markAsPristine();
     this.catalogForm.markAsUntouched();
   }
@@ -169,6 +173,8 @@ export class SedePosPageComponent implements OnInit {
 
   startEditCatalog(row: HeadquarterPosCatalogItemResponse): void {
     this.editingItemId.set(row.itemId);
+    this.pendingItemId.set(null);
+    this.pendingItemLabel.set('');
     this.catalogForm.reset({
       saleCategory: row.saleCategory,
       salePrice: row.salePrice,
@@ -200,18 +206,28 @@ export class SedePosPageComponent implements OnInit {
         next: () => {
           this.cancelCatalogEdit();
           this.cargar(this.headquarterId());
-          this.posCatalog.listCandidates(this.headquarterId()).subscribe({
-            next: (items) => this.posCandidates.set(items),
-          });
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
   }
 
-  configureCandidate(): void {
-    const item = this.posCandidates().find((candidate) => candidate.id === Number(this.candidateId));
-    if (!item) return;
-    this.editingItemId.set(item.id);
+  onPendingItemChange(id: number | null): void {
+    this.pendingItemId.set(id);
+    if (id == null) this.pendingItemLabel.set('');
+  }
+
+  onPendingItemPicked(item: ItemResponse | null): void {
+    if (!item) {
+      this.pendingItemLabel.set('');
+      return;
+    }
+    this.pendingItemLabel.set(`${item.sku} · ${item.name}`);
+  }
+
+  configurePendingItem(): void {
+    const itemId = this.pendingItemId();
+    if (itemId == null) return;
+    this.editingItemId.set(itemId);
     this.catalogForm.reset({
       saleCategory: this.saleCategories()[0]?.name ?? '',
       salePrice: 0,
@@ -237,42 +253,26 @@ export class SedePosPageComponent implements OnInit {
       });
   }
 
-  addFromLookup(): void {
-    const q = this.lookupSku.trim();
-    if (!q) return;
-    this.inventory.lookupItem(q).subscribe({
-      next: (item) => {
-        this.editingItemId.set(item.id);
-        this.catalogForm.reset({
-          saleCategory: 'GENERAL',
-          salePrice: 0,
-          available: true,
-          stockPolicy: 'CONTROLLED',
-          negativeStockLimit: null,
-        });
-      },
-      error: (err: unknown) => this.error.set(parseApiError(err)),
-    });
-  }
-
   itemName(itemId: number): string {
-    return this.catalog().find((row) => row.itemId === itemId)?.itemName
-      ?? this.masterItems().find((i) => i.id === itemId)?.name
-      ?? `Ítem #${itemId}`;
+    const fromCatalog = this.catalog().find((row) => row.itemId === itemId)?.itemName;
+    if (fromCatalog) return fromCatalog;
+    if (this.editingItemId() === itemId && this.pendingItemLabel()) {
+      const parts = this.pendingItemLabel().split(' · ');
+      return parts.length > 1 ? parts.slice(1).join(' · ') : this.pendingItemLabel();
+    }
+    return `Ítem #${itemId}`;
   }
 
   itemSku(itemId: number): string {
-    return this.catalog().find((row) => row.itemId === itemId)?.itemSku
-      ?? this.masterItems().find((i) => i.id === itemId)?.sku
-      ?? '';
+    return this.catalog().find((row) => row.itemId === itemId)?.itemSku ?? '';
   }
 
   printCatalogLabels(): void {
     this.labelPrint.print(
       this.catalog()
         .map((row) => ({
-           sku: row.itemSku || this.itemSku(row.itemId),
-           name: row.itemName || this.itemName(row.itemId),
+          sku: row.itemSku || this.itemSku(row.itemId),
+          name: row.itemName || this.itemName(row.itemId),
           price: row.salePrice,
         }))
         .filter((label) => label.sku),
