@@ -1,17 +1,18 @@
-# Local development only. GHCR images are published by CI/CD, not this file.
+# Local development only. Values are hardcoded so backend/.env (prod) is never interpolated.
 #   docker compose up --build
+# Prod-like local run (homelab networks + .env): docker compose -f docker-compose.prod.yml up --build
 name: pimienta-backend
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-pimienta_alimentos}
-      POSTGRES_USER: ${POSTGRES_USER:-pimienta_dba}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pimienta_dba}
+      POSTGRES_DB: pimienta_alimentos
+      POSTGRES_USER: pimienta_dba
+      POSTGRES_PASSWORD: pimienta_dba
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT:-5431}:5432"
+      - "5431:5432"
     volumes:
       - pimienta_pg_data:/var/lib/postgresql/data
       - ./docker/postgres/ensure-role.sh:/ensure-role.sh:ro
@@ -44,8 +45,8 @@ services:
     image: localstack/localstack:4
     environment:
       SERVICES: s3
-      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
-      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-pimienta-employees}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_S3_BUCKET_NAME: pimienta-employees
     restart: unless-stopped
     ports:
       - "4566:4566"
@@ -65,25 +66,33 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "${API_PORT:-8080}:${API_PORT:-8080}"
+      - "8080:8080"
     restart: unless-stopped
-    env_file:
-      - path: .env
-        required: false
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-pimienta_alimentos}
-      POSTGRES_USER: ${POSTGRES_USER:-pimienta_dba}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pimienta_dba}
+      POSTGRES_DB: pimienta_alimentos
+      POSTGRES_USER: pimienta_dba
+      POSTGRES_PASSWORD: pimienta_dba
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/pimienta_alimentos
       REDIS_URL: redis://redis:6379
-      API_PORT: ${API_PORT:-8080}
-      PIMIENTA_SECURITY_JWT_SECRET: ${PIMIENTA_SECURITY_JWT_SECRET}
-      JAVA_OPTS: ${JAVA_OPTS:-}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
-      AWS_S3_FOLDER: ${AWS_S3_FOLDER:-employees}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      PIMIENTA_REDIS_KEY_PREFIX: pimienta-alimentos
+      PIMIENTA_CORS_ALLOWED_ORIGINS: http://localhost:4000,http://localhost:4001,http://localhost:3000,http://127.0.0.1:4000,http://127.0.0.1:4001,http://127.0.0.1:3000
+      PIMIENTA_SECURITY_JWT_SECRET: change-me-use-at-least-256-bits-for-hs256-secret-key-pimienta
+      PIMIENTA_BOOTSTRAP_ADMIN_ENABLED: "true"
+      PIMIENTA_BOOTSTRAP_ADMIN_EMAIL: admin@pimienta.local
+      PIMIENTA_BOOTSTRAP_ADMIN_PASSWORD: ChangeMeAdmin1
+      PIMIENTA_BOOTSTRAP_ADMIN_FIRST_NAME: Admin
+      PIMIENTA_BOOTSTRAP_ADMIN_LAST_NAME: Pimienta
+      PIMIENTA_BOOTSTRAP_ADMIN_PHONE: "+520000000001"
+      JAVA_OPTS: ""
+      AWS_REGION: us-east-1
+      AWS_S3_FOLDER: employees
+      AWS_S3_SOURCES_ROOT: pimienta/sources
+      AWS_S3_POS_APK_KEY: pimienta/releases/pos/android/latest.apk
+      AWS_S3_POS_APK_MANIFEST_KEY: pimienta/releases/pos/android/current.json
+      AWS_S3_BUCKET_NAME: pimienta-employees
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
       AWS_S3_ENDPOINT: http://localstack:4566
       AWS_S3_PUBLIC_ENDPOINT: http://localhost:4566
     volumes:

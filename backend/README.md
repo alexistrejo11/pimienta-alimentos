@@ -52,17 +52,30 @@ remain outside the versioned API prefix.
 
 ## Local Development
 
+Dev stack (Postgres, Redis, LocalStack, `Dockerfile.dev`). Env values are
+hardcoded in `docker-compose.yml` so a production `backend/.env` is not used:
+
 ```bash
-cp .env.example .env
 docker compose up --build
 ```
 
-For host-based development:
+Production-shaped run on this machine (JAR via `Dockerfile`, reads `.env`,
+joins `infra_central_network` / `shared_app_network`):
+
+```bash
+cp .env.example .env   # once; fill real secrets
+docker compose -f docker-compose.prod.yml up --build
+```
+
+For host-based development against published local ports:
 
 ```bash
 docker compose up -d postgres redis localstack
 ./mvnw spring-boot:run
 ```
+
+Do not run Maven against a production `.env`: `DotenvEnvironmentPostProcessor`
+loads `.env` from the working directory.
 
 ## Test
 
