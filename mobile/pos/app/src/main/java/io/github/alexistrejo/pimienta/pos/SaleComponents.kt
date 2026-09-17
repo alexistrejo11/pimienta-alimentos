@@ -9,6 +9,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -62,7 +63,7 @@ internal fun rememberLivePrinterStatus(context: Context, mode: RuntimeMode): Pai
     return presentation.label to presentation.alert
 }
 
-// Keeps operational status visible without letting a portrait header overflow.
+// Keeps operational status visible in a compact collapsible top bar.
 @Composable
 internal fun StatusBar(
     cashier: String,
@@ -79,38 +80,79 @@ internal fun StatusBar(
     printerAlert: Boolean,
     scannerLabel: String,
 ) {
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val headerBtnPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+
     Column(
-        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clickable { expanded = !expanded }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             Image(
                 painter = painterResource(R.drawable.logo),
                 contentDescription = null,
-                modifier = Modifier.size(48.dp).padding(end = 8.dp)
+                modifier = Modifier.size(24.dp)
             )
-            Text("Punto de Venta", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.weight(1f))
-            val headerBtnPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-            PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
-            Spacer(Modifier.width(8.dp))
-            PosButton("Bloquear caja", lockCashRegister, contentPadding = headerBtnPadding)
-            Spacer(Modifier.width(8.dp))
-            PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
-            Spacer(Modifier.width(8.dp))
-            if (BuildConfig.DEBUG) {
-                PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
+            Text(
+                if (landscape) "Punto de Venta" else "POS",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Row(
+                modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StatusChip(if (landscape) "Turno: $cashier" else cashier)
+                StatusChip(printerLabel, alert = printerAlert)
+                if (pending > 0 || syncLabel.contains("desactualizado", ignoreCase = true)) {
+                    StatusChip(syncLabel, alert = syncLabel.contains("desactualizado", ignoreCase = true))
+                }
             }
+            PosButton(
+                label = if (expanded) "Ocultar ▲" else "Acciones ▼",
+                click = { expanded = !expanded },
+                contentPadding = headerBtnPadding,
+            )
         }
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
         ) {
-            StatusChip(syncLabel, alert = syncLabel.contains("desactualizado", ignoreCase = true))
-            StatusChip("Tablet T1")
-            StatusChip(if (landscape) "Turno abierto · $cashier" else "Turno abierto")
-            StatusChip(printerLabel, alert = printerAlert)
-            StatusChip(scannerLabel)
+            Column(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
+                    PosButton("Bloquear caja", lockCashRegister, contentPadding = headerBtnPadding)
+                    PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
+                    if (BuildConfig.DEBUG) {
+                        PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
+                    }
+                }
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    StatusChip(syncLabel, alert = syncLabel.contains("desactualizado", ignoreCase = true))
+                    StatusChip("Tablet T1")
+                    StatusChip(scannerLabel)
+                }
+            }
         }
     }
 }
@@ -138,7 +180,13 @@ internal fun PendingCatalogDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                Modifier
+                    .widthIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text("Producto pendiente de catálogo", style = MaterialTheme.typography.titleLarge)
                 Text("Código escaneado", style = MaterialTheme.typography.labelLarge)
                 Text(barcode, style = MaterialTheme.typography.titleMedium)
@@ -432,6 +480,7 @@ internal fun StatusChip(label: String, alert: Boolean = false) {
             style = MaterialTheme.typography.labelMedium,
             color = content,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -466,32 +515,40 @@ internal fun CatalogPanel(
     onOpenSections: () -> Unit = {},
 ) {
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxSize().padding(12.dp)) {
-            Text("Catálogo", style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxSize().padding(10.dp)) {
             OutlinedTextField(
                 value = search,
                 onValueChange = onSearch,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Buscar por nombre o código") },
+                placeholder = { Text("Buscar por nombre o código", style = MaterialTheme.typography.bodyMedium) },
                 singleLine = true,
                 colors = catalogFieldColors(),
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                PosButton("☰", onOpenSections, modifier = Modifier.padding(end = 8.dp))
+                PosButton(
+                    label = "☰",
+                    click = onOpenSections,
+                    modifier = Modifier.padding(end = 6.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                )
                 LazyRow(
                     modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     items(categories, key = { it }) { item ->
-                        PosButton(item, { onCategory(item) }, selected = selectedCategory == item)
+                        PosButton(
+                            label = item,
+                            click = { onCategory(item) },
+                            selected = selectedCategory == item,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(6.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(6.dp))
 
             val openCategoriesFiltered = remember(openAmountCategories, search) {
                 if (search.isBlank()) openAmountCategories else openAmountCategories.filter { it.contains(search, ignoreCase = true) }
@@ -531,13 +588,13 @@ internal fun CatalogPanel(
 internal fun OpenProductTile(category: String, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 116.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 104.dp),
         shape = MaterialTheme.shapes.small,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+        contentPadding = PaddingValues(12.dp),
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Text("$category (Abierto)", style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -566,7 +623,7 @@ internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
 
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 116.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 104.dp),
         enabled = !unavailable,
         shape = MaterialTheme.shapes.small,
         colors = ButtonDefaults.buttonColors(
@@ -575,7 +632,7 @@ internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
             disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+        contentPadding = PaddingValues(12.dp),
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Text(product.name, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -622,7 +679,13 @@ internal fun DiscountAuthorization(
     }
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                Modifier
+                    .widthIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text("Descuento / cortesía", style = MaterialTheme.typography.titleLarge)
                 Text("Venta bruta: ${Money.format(gross)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe fijo en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -944,6 +1007,9 @@ internal fun SaleCompleted(folio: String?, onFinished: (String) -> Unit) {
                 "Venta confirmada · ${displayed.orEmpty()} · Ticket en cola de impresión",
                 color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.labelLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
         }
     }

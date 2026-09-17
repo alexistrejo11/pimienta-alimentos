@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -132,7 +133,7 @@ private fun ManagerHeaderWithoutShift(manager: LocalUserEntity, onExit: () -> Un
 // Renders the Manager workspace with a visual dashboard and local Room-backed sections.
 @Composable
 internal fun ManagerPanel(shift: ShiftEntity, manager: LocalUserEntity, products: List<ProductEntity>, pendingEvents: Int, repository: PosRepository, onReturnToSale: () -> Unit, onShiftClosed: () -> Unit = {}) {
-    var section by remember { mutableStateOf(ManagerSection.DASHBOARD) }
+    var section by rememberSaveable { mutableStateOf(ManagerSection.DASHBOARD) }
     var summary by remember { mutableStateOf<DashboardSummary?>(null) }
     var webCentralMessage by remember { mutableStateOf<String?>(null) }
     var refreshToken by remember { mutableStateOf(0) }
@@ -158,11 +159,26 @@ internal fun ManagerPanel(shift: ShiftEntity, manager: LocalUserEntity, products
 // Keeps return and Web Central shortcuts visible in every section.
 @Composable
 private fun ManagerHeader(shift: ShiftEntity, manager: LocalUserEntity, onReturn: () -> Unit, onOpenWebCentral: () -> Unit) {
-    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         PosButton("Volver a caja", onReturn)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) { Text("Panel de control", style = MaterialTheme.typography.titleLarge); Text("Resumen local · Tablet T1 · Turno ${shift.id.take(4).uppercase()} · ${manager.displayName}", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        PosButton("Abrir Web Central", onOpenWebCentral)
+        Column(Modifier.weight(1f)) {
+            Text("Panel de control", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                "Turno ${shift.id.take(4).uppercase()} · ${manager.displayName}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        PosButton("Web Central", onOpenWebCentral)
     }
 }
 
@@ -209,11 +225,32 @@ private fun DashboardPanel(summary: DashboardSummary?, pendingEvents: Int, modif
     }
 }
 
-// Renders the dashboard metric grid.
+// Renders the dashboard metric grid responsively.
 @Composable
 private fun MetricGrid(summary: DashboardSummary, pendingEvents: Int) {
-    val metrics = listOf("Ventas netas" to Money.format(summary.netCentavos), "Ventas brutas" to Money.format(summary.grossCentavos), "Descuentos / cortesías" to Money.format(summary.discountsCentavos), "Tickets" to summary.ticketCount.toString(), "Ticket promedio" to Money.format(summary.averageTicketCentavos), "Efectivo cobrado" to Money.format(summary.cashCollectedCentavos), "Sangrías" to "${summary.withdrawalCount} · ${Money.format(summary.withdrawalsCentavos)}", "Mermas" to summary.wasteCount.toString(), "Ventas canceladas" to summary.cancelledCount.toString(), "Pendientes sync" to pendingEvents.toString())
-    metrics.chunked(3).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { row.forEach { (label, value) -> MetricTile(label, value, Modifier.weight(1f)) }; repeat(3 - row.size) { Spacer(Modifier.weight(1f)) } } }
+    val metrics = listOf(
+        "Ventas netas" to Money.format(summary.netCentavos),
+        "Ventas brutas" to Money.format(summary.grossCentavos),
+        "Descuentos / cortesías" to Money.format(summary.discountsCentavos),
+        "Tickets" to summary.ticketCount.toString(),
+        "Ticket promedio" to Money.format(summary.averageTicketCentavos),
+        "Efectivo cobrado" to Money.format(summary.cashCollectedCentavos),
+        "Sangrías" to "${summary.withdrawalCount} · ${Money.format(summary.withdrawalsCentavos)}",
+        "Mermas" to summary.wasteCount.toString(),
+        "Ventas canceladas" to summary.cancelledCount.toString(),
+        "Pendientes sync" to pendingEvents.toString(),
+    )
+    BoxWithConstraints {
+        val columns = if (maxWidth >= 540.dp) 3 else 2
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            metrics.chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { (label, value) -> MetricTile(label, value, Modifier.weight(1f)) }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
 }
 
 // Creates a flat metric tile with a clear numeric hierarchy.
@@ -328,7 +365,13 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
     val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.widthIn(max = 520.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                Modifier
+                    .widthIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text("Cancelar venta en efectivo", style = MaterialTheme.typography.titleLarge)
                 Text("El ticket se conserva como cancelado y se revierte el movimiento de inventario.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, modifier = Modifier.fillMaxWidth())
@@ -468,7 +511,33 @@ private fun StatusPanel(
 
 // Confirms a Manager PIN for high-impact actions such as sealing a shift.
 @Composable
-private fun ManagerPinDialog(manager: LocalUserEntity, title: String, onDismiss: () -> Unit, onApproved: (String) -> Unit) { var pin by remember { mutableStateOf("") }; var error by remember { mutableStateOf<String?>(null) }; fun submit() { if (pin.length < 4) error = "Captura los cuatro dígitos del PIN." else onApproved(pin) }; Dialog(onDismissRequest = onDismiss) { Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) { Column(Modifier.widthIn(max = 480.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text(title, style = MaterialTheme.typography.titleLarge); Text("Autorizador: ${manager.displayName}", color = MaterialTheme.colorScheme.onSurfaceVariant); Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit); error?.let { Text(it, color = MaterialTheme.colorScheme.error) }; Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f)); PosButton("Firmar", ::submit, primary = true, modifier = Modifier.weight(1f)) } } } } }
+private fun ManagerPinDialog(manager: LocalUserEntity, title: String, onDismiss: () -> Unit, onApproved: (String) -> Unit) {
+    var pin by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    fun submit() {
+        if (pin.length < 4) error = "Captura los cuatro dígitos del PIN." else onApproved(pin)
+    }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+            Column(
+                Modifier
+                    .widthIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(title, style = MaterialTheme.typography.titleLarge)
+                Text("Autorizador: ${manager.displayName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit)
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
+                    PosButton("Firmar", ::submit, primary = true, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
 
 // Keeps empty states explicit instead of rendering a blank surface.
 @Composable

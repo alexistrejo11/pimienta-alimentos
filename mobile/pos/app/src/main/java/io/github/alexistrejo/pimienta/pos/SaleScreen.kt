@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,6 +18,18 @@ import io.github.alexistrejo.pimienta.pos.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+
+// Serializes and restores the cart list across activity state saves.
+private val CartListSaver: Saver<MutableState<List<CartLine>>, String> = Saver(
+    save = { Json.encodeToString(it.value) },
+    restore = {
+        mutableStateOf(
+            runCatching { Json.decodeFromString<List<CartLine>>(it) }
+                .getOrDefault(emptyList())
+        )
+    }
+)
 
 // Renders a split workspace in landscape and readable alternate panels in portrait.
 @Composable
@@ -33,26 +47,45 @@ internal fun Sale(
     scanner: BarcodeScanner? = null,
 ) {
     val scope = rememberCoroutineScope()
-    var cart by remember { mutableStateOf<List<CartLine>>(emptyList()) }
-    var category by remember { mutableStateOf("Todos") }
-    var search by remember { mutableStateOf("") }
-    var checkout by remember { mutableStateOf(false) }
-    var portraitPanel by remember { mutableStateOf(PortraitPanel.CATALOG) }
-    var completedFolio by remember { mutableStateOf<String?>(null) }
+    var cart by rememberSaveable(saver = CartListSaver) { mutableStateOf<List<CartLine>>(emptyList()) }
+    var category by rememberSaveable { mutableStateOf("Todos") }
+    var search by rememberSaveable { mutableStateOf("") }
+    var checkout by rememberSaveable { mutableStateOf(false) }
+    var portraitPanel by rememberSaveable { mutableStateOf(PortraitPanel.CATALOG) }
+    var completedFolio by rememberSaveable { mutableStateOf<String?>(null) }
     var pending by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
-    var paymentMethodDraft by remember { mutableStateOf(PaymentMethod.CASH) }
-    var tenderedDraft by remember { mutableStateOf("") }
-    var locked by remember { mutableStateOf(false) }
-    var managerAccessRequested by remember { mutableStateOf(false) }
-    var manager by remember { mutableStateOf<LocalUserEntity?>(null) }
-    var discount by remember { mutableStateOf<SaleDiscountDraft?>(null) }
-    var discountRequested by remember { mutableStateOf(false) }
-    var withdrawalRequested by remember { mutableStateOf(false) }
-    var pendingCatalogBarcode by remember { mutableStateOf<String?>(null) }
-    var openAmountRequested by remember { mutableStateOf(false) }
-    var selectedOpenCategory by remember { mutableStateOf<String?>(null) }
-    var sectionsRequested by remember { mutableStateOf(false) }
+    var paymentMethodDraft by rememberSaveable { mutableStateOf(PaymentMethod.CASH) }
+    var tenderedDraft by rememberSaveable { mutableStateOf("") }
+    var locked by rememberSaveable { mutableStateOf(false) }
+    var managerAccessRequested by rememberSaveable { mutableStateOf(false) }
+    var managerId by rememberSaveable { mutableStateOf<String?>(null) }
+    val manager = remember(managerId, users) { users.firstOrNull { it.id == managerId } }
+    var discountAmountCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
+    var discountReason by rememberSaveable { mutableStateOf("") }
+    var discountAuthorizedById by rememberSaveable { mutableStateOf<String?>(null) }
+    val discount = remember(discountAmountCentavos, discountReason, discountAuthorizedById, users) {
+        val amount = discountAmountCentavos ?: return@remember null
+        val authorizer = users.firstOrNull { it.id == discountAuthorizedById } ?: return@remember null
+        SaleDiscountDraft(amount, discountReason, authorizer)
+    }
+    fun updateDiscount(draft: SaleDiscountDraft?) {
+        if (draft == null) {
+            discountAmountCentavos = null
+            discountReason = ""
+            discountAuthorizedById = null
+        } else {
+            discountAmountCentavos = draft.amountCentavos
+            discountReason = draft.reason
+            discountAuthorizedById = draft.authorizedBy.id
+        }
+    }
+    var discountRequested by rememberSaveable { mutableStateOf(false) }
+    var withdrawalRequested by rememberSaveable { mutableStateOf(false) }
+    var pendingCatalogBarcode by rememberSaveable { mutableStateOf<String?>(null) }
+    var openAmountRequested by rememberSaveable { mutableStateOf(false) }
+    var selectedOpenCategory by rememberSaveable { mutableStateOf<String?>(null) }
+    var sectionsRequested by rememberSaveable { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     val mode = repository.mode()
@@ -61,7 +94,7 @@ internal fun Sale(
     val openAmountCategories = remember(policy) {
         policy?.let {
             runCatching {
-                kotlinx.serialization.json.Json.decodeFromString<List<String>>(it.openAmountCategoriesJson)
+                Json.decodeFromString<List<String>>(it.openAmountCategoriesJson)
             }.getOrDefault(emptyList())
         } ?: emptyList()
     }
@@ -97,7 +130,7 @@ internal fun Sale(
                 if (it.lineType == SaleLineType.CATALOG && it.productId == product.id) it.copy(quantity = it.quantity + 1) else it
             }
         }
-        discount = null
+        updateDiscount(null)
         if (wasCheckout) {
             checkout = false
             portraitPanel = PortraitPanel.CART
@@ -124,7 +157,7 @@ internal fun Sale(
         } else {
             cart + line
         }
-        discount = null
+        updateDiscount(null)
         pendingCatalogBarcode = null
         if (wasCheckout) {
             checkout = false
@@ -160,7 +193,7 @@ internal fun Sale(
                 System.currentTimeMillis(),
             )
             openAmountRequested = false
-            discount = null
+            updateDiscount(null)
         }
     }
 
@@ -198,7 +231,7 @@ internal fun Sale(
                 portraitPanel = PortraitPanel.CATALOG
                 paymentMethodDraft = PaymentMethod.CASH
                 tenderedDraft = ""
-                discount = null
+                updateDiscount(null)
                 completedFolio = it.folio
                 pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
                 PrintWorker.enqueue(context)
@@ -221,11 +254,11 @@ internal fun Sale(
         } else if (manager != null) {
             ManagerPanel(
                 shift = shift,
-                manager = manager!!,
+                manager = manager,
                 products = products,
                 pendingEvents = pending,
                 repository = repository,
-                onReturnToSale = { manager = null },
+                onReturnToSale = { managerId = null },
                 onShiftClosed = onShiftClosed,
             )
         } else Column(Modifier.fillMaxSize()) {
@@ -259,7 +292,7 @@ internal fun Sale(
                     current = discount,
                     repository = repository,
                     onDismiss = { discountRequested = false },
-                    onAuthorized = { discount = it; discountRequested = false },
+                    onAuthorized = { updateDiscount(it); discountRequested = false },
                 )
             }
             if (withdrawalRequested) {
@@ -344,7 +377,7 @@ internal fun Sale(
                             confirm = ::confirm,
                         )
                     } else {
-                        CartPanel(Modifier.weight(0.4f).fillMaxHeight(), cart, discount, { cart = it; discount = null }, { discountRequested = true }) { checkout = true }
+                        CartPanel(Modifier.weight(0.4f).fillMaxHeight(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }) { checkout = true }
                     }
                 }
             } else if (checkout) {
@@ -382,7 +415,7 @@ internal fun Sale(
                         onOpenSections = { sectionsRequested = true }
                     )
                 } else {
-                    CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; discount = null }, { discountRequested = true }) { checkout = true }
+                    CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }) { checkout = true }
                 }
             }
         }
@@ -393,7 +426,7 @@ internal fun Sale(
                 repository = repository,
                 onDismiss = { managerAccessRequested = false },
                 onAuthorized = {
-                    manager = it
+                    managerId = it.id
                     managerAccessRequested = false
                 },
             )

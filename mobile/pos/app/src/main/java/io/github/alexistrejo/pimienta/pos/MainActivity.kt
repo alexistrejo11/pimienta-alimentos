@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -159,7 +160,8 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     var products by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
     var policy by remember { mutableStateOf<PosPolicyEntity?>(null) }
     var shift by remember { mutableStateOf<ShiftEntity?>(null) }
-    var managerReadOnly by remember { mutableStateOf<LocalUserEntity?>(null) }
+    var managerReadOnlyId by rememberSaveable { mutableStateOf<String?>(null) }
+    val managerReadOnly = remember(managerReadOnlyId, users) { users.firstOrNull { it.id == managerReadOnlyId } }
     var notice by remember { mutableStateOf<String?>(null) }
     var enrolling by remember { mutableStateOf(false) }
     var enrollError by remember { mutableStateOf<String?>(null) }
@@ -239,7 +241,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             }
             repository = PosRepository(app.databaseProvider)
             shift = null
-            managerReadOnly = null
+            managerReadOnlyId = null
             notice = null
             reload()
         }
@@ -254,7 +256,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             initialized = false
             withContext(Dispatchers.IO) { app.resetTrainingPlayground() }
             shift = null
-            managerReadOnly = null
+            managerReadOnlyId = null
             reload()
         }
     }
@@ -388,8 +390,8 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                             },
                         )
                     }
-                    shift == null && managerReadOnly != null -> ManagerReadOnlyPanel(managerReadOnly!!, repository) { managerReadOnly = null }
-                    shift == null -> Access(users, repository, notice, mode, { shift = it }, { notice = it }) { managerReadOnly = it }
+                    shift == null && managerReadOnly != null -> ManagerReadOnlyPanel(managerReadOnly, repository) { managerReadOnlyId = null }
+                    shift == null -> Access(users, repository, notice, mode, { shift = it }, { notice = it }) { managerReadOnlyId = it.id }
                     else -> Sale(
                         repository = repository,
                         shift = shift!!,

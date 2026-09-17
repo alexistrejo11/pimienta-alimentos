@@ -1,5 +1,7 @@
 package io.github.alexistrejo.pimienta.pos
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -46,7 +48,11 @@ internal fun RuntimeModeBanner(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Button(
                 onClick = onForceSync,
                 modifier = Modifier.heightIn(min = 36.dp),

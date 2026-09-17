@@ -1,5 +1,7 @@
 package io.github.alexistrejo.pimienta.pos
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +32,11 @@ internal fun EnrollmentScreen(
     var name by remember { mutableStateOf("POS Android") }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
-            Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(28.dp),
+            Modifier
+                .widthIn(max = 560.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Enrolar dispositivo", style = MaterialTheme.typography.headlineSmall)

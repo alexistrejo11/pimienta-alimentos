@@ -13,11 +13,14 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
 // Distinguishes catalog lines from unknown-barcode exceptions captured at the register.
+@Serializable
 enum class SaleLineType { CATALOG, PENDING_CATALOG, OPEN_AMOUNT }
 
 // Represents an editable sale line before it becomes an immutable database snapshot.
+@Serializable
 data class CartLine(
     val productId: String?,
     val name: String,
