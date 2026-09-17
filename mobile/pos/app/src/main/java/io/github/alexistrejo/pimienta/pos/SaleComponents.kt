@@ -19,11 +19,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -513,15 +521,27 @@ internal fun CatalogPanel(
     openAmountCategories: List<String> = emptyList(),
     onOpenAmountCategory: (String) -> Unit = {},
     onOpenSections: () -> Unit = {},
+    onSubmitSearch: (String) -> Unit = {},
 ) {
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(10.dp)) {
             OutlinedTextField(
                 value = search,
                 onValueChange = onSearch,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onPreviewKeyEvent { keyEvent ->
+                        if (keyEvent.type == KeyEventType.KeyDown && (keyEvent.key == Key.Enter || keyEvent.key == Key.NumPadEnter)) {
+                            onSubmitSearch(search)
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 placeholder = { Text("Buscar por nombre o código", style = MaterialTheme.typography.bodyMedium) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSubmitSearch(search) }),
                 colors = catalogFieldColors(),
             )
             Spacer(Modifier.height(6.dp))
@@ -896,12 +916,10 @@ internal fun CashPayment(value: String, changed: (String) -> Unit, total: Long) 
         if (twoColumns) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CashEntry(Modifier.weight(1f), value, changed)
-                CashShortcuts(Modifier.weight(1f), received, total, changed)
             }
         } else {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CashEntry(Modifier.fillMaxWidth(), value, changed)
-                CashShortcuts(Modifier.fillMaxWidth(), received, total, changed)
             }
         }
     }
@@ -915,21 +933,6 @@ internal fun CashEntry(modifier: Modifier, value: String, changed: (String) -> U
         Text(Money.format(Money.fromInput(value) ?: 0), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Numpad(value, changed)
-    }
-}
-
-// Adds common Mexican denominations and exposes the calculated change.
-@Composable
-internal fun CashShortcuts(modifier: Modifier, received: Long, total: Long, changed: (String) -> Unit) {
-    Column(modifier) {
-        Text("Billetes y monedas", style = MaterialTheme.typography.labelLarge)
-        Spacer(Modifier.height(8.dp))
-        DenominationGrid(
-            add = { denomination -> changed(moneyInput(received + denomination)) },
-            exact = { changed(moneyInput(total)) },
-        )
-        Spacer(Modifier.height(12.dp))
-        ChangeSummary((received - total).coerceAtLeast(0))
     }
 }
 

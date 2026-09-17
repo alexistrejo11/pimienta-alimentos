@@ -211,10 +211,32 @@ internal fun Sale(
             }
             val code = read.rawValue.trim()
             if (code.isBlank()) return@collect
+            search = ""
             val product = withContext(Dispatchers.IO) { repository.findProductByCode(code) }
             when {
                 product == null -> pendingCatalogBarcode = code
                 !product.available -> scope.launch { feedbackHost.showSnackbar("${product.name} no está disponible.") }
+                else -> add(product)
+            }
+        }
+    }
+
+    // Submits manual search queries on Enter, requiring an exact SKU, barcode or name match.
+    fun submitSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return
+        scope.launch {
+            val product = withContext(Dispatchers.IO) { repository.findProductByCode(trimmed) }
+                ?: products.firstOrNull {
+                    it.sku.equals(trimmed, ignoreCase = true) ||
+                    it.barcode?.equals(trimmed, ignoreCase = true) == true ||
+                    it.legacyBarcode?.equals(trimmed, ignoreCase = true) == true ||
+                    it.name.equals(trimmed, ignoreCase = true)
+                }
+            search = ""
+            when {
+                product == null -> pendingCatalogBarcode = trimmed
+                !product.available -> feedbackHost.showSnackbar("${product.name} no está disponible.")
                 else -> add(product)
             }
         }
@@ -361,7 +383,8 @@ internal fun Sale(
                                 selectedOpenCategory = cat
                                 openAmountRequested = true
                             },
-                            onOpenSections = { sectionsRequested = true }
+                            onOpenSections = { sectionsRequested = true },
+                            onSubmitSearch = ::submitSearch,
                         )
                     if (checkout) {
                         Checkout(
@@ -412,7 +435,8 @@ internal fun Sale(
                             selectedOpenCategory = cat
                             openAmountRequested = true
                         },
-                        onOpenSections = { sectionsRequested = true }
+                        onOpenSections = { sectionsRequested = true },
+                        onSubmitSearch = ::submitSearch,
                     )
                 } else {
                     CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }) { checkout = true }

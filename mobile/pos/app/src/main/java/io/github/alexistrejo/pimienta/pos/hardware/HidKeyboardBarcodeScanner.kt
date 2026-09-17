@@ -8,10 +8,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 // Converts USB-HID keyboard-wedge scans into normalized barcode events.
-class HidKeyboardBarcodeScanner : BarcodeScanner {
+class HidKeyboardBarcodeScanner(
+    maxGapMs: Long = 150L,
+) : BarcodeScanner {
     private val _status = MutableStateFlow(PeripheralStatus.READY)
     private val _events = MutableSharedFlow<BarcodeRead>(extraBufferCapacity = 32)
-    private val burst = HidScanBurstHelper()
+    private val burst = HidScanBurstHelper(maxGapMs = maxGapMs)
 
     override val status: Flow<PeripheralStatus> = _status.asStateFlow()
     override val events: Flow<BarcodeRead> = _events.asSharedFlow()

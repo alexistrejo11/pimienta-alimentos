@@ -2,7 +2,7 @@ package io.github.alexistrejo.pimienta.pos.hardware
 
 // Pure-Kotlin burst detection so HID scans do not steal slow typing in search fields.
 internal class HidScanBurstHelper(
-    private val maxGapMs: Long = 80L,
+    private val maxGapMs: Long = 150L,
     private val minLength: Int = 4,
 ) {
     private val buffer = StringBuilder()
