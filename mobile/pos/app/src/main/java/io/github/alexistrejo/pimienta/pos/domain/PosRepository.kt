@@ -86,6 +86,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun users() = database.userDao().activeUsers()
     fun products() = database.productDao().getAll()
     fun observeProducts(): Flow<List<ProductEntity>> = database.productDao().observeAll()
+    fun observeUsers(): Flow<List<LocalUserEntity>> = database.userDao().observeActiveUsers()
     fun observePolicy(): Flow<PosPolicyEntity?> = database.syncProjectionDao().observePolicy()
     fun observeSyncState(): Flow<SyncStateEntity?> = database.syncDao().observeState()
     fun observePendingEvents(): Flow<Int> = database.operationsDao().observePendingEventCount()
