@@ -37,6 +37,7 @@ internal fun RuntimeModeBanner(
     dark: Boolean = true,
     onTheme: ((Boolean) -> Unit)? = null,
     onResetDemo: (() -> Unit)? = null,
+    onForceSync: (() -> Unit)? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     var pin by remember { mutableStateOf("") }
@@ -60,6 +61,14 @@ internal fun RuntimeModeBanner(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (onForceSync != null && !isTraining) {
+                Button(
+                    onClick = onForceSync,
+                    modifier = Modifier.heightIn(min = 36.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
+                ) { Text("Sincronizar") }
+            }
             if (onTheme != null) {
                 Button(
                     onClick = { onTheme(!dark) },

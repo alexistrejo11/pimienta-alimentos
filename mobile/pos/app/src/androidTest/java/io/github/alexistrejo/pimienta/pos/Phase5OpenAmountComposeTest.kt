@@ -7,7 +7,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.ui.theme.PosTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -20,8 +19,6 @@ import org.junit.runner.RunWith
 class Phase5OpenAmountComposeTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    private val manager = LocalUserEntity("42", "Manager", "MANAGER", "hash", true)
 
     @Test
     fun catalogActionIsVisibleOnlyWhenPolicyAllowsIt() {
@@ -48,44 +45,30 @@ class Phase5OpenAmountComposeTest {
     fun dialogShowsGeneratedDescriptionAndValidatesAmount() {
         composeRule.setContent {
             PosTheme(darkTheme = true) {
-                OpenAmountDialog(listOf("Bebidas"), listOf(manager), { _, _ -> true }, {}, { _, _, _, _ -> })
+                OpenAmountDialog(listOf("Bebidas"), {}, { _, _ -> })
             }
         }
         composeRule.onNodeWithText("Producto abierto · Bebidas").assertIsDisplayed()
-        composeRule.onNodeWithText("Autorizar y agregar").performClick()
+        composeRule.onNodeWithText("Agregar al carrito").performClick()
         composeRule.onNodeWithText("Captura un importe válido.").assertIsDisplayed()
     }
 
     @Test
-    fun failedPinKeepsSurfaceOpenAndShowsError() {
-        composeRule.setContent {
-            PosTheme(darkTheme = true) {
-                OpenAmountDialog(listOf("Bebidas"), listOf(manager), { _, _ -> false }, {}, { _, _, _, _ -> })
-            }
-        }
-        composeRule.onAllNodesWithText("4")[0].performClick()
-        repeat(4) { composeRule.onAllNodesWithText("4")[1].performClick() }
-        composeRule.onNodeWithText("Autorizar y agregar").performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText("PIN inválido o autorizador inactivo.").assertIsDisplayed()
-    }
-
-    @Test
-    fun validPinCreatesOneAuthorizedLine() {
+    fun validAmountCreatesOneLine() {
         var created = false
         composeRule.setContent {
             PosTheme(darkTheme = true) {
                 OpenAmountDialog(
-                    listOf("Bebidas"), listOf(manager), { _, _ -> true },
+                    listOf("Bebidas"),
                     {},
-                ) { category, amount, authorizer, _ ->
-                    created = category == "Bebidas" && amount == 400L && authorizer.id == "42"
+                ) { category, amount ->
+                    created = category == "Bebidas" && amount == 400L
                 }
             }
         }
         composeRule.onAllNodesWithText("4")[0].performClick()
-        repeat(4) { composeRule.onAllNodesWithText("4")[1].performClick() }
-        composeRule.onNodeWithText("Autorizar y agregar").performClick()
+        repeat(2) { composeRule.onAllNodesWithText("0")[0].performClick() }
+        composeRule.onNodeWithText("Agregar al carrito").performClick()
         composeRule.waitForIdle()
         assertTrue(created)
     }
@@ -96,7 +79,7 @@ class Phase5OpenAmountComposeTest {
         var cancelled = false
         composeRule.setContent {
             PosTheme(darkTheme = true) {
-                OpenAmountDialog(listOf("Bebidas"), listOf(manager), { _, _ -> true }, { cancelled = true }) { _, _, _, _ -> created = true }
+                OpenAmountDialog(listOf("Bebidas"), { cancelled = true }) { _, _ -> created = true }
             }
         }
         composeRule.onNodeWithText("Cancelar").performClick()

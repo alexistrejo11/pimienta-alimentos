@@ -240,34 +240,23 @@ internal fun Sale(
         }
     }
 
-    // Verifies the manager PIN before adding the auditable open amount line.
-    fun addOpenAmountLine(category: String, centavos: Long, authorizer: LocalUserEntity, pin: String) {
-        if (busy || !openAmountAllowed) return
-        scope.launch {
-            val approved = withContext(Dispatchers.IO) {
-                authorizer.active &&
-                    authorizer.isManagerOrAdmin &&
-                    repository.authenticate(authorizer.id, pin)
-            }
-            if (!approved) {
-                feedbackHost.showSnackbar("PIN inválido o autorizador inactivo.")
-                return@launch
-            }
-            cart = cart + CartLine(
-                null,
-                "Producto abierto · ${category.trim()}",
-                category.trim(),
-                centavos,
-                "NOT_CONTROLLED",
-                1,
-                SaleLineType.OPEN_AMOUNT,
-                null,
-                authorizer.id.toLong(),
-                System.currentTimeMillis(),
-            )
-            openAmountRequested = false
-            updateDiscount(null)
-        }
+    // Adds an open amount line to the cart without requiring manager PIN authorization.
+    fun addOpenAmountLine(category: String, centavos: Long) {
+        if (busy || !openAmountAllowed || centavos <= 0) return
+        cart = cart + CartLine(
+            null,
+            "Producto abierto · ${category.trim()}",
+            category.trim(),
+            centavos,
+            "NOT_CONTROLLED",
+            1,
+            SaleLineType.OPEN_AMOUNT,
+            null,
+            null,
+            System.currentTimeMillis(),
+        )
+        openAmountRequested = false
+        updateDiscount(null)
     }
 
     // Starts the scanner and routes reads through the same catalog resolver as search.
@@ -417,14 +406,6 @@ internal fun Sale(
             if (openAmountRequested) {
                 OpenAmountDialog(
                     categories = openAmountCategories,
-                    users = users,
-                    verifyPin = { user, pin ->
-                        withContext(Dispatchers.IO) {
-                            user.active &&
-                                user.isManagerOrAdmin &&
-                                repository.authenticate(user.id, pin)
-                        }
-                    },
                     onDismiss = { 
                         openAmountRequested = false
                         selectedOpenCategory = null

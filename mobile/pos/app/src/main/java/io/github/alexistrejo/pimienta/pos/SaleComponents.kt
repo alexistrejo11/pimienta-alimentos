@@ -299,41 +299,24 @@ internal fun CreatePosProductDialog(
     }
 }
 
-// Captures an authorized open-amount line without inventing a catalog product.
+// Captures an open-amount line without requiring manager PIN authorization.
 @Composable
 internal fun OpenAmountDialog(
     categories: List<String>,
-    users: List<LocalUserEntity>,
-    verifyPin: suspend (LocalUserEntity, String) -> Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Long, LocalUserEntity, String) -> Unit,
+    onConfirm: (category: String, centavos: Long) -> Unit,
     initialCategory: String? = null,
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(initialCategory ?: categories.firstOrNull().orEmpty()) }
-    var selectedAuthorizer by remember { mutableStateOf(users.firstOrNull { it.isManagerOrAdmin }) }
-    var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    var verifying by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     fun submit() {
         val cents = Money.fromInput(amount)
         when {
             selectedCategory.isBlank() -> error = "Selecciona una categoría."
             cents == null || cents <= 0 -> error = "Captura un importe válido."
-            selectedAuthorizer == null -> error = "Selecciona un Manager o Superadmin."
-            pin.length < 4 -> error = "Captura los cuatro dígitos del PIN."
-            else -> {
-                verifying = true
-                scope.launch {
-                    val authorizer = selectedAuthorizer!!
-                    val valid = verifyPin(authorizer, pin)
-                    verifying = false
-                    if (valid) onConfirm(selectedCategory.trim(), cents, authorizer, pin)
-                    else error = "PIN inválido o autorizador inactivo."
-                }
-            }
+            else -> onConfirm(selectedCategory.trim(), cents)
         }
     }
 
@@ -363,21 +346,10 @@ internal fun OpenAmountDialog(
                 Text("Importe", style = MaterialTheme.typography.labelLarge)
                 Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
                 Numpad(amount, { amount = it }, onSubmit = ::submit)
-                Text("Autorizador (Manager)", style = MaterialTheme.typography.labelLarge)
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    users.filter { it.isManagerOrAdmin }.forEach { user ->
-                        PosButton(user.displayTitle(), { selectedAuthorizer = user }, selected = selectedAuthorizer?.id == user.id)
-                    }
-                }
-                Text("PIN de autorización", style = MaterialTheme.typography.labelLarge)
-                Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                    PosButton("Autorizar y agregar", ::submit, primary = true, enabled = !verifying, modifier = Modifier.weight(1f))
+                    PosButton("Agregar al carrito", ::submit, primary = true, modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -694,26 +666,15 @@ internal fun OpenProductTile(category: String, onClick: () -> Unit) {
             Text("$category (Abierto)", style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Column {
                 Text("Capturar precio", fontWeight = FontWeight.Bold)
-                Text("Requiere autorización", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
-// Shows product price and stock context in one compact, high-target catalog tile.
+// Shows product price in one compact, high-target catalog tile.
 @Composable
 internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
     val unavailable = !product.available
-    val stock = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
-    val controlled = product.stockPolicy == "CONTROLLED"
-    val warning = controlled && stock <= BigDecimal.ZERO
-    val status = when {
-        unavailable -> "No disponible"
-        !controlled -> "Preparado al momento"
-        warning -> "Inventario local: ${product.stock}"
-        else -> "${product.stock} disponibles"
-    }
-    val statusColor = if (unavailable || warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
 
     Button(
         onClick = onClick,
@@ -732,7 +693,9 @@ internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
             Text(product.name, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Column {
                 Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.Bold)
-                Text(status, style = MaterialTheme.typography.labelMedium, color = statusColor)
+                if (unavailable) {
+                    Text("No disponible", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

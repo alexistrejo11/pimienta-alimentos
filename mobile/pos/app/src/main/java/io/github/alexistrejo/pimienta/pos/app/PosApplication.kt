@@ -31,7 +31,7 @@ class PosApplication : Application() {
                 // Room cannot run on the main thread; bootstrap off-UI then open printers.
                 Executors.newSingleThreadExecutor().execute {
                     try {
-                        resetTrainingScratch()
+                        ensureTrainingScratchInitialized()
                         PrintWorker.enqueue(this)
                     } finally {
                         trainingReady.complete(Unit)
@@ -75,6 +75,13 @@ class PosApplication : Application() {
         PrintWorker.cancel(this)
         resetTrainingScratch()
         PrintWorker.enqueue(this)
+    }
+
+    private fun ensureTrainingScratchInitialized() {
+        val trainingDbFile = getDatabasePath(PosDatabaseProvider.TRAINING_DB_NAME)
+        if (!trainingDbFile.exists()) {
+            resetTrainingScratch()
+        }
     }
 
     private fun resetTrainingScratch() {

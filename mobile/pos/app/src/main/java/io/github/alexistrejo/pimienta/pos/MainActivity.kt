@@ -295,6 +295,13 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 requiresPinForSwitch = requiresPinForSwitch,
                 onSwitchRequested = ::switchMode,
                 onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
+                onForceSync = {
+                    scope.launch {
+                        notice = "Sincronizando con el servidor…"
+                        notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                        reload()
+                    }
+                },
             )
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
