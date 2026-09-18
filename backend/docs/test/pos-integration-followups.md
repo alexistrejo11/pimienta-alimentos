@@ -39,3 +39,11 @@ No extra follow-ups blocking this pass.
 - `GET /pos/admin/shifts?status=OPEN` 500’d with `could not determine data type of parameter $7`. JPQL still bound unused `Instant` filters (`openedFrom`/`closedFrom`) as untyped nulls. Criteria now adds date predicates only when those values are present. H2 ITs did not catch it.
 
 No extra follow-ups blocking this pass.
+
+## 2026-09-17 — Device catalog create
+
+- `POST /api/v1/pos/sync/products` uses device JWT and HQ from the token. Staff JWT is 403 (`SCOPE_pos:sync` only).
+- `createdByOperatorId` is validated when present but not persisted on `headquarter_items` (no column). Audit is request-time only.
+- Empty barcode is omitted from JSON (`NON_NULL`) rather than returned as `null`.
+
+No extra follow-ups from this pass.

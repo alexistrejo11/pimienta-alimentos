@@ -9,4 +9,9 @@ public class PosSaleCategoryNotFoundException extends ResourceNotFoundException 
     super(ErrorCode.POS_SALE_CATEGORY_NOT_FOUND, "POS sale category was not found.",
         Map.of("categoryId", id), "POS sale category not found: " + id);
   }
+
+  public PosSaleCategoryNotFoundException(String name) {
+    super(ErrorCode.POS_SALE_CATEGORY_NOT_FOUND, "POS sale category was not found.",
+        Map.of("name", name), "POS sale category not found: " + name);
+  }
 }

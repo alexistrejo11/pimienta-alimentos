@@ -72,6 +72,10 @@ object PosApiUserMessages {
                 -> "Revisa los datos e intenta de nuevo."
                 "HEADQUARTER_NOT_FOUND" ->
                     "La sede del código no está disponible. Contacta a un administrador."
+                "ITEM_BARCODE_ALREADY_EXISTS" ->
+                    "Ya existe un producto con ese código de barras."
+                "POS_SALE_CATEGORY_NOT_FOUND" ->
+                    "Esa categoría de venta no existe en esta sede."
                 else -> null
             }
         if (byCode != null) return byCode

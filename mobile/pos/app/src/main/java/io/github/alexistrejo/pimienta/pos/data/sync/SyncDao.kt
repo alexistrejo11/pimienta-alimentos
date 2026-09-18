@@ -25,6 +25,9 @@ interface SyncDao {
     fun markFailedRetryable(id: String, next: Long, message: String)
     @Query("UPDATE outbox_event SET status = 'FAILED_RETRYABLE', nextAttemptAtEpochMillis = :next WHERE status = 'IN_FLIGHT'")
     fun recoverInFlight(next: Long)
+    // Clears retry backoff timers so a foreground sync attempt retries pending outbox events immediately.
+    @Query("UPDATE outbox_event SET nextAttemptAtEpochMillis = 0 WHERE status IN ('PENDING', 'FAILED_RETRYABLE', 'RETRY')")
+    fun resetBackoffForSync()
     @Insert(onConflict = OnConflictStrategy.REPLACE) fun saveState(state: SyncStateEntity)
     @Query("SELECT * FROM sync_state WHERE id = 1") fun state(): SyncStateEntity?
     @Query("SELECT * FROM sync_state WHERE id = 1") fun observeState(): Flow<SyncStateEntity?>

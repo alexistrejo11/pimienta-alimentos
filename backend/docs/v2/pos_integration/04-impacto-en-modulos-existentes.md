@@ -73,7 +73,7 @@ Sin PIN en `User`. Puente opcional: `pos_operators.user_id`.
 | Token device | TTL |
 |--------------|-----|
 | Access | **15 min** |
-| Refresh | **90 días** default; techo **365 días** |
+| Refresh | **180 días** default; techo **365 días** |
 
 Reasignar tablet: `POST .../devices/{id}/revoke` + nuevo código de enrolamiento. No hay transfer in-place.
 

@@ -47,6 +47,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
+import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
 import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
@@ -74,7 +75,7 @@ private enum class CountStage { OPEN, COUNTING, VALIDATION }
 // Requests Manager authorization without changing the cashier session.
 @Composable
 internal fun ManagerAccess(users: List<LocalUserEntity>, repository: PosRepository, onDismiss: () -> Unit, onAuthorized: (LocalUserEntity) -> Unit) {
-    val managers = users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }
+    val managers = users.filter { it.isManagerOrAdmin }
     var selected by remember { mutableStateOf(managers.firstOrNull()) }
     var pin by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
@@ -95,7 +96,7 @@ internal fun ManagerAccess(users: List<LocalUserEntity>, repository: PosReposito
             ) {
                 Text("Autorizar acceso a Manager", style = MaterialTheme.typography.titleLarge)
                 Text("La venta y el carrito permanecerán activos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                managers.forEach { user -> PosButton(user.displayName, { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
+                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Manager", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::authorize)
                 message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -106,30 +107,6 @@ internal fun ManagerAccess(users: List<LocalUserEntity>, repository: PosReposito
 }
 
 // Shows the local dashboard when no shift is open; operational actions stay unavailable.
-@Composable
-internal fun ManagerReadOnlyPanel(manager: LocalUserEntity, repository: PosRepository, onExit: () -> Unit) {
-    var summary by remember { mutableStateOf<DashboardSummary?>(null) }
-    LaunchedEffect(Unit) { summary = withContext(Dispatchers.IO) { repository.dailySummary() } }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        ManagerHeaderWithoutShift(manager, onExit)
-        DashboardPanel(summary, summary?.pendingEvents ?: 0, Modifier.weight(1f))
-    }
-}
-
-// Makes the no-shift state explicit so nobody can mistake the dashboard for an open register.
-@Composable
-private fun ManagerHeaderWithoutShift(manager: LocalUserEntity, onExit: () -> Unit) {
-    Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        PosButton("Volver", onExit)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text("Panel de control", style = MaterialTheme.typography.titleLarge)
-            Text("Solo lectura · no hay turno activo · ${manager.displayName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text("Caja cerrada", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
 // Renders the Manager workspace with a visual dashboard and local Room-backed sections.
 @Composable
 internal fun ManagerPanel(shift: ShiftEntity, manager: LocalUserEntity, products: List<ProductEntity>, pendingEvents: Int, repository: PosRepository, onReturnToSale: () -> Unit, onShiftClosed: () -> Unit = {}) {
@@ -436,8 +413,10 @@ private fun StatusPanel(
                     Text("Offline-first · los eventos permanecen en Room hasta sincronizar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     PosButton("Intentar sincronizar ahora", {
                         if (mode == RuntimeMode.PRODUCTION) {
-                            SyncWorker.enqueue(context)
-                            syncMessage = "Sincronización encolada."
+                            syncMessage = "Sincronizando…"
+                            scope.launch {
+                                syncMessage = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                            }
                         } else {
                             syncMessage = "Sandbox no envía eventos al backend."
                         }

@@ -35,4 +35,17 @@ class DeviceApiMockWebServerTest {
   server.enqueue(MockResponse().setResponseCode(200).setBody("""{"results":[{"eventId":"a","status":"ACCEPTED"},{"eventId":"b","status":"REQUIRES_REVIEW","incidentId":"inc-1"},{"eventId":"c","status":"REJECTED"}]}""").addHeader("Content-Type","application/json"))
   val result=api.events(EventsRequest(emptyList())); Assert.assertEquals(listOf("ACCEPTED","REQUIRES_REVIEW","REJECTED"),result.results.map{it.status})
  }
+ @Test fun createProductPostsDeviceCatalogBody()=runBlocking{
+  server.enqueue(MockResponse().setResponseCode(201).setBody("""{"id":"9","sku":"INT-1","name":"Agua","saleCategory":"Bebidas","unit":"PIECE","priceCentavos":1500,"costCentavos":0,"available":true,"stockQuantity":0,"stockMinQuantity":0,"stockPolicy":"NOT_CONTROLLED"}""").addHeader("Content-Type","application/json"))
+  val created=api.createProduct(CreatePosProductRequest("Agua",1500,"Bebidas",null,42,"NOT_CONTROLLED"))
+  Assert.assertEquals("9",created.id)
+  Assert.assertEquals(1500L,created.priceCentavos)
+  val recorded=server.takeRequest()
+  Assert.assertEquals("/api/v1/pos/sync/products",recorded.path)
+  Assert.assertEquals("POST",recorded.method)
+  val body=recorded.body.readUtf8()
+  Assert.assertTrue(body.contains("\"saleCategory\":\"Bebidas\""))
+  Assert.assertTrue(body.contains("\"createdByOperatorId\":42"))
+  Assert.assertTrue(body.contains("\"stockPolicy\":\"NOT_CONTROLLED\""))
+ }
 }

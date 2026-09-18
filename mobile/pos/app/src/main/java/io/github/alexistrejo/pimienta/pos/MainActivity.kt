@@ -63,6 +63,7 @@ import io.github.alexistrejo.pimienta.pos.data.sync.DeviceSessionPolicy
 import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
+import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
@@ -96,7 +97,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             var dark by remember {
-                mutableStateOf(if (BuildConfig.DEBUG) preferences.getBoolean("dark-theme", true) else true)
+                mutableStateOf(preferences.getBoolean("dark-theme", true))
             }
             PosTheme(dark) {
                 PosApp(barcodeScanner, dark) { enabled ->
@@ -160,8 +161,6 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     var products by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
     var policy by remember { mutableStateOf<PosPolicyEntity?>(null) }
     var shift by remember { mutableStateOf<ShiftEntity?>(null) }
-    var managerReadOnlyId by rememberSaveable { mutableStateOf<String?>(null) }
-    val managerReadOnly = remember(managerReadOnlyId, users) { users.firstOrNull { it.id == managerReadOnlyId } }
     var notice by remember { mutableStateOf<String?>(null) }
     var enrolling by remember { mutableStateOf(false) }
     var enrollError by remember { mutableStateOf<String?>(null) }
@@ -222,13 +221,13 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             }
             if (requiresPinForSwitch) {
                 val productionRepository = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION)
+                val activeRepo = PosRepository(app.databaseProvider)
                 val manager = withContext(Dispatchers.IO) {
-                    productionRepository.users().firstOrNull {
-                        it.active && (it.role.equals("MANAGER", true) || it.role.equals("SUPERADMIN", true))
-                    }
+                    productionRepository.users().firstOrNull { it.active && it.isManagerOrAdmin }
+                        ?: activeRepo.users().firstOrNull { it.active && it.isManagerOrAdmin }
                 }
                 val valid = withContext(Dispatchers.IO) {
-                    manager != null && productionRepository.authenticate(manager.id, pin ?: "")
+                    manager != null && (productionRepository.authenticate(manager.id, pin ?: "") || activeRepo.authenticate(manager.id, pin ?: ""))
                 }
                 if (!valid) {
                     notice = "PIN de Manager/Superadmin invalido"
@@ -241,7 +240,6 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             }
             repository = PosRepository(app.databaseProvider)
             shift = null
-            managerReadOnlyId = null
             notice = null
             reload()
         }
@@ -256,7 +254,6 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             initialized = false
             withContext(Dispatchers.IO) { app.resetTrainingPlayground() }
             shift = null
-            managerReadOnlyId = null
             reload()
         }
     }
@@ -266,6 +263,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     // Room flows keep catalog and policy state live after every committed sync transaction.
     LaunchedEffect(repository) {
         launch { repository.observeProducts().collect { products = it } }
+        launch { repository.observeUsers().collect { users = it } }
         launch { repository.observePolicy().collect { policy = it } }
         launch { repository.observeSyncState().collect { syncState = it } }
     }
@@ -279,13 +277,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         if (users.isNotEmpty() && products.isNotEmpty()) return@LaunchedEffect
         productionCatalogSyncAttempted = true
         notice = "Sincronizando con el servidor…"
-        val result = withContext(Dispatchers.IO) {
-            ProvisioningRepository(context, app.databaseProvider).syncCatalogNow()
-        }
-        notice = result.fold(
-            onSuccess = { report -> report.userMessage() },
-            onFailure = { PosApiUserMessages.from(it) },
-        )
+        notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
         reload()
     }
 
@@ -299,13 +291,17 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         if (shift == null) {
             RuntimeModeBanner(
                 mode = mode,
-                isDebug = BuildConfig.DEBUG,
+                dark = dark,
+                onTheme = onTheme,
                 requiresPinForSwitch = requiresPinForSwitch,
                 onSwitchRequested = ::switchMode,
                 onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
                 onForceSync = {
-                    SyncWorker.enqueue(context)
-                    notice = "Sincronización solicitada."
+                    scope.launch {
+                        notice = "Sincronizando con el servidor…"
+                        notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                        reload()
+                    }
                 },
             )
         }
@@ -361,14 +357,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                                 scope.launch {
                                     productionCatalogSyncAttempted = true
                                     notice = "Sincronizando con el servidor…"
-                                    val result = withContext(Dispatchers.IO) {
-                                        ProvisioningRepository(context, app.databaseProvider).syncCatalogNow()
-                                    }
-                                    notice = result.fold(
-                                        onSuccess = { report -> report.userMessage() },
-                                        onFailure = { PosApiUserMessages.from(it) },
-                                    )
-                                    SyncWorker.enqueue(context)
+                                    notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
                                     reload()
                                 }
                             },
@@ -390,8 +379,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                             },
                         )
                     }
-                    shift == null && managerReadOnly != null -> ManagerReadOnlyPanel(managerReadOnly, repository) { managerReadOnlyId = null }
-                    shift == null -> Access(users, repository, notice, mode, { shift = it }, { notice = it }) { managerReadOnlyId = it.id }
+                    shift == null -> Access(users, repository, notice, mode, { shift = it }, { notice = it })
                     else -> Sale(
                         repository = repository,
                         shift = shift!!,
@@ -415,9 +403,8 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
 private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 private fun loadingMessage(mode: RuntimeMode, notice: String?): String = notice ?: when (mode) {
-    RuntimeMode.SANDBOX ->
-        if (BuildConfig.DEBUG) "Preparando playground de desarrollo…" else "Preparando plantilla de capacitación…"
-    RuntimeMode.PRODUCTION -> "Cargando datos de producción…"
+    RuntimeMode.SANDBOX -> "Preparando entorno de capacitación…"
+    RuntimeMode.PRODUCTION -> "Cargando datos de venta…"
 }
 
 // Waits for the training template import without blocking the Compose UI thread.
@@ -464,7 +451,6 @@ private fun Access(
     mode: RuntimeMode,
     opened: (ShiftEntity) -> Unit,
     message: (String) -> Unit,
-    openManagerDashboard: (LocalUserEntity) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -499,7 +485,7 @@ private fun Access(
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(users, key = { it.id }) { profile ->
-                        PosButton(profile.displayName, { user = profile }, selected = user.id == profile.id)
+                        PosButton(profile.displayTitle(mode == RuntimeMode.SANDBOX), { user = profile }, selected = user.id == profile.id)
                     }
                 }
 
@@ -534,18 +520,6 @@ private fun Access(
                     },
                     enabled = !busy,
                     primary = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                PosButton(
-                    label = "Abrir panel Manager (solo lectura)",
-                    click = {
-                        scope.launch {
-                            val authorized = withContext(Dispatchers.IO) {
-                                (user.role == "MANAGER" || user.role == "SUPERADMIN") && repository.authenticate(user.id, pin)
-                            }
-                            if (authorized) openManagerDashboard(user) else message("El PIN no corresponde a un perfil Manager.")
-                        }
-                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

@@ -8,7 +8,7 @@ Prefijo: `/api/v1/pos`. Auth: JWT de **dispositivo** (`typ=device`, `scope=pos:s
 
 ### `POST /api/v1/pos/devices/enroll`
 
-Código de un solo uso, **TTL 10 minutos** → access (**15 min**) + refresh (**90 días**, techo 365) hasheado/rotado + dispositivo (`pos_devices`) + sede + pistas de config.
+Código de un solo uso, **TTL 10 minutos** → access (**15 min**) + refresh (**180 días**, techo 365) hasheado/rotado + dispositivo (`pos_devices`) + sede + pistas de config.
 
 Request: [contracts/device-enroll-request.example.json](contracts/device-enroll-request.example.json)
 
@@ -20,7 +20,7 @@ Efectos: código consumido, device `AUTHORIZED` en `pos_devices`, sede fijada. C
 
 ### `POST /api/v1/pos/devices/refresh`
 
-Body: `{ "refreshToken": "..." }`. Rota refresh (nuevo TTL hasta 90 días / techo 365). `REVOKED` → 401/403.
+Body: `{ "refreshToken": "..." }`. Rota refresh (nuevo TTL hasta 180 días / techo 365). `REVOKED` → 401/403.
 
 ### `GET /api/v1/pos/devices/me`
 

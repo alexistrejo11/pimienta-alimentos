@@ -34,7 +34,7 @@ CREATE TABLE account_user_roles (
     role    VARCHAR(32) NOT NULL,
     PRIMARY KEY (user_id, role),
     CONSTRAINT ck_account_user_roles_role
-        CHECK (role IN ('USER', 'SUPPORT', 'MANAGER', 'ADMIN'))
+        CHECK (role IN ('ADMIN', 'MANAGER', 'SALES', 'POS_OPERATOR', 'EMPLOYEE', 'SUPPORT', 'USER'))
 );
 
 CREATE INDEX idx_account_user_roles_user_id ON account_user_roles (user_id);

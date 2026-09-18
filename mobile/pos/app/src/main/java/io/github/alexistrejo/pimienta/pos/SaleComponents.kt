@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -79,6 +80,10 @@ internal fun StatusBar(
     printerLabel: String,
     printerAlert: Boolean,
     scannerLabel: String,
+    onCreateProduct: () -> Unit = {},
+    onSyncNow: () -> Unit = {},
+    syncBusy: Boolean = false,
+    createProductEnabled: Boolean = true,
 ) {
     var expanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val headerBtnPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -112,7 +117,7 @@ internal fun StatusBar(
             ) {
                 StatusChip(if (landscape) "Turno: $cashier" else cashier)
                 StatusChip(printerLabel, alert = printerAlert)
-                if (pending > 0 || syncLabel.contains("desactualizado", ignoreCase = true)) {
+                if (!expanded && (pending > 0 || syncLabel.contains("desactualizado", ignoreCase = true))) {
                     StatusChip(syncLabel, alert = syncLabel.contains("desactualizado", ignoreCase = true))
                 }
             }
@@ -133,16 +138,16 @@ internal fun StatusBar(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
+                    PosButton("Agregar producto", onCreateProduct, enabled = createProductEnabled, contentPadding = headerBtnPadding)
+                    PosButton(if (syncBusy) "Sincronizando…" else "Sincronizar", onSyncNow, enabled = !syncBusy, contentPadding = headerBtnPadding)
                     PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
                     PosButton("Bloquear caja", lockCashRegister, contentPadding = headerBtnPadding)
                     PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
-                    if (BuildConfig.DEBUG) {
-                        PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
-                    }
+                    PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
                 }
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -157,13 +162,14 @@ internal fun StatusBar(
     }
 }
 
-// Captures price for an unknown barcode without creating a catalog product.
+// Captures price for an unknown barcode without creating a catalog product by default.
 @Composable
 internal fun PendingCatalogDialog(
     barcode: String,
     openAmountAvailable: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (Long) -> Unit,
+    onSaveToCatalog: () -> Unit = {},
     onOpenAmount: () -> Unit = {},
 ) {
     var amount by remember { mutableStateOf("") }
@@ -187,11 +193,11 @@ internal fun PendingCatalogDialog(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("Producto pendiente de catálogo", style = MaterialTheme.typography.titleLarge)
+                Text("Código no está en el catálogo", style = MaterialTheme.typography.titleLarge)
                 Text("Código escaneado", style = MaterialTheme.typography.labelLarge)
                 Text(barcode, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Producto pendiente de catálogo · $barcode",
+                    "Cobra esta venta con el importe, o guarda el producto si ya conoces el nombre.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text("Importe", style = MaterialTheme.typography.labelLarge)
@@ -200,8 +206,9 @@ internal fun PendingCatalogDialog(
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                    PosButton("Agregar al carrito", ::submit, primary = true, modifier = Modifier.weight(1f))
+                    PosButton("Agregar a esta venta", ::submit, primary = true, modifier = Modifier.weight(1f))
                 }
+                PosButton("Guardar en catálogo", onSaveToCatalog, modifier = Modifier.fillMaxWidth())
                 if (openAmountAvailable) {
                     PosButton("Usar Monto abierto", onOpenAmount, modifier = Modifier.fillMaxWidth())
                 }
@@ -210,41 +217,107 @@ internal fun PendingCatalogDialog(
     }
 }
 
-// Captures an authorized open-amount line without inventing a catalog product.
+// Creates a POS-sellable product (server in production, local scratch in training).
+@Composable
+internal fun CreatePosProductDialog(
+    categories: List<String>,
+    lockedBarcode: String? = null,
+    initialPriceCentavos: Long? = null,
+    sandbox: Boolean,
+    busy: Boolean,
+    error: String?,
+    onDismiss: () -> Unit,
+    onSubmit: (name: String, category: String, priceCentavos: Long, barcode: String?, controlled: Boolean) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf(categories.firstOrNull().orEmpty()) }
+    var amount by remember { mutableStateOf(initialPriceCentavos?.let { BigDecimal.valueOf(it, 2).toPlainString() } ?: "") }
+    var barcode by remember { mutableStateOf(lockedBarcode.orEmpty()) }
+    var controlled by remember { mutableStateOf(false) }
+    var localError by remember { mutableStateOf<String?>(null) }
+
+    fun submit() {
+        val cents = Money.fromInput(amount)
+        when {
+            name.isBlank() -> localError = "Captura el nombre."
+            category.isBlank() -> localError = "Elige una categoría de venta."
+            cents == null || cents <= 0 -> localError = "Captura un precio válido."
+            else -> {
+                localError = null
+                onSubmit(name.trim(), category, cents, barcode.trim().ifBlank { null }, controlled)
+            }
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+            Column(
+                Modifier
+                    .widthIn(max = 560.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("Nuevo producto", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    if (sandbox) {
+                        "Capacitación: se guarda en esta tablet y desaparece al salir o al reiniciar. No se envía al servidor."
+                    } else {
+                        "El SKU lo asigna el servidor. Sin código queda como producto interno."
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nombre") }, singleLine = true, colors = catalogFieldColors())
+                Text("Categoría", style = MaterialTheme.typography.labelLarge)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    categories.forEach { cat ->
+                        PosButton(cat, { category = cat }, selected = category == cat)
+                    }
+                }
+                OutlinedTextField(
+                    value = barcode,
+                    onValueChange = { if (lockedBarcode == null) barcode = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Código de barras (opcional)") },
+                    singleLine = true,
+                    readOnly = lockedBarcode != null,
+                    colors = catalogFieldColors(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Switch(checked = controlled, onCheckedChange = { controlled = it })
+                    Text("Controla inventario")
+                }
+                Text("Precio", style = MaterialTheme.typography.labelLarge)
+                Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
+                Numpad(amount, { amount = it }, onSubmit = ::submit)
+                (error ?: localError)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f), enabled = !busy)
+                    PosButton(if (busy) "Guardando…" else "Guardar", ::submit, primary = true, modifier = Modifier.weight(1f), enabled = !busy)
+                }
+            }
+        }
+    }
+}
+
+// Captures an open-amount line without requiring manager PIN authorization.
 @Composable
 internal fun OpenAmountDialog(
     categories: List<String>,
-    users: List<LocalUserEntity>,
-    verifyPin: suspend (LocalUserEntity, String) -> Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Long, LocalUserEntity, String) -> Unit,
+    onConfirm: (category: String, centavos: Long) -> Unit,
     initialCategory: String? = null,
 ) {
     var amount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(initialCategory ?: categories.firstOrNull().orEmpty()) }
-    var selectedAuthorizer by remember { mutableStateOf(users.firstOrNull { it.role == "MANAGER" || it.role == "SUPERADMIN" }) }
-    var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    var verifying by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     fun submit() {
         val cents = Money.fromInput(amount)
         when {
             selectedCategory.isBlank() -> error = "Selecciona una categoría."
             cents == null || cents <= 0 -> error = "Captura un importe válido."
-            selectedAuthorizer == null -> error = "Selecciona un Manager o Superadmin."
-            pin.length < 4 -> error = "Captura los cuatro dígitos del PIN."
-            else -> {
-                verifying = true
-                scope.launch {
-                    val authorizer = selectedAuthorizer!!
-                    val valid = verifyPin(authorizer, pin)
-                    verifying = false
-                    if (valid) onConfirm(selectedCategory.trim(), cents, authorizer, pin)
-                    else error = "PIN inválido o autorizador inactivo."
-                }
-            }
+            else -> onConfirm(selectedCategory.trim(), cents)
         }
     }
 
@@ -274,28 +347,17 @@ internal fun OpenAmountDialog(
                 Text("Importe", style = MaterialTheme.typography.labelLarge)
                 Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
                 Numpad(amount, { amount = it }, onSubmit = ::submit)
-                Text("Autorizador (Manager)", style = MaterialTheme.typography.labelLarge)
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }.forEach { user ->
-                        PosButton(user.displayName, { selectedAuthorizer = user }, selected = selectedAuthorizer?.id == user.id)
-                    }
-                }
-                Text("PIN de autorización", style = MaterialTheme.typography.labelLarge)
-                Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                    PosButton("Autorizar y agregar", ::submit, primary = true, enabled = !verifying, modifier = Modifier.weight(1f))
+                    PosButton("Agregar al carrito", ::submit, primary = true, modifier = Modifier.weight(1f))
                 }
             }
         }
     }
 }
 
-// Shows a vertical list of categories to jump quickly between sections.
+// Shows categories grouped in columns of up to 6 items to jump quickly between sections.
 @Composable
 internal fun SectionsDialog(
     categories: List<String>,
@@ -303,29 +365,40 @@ internal fun SectionsDialog(
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit
 ) {
+    val chunks = remember(categories) { categories.chunked(6) }
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 400.dp)
+                    .widthIn(max = 840.dp)
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text("Secciones del catálogo", style = MaterialTheme.typography.titleLarge)
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 400.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(categories) { category ->
-                        PosButton(
-                            label = category,
-                            click = {
-                                onSelect(category)
-                                onDismiss()
-                            },
-                            selected = selected == category,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    chunks.forEach { columnCategories ->
+                        Column(
+                            modifier = Modifier.width(180.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            columnCategories.forEach { category ->
+                                PosButton(
+                                    label = category,
+                                    click = {
+                                        onSelect(category)
+                                        onDismiss()
+                                    },
+                                    selected = selected == category,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
                     }
                 }
                 PosButton("Cerrar", onDismiss, modifier = Modifier.fillMaxWidth())
@@ -343,7 +416,7 @@ internal fun CashWithdrawalAuthorization(
     onDismiss: () -> Unit,
     onRecorded: (CashWithdrawalEntity) -> Unit,
 ) {
-    val managers = users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }
+    val managers = users.filter { it.isManagerOrAdmin }
     var selected by remember { mutableStateOf(managers.firstOrNull()) }
     var amount by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
@@ -378,7 +451,7 @@ internal fun CashWithdrawalAuthorization(
                 Text("Registrar sangría", style = MaterialTheme.typography.titleLarge)
                 Text("Motivo: Resguardo de efectivo", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                managers.forEach { user -> PosButton(user.displayName, { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
+                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::record)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -514,14 +587,26 @@ internal fun CatalogPanel(
     onOpenAmountCategory: (String) -> Unit = {},
     onOpenSections: () -> Unit = {},
 ) {
+    val categoryListState = rememberLazyListState()
+    val selectedIndex = remember(categories, selectedCategory) {
+        categories.indexOf(selectedCategory)
+    }
+
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex >= 0) {
+            categoryListState.animateScrollToItem(maxOf(0, selectedIndex - 1))
+        }
+    }
+
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(10.dp)) {
             OutlinedTextField(
                 value = search,
                 onValueChange = onSearch,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar por nombre o código", style = MaterialTheme.typography.bodyMedium) },
+                placeholder = { Text("Escanea un producto", style = MaterialTheme.typography.bodyMedium) },
                 singleLine = true,
+                readOnly = true,
                 colors = catalogFieldColors(),
             )
             Spacer(Modifier.height(6.dp))
@@ -533,6 +618,7 @@ internal fun CatalogPanel(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 )
                 LazyRow(
+                    state = categoryListState,
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
@@ -550,8 +636,12 @@ internal fun CatalogPanel(
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
             Spacer(Modifier.height(6.dp))
 
-            val openCategoriesFiltered = remember(openAmountCategories, search) {
-                if (search.isBlank()) openAmountCategories else openAmountCategories.filter { it.contains(search, ignoreCase = true) }
+            val openCategoriesFiltered = remember(openAmountCategories, selectedCategory, search) {
+                openAmountCategories.filter { cat ->
+                    val matchesCategory = selectedCategory == "Todos" || selectedCategory == "Monto Abierto" || cat.contains(selectedCategory, ignoreCase = true) || selectedCategory.contains(cat, ignoreCase = true)
+                    val matchesSearch = search.isBlank() || cat.contains(search, ignoreCase = true)
+                    matchesCategory && matchesSearch
+                }
             }
 
             if ((products.isEmpty() && selectedCategory != "Monto Abierto") || (selectedCategory == "Monto Abierto" && openCategoriesFiltered.isEmpty())) {
@@ -600,26 +690,15 @@ internal fun OpenProductTile(category: String, onClick: () -> Unit) {
             Text("$category (Abierto)", style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Column {
                 Text("Capturar precio", fontWeight = FontWeight.Bold)
-                Text("Requiere autorización", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
-// Shows product price and stock context in one compact, high-target catalog tile.
+// Shows product price in one compact, high-target catalog tile.
 @Composable
 internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
     val unavailable = !product.available
-    val stock = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
-    val controlled = product.stockPolicy == "CONTROLLED"
-    val warning = controlled && stock <= BigDecimal.ZERO
-    val status = when {
-        unavailable -> "No disponible"
-        !controlled -> "Preparado al momento"
-        warning -> "Inventario local: ${product.stock}"
-        else -> "${product.stock} disponibles"
-    }
-    val statusColor = if (unavailable || warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
 
     Button(
         onClick = onClick,
@@ -638,7 +717,16 @@ internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
             Text(product.name, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Column {
                 Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.Bold)
-                Text(status, style = MaterialTheme.typography.labelMedium, color = statusColor)
+                if (unavailable) {
+                    Text("No disponible", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                }
+                product.sku.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }?.let { sku ->
+                    Text(
+                        text = "SKU: $sku",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -654,7 +742,7 @@ internal fun DiscountAuthorization(
     onDismiss: () -> Unit,
     onAuthorized: (SaleDiscountDraft) -> Unit,
 ) {
-    val managers = users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }
+    val managers = users.filter { it.isManagerOrAdmin }
     var selected by remember { mutableStateOf(managers.firstOrNull()) }
     var amount by remember { mutableStateOf(current?.amountCentavos?.let { BigDecimal.valueOf(it, 2).toPlainString() } ?: "") }
     var reason by remember { mutableStateOf(current?.reason ?: "") }
@@ -690,7 +778,7 @@ internal fun DiscountAuthorization(
                 Text("Venta bruta: ${Money.format(gross)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe fijo en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                managers.forEach { user -> PosButton(user.displayName, { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
+                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::authorize)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -852,35 +940,60 @@ internal fun Checkout(
     val tenderedMoney = Money.fromInput(tendered) ?: 0
 
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.fillMaxSize().padding(16.dp)) {
-            PosButton("Volver al carrito", back, enabled = !busy, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(10.dp))
+        Column(Modifier.fillMaxSize().padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PosButton(
+                    "← Volver al carrito",
+                    back,
+                    enabled = !busy,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+            Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
             Column(
-                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Cobro", style = MaterialTheme.typography.titleLarge)
-                Text("Total a cobrar", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(Money.format(total), style = MaterialTheme.typography.headlineSmall)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = MaterialTheme.shapes.extraSmall,
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Total a cobrar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(Money.format(total), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                }
                 if (!courtesy) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Efectivo", { onMethodChanged(PaymentMethod.CASH) }, method == PaymentMethod.CASH, modifier = Modifier.weight(1f))
                     PosButton("Tarjeta externa", { onMethodChanged(PaymentMethod.EXTERNAL_CARD_MP) }, method == PaymentMethod.EXTERNAL_CARD_MP, modifier = Modifier.weight(1f))
                 }
                 if (courtesy) {
                     Text("Cortesía autorizada · no se recibe efectivo ni tarjeta", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else if (method == PaymentMethod.CASH) CashPayment(tendered, onTenderedChanged, total) else ExternalCardNotice()
+                } else if (method == PaymentMethod.CASH) {
+                    CashPayment(tendered, onTenderedChanged, total)
+                } else {
+                    ExternalCardNotice()
+                }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PosButton("Cancelar intento", back, enabled = !busy, modifier = Modifier.weight(1f))
+                PosButton("Cancelar", back, enabled = !busy, modifier = Modifier.weight(1f))
                 PosButton(
-                    if (busy) "Confirmando…" else if (courtesy) "Confirmar cortesía e imprimir" else "Confirmar cobro e imprimir",
+                    if (busy) "Confirmando…" else if (courtesy) "Confirmar cortesía" else "Confirmar cobro",
                     { confirm(if (courtesy) PaymentMethod.CORTESIA else method, if (courtesy) 0 else if (method == PaymentMethod.CASH) tenderedMoney else total) },
                     enabled = !busy && (courtesy || method != PaymentMethod.CASH || tenderedMoney >= total),
                     primary = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1.5f),
                 )
             }
         }
@@ -890,18 +1003,15 @@ internal fun Checkout(
 // Combines numeric entry, denomination shortcuts, and the resulting change for cash.
 @Composable
 internal fun CashPayment(value: String, changed: (String) -> Unit, total: Long) {
-    val received = Money.fromInput(value) ?: 0
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val twoColumns = maxWidth >= 480.dp
         if (twoColumns) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CashEntry(Modifier.weight(1f), value, changed)
-                CashShortcuts(Modifier.weight(1f), received, total, changed)
+                CashEntry(Modifier.weight(1f), value, changed, total)
             }
         } else {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                CashEntry(Modifier.fillMaxWidth(), value, changed)
-                CashShortcuts(Modifier.fillMaxWidth(), received, total, changed)
+                CashEntry(Modifier.fillMaxWidth(), value, changed, total)
             }
         }
     }
@@ -909,27 +1019,36 @@ internal fun CashPayment(value: String, changed: (String) -> Unit, total: Long) 
 
 // Renders direct numeric entry for cash without calling the system keyboard.
 @Composable
-internal fun CashEntry(modifier: Modifier, value: String, changed: (String) -> Unit) {
-    Column(modifier) {
-        Text("Efectivo recibido", style = MaterialTheme.typography.labelLarge)
-        Text(Money.format(Money.fromInput(value) ?: 0), style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(8.dp))
-        Numpad(value, changed)
-    }
-}
+internal fun CashEntry(modifier: Modifier, value: String, changed: (String) -> Unit, total: Long = 0) {
+    val received = Money.fromInput(value) ?: 0
+    val change = (received - total).coerceAtLeast(0)
 
-// Adds common Mexican denominations and exposes the calculated change.
-@Composable
-internal fun CashShortcuts(modifier: Modifier, received: Long, total: Long, changed: (String) -> Unit) {
     Column(modifier) {
-        Text("Billetes y monedas", style = MaterialTheme.typography.labelLarge)
-        Spacer(Modifier.height(8.dp))
-        DenominationGrid(
-            add = { denomination -> changed(moneyInput(received + denomination)) },
-            exact = { changed(moneyInput(total)) },
-        )
-        Spacer(Modifier.height(12.dp))
-        ChangeSummary((received - total).coerceAtLeast(0))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Efectivo recibido", style = MaterialTheme.typography.labelLarge)
+            val displayMoney = if (value.isBlank()) Money.format(0) else Money.format(received)
+            Text(displayMoney, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+        if (received > total) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.extraSmall)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Cambio a entregar", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                Text(Money.format(change), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Numpad(value, changed)
     }
 }
 
@@ -948,34 +1067,6 @@ internal fun ExternalCardNotice() {
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.error,
             )
-        }
-    }
-}
-
-// Presents denomination shortcuts that add to the received cash amount.
-@Composable
-internal fun DenominationGrid(add: (Long) -> Unit, exact: () -> Unit) {
-    val denominations = listOf(50L, 100L, 500L, 1_000L, 2_000L, 5_000L, 10_000L, 20_000L, 50_000L)
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        modifier = Modifier.height(172.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        items(denominations) { denomination ->
-            PosButton(Money.format(denomination), { add(denomination) }, modifier = Modifier.fillMaxWidth())
-        }
-        item { PosButton("Exacto", exact, modifier = Modifier.fillMaxWidth()) }
-    }
-}
-
-// Highlights change in a flat operational container rather than a modal confirmation.
-@Composable
-internal fun ChangeSummary(change: Long) {
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            Text("Cambio a entregar", style = MaterialTheme.typography.labelLarge)
-            Text(Money.format(change), style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
@@ -1047,7 +1138,13 @@ internal fun Numpad(value: String, changed: (String) -> Unit, masked: Boolean = 
                         key,
                         {
                             when (key) {
-                                "⌫" -> changed(value.dropLast(1))
+                                "⌫" -> {
+                                    when {
+                                        value.endsWith(".00") -> changed(value.dropLast(3))
+                                        value.endsWith(".0") -> changed(value.dropLast(2))
+                                        else -> changed(value.dropLast(1))
+                                    }
+                                }
                                 "Entrar" -> onSubmit?.invoke()
                                 "." -> if (!value.contains('.')) changed(if (value.isBlank()) "0." else "$value.")
                                 else -> if (value.length < 8) changed(value + key)
@@ -1061,9 +1158,6 @@ internal fun Numpad(value: String, changed: (String) -> Unit, masked: Boolean = 
         }
     }
 }
-
-// Formats centavos as a numeric value that can be read back by Money.fromInput.
-internal fun moneyInput(centavos: Long): String = BigDecimal.valueOf(centavos, 2).stripTrailingZeros().toPlainString()
 
 // Sums the immutable price snapshots already captured in the draft cart.
 internal fun List<CartLine>.totalCentavos(): Long = sumOf { it.unitPriceCentavos * it.quantity }

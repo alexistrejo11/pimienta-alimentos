@@ -7,6 +7,7 @@ CREATE TABLE headquarter_pos_settings (
     catalog_stale_warn_hours     INTEGER      NOT NULL DEFAULT 24,
     catalog_stale_block_hours    INTEGER      NOT NULL DEFAULT 72,
     open_amount_categories       JSONB        NOT NULL DEFAULT '[]'::jsonb,
+    allow_open_products          BOOLEAN      NOT NULL DEFAULT FALSE,
     default_negative_stock_limit INTEGER,
     created_at                   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,

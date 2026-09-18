@@ -7,8 +7,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
-import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
+import io.github.alexistrejo.pimienta.pos.app.posDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.hardware.PrinterFactory
 import java.util.concurrent.TimeUnit
 
@@ -16,7 +15,7 @@ private const val UNIQUE_PRINT = "pos-print"
 
 // Drains one local print job per run so a failed device cannot block the UI.
 class PrintWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
-    private val provider = PosDatabaseProvider(appContext)
+    private val provider = appContext.posDatabaseProvider()
 
     override suspend fun doWork(): Result {
         val mode = provider.modes.mode()

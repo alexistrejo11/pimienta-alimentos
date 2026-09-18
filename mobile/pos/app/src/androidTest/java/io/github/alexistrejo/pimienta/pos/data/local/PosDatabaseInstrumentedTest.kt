@@ -10,6 +10,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
+import io.github.alexistrejo.pimienta.pos.data.sync.ProductDto
+import io.github.alexistrejo.pimienta.pos.data.sync.toProductEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import io.github.alexistrejo.pimienta.pos.data.telemetry.PosTelemetryLogger
@@ -48,6 +50,31 @@ class PosDatabaseInstrumentedTest {
    Assert.assertEquals(42L, line.authorizedByOperatorId)
    Assert.assertEquals(1726358400000L, line.authorizedAtEpochMillis)
    Assert.assertTrue(db.operationsDao().movementsBetween(0, Long.MAX_VALUE).isEmpty())
+  }
+
+  // Verifies a Device API create response upserts into Room like persistCreatedProduct.
+  @Test fun createdProductDtoUpsertsIntoCatalog() {
+   val product = ProductDto(
+    id = "9",
+    sku = "INT-1",
+    barcode = null,
+    name = "Agua",
+    saleCategory = "Bebidas",
+    unit = "PIECE",
+    priceCentavos = 1500,
+    costCentavos = 0,
+    available = true,
+    stockQuantity = 0,
+    stockMinQuantity = 0,
+    stockPolicy = "NOT_CONTROLLED",
+   ).toProductEntity()
+   db.runInTransaction {
+    db.productDao().insertAll(listOf(product))
+    db.syncProjectionDao().insertCategories(listOf(CatalogCategoryEntity("1", product.saleCategory)))
+   }
+   Assert.assertEquals("Agua", db.productDao().getAll().single().name)
+   Assert.assertEquals("15.00", db.productDao().getAll().single().price)
+   Assert.assertEquals(listOf("Bebidas"), db.syncProjectionDao().activeCategories("1").map { it.name })
   }
 
   // Verifies that catalog changes emit immediately to the Compose-facing Room flow.

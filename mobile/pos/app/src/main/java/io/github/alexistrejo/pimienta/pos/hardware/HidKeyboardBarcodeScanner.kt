@@ -16,10 +16,9 @@ class HidKeyboardBarcodeScanner : BarcodeScanner {
     override val status: Flow<PeripheralStatus> = _status.asStateFlow()
     override val events: Flow<BarcodeRead> = _events.asSharedFlow()
 
-    // Consumes only fast wedge bursts so slow typing can reach Compose search fields.
+    // Captures USB/Bluetooth scanner key events at the activity dispatch layer.
     fun onKeyEvent(event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN) return false
-        val now = System.currentTimeMillis()
         return when (event.keyCode) {
             KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
                 val code = burst.onEnter()
@@ -33,7 +32,7 @@ class HidKeyboardBarcodeScanner : BarcodeScanner {
             else -> {
                 val char = event.unicodeChar.toChar()
                 if (char.isLetterOrDigit() || char in "-._/") {
-                    burst.onCharacter(char, now)
+                    burst.onCharacter(char)
                 } else {
                     false
                 }

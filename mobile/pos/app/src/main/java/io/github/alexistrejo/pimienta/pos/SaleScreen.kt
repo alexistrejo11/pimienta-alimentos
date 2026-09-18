@@ -11,8 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
+import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
+import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
+import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
+import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
 import io.github.alexistrejo.pimienta.pos.domain.*
 import kotlinx.coroutines.Dispatchers
@@ -83,6 +87,12 @@ internal fun Sale(
     var discountRequested by rememberSaveable { mutableStateOf(false) }
     var withdrawalRequested by rememberSaveable { mutableStateOf(false) }
     var pendingCatalogBarcode by rememberSaveable { mutableStateOf<String?>(null) }
+    var createProductRequested by rememberSaveable { mutableStateOf(false) }
+    var createProductLockedBarcode by rememberSaveable { mutableStateOf<String?>(null) }
+    var createProductBusy by remember { mutableStateOf(false) }
+    var createProductError by remember { mutableStateOf<String?>(null) }
+    var syncBusy by remember { mutableStateOf(false) }
+    var saleCategories by remember { mutableStateOf(emptyList<String>()) }
     var openAmountRequested by rememberSaveable { mutableStateOf(false) }
     var selectedOpenCategory by rememberSaveable { mutableStateOf<String?>(null) }
     var sectionsRequested by rememberSaveable { mutableStateOf(false) }
@@ -102,13 +112,25 @@ internal fun Sale(
     LaunchedEffect(repository) {
         repository.observePendingEvents().collect { pending = it }
     }
+    LaunchedEffect(products) {
+        saleCategories = withContext(Dispatchers.IO) {
+            repository.saleCategoryNames().ifEmpty { products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct() }
+        }
+    }
 
     val categories = remember(products, openAmountAllowed) {
         val base = listOf("Todos") + products.map { it.saleCategory }.distinct()
         if (openAmountAllowed) base + "Monto Abierto" else base
     }
-    val filtered = products.filter {
-            (it.name.contains(search, true) || it.sku.contains(search, true) || it.barcode?.contains(search, true) == true)
+    val filtered = remember(products, category, search) {
+        products.filter { product ->
+            val matchesCategory = category == "Todos" || category == "Monto Abierto" || product.saleCategory.equals(category, ignoreCase = true)
+            val matchesSearch = search.isBlank() ||
+                product.name.contains(search, ignoreCase = true) ||
+                product.sku.contains(search, ignoreCase = true) ||
+                product.barcode?.contains(search, ignoreCase = true) == true
+            matchesCategory && matchesSearch
+        }
     }
 
     fun add(product: ProductEntity) {
@@ -166,35 +188,75 @@ internal fun Sale(
         }
     }
 
-    // Verifies the manager PIN before adding the auditable open amount line.
-    fun addOpenAmountLine(category: String, centavos: Long, authorizer: LocalUserEntity, pin: String) {
-        if (busy || !openAmountAllowed) return
+    fun submitCreatedProduct(name: String, category: String, priceCentavos: Long, barcode: String?, controlled: Boolean) {
+        val operatorId = shift.cashierId.toLongOrNull()
+        val app = context.applicationContext as PosApplication
+        val training = repository.mode() != io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode.PRODUCTION
         scope.launch {
-            val approved = withContext(Dispatchers.IO) {
-                authorizer.active &&
-                    (authorizer.role == "MANAGER" || authorizer.role == "SUPERADMIN") &&
-                    authorizer.id.toLongOrNull() != null &&
-                    repository.authenticate(authorizer.id, pin)
+            createProductBusy = true
+            createProductError = null
+            val result = withContext(Dispatchers.IO) {
+                if (training) {
+                    repository.createTrainingProduct(name, priceCentavos, category, barcode, controlled)
+                } else {
+                    ProvisioningRepository(context, app.databaseProvider).createProduct(
+                        name, priceCentavos, category, barcode, operatorId, controlled,
+                    )
+                }
             }
-            if (!approved) {
-                feedbackHost.showSnackbar("PIN inválido o autorizador inactivo.")
-                return@launch
-            }
-            cart = cart + CartLine(
-                null,
-                "Producto abierto · ${category.trim()}",
-                category.trim(),
-                centavos,
-                "NOT_CONTROLLED",
-                1,
-                SaleLineType.OPEN_AMOUNT,
-                null,
-                authorizer.id.toLong(),
-                System.currentTimeMillis(),
+            createProductBusy = false
+            result.fold(
+                onSuccess = { product ->
+                    createProductRequested = false
+                    createProductLockedBarcode = null
+                    pendingCatalogBarcode = null
+                    add(product)
+                    scope.launch { feedbackHost.showSnackbar("${product.name} guardado en catálogo.") }
+                },
+                onFailure = {
+                    createProductError = if (training) {
+                        it.message ?: "No se pudo guardar el producto de práctica."
+                    } else {
+                        PosApiUserMessages.from(it)
+                    }
+                },
             )
-            openAmountRequested = false
-            updateDiscount(null)
         }
+    }
+
+    fun syncCatalogNow() {
+        if (syncBusy) return
+        scope.launch {
+            syncBusy = true
+            val message = withContext(Dispatchers.IO) {
+                if (repository.mode() != io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode.PRODUCTION) {
+                    "Capacitación: no hay servidor. El producto queda en esta tablet."
+                } else {
+                    runForegroundSync(context)
+                }
+            }
+            syncBusy = false
+            feedbackHost.showSnackbar(message)
+        }
+    }
+
+    // Adds an open amount line to the cart without requiring manager PIN authorization.
+    fun addOpenAmountLine(category: String, centavos: Long) {
+        if (busy || !openAmountAllowed || centavos <= 0) return
+        cart = cart + CartLine(
+            null,
+            "Producto abierto · ${category.trim()}",
+            category.trim(),
+            centavos,
+            "NOT_CONTROLLED",
+            1,
+            SaleLineType.OPEN_AMOUNT,
+            null,
+            null,
+            System.currentTimeMillis(),
+        )
+        openAmountRequested = false
+        updateDiscount(null)
     }
 
     // Starts the scanner and routes reads through the same catalog resolver as search.
@@ -211,6 +273,7 @@ internal fun Sale(
             }
             val code = read.rawValue.trim()
             if (code.isBlank()) return@collect
+            search = ""
             val product = withContext(Dispatchers.IO) { repository.findProductByCode(code) }
             when {
                 product == null -> pendingCatalogBarcode = code
@@ -281,6 +344,14 @@ internal fun Sale(
                 printerLabel = printerLabel,
                 printerAlert = printerAlert,
                 scannerLabel = "Lector HID",
+                onCreateProduct = {
+                    createProductLockedBarcode = null
+                    createProductError = null
+                    createProductRequested = true
+                },
+                onSyncNow = ::syncCatalogNow,
+                syncBusy = syncBusy,
+                createProductEnabled = !createProductBusy,
             )
             SaleCompleted(completedFolio) { folio ->
                 if (completedFolio == folio) completedFolio = null
@@ -310,21 +381,31 @@ internal fun Sale(
                     openAmountAvailable = openAmountAllowed,
                     onDismiss = { pendingCatalogBarcode = null },
                     onConfirm = { addPendingCatalogLine(barcode, it) },
+                    onSaveToCatalog = {
+                        createProductLockedBarcode = barcode
+                        createProductRequested = true
+                    },
                     onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
+                )
+            }
+            if (createProductRequested) {
+                CreatePosProductDialog(
+                    categories = saleCategories,
+                    lockedBarcode = createProductLockedBarcode,
+                    sandbox = repository.mode() != io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode.PRODUCTION,
+                    busy = createProductBusy,
+                    error = createProductError,
+                    onDismiss = {
+                        createProductRequested = false
+                        createProductLockedBarcode = null
+                        createProductError = null
+                    },
+                    onSubmit = ::submitCreatedProduct,
                 )
             }
             if (openAmountRequested) {
                 OpenAmountDialog(
                     categories = openAmountCategories,
-                    users = users,
-                    verifyPin = { user, pin ->
-                        withContext(Dispatchers.IO) {
-                            user.active &&
-                                (user.role == "MANAGER" || user.role == "SUPERADMIN") &&
-                                user.id.toLongOrNull() != null &&
-                                repository.authenticate(user.id, pin)
-                        }
-                    },
                     onDismiss = { 
                         openAmountRequested = false
                         selectedOpenCategory = null
@@ -361,7 +442,7 @@ internal fun Sale(
                                 selectedOpenCategory = cat
                                 openAmountRequested = true
                             },
-                            onOpenSections = { sectionsRequested = true }
+                            onOpenSections = { sectionsRequested = true },
                         )
                     if (checkout) {
                         Checkout(
@@ -412,7 +493,7 @@ internal fun Sale(
                             selectedOpenCategory = cat
                             openAmountRequested = true
                         },
-                        onOpenSections = { sectionsRequested = true }
+                        onOpenSections = { sectionsRequested = true },
                     )
                 } else {
                     CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }) { checkout = true }

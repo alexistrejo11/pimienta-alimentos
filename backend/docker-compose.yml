@@ -79,11 +79,11 @@ services:
       PIMIENTA_REDIS_KEY_PREFIX: pimienta-alimentos
       PIMIENTA_CORS_ALLOWED_ORIGINS: http://localhost:4000,http://localhost:4001,http://localhost:3000,http://127.0.0.1:4000,http://127.0.0.1:4001,http://127.0.0.1:3000,https://pimienta-alimentos.com,https://api.pimienta-alimentos.com
       PIMIENTA_SECURITY_JWT_SECRET: change-me-use-at-least-256-bits-for-hs256-secret-key-pimienta
-      PIMIENTA_BOOTSTRAP_ADMIN_ENABLED: "false"
-      PIMIENTA_BOOTSTRAP_ADMIN_EMAIL: admin@pimienta.local
-      PIMIENTA_BOOTSTRAP_ADMIN_PASSWORD: ChangeMeAdmin1
-      PIMIENTA_BOOTSTRAP_ADMIN_FIRST_NAME: Admin
-      PIMIENTA_BOOTSTRAP_ADMIN_LAST_NAME: Pimienta
+      PIMIENTA_BOOTSTRAP_ADMIN_ENABLED: "true"
+      PIMIENTA_BOOTSTRAP_ADMIN_EMAIL: marcoalexispt.02@gmail.com
+      PIMIENTA_BOOTSTRAP_ADMIN_PASSWORD: adminadmin1
+      PIMIENTA_BOOTSTRAP_ADMIN_FIRST_NAME: Alexis
+      PIMIENTA_BOOTSTRAP_ADMIN_LAST_NAME: Perez
       PIMIENTA_BOOTSTRAP_ADMIN_PHONE: "+520000000001"
       JAVA_OPTS: ""
       AWS_REGION: us-east-1

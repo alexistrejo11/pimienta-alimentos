@@ -61,4 +61,17 @@ class TrainingDatabaseResetTest {
         assertEquals(productCount, resetDatabase.productDao().getAll().size)
         assertTrue(resetDatabase.userDao().count() >= 2)
     }
+
+    @Test
+    fun trainingProductIsWipedOnReset() {
+        val repository = io.github.alexistrejo.pimienta.pos.domain.PosRepository(provider, RuntimeMode.SANDBOX)
+        val created = repository.createTrainingProduct("Jugo práctica", 1800, "Bebidas", "750111999", false)
+        assertTrue(created.isSuccess)
+        assertTrue(provider.database(RuntimeMode.SANDBOX).productDao().findByCode("750111999") != null)
+
+        provider.resetTrainingDatabase()
+        TrainingBootstrapImporter(context).resetFromTemplate(provider.database(RuntimeMode.SANDBOX))
+
+        assertNull(provider.database(RuntimeMode.SANDBOX).productDao().findByCode("750111999"))
+    }
 }

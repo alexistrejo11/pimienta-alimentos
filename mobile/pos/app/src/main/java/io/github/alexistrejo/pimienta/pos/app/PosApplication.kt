@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.app
 
 import android.app.Application
+import android.content.Context
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
@@ -31,7 +32,7 @@ class PosApplication : Application() {
                 // Room cannot run on the main thread; bootstrap off-UI then open printers.
                 Executors.newSingleThreadExecutor().execute {
                     try {
-                        resetTrainingScratch()
+                        ensureTrainingScratchInitialized()
                         PrintWorker.enqueue(this)
                     } finally {
                         trainingReady.complete(Unit)
@@ -77,6 +78,13 @@ class PosApplication : Application() {
         PrintWorker.enqueue(this)
     }
 
+    private fun ensureTrainingScratchInitialized() {
+        val trainingDbFile = getDatabasePath(PosDatabaseProvider.TRAINING_DB_NAME)
+        if (!trainingDbFile.exists()) {
+            resetTrainingScratch()
+        }
+    }
+
     private fun resetTrainingScratch() {
         val database = databaseProvider.resetTrainingDatabase()
         TrainingBootstrapImporter(this).resetFromTemplate(database)
@@ -86,3 +94,18 @@ class PosApplication : Application() {
         databaseProvider.resetTrainingDatabase()
     }
 }
+
+// Fallback for contexts without PosApplication (tests, isolated components).
+private val fallbackLock = Any()
+private var fallbackProvider: PosDatabaseProvider? = null
+
+/**
+ * Returns the provider owned by the process.
+ * Workers and the sync pipeline must reuse it: a second Room instance over the same file
+ * writes fine but never invalidates the Flows the UI is collecting.
+ */
+fun Context.posDatabaseProvider(): PosDatabaseProvider =
+    (applicationContext as? PosApplication)?.databaseProvider
+        ?: synchronized(fallbackLock) {
+            fallbackProvider ?: PosDatabaseProvider(applicationContext).also { fallbackProvider = it }
+        }

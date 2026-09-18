@@ -23,7 +23,8 @@ CREATE TABLE pos_sync_events (
         CHECK (status IN ('ACCEPTED', 'DUPLICATE', 'REQUIRES_REVIEW', 'REJECTED'))
 );
 
-CREATE INDEX idx_pos_sync_events_device_sequence
+-- A device sequence identifies one causal position on one tablet.
+CREATE UNIQUE INDEX uk_pos_sync_events_device_sequence
     ON pos_sync_events (device_id, device_sequence);
 CREATE INDEX idx_pos_sync_events_headquarter_id ON pos_sync_events (headquarter_id);
 CREATE INDEX idx_pos_sync_events_status ON pos_sync_events (status);
@@ -101,6 +102,9 @@ CREATE TABLE pos_sale_lines (
     stock_policy                VARCHAR(32)  NOT NULL DEFAULT 'NOT_CONTROLLED',
     sold_with_negative_stock    BOOLEAN      NOT NULL DEFAULT FALSE,
     sold_while_unavailable      BOOLEAN      NOT NULL DEFAULT FALSE,
+    line_type                   VARCHAR(32)  NOT NULL DEFAULT 'CATALOG',
+    authorized_by_operator_id   BIGINT       REFERENCES pos_operators (id),
+    authorized_at               TIMESTAMP,
     raw_barcode                 VARCHAR(128),
     created_at                  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -108,11 +112,14 @@ CREATE TABLE pos_sale_lines (
     version                     BIGINT       NOT NULL DEFAULT 1,
     CONSTRAINT ck_pos_sale_lines_stock_policy
         CHECK (stock_policy IN ('CONTROLLED', 'NOT_CONTROLLED')),
+    CONSTRAINT ck_pos_sale_lines_line_type
+        CHECK (line_type IN ('CATALOG', 'OPEN_AMOUNT', 'PENDING_CATALOG')),
     CONSTRAINT uk_pos_sale_lines_sale_line UNIQUE (sale_id, line_id)
 );
 
 CREATE INDEX idx_pos_sale_lines_sale_id ON pos_sale_lines (sale_id);
 CREATE INDEX idx_pos_sale_lines_product_id ON pos_sale_lines (product_id);
+CREATE INDEX idx_pos_sale_lines_line_type ON pos_sale_lines (line_type);
 
 COMMENT ON TABLE pos_sale_lines IS 'Snapshot lines for a POS sale (names/prices frozen at sync time).';
 

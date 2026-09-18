@@ -6,6 +6,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.data.sync.OutboxPayloadBuilder
 import io.github.alexistrejo.pimienta.pos.data.sync.PinVerifier
+import io.github.alexistrejo.pimienta.pos.data.sync.trainingProductEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -85,9 +86,14 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun users() = database.userDao().activeUsers()
     fun products() = database.productDao().getAll()
     fun observeProducts(): Flow<List<ProductEntity>> = database.productDao().observeAll()
+    fun observeUsers(): Flow<List<LocalUserEntity>> = database.userDao().observeActiveUsers()
     fun observePolicy(): Flow<PosPolicyEntity?> = database.syncProjectionDao().observePolicy()
     fun observeSyncState(): Flow<SyncStateEntity?> = database.syncDao().observeState()
     fun observePendingEvents(): Flow<Int> = database.operationsDao().observePendingEventCount()
+    fun saleCategoryNames(): List<String> {
+        val siteId = database.siteDao().current()?.id ?: return emptyList()
+        return database.syncProjectionDao().activeCategories(siteId).map { it.name }.filter { it.isNotBlank() }
+    }
     fun findProductByCode(code: String): ProductEntity? = database.productDao().findByCode(code.trim())
     fun activeShift() = database.operationsDao().activeShift()
     fun pendingEvents() = database.operationsDao().pendingEventCount()
@@ -127,6 +133,39 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     }
     fun authenticate(userId: String, pin: String): Boolean =
         database.userDao().find(userId)?.let { it.active && PinVerifier.matches(pin, it.pinHash, mode == RuntimeMode.SANDBOX) } ?: false
+
+    // Saves a product only in the training scratch DB so cashiers can practice the create flow.
+    fun createTrainingProduct(
+        name: String,
+        salePriceCentavos: Long,
+        saleCategory: String,
+        barcode: String?,
+        controlledStock: Boolean,
+    ): Result<ProductEntity> {
+        if (mode != RuntimeMode.SANDBOX) {
+            return Result.failure(IllegalStateException("Solo capacitación guarda productos en local."))
+        }
+        val trimmedBarcode = barcode?.trim()?.takeIf { it.isNotEmpty() }
+        if (trimmedBarcode != null && database.productDao().findByCode(trimmedBarcode) != null) {
+            return Result.failure(IllegalStateException("Ya existe un producto con ese código de barras."))
+        }
+        val product = trainingProductEntity(
+            name = name.trim(),
+            saleCategory = saleCategory.trim(),
+            salePriceCentavos = salePriceCentavos,
+            barcode = trimmedBarcode,
+            controlledStock = controlledStock,
+            id = UUID.randomUUID().toString(),
+        )
+        database.runInTransaction {
+            database.productDao().insertAll(listOf(product))
+            val siteId = database.siteDao().current()?.id
+            if (siteId != null && product.saleCategory.isNotBlank()) {
+                database.syncProjectionDao().insertCategories(listOf(CatalogCategoryEntity(siteId, product.saleCategory)))
+            }
+        }
+        return Result.success(product)
+    }
 
     // Opens the single allowed shift and records a durable SHIFT_OPENED sync event.
     fun openShift(userId: String, openingCashCentavos: Long): ShiftEntity? = database.runInTransaction<ShiftEntity?> {

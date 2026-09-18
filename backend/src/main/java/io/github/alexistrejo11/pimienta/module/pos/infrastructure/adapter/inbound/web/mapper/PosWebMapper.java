@@ -518,6 +518,10 @@ public final class PosWebMapper {
         row.id(), row.displayName(), row.role().name(), row.pinHash(), row.active());
   }
 
+  public static PosBootstrapProductResponse toProductResponse(ProductRow row) {
+    return toBootstrapProduct(row);
+  }
+
   private static PosBootstrapProductResponse toBootstrapProduct(ProductRow row) {
     return new PosBootstrapProductResponse(
         row.id(),
