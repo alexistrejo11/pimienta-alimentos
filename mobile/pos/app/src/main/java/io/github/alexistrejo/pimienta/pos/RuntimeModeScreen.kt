@@ -75,7 +75,7 @@ internal fun RuntimeModeBanner(
                     modifier = Modifier.heightIn(min = 36.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     shape = MaterialTheme.shapes.extraSmall,
-                ) { Text(if (dark) "☀️ Claro" else "🌙 Oscuro") }
+                ) { Text(if (dark) "Tema claro" else "Tema oscuro") }
             }
             if (isTraining && onResetDemo != null) {
                 Button(

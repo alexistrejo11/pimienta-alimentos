@@ -314,8 +314,6 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                         EnrollmentScreen(
                             busy = enrolling,
                             error = enrollError ?: syncState?.lastError,
-                            dark = dark,
-                            onTheme = onTheme,
                         ) { code, name ->
                         scope.launch {
                             enrolling = true
