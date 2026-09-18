@@ -1,12 +1,15 @@
 package io.github.alexistrejo.pimienta.pos
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -27,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,7 +73,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 // Describes the local Manager workspace navigation.
-private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte Z"), HISTORY("Historial"), STATUS("Estado") }
+private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte de Caja"), HISTORY("Historial"), STATUS("Estado") }
 // Tracks the blind-count workflow before a shift is sealed.
 private enum class CountStage { OPEN, COUNTING, VALIDATION }
 
@@ -109,7 +114,16 @@ internal fun ManagerAccess(users: List<LocalUserEntity>, repository: PosReposito
 // Shows the local dashboard when no shift is open; operational actions stay unavailable.
 // Renders the Manager workspace with a visual dashboard and local Room-backed sections.
 @Composable
-internal fun ManagerPanel(shift: ShiftEntity, manager: LocalUserEntity, products: List<ProductEntity>, pendingEvents: Int, repository: PosRepository, onReturnToSale: () -> Unit, onShiftClosed: () -> Unit = {}) {
+internal fun ManagerPanel(
+    shift: ShiftEntity,
+    manager: LocalUserEntity,
+    users: List<LocalUserEntity> = emptyList(),
+    products: List<ProductEntity>,
+    pendingEvents: Int,
+    repository: PosRepository,
+    onReturnToSale: () -> Unit,
+    onShiftClosed: () -> Unit = {}
+) {
     var section by rememberSaveable { mutableStateOf(ManagerSection.DASHBOARD) }
     var summary by remember { mutableStateOf<DashboardSummary?>(null) }
     var webCentralMessage by remember { mutableStateOf<String?>(null) }
@@ -124,10 +138,10 @@ internal fun ManagerPanel(shift: ShiftEntity, manager: LocalUserEntity, products
             if (landscape) Row(Modifier.weight(1f).fillMaxWidth()) {
                 ManagerSideNav(section, { section = it }, Modifier.width(188.dp).fillMaxHeight())
                 HorizontalDivider(modifier = Modifier.fillMaxHeight().width(1.dp))
-                ManagerSectionContent(section, shift, manager, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
+                ManagerSectionContent(section, shift, manager, users, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
             } else {
                 ManagerCompactNav(section, { section = it })
-                ManagerSectionContent(section, shift, manager, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
+                ManagerSectionContent(section, shift, manager, users, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
             }
         }
     }
@@ -175,10 +189,10 @@ private fun ManagerCompactNav(selected: ManagerSection, choose: (ManagerSection)
 
 // Routes each Manager area while preserving the local session.
 @Composable
-private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity, manager: LocalUserEntity, products: List<ProductEntity>, pendingEvents: Int, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
+private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity, manager: LocalUserEntity, users: List<LocalUserEntity>, products: List<ProductEntity>, pendingEvents: Int, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
     when (section) {
         ManagerSection.DASHBOARD -> DashboardPanel(summary, pendingEvents, modifier)
-        ManagerSection.Z_CLOSE -> ZClosePanel(shift, manager, summary, repository, refresh, onShiftClosed, modifier)
+        ManagerSection.Z_CLOSE -> ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
         ManagerSection.HISTORY -> HistoryPanel(shift, manager, repository, refresh, modifier)
         ManagerSection.STATUS -> StatusPanel(pendingEvents, products, repository, modifier)
     }
@@ -190,10 +204,10 @@ private fun DashboardPanel(summary: DashboardSummary?, pendingEvents: Int, modif
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Resumen del día", style = MaterialTheme.typography.headlineSmall)
-            Text("Actividad local de esta tablet · fecha operativa local", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Métricas acumuladas de toda la jornada (suma de todos los turnos del día en esta tablet).", color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (summary == null) Text("Cargando resumen local…", color = MaterialTheme.colorScheme.onSurfaceVariant) else {
                 MetricGrid(summary, pendingEvents)
-                Text("Productos más vendidos", style = MaterialTheme.typography.titleMedium)
+                Text("Productos más vendidos hoy", style = MaterialTheme.typography.titleMedium)
                 if (summary.topProducts.isEmpty()) EmptySurface("Aún no hay ventas registradas hoy.") else summary.topProducts.forEachIndexed { index, product ->
                     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) { Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text("${index + 1}", modifier = Modifier.width(32.dp)); Text(product.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis); Text("${product.quantity} · ${Money.format(product.amountCentavos)}", fontWeight = FontWeight.SemiBold) } }
                 }
@@ -236,36 +250,216 @@ private fun MetricTile(label: String, value: String, modifier: Modifier = Modifi
 
 // Handles the operational cash summary, blind count, rejection, and final approval.
 @Composable
-private fun ZClosePanel(shift: ShiftEntity, manager: LocalUserEntity, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
+private fun ZClosePanel(
+    shift: ShiftEntity,
+    manager: LocalUserEntity,
+    users: List<LocalUserEntity>,
+    summary: DashboardSummary?,
+    repository: PosRepository,
+    refresh: () -> Unit,
+    onShiftClosed: () -> Unit,
+    modifier: Modifier
+) {
+    var zCloseOpen by remember(shift.id) { mutableStateOf(false) }
+    var withdrawalsOpen by remember(shift.id) { mutableStateOf(false) }
+    var expected by remember(shift.id) { mutableStateOf(0L) }
+
+    LaunchedEffect(shift.id, summary) {
+        expected = withContext(Dispatchers.IO) { repository.expectedCash(shift) }
+    }
+
+    Surface(modifier, color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text("Caja y Corte de Caja", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Arqueo de caja y cierre exclusivo del turno activo (${shift.id.take(4).uppercase()}). Incluye conteo ciego de efectivo y firma de entrega.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = MaterialTheme.shapes.extraSmall,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Efectivo teórico en cajón (Turno activo)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(Money.format(expected), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text("Fondo inicial asignado al turno: ${Money.format(shift.openingCashCentavos)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                PosButton("Ver sangrías del turno", { withdrawalsOpen = true }, modifier = Modifier.weight(1f))
+                PosButton("Iniciar Corte de Caja", { zCloseOpen = true }, primary = true, modifier = Modifier.weight(1f))
+            }
+
+            summary?.let {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                Text("Resumen acumulado del día", style = MaterialTheme.typography.titleMedium)
+                MetricGrid(it, 0)
+            }
+        }
+    }
+
+    if (zCloseOpen) {
+        ZCloseDialog(
+            shift = shift,
+            manager = manager,
+            users = users,
+            expected = expected,
+            repository = repository,
+            onDismiss = { zCloseOpen = false },
+            onApprovedAndClosed = {
+                zCloseOpen = false
+                refresh()
+                onShiftClosed()
+            }
+        )
+    }
+
+    if (withdrawalsOpen) {
+        Dialog(onDismissRequest = { withdrawalsOpen = false }) {
+            Surface(Modifier.widthIn(max = 720.dp), color = MaterialTheme.colorScheme.surface) {
+                WithdrawalsPanel(shift, repository, Modifier.fillMaxWidth().padding(8.dp))
+            }
+        }
+    }
+}
+
+// Displays the blind count and manager approval workflow in a modal dialog.
+@Composable
+private fun ZCloseDialog(
+    shift: ShiftEntity,
+    manager: LocalUserEntity,
+    users: List<LocalUserEntity>,
+    expected: Long,
+    repository: PosRepository,
+    onDismiss: () -> Unit,
+    onApprovedAndClosed: () -> Unit,
+) {
     val context = LocalContext.current
-    var stage by remember(shift.id) { mutableStateOf(CountStage.OPEN) }
+    var stage by remember(shift.id) { mutableStateOf(CountStage.COUNTING) }
     var count by remember(shift.id) { mutableStateOf("") }
     var attempt by remember(shift.id) { mutableStateOf<CashCountAttemptEntity?>(null) }
     var rejectionReason by remember(shift.id) { mutableStateOf("") }
     var message by remember(shift.id) { mutableStateOf<String?>(null) }
     var pinRequested by remember(shift.id) { mutableStateOf(false) }
-    var withdrawalsOpen by remember(shift.id) { mutableStateOf(false) }
+    var printSummaryTicket by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
-    var expected by remember(shift.id) { mutableStateOf(0L) }
-    LaunchedEffect(shift.id, summary) { expected = withContext(Dispatchers.IO) { repository.expectedCash(shift) } }
-    fun submit() { val amount = Money.fromInput(count); if (amount == null || amount < 0) message = "Captura un conteo válido." else scope.launch { attempt = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }; if (attempt == null) message = "No se pudo guardar el conteo local." else { SyncWorker.enqueue(context); stage = CountStage.VALIDATION } } }
-    Surface(modifier, color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("Caja y Corte Z", style = MaterialTheme.typography.headlineSmall)
-            Text("Turno ${shift.id.take(4).uppercase()} · Fondo inicial ${Money.format(shift.openingCashCentavos)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            PosButton("Ver sangrías del turno", { withdrawalsOpen = true })
-            when (stage) {
-                CountStage.OPEN -> { summary?.let { MetricGrid(it, 0) }; Text("Efectivo teórico en cajón: ${Money.format(expected)}", style = MaterialTheme.typography.titleLarge); PosButton("Iniciar conteo ciego", { stage = CountStage.COUNTING }, primary = true) }
-                CountStage.COUNTING -> { Text("Conteo ciego · Cajero", style = MaterialTheme.typography.titleLarge); Text("No se muestra el efectivo esperado ni la diferencia.", color = MaterialTheme.colorScheme.onSurfaceVariant); Text("Total contado: ${Money.format(Money.fromInput(count) ?: 0)}", style = MaterialTheme.typography.headlineSmall); Numpad(count, { count = it }); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { PosButton("Cancelar", { stage = CountStage.OPEN }, modifier = Modifier.weight(1f)); PosButton("Enviar a validación", ::submit, primary = true, modifier = Modifier.weight(1f)) } }
-                CountStage.VALIDATION -> { val counted = attempt?.totalCentavos ?: 0; Text("Validar Corte Z · ${manager.displayName}", style = MaterialTheme.typography.titleLarge); Text("Efectivo esperado: ${Money.format(expected)}"); Text("Conteo físico: ${Money.format(counted)}"); Text("Diferencia: ${Money.format(counted - expected)}", fontWeight = FontWeight.Bold); OutlinedTextField(rejectionReason, { rejectionReason = it }, label = { Text("Motivo si se devuelve a corrección") }, modifier = Modifier.fillMaxWidth()); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { PosButton("Devolver para corregir", { if (rejectionReason.isBlank()) message = "Escribe un motivo de corrección." else scope.launch { withContext(Dispatchers.IO) { attempt?.let { repository.rejectCashCount(it.id, rejectionReason) } }; attempt = null; count = ""; rejectionReason = ""; stage = CountStage.COUNTING } }, modifier = Modifier.weight(1f)); PosButton("Aprobar con PIN", { pinRequested = true }, primary = true, modifier = Modifier.weight(1f)) } }
+
+    fun submit() {
+        val amount = Money.fromInput(count)
+        if (amount == null || amount < 0) {
+            message = "Captura un conteo válido."
+        } else scope.launch {
+            attempt = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
+            if (attempt == null) {
+                message = "No se pudo guardar el conteo local."
+            } else {
+                SyncWorker.enqueue(context)
+                stage = CountStage.VALIDATION
             }
-            message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }
-    if (pinRequested && attempt != null) ManagerPinDialog(manager, "Firmar y cerrar turno", { pinRequested = false }) { pin -> scope.launch { val closed = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, attempt!!, manager, pin) }; pinRequested = false; if (closed) { SyncWorker.enqueue(context); refresh(); onShiftClosed() } else message = "No se pudo aprobar el Corte Z." } }
-    if (withdrawalsOpen) Dialog(onDismissRequest = { withdrawalsOpen = false }) {
-        Surface(Modifier.widthIn(max = 720.dp), color = MaterialTheme.colorScheme.surface) {
-            WithdrawalsPanel(shift, repository, Modifier.fillMaxWidth().padding(8.dp))
+
+    Dialog(onDismissRequest = { /* Prevent accidental dismiss on backdrop tap for security */ }) {
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 560.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                when (stage) {
+                    CountStage.OPEN, CountStage.COUNTING -> {
+                        Text("Conteo ciego de caja", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "Captura el efectivo físico en cajón. No se muestra el monto esperado ni la diferencia.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            Money.format(Money.fromInput(count) ?: 0),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Numpad(count, { count = it })
+                        message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
+                            PosButton("Enviar a validación", ::submit, primary = true, modifier = Modifier.weight(1f))
+                        }
+                    }
+                    CountStage.VALIDATION -> {
+                        val counted = attempt?.totalCentavos ?: 0
+                        Text("Validar Corte de Caja · ${manager.displayName}", style = MaterialTheme.typography.titleLarge)
+                        Text("Efectivo esperado: ${Money.format(expected)}")
+                        Text("Conteo físico: ${Money.format(counted)}")
+                        Text("Diferencia: ${Money.format(counted - expected)}", fontWeight = FontWeight.Bold)
+                        OutlinedTextField(
+                            value = rejectionReason,
+                            onValueChange = { rejectionReason = it },
+                            label = { Text("Motivo si se devuelve a corrección") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clickable { printSummaryTicket = !printSummaryTicket }
+                        ) {
+                            Checkbox(checked = printSummaryTicket, onCheckedChange = { printSummaryTicket = it })
+                            Spacer(Modifier.width(6.dp))
+                            Text("Imprimir ticket comprobante de Corte de Caja", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PosButton(
+                                "Devolver a corrección",
+                                {
+                                    if (rejectionReason.isBlank()) message = "Escribe un motivo de corrección."
+                                    else scope.launch {
+                                        withContext(Dispatchers.IO) { attempt?.let { repository.rejectCashCount(it.id, rejectionReason) } }
+                                        attempt = null
+                                        count = ""
+                                        rejectionReason = ""
+                                        message = "Conteo devuelto a corrección. Ingresa el nuevo conteo físico."
+                                        stage = CountStage.COUNTING
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            PosButton("Aprobar con PIN", { pinRequested = true }, primary = true, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (pinRequested && attempt != null) {
+        val currentAttempt = attempt ?: return
+        ManagerPinDialog(
+            users = users,
+            title = "Firmar y cerrar turno",
+            initialManager = manager,
+            repository = repository,
+            onDismiss = { pinRequested = false },
+        ) { signingManager, pin ->
+            scope.launch {
+                val result = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, currentAttempt, signingManager, pin, printSummaryTicket) }
+                pinRequested = false
+                result.onSuccess {
+                    SyncWorker.enqueue(context)
+                    onApprovedAndClosed()
+                }.onFailure { ex ->
+                    message = ex.message ?: "No se pudo cerrar el turno."
+                }
+            }
         }
     }
 }
@@ -283,20 +477,55 @@ private fun WithdrawalsPanel(shift: ShiftEntity, repository: PosRepository, modi
 @Composable
 private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repository: PosRepository, refresh: () -> Unit, modifier: Modifier) {
     var sales by remember(shift.id) { mutableStateOf<List<SaleEntity>>(emptyList()) }
-    var query by remember { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
+    var pageSize by rememberSaveable(query) { mutableIntStateOf(10) }
     var message by remember { mutableStateOf<String?>(null) }
     var cancelSale by remember { mutableStateOf<SaleEntity?>(null) }
     val scope = rememberCoroutineScope()
+
     LaunchedEffect(shift.id) { sales = withContext(Dispatchers.IO) { repository.salesForShift(shift.id) } }
-    val filtered = sales.filter { query.isBlank() || it.folio.contains(query, true) }
+
+    val filtered = remember(sales, query) {
+        sales.filter { query.isBlank() || it.folio.contains(query, ignoreCase = true) }
+    }
+    val visibleSales = remember(filtered, pageSize) { filtered.take(pageSize) }
+
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Historial del turno", style = MaterialTheme.typography.headlineSmall)
-            Text("Solo tickets de este turno · Manager ${manager.displayName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedTextField(query, { query = it }, label = { Text("Buscar por folio") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-                items(filtered, key = { it.id }) { sale ->
-                    SaleHistoryRow(sale, repository, { message = it; refresh() }, { cancelSale = sale })
+            Text(
+                "Historial exclusivo de ventas del turno activo (${shift.id.take(4).uppercase()}). Muestra los tickets generados durante este turno.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Buscar por folio (búsqueda parcial)") },
+                placeholder = { Text("Ej. 0001") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            if (filtered.isEmpty()) {
+                EmptySurface("No se encontraron tickets en este turno para la búsqueda.")
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    items(visibleSales, key = { it.id }) { sale ->
+                        SaleHistoryRow(sale, repository, { message = it; refresh() }, { cancelSale = sale })
+                    }
+                    if (filtered.size > visibleSales.size) {
+                        item {
+                            Spacer(Modifier.height(4.dp))
+                            PosButton(
+                                label = "Mostrar más (${visibleSales.size} de ${filtered.size})",
+                                click = { pageSize += 10 },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                 }
             }
             message?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -358,8 +587,21 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cerrar", onDismiss, modifier = Modifier.weight(1f))
                     PosButton("Confirmar cancelación", {
-                        if (reason.isBlank() || pin.length < 4) message = "Captura motivo y PIN de cuatro dígitos."
-                        else scope.launch { val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }; if (ok) { SyncWorker.enqueue(context); onDone("Venta ${sale.folio} cancelada y auditada.") } else message = "No se pudo cancelar la venta." }
+                        if (reason.isBlank() || pin.length < 4) {
+                            message = "Captura motivo y PIN de cuatro dígitos."
+                        } else scope.launch {
+                            val validPin = withContext(Dispatchers.IO) { repository.authenticate(manager.id, pin) }
+                            if (!validPin) {
+                                message = "PIN de ${manager.displayName} incorrecto."
+                                pin = ""
+                                return@launch
+                            }
+                            val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }
+                            if (ok) {
+                                SyncWorker.enqueue(context)
+                                onDone("Venta ${sale.folio} cancelada y auditada.")
+                            } else message = "No se pudo cancelar la venta."
+                        }
                     }, primary = true, modifier = Modifier.weight(1f))
                 }
             }
@@ -490,28 +732,83 @@ private fun StatusPanel(
 
 // Confirms a Manager PIN for high-impact actions such as sealing a shift.
 @Composable
-private fun ManagerPinDialog(manager: LocalUserEntity, title: String, onDismiss: () -> Unit, onApproved: (String) -> Unit) {
+private fun ManagerPinDialog(
+    users: List<LocalUserEntity>,
+    title: String,
+    initialManager: LocalUserEntity? = null,
+    repository: PosRepository? = null,
+    onDismiss: () -> Unit,
+    onApproved: (LocalUserEntity, String) -> Unit
+) {
+    val managers = remember(users) {
+        users.filter { it.active && (it.role.equals("MANAGER", ignoreCase = true) || it.role.equals("SUPERADMIN", ignoreCase = true)) }
+    }
+    var selected by remember { mutableStateOf(initialManager ?: managers.firstOrNull()) }
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
     fun submit() {
-        if (pin.length < 4) error = "Captura los cuatro dígitos del PIN." else onApproved(pin)
+        val authorizer = selected
+        if (authorizer == null) {
+            error = "Selecciona un perfil de Manager o Superadmin."
+            return
+        }
+        if (pin.length < 4) {
+            error = "Captura los cuatro dígitos del PIN."
+            return
+        }
+        if (repository != null) {
+            scope.launch {
+                busy = true
+                val valid = withContext(Dispatchers.IO) { repository.authenticate(authorizer.id, pin) }
+                busy = false
+                if (valid) {
+                    onApproved(authorizer, pin)
+                } else {
+                    error = "PIN de ${authorizer.displayName} incorrecto."
+                    pin = ""
+                }
+            }
+        } else {
+            onApproved(authorizer, pin)
+        }
     }
-    Dialog(onDismissRequest = onDismiss) {
+
+    Dialog(onDismissRequest = { /* Prevent accidental dismiss on backdrop tap for security */ }) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
             Column(
                 Modifier
-                    .widthIn(max = 480.dp)
+                    .widthIn(max = 520.dp)
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(title, style = MaterialTheme.typography.titleLarge)
-                Text("Autorizador: ${manager.displayName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Selecciona el autorizador Manager / Superadmin:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (managers.isEmpty()) {
+                    Text("No hay usuarios Manager o Superadmin activos.", color = MaterialTheme.colorScheme.error)
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        managers.forEach { user ->
+                            PosButton(
+                                label = user.displayName,
+                                click = { selected = user; error = null },
+                                selected = selected?.id == user.id,
+                            )
+                        }
+                    }
+                }
+                Text("PIN de ${selected?.displayName ?: "Manager"}", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                    PosButton("Firmar", ::submit, primary = true, modifier = Modifier.weight(1f))
+                    PosButton("Cancelar", onDismiss, enabled = !busy, modifier = Modifier.weight(1f))
+                    PosButton(if (busy) "Verificando…" else "Firmar", ::submit, enabled = !busy && pin.length >= 4 && selected != null, primary = true, modifier = Modifier.weight(1f))
                 }
             }
         }

@@ -318,6 +318,7 @@ internal fun Sale(
             ManagerPanel(
                 shift = shift,
                 manager = manager,
+                users = users,
                 products = products,
                 pendingEvents = pending,
                 repository = repository,
