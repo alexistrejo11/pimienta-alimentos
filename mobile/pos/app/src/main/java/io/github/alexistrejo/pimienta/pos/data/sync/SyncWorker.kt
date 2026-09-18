@@ -36,7 +36,8 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
             val wm = WorkManager.getInstance(context)
             val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
             wm.enqueueUniqueWork(UNIQUE_SYNC, ExistingWorkPolicy.REPLACE, OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
-            wm.enqueueUniquePeriodicWork(UNIQUE_SYNC + "-periodic", ExistingPeriodicWorkPolicy.KEEP, PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setConstraints(constraints).build())
+            // Background periodic sync every 15 minutes when app is idle or closed.
+            wm.enqueueUniquePeriodicWork(UNIQUE_SYNC + "-periodic", ExistingPeriodicWorkPolicy.UPDATE, PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setConstraints(constraints).build())
         }
     }
 }

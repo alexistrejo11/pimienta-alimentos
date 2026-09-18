@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.app
 
 import android.app.Application
+import android.content.Context
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
@@ -93,3 +94,18 @@ class PosApplication : Application() {
         databaseProvider.resetTrainingDatabase()
     }
 }
+
+// Fallback for contexts without PosApplication (tests, isolated components).
+private val fallbackLock = Any()
+private var fallbackProvider: PosDatabaseProvider? = null
+
+/**
+ * Returns the provider owned by the process.
+ * Workers and the sync pipeline must reuse it: a second Room instance over the same file
+ * writes fine but never invalidates the Flows the UI is collecting.
+ */
+fun Context.posDatabaseProvider(): PosDatabaseProvider =
+    (applicationContext as? PosApplication)?.databaseProvider
+        ?: synchronized(fallbackLock) {
+            fallbackProvider ?: PosDatabaseProvider(applicationContext).also { fallbackProvider = it }
+        }

@@ -2,7 +2,7 @@ package io.github.alexistrejo.pimienta.pos.data.sync
 
 import android.content.Context
 import io.github.alexistrejo.pimienta.pos.BuildConfig
-import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
+import io.github.alexistrejo.pimienta.pos.app.posDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
@@ -33,7 +33,8 @@ enum class PosSyncNowOutcome {
  * The sale screen never waits on this; only the explicit sync button does.
  */
 class PosSyncPipeline(private val context: Context) {
-    private val provider = PosDatabaseProvider(context)
+    // Shared process provider so catalog writes invalidate the Flows the sale screen collects.
+    private val provider = context.posDatabaseProvider()
     private val db get() = provider.database(RuntimeMode.PRODUCTION)
     private val credentials = DeviceCredentials(context)
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
@@ -51,8 +52,12 @@ class PosSyncPipeline(private val context: Context) {
         val api = api(baseUrl)
         var inFlightIds = emptyList<String>()
         var acceptedResults = emptyList<EventResult>()
-        return try {
+        var eventsError: Exception? = null
+
+        // Pushes pending outbox events; handles rejections or temporary push failures gracefully.
+        try {
             db.syncDao().recoverInFlight(System.currentTimeMillis())
+            db.syncDao().resetBackoffForSync()
             val events = db.syncDao().eligible(System.currentTimeMillis(), 50)
             if (events.isNotEmpty()) {
                 inFlightIds = events.map { it.id }
@@ -61,20 +66,38 @@ class PosSyncPipeline(private val context: Context) {
                     uploadTelemetry(api, device.id, null, state)
                     return PosSyncNowOutcome.SUCCESS
                 }
-                val response = api.events(EventsRequest(events.map { it.toEnvelope(device.id, siteId, json) }))
-                val received = response.results.map { it.eventId }.toSet()
-                acceptedResults = response.results.filter { it.status.uppercase() in setOf("ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW") }
-                response.results.forEach { result ->
-                    when (result.status.uppercase()) {
-                        "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> Unit
-                        "REJECTED" -> db.syncDao().markRejected(result.eventId, result.message ?: "event rejected")
-                        else -> db.syncDao().markFailedRetryable(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
+                try {
+                    val response = api.events(EventsRequest(events.map { it.toEnvelope(device.id, siteId, json) }))
+                    val received = response.results.map { it.eventId }.toSet()
+                    acceptedResults = response.results.filter { it.status.uppercase() in setOf("ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW") }
+                    response.results.forEach { result ->
+                        when (result.status.uppercase()) {
+                            "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> Unit
+                            "REJECTED" -> db.syncDao().markRejected(result.eventId, result.message ?: "event rejected")
+                            else -> db.syncDao().markFailedRetryable(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
+                        }
                     }
-                }
-                events.filter { it.id !in received }.forEach {
-                    db.syncDao().markFailedRetryable(it.id, System.currentTimeMillis() + backoff(1), "server did not return a result")
+                    events.filter { it.id !in received }.forEach {
+                        db.syncDao().markFailedRetryable(it.id, System.currentTimeMillis() + backoff(1), "server did not return a result")
+                    }
+                } catch (e: HttpException) {
+                    if (e.code() == 400 || e.code() == 422) {
+                        inFlightIds.forEach { db.syncDao().markRejected(it, "HTTP ${e.code()}: ${e.message()}") }
+                    } else {
+                        inFlightIds.forEach { db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message()) }
+                        eventsError = e
+                    }
+                } catch (e: Exception) {
+                    inFlightIds.forEach { db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message ?: "events push failed") }
+                    eventsError = e
                 }
             }
+        } catch (e: Exception) {
+            eventsError = e
+        }
+
+        // Pulls catalog changes or bootstrap snapshot so catalog freshness is not blocked by outbox errors.
+        return try {
             val current = db.syncDao().state() ?: state
             val localIncomplete = db.productDao().count() == 0 || db.userDao().count() == 0
             val provisioning = ProvisioningRepository(context, provider)
@@ -84,8 +107,15 @@ class PosSyncPipeline(private val context: Context) {
                 provisioning.applyChanges(api.changes(current.changesCursor), acceptedResults)
             }
             uploadTelemetry(api, device.id, device.siteId, state)
-            db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
-            PosSyncNowOutcome.SUCCESS
+            val latestState = db.syncDao().state() ?: state
+            db.syncDao().saveState(
+                latestState.copy(
+                    lastSuccessfulAtEpochMillis = System.currentTimeMillis(),
+                    lastError = eventsError?.message,
+                    status = if (eventsError == null) "ONLINE" else "RETRYING",
+                ),
+            )
+            if (eventsError != null) PosSyncNowOutcome.RETRY else PosSyncNowOutcome.SUCCESS
         } catch (e: HttpException) {
             recordDiagnostic("ERROR", "sync_http_failure", "POS sync HTTP ${e.code()}")
             if (e.code() != 401 && e.code() != 403) {
@@ -102,16 +132,18 @@ class PosSyncPipeline(private val context: Context) {
                 PosSyncErrorPolicy.requiresBootstrap(e) -> {
                     try {
                         ProvisioningRepository(context, provider).applyBootstrap(api(baseUrl).bootstrap(), acceptedResults)
-                        db.syncDao().saveState((db.syncDao().state() ?: state).copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
+                        val latestState = db.syncDao().state() ?: state
+                        db.syncDao().saveState(latestState.copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
                         PosSyncNowOutcome.SUCCESS
                     } catch (bootstrapError: Exception) {
-                        db.syncDao().saveState(state.copy(status = "RETRYING", lastError = bootstrapError.message ?: "bootstrap after cursor 409 failed"))
+                        val latestState = db.syncDao().state() ?: state
+                        db.syncDao().saveState(latestState.copy(status = "RETRYING", lastError = bootstrapError.message ?: "bootstrap after cursor 409 failed"))
                         PosSyncNowOutcome.RETRY
                     }
                 }
                 else -> {
-                    inFlightIds.forEach { db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message ?: "sync failed") }
-                    db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message()))
+                    val latestState = db.syncDao().state() ?: state
+                    db.syncDao().saveState(latestState.copy(status = "RETRYING", lastError = e.message()))
                     PosSyncNowOutcome.RETRY
                 }
             }
@@ -119,10 +151,8 @@ class PosSyncPipeline(private val context: Context) {
             recordDiagnostic("ERROR", "sync_failure", "POS sync ${e.javaClass.simpleName}")
             val retrying = (db.syncDao().state() ?: state).copy(status = "RETRYING")
             uploadTelemetry(api, device.id, device.siteId, retrying)
-            inFlightIds.forEach {
-                db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message ?: "sync failed")
-            }
-            db.syncDao().saveState(state.copy(status = "RETRYING", lastError = e.message ?: e.javaClass.simpleName))
+            val latestState = db.syncDao().state() ?: state
+            db.syncDao().saveState(latestState.copy(status = "RETRYING", lastError = e.message ?: e.javaClass.simpleName))
             PosSyncNowOutcome.RETRY
         }
     }
@@ -146,7 +176,7 @@ class PosSyncPipeline(private val context: Context) {
                 PosSyncNowOutcome.FAILURE
             } else {
                 db.syncDao().saveState(
-                    state.copy(
+                    (db.syncDao().state() ?: state).copy(
                         status = "RETRYING",
                         lastError = DeviceSessionPolicy.syncRetryMessage(error),
                     ),

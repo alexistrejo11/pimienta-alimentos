@@ -63,6 +63,7 @@ abstract class PosDatabase : RoomDatabase() {
             Migrations.V1_TO_V2, Migrations.V2_TO_V3, Migrations.V3_TO_V4, Migrations.V4_TO_V5,
             Migrations.V5_TO_V6, Migrations.V6_TO_V7, Migrations.V7_TO_V8, Migrations.V8_TO_V9,
               Migrations.V9_TO_V10, Migrations.V10_TO_V11, Migrations.V11_TO_V12, Migrations.V12_TO_V13, Migrations.V13_TO_V14, Migrations.V14_TO_V15,
-        ).build()
+        // Safety net: if another instance of this file is ever opened, Flows still get invalidated.
+        ).enableMultiInstanceInvalidation().build()
     }
 }

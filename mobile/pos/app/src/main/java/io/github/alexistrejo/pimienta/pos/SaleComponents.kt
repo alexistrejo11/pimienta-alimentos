@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -116,7 +117,7 @@ internal fun StatusBar(
             ) {
                 StatusChip(if (landscape) "Turno: $cashier" else cashier)
                 StatusChip(printerLabel, alert = printerAlert)
-                if (pending > 0 || syncLabel.contains("desactualizado", ignoreCase = true)) {
+                if (!expanded && (pending > 0 || syncLabel.contains("desactualizado", ignoreCase = true))) {
                     StatusChip(syncLabel, alert = syncLabel.contains("desactualizado", ignoreCase = true))
                 }
             }
@@ -356,7 +357,7 @@ internal fun OpenAmountDialog(
     }
 }
 
-// Shows a vertical list of categories to jump quickly between sections.
+// Shows categories grouped in columns of up to 6 items to jump quickly between sections.
 @Composable
 internal fun SectionsDialog(
     categories: List<String>,
@@ -364,29 +365,40 @@ internal fun SectionsDialog(
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit
 ) {
+    val chunks = remember(categories) { categories.chunked(6) }
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 400.dp)
+                    .widthIn(max = 840.dp)
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text("Secciones del catálogo", style = MaterialTheme.typography.titleLarge)
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 400.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(categories) { category ->
-                        PosButton(
-                            label = category,
-                            click = {
-                                onSelect(category)
-                                onDismiss()
-                            },
-                            selected = selected == category,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    chunks.forEach { columnCategories ->
+                        Column(
+                            modifier = Modifier.width(180.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            columnCategories.forEach { category ->
+                                PosButton(
+                                    label = category,
+                                    click = {
+                                        onSelect(category)
+                                        onDismiss()
+                                    },
+                                    selected = selected == category,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
                     }
                 }
                 PosButton("Cerrar", onDismiss, modifier = Modifier.fillMaxWidth())
@@ -575,6 +587,17 @@ internal fun CatalogPanel(
     onOpenAmountCategory: (String) -> Unit = {},
     onOpenSections: () -> Unit = {},
 ) {
+    val categoryListState = rememberLazyListState()
+    val selectedIndex = remember(categories, selectedCategory) {
+        categories.indexOf(selectedCategory)
+    }
+
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex >= 0) {
+            categoryListState.animateScrollToItem(maxOf(0, selectedIndex - 1))
+        }
+    }
+
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(10.dp)) {
             OutlinedTextField(
@@ -595,6 +618,7 @@ internal fun CatalogPanel(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 )
                 LazyRow(
+                    state = categoryListState,
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
@@ -695,6 +719,13 @@ internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
                 Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.Bold)
                 if (unavailable) {
                     Text("No disponible", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                }
+                product.sku.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }?.let { sku ->
+                    Text(
+                        text = "SKU: $sku",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

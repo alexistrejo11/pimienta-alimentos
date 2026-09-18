@@ -45,7 +45,7 @@ class Phase5OpenAmountComposeTest {
     fun dialogShowsGeneratedDescriptionAndValidatesAmount() {
         composeRule.setContent {
             PosTheme(darkTheme = true) {
-                OpenAmountDialog(listOf("Bebidas"), {}, { _, _ -> })
+                OpenAmountDialog(categories = listOf("Bebidas"), onDismiss = {}, onConfirm = { _, _ -> })
             }
         }
         composeRule.onNodeWithText("Producto abierto · Bebidas").assertIsDisplayed()
@@ -59,11 +59,12 @@ class Phase5OpenAmountComposeTest {
         composeRule.setContent {
             PosTheme(darkTheme = true) {
                 OpenAmountDialog(
-                    listOf("Bebidas"),
-                    {},
-                ) { category, amount ->
-                    created = category == "Bebidas" && amount == 400L
-                }
+                    categories = listOf("Bebidas"),
+                    onDismiss = {},
+                    onConfirm = { category, amount ->
+                        created = category == "Bebidas" && amount == 400L
+                    },
+                )
             }
         }
         composeRule.onAllNodesWithText("4")[0].performClick()
@@ -79,7 +80,11 @@ class Phase5OpenAmountComposeTest {
         var cancelled = false
         composeRule.setContent {
             PosTheme(darkTheme = true) {
-                OpenAmountDialog(listOf("Bebidas"), { cancelled = true }) { _, _ -> created = true }
+                OpenAmountDialog(
+                    categories = listOf("Bebidas"),
+                    onDismiss = { cancelled = true },
+                    onConfirm = { _, _ -> created = true },
+                )
             }
         }
         composeRule.onNodeWithText("Cancelar").performClick()

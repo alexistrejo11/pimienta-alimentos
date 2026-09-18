@@ -263,6 +263,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     // Room flows keep catalog and policy state live after every committed sync transaction.
     LaunchedEffect(repository) {
         launch { repository.observeProducts().collect { products = it } }
+        launch { repository.observeUsers().collect { users = it } }
         launch { repository.observePolicy().collect { policy = it } }
         launch { repository.observeSyncState().collect { syncState = it } }
     }
