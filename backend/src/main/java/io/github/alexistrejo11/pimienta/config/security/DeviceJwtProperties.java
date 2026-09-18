@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class DeviceJwtProperties {
 
   private int accessTokenTtlMinutes = 15;
-  private int refreshTokenTtlDays = 90;
+  private int refreshTokenTtlDays = 180;
   private int refreshTokenMaxTtlDays = 365;
 
   public int getAccessTokenTtlMinutes() {

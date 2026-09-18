@@ -20,6 +20,6 @@ Reglas:
 - No usar `float`/`double` ni JSON number decimal para dinero.
 - `siteId` / `site.id` = `Headquarter.id` en string decimal.
 - Productos del bootstrap son proyección plana (`inventory_items` + `headquarter_items` + stock en `storage_locations` tipo POS).
-- Access device 15 min (900 s); refresh default 90 días (7776000 s); techo 365 días (31536000 s).
+- Access device 15 min (900 s); refresh default 180 días (15552000 s); techo 365 días (31536000 s).
 - Enrolamiento: código único, un uso, 10 minutos.
 - El seed debug Android aún usa strings decimales; el cliente mapeará al hablar con este contrato.

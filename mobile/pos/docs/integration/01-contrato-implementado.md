@@ -22,7 +22,7 @@ abiertos; ver [../implementation/00-estado-actual.md](../implementation/00-estad
 | Ruta | Uso del cliente |
 |---|---|
 | `POST /api/v1/pos/devices/enroll` | Canjear código de un solo uso de 10 min por identidad de tablet, sede y tokens. |
-| `POST /api/v1/pos/devices/refresh` | Rotar refresh token. El access dura 15 min; refresh 90 días, máximo 365. |
+| `POST /api/v1/pos/devices/refresh` | Rotar refresh token. El access dura 15 min; refresh 180 días (semestre), máximo 365. |
 | `GET /api/v1/pos/devices/me` | Consultar estado, sede, versión mínima y schemas soportados. |
 | `GET /api/v1/pos/sync/bootstrap` | Descargar snapshot plano y atómico de la sede. |
 | `GET /api/v1/pos/sync/changes?cursor=` | Descargar `upsert`/`deactivate`; cursor ajeno o inválido devuelve 409 y exige bootstrap. |

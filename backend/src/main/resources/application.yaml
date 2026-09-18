@@ -134,7 +134,7 @@ pimienta:
       refresh-token-ttl-days: 7
     device-jwt:
       access-token-ttl-minutes: 15
-      refresh-token-ttl-days: 90
+      refresh-token-ttl-days: 180
       refresh-token-max-ttl-days: 365
 
 aws:

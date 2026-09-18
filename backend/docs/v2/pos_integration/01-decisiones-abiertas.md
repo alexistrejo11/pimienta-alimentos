@@ -173,7 +173,7 @@ TTL de tokens de dispositivo:
 | Token | TTL |
 |-------|-----|
 | Access | **15 minutos** |
-| Refresh | **90 días** por defecto; **máximo 365 días** (techo de política; no emitir por encima) |
+| Refresh | **180 días** por defecto; **máximo 365 días** (techo de política; no emitir por encima) |
 
 - Refresh tokens **hasheados** en backend y **rotados** en cada refresh.
 - La tablet los protege con Android Keystore (regla de cliente; el backend no almacena el refresh en claro).
@@ -291,7 +291,7 @@ Tablas auxiliares esperadas en el mismo módulo (no renombrar sin nota): `pos_op
 | Parámetro | Valor |
 |-----------|-------|
 | Access token device | 15 min |
-| Refresh token device | 90 días (default); techo 365 días |
+| Refresh token device | 180 días (default); techo 365 días |
 | Código de enrolamiento | único, un uso, **10 min** TTL |
 | Reasignar tablet | **revocar** + **nuevo enrolamiento** |
 | Barcode | único global, **no reutilizable** |
