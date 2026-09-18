@@ -61,6 +61,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platform-tools
+            platforms;android-35
+          accept-android-sdk-licenses: true
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -91,6 +96,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platform-tools
+            platforms;android-35
+          accept-android-sdk-licenses: true
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew

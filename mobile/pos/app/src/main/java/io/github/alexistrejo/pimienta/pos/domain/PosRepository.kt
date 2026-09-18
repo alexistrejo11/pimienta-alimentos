@@ -266,11 +266,13 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             operations.insertShiftClose(close)
             operations.updateCashCountStatus(attempt.id, "APPROVED", null)
             operations.updateShiftStatus(shift.id, "CLOSED")
-            val device = operations.device() ?: return@runInTransaction false
-            enqueueOutbox(
-                operations, device, shift.siteId, shift.id, "SHIFT_CLOSED", close.id,
-                OutboxPayloadBuilder.shiftClosed(close), close.approvedAtEpochMillis
-            )
+            val device = operations.device()
+            if (device != null) {
+                enqueueOutbox(
+                    operations, device, shift.siteId, shift.id, "SHIFT_CLOSED", close.id,
+                    OutboxPayloadBuilder.shiftClosed(close), close.approvedAtEpochMillis
+                )
+            }
             if (printTicket) {
                 operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), close.id, "PENDING", false, System.currentTimeMillis(), "SHIFT_CLOSE"))
             }

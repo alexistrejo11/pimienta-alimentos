@@ -442,6 +442,7 @@ private fun ZCloseDialog(
     }
 
     if (pinRequested && attempt != null) {
+        val currentAttempt = attempt ?: return
         ManagerPinDialog(
             users = users,
             title = "Firmar y cerrar turno",
@@ -450,7 +451,7 @@ private fun ZCloseDialog(
             onDismiss = { pinRequested = false },
         ) { signingManager, pin ->
             scope.launch {
-                val result = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, attempt!!, signingManager, pin, printSummaryTicket) }
+                val result = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, currentAttempt, signingManager, pin, printSummaryTicket) }
                 pinRequested = false
                 result.onSuccess {
                     SyncWorker.enqueue(context)

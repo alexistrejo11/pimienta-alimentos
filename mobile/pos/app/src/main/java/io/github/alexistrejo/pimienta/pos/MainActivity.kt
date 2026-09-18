@@ -380,19 +380,26 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                         )
                     }
                     shift == null -> Access(users, repository, notice, mode, { shift = it }, { notice = it })
-                    else -> Sale(
-                        repository = repository,
-                        shift = shift!!,
-                        cashier = users.firstOrNull { it.id == shift!!.cashierId }?.displayName ?: "Cajero",
-                        users = users,
-                        products = products,
-                        policy = policy,
-                        syncState = syncState,
-                        dark = dark,
-                        onTheme = onTheme,
-                        onShiftClosed = { shift = null },
-                        scanner = scanner,
-                    )
+                    else -> {
+                        val activeShift = shift
+                        if (activeShift != null) {
+                            Sale(
+                                repository = repository,
+                                shift = activeShift,
+                                cashier = users.firstOrNull { it.id == activeShift.cashierId }?.displayName ?: "Cajero",
+                                users = users,
+                                products = products,
+                                policy = policy,
+                                syncState = syncState,
+                                dark = dark,
+                                onTheme = onTheme,
+                                onShiftClosed = { shift = null },
+                                scanner = scanner,
+                            )
+                        } else {
+                            Access(users, repository, notice, mode, { shift = it }, { notice = it })
+                        }
+                    }
                 }
             }
         }
