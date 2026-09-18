@@ -281,9 +281,15 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         reload()
     }
 
+    val showEnrollment = mode == RuntimeMode.PRODUCTION &&
+        (syncState?.baseUrl == null || syncState?.status == "REQUIRES_REENROLLMENT")
+
     LaunchedEffect(scanner) {
         (scanner as? MultiplexBarcodeScanner)?.attach(this)
-        scanner.start()
+    }
+    // HID wedge must not swallow on-screen digits while the enrollment form is visible.
+    LaunchedEffect(scanner, initialized, showEnrollment) {
+        if (initialized && !showEnrollment) scanner.start() else scanner.stop()
     }
 
     // Insets once at the root so Sale (and siblings) do not add a second black status-bar gap under the banner.
@@ -310,8 +316,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 Loading(loadingMessage(mode, null), ::reload)
             } else {
                 when {
-                    mode == RuntimeMode.PRODUCTION &&
-                        (syncState?.baseUrl == null || syncState?.status == "REQUIRES_REENROLLMENT") ->
+                    showEnrollment ->
                         EnrollmentScreen(
                             busy = enrolling,
                             error = enrollError ?: syncState?.lastError,

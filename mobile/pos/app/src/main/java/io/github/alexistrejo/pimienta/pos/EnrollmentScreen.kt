@@ -1,15 +1,14 @@
 package io.github.alexistrejo.pimienta.pos
 
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -20,6 +19,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
@@ -32,6 +33,7 @@ internal fun EnrollmentScreen(
 ) {
     var code by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("POS Android") }
+    val canEnroll = !busy && code.length == 6 && name.trim().isNotEmpty()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier
@@ -43,22 +45,40 @@ internal fun EnrollmentScreen(
         ) {
             Text("Enrolar dispositivo", style = MaterialTheme.typography.headlineSmall)
             Text("Ingresa el código de un solo uso generado en la Web Central.")
-            // Restrict the code to the six digits expected by the enrollment API.
-            OutlinedTextField(
-                value = code,
-                onValueChange = { value -> code = value.filter(Char::isDigit).take(6) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Código de enrolamiento") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
+            Text("Código de enrolamiento", style = MaterialTheme.typography.labelLarge)
+            Text(
+                code.ifEmpty { "------" },
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
             )
-            OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Nombre del dispositivo") })
-            if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
-            Button(
-                enabled = !busy && code.length == 6,
-                onClick = { onEnroll(code.trim(), name.trim()) },
+            // Tablet-safe digits: Compose buttons, not the system keyboard stolen by the HID wedge.
+            Numpad(
+                value = code,
+                changed = { incoming -> code = incoming.filter(Char::isDigit).take(6) },
+                masked = true,
+                revealValue = true,
+                onSubmit = { if (canEnroll) onEnroll(code, name.trim()) },
+            )
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it.take(40) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(if (busy) "Enrolando…" else "Enrolar dispositivo") }
+                label = { Text("Nombre del dispositivo") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    keyboardType = KeyboardType.Text,
+                ),
+                colors = catalogFieldColors(),
+            )
+            if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
+            PosButton(
+                label = if (busy) "Enrolando…" else "Enrolar dispositivo",
+                click = { onEnroll(code, name.trim()) },
+                enabled = canEnroll,
+                primary = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

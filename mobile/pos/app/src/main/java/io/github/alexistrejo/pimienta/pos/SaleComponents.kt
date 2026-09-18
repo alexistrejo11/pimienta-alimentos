@@ -1118,14 +1118,20 @@ internal fun SaleCompleted(folio: String?, onFinished: (String) -> Unit) {
 
 // Provides number-only input without a nested scroll grid so parent screens can scroll the full pad.
 @Composable
-internal fun Numpad(value: String, changed: (String) -> Unit, masked: Boolean = false, onSubmit: (() -> Unit)? = null) {
+internal fun Numpad(
+    value: String,
+    changed: (String) -> Unit,
+    masked: Boolean = false,
+    onSubmit: (() -> Unit)? = null,
+    revealValue: Boolean = false,
+) {
     val keys = if (masked) {
         listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "⌫", "Entrar")
     } else {
         listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
     }
     // Dots only while typing; empty state stays quiet so the parent can label the field.
-    if (masked && value.isNotBlank()) {
+    if (masked && !revealValue && value.isNotBlank()) {
         Text(
             "•".repeat(value.length),
             style = MaterialTheme.typography.titleLarge,

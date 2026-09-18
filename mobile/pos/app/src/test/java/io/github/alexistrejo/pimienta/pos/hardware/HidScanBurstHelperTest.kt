@@ -24,16 +24,26 @@ class HidScanBurstHelperTest {
     }
 
     @Test
+    fun staleCharactersAreDroppedAfterTheBurstInterval() {
+        val helper = HidScanBurstHelper()
+        helper.onCharacter('9', nowMs = 0)
+        helper.onCharacter('7', nowMs = 200)
+        helper.onCharacter('5', nowMs = 210)
+        helper.onCharacter('0', nowMs = 220)
+        helper.onCharacter('1', nowMs = 230)
+        assertEquals("7501", helper.onEnter())
+    }
+
+    @Test
     fun ean13_and_16_char_long_barcodes_are_accepted_completely() {
         val helper = HidScanBurstHelper()
-        val ean13 = "7501073839854" // 13 digits EAN-13
-        
+        val ean13 = "7501073839854"
         ean13.forEach { char ->
             assertTrue(helper.onCharacter(char))
         }
         assertEquals("7501073839854", helper.onEnter())
 
-        val code16 = "CAF-0033-2-ABC16" // 16 characters barcode
+        val code16 = "CAF-0033-2-ABC16"
         code16.forEach { char ->
             assertTrue(helper.onCharacter(char))
         }
