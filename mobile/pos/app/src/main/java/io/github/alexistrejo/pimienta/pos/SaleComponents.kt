@@ -146,9 +146,7 @@ internal fun StatusBar(
                     PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
                     PosButton("Bloquear caja", lockCashRegister, contentPadding = headerBtnPadding)
                     PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
-                    if (BuildConfig.DEBUG) {
-                        PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
-                    }
+                    PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
                 }
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -371,7 +369,7 @@ internal fun OpenAmountDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     users.filter { it.isManagerOrAdmin }.forEach { user ->
-                        PosButton(user.displayName, { selectedAuthorizer = user }, selected = selectedAuthorizer?.id == user.id)
+                        PosButton(user.displayTitle(), { selectedAuthorizer = user }, selected = selectedAuthorizer?.id == user.id)
                     }
                 }
                 Text("PIN de autorización", style = MaterialTheme.typography.labelLarge)
@@ -469,7 +467,7 @@ internal fun CashWithdrawalAuthorization(
                 Text("Registrar sangría", style = MaterialTheme.typography.titleLarge)
                 Text("Motivo: Resguardo de efectivo", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                managers.forEach { user -> PosButton(user.displayName, { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
+                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::record)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -786,7 +784,7 @@ internal fun DiscountAuthorization(
                 Text("Venta bruta: ${Money.format(gross)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe fijo en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                managers.forEach { user -> PosButton(user.displayName, { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
+                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true, onSubmit = ::authorize)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
