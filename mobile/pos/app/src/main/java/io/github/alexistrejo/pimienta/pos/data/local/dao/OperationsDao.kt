@@ -36,9 +36,15 @@ import kotlinx.coroutines.flow.Flow
     @Query("SELECT COALESCE(SUM(totalCentavos), 0) FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED'") fun netForShift(shiftId: String): Long
     @Query("SELECT COUNT(*) FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED'") fun ticketCountForShift(shiftId: String): Int
     @Query("SELECT COUNT(*) FROM sale WHERE shiftId = :shiftId AND status = 'CANCELLED'") fun cancelledCountForShift(shiftId: String): Int
-    @Query("SELECT COALESCE(SUM(totalCentavos), 0) FROM sale WHERE shiftId = :shiftId AND paymentMethod = 'CORTESIA' AND status != 'CANCELLED'") fun courtesyForShift(shiftId: String): Long
+    // Courtesy net is always 0; Corte Z shows the given-away gross instead.
+    @Query("SELECT COALESCE(SUM(grossCentavos), 0) FROM sale WHERE shiftId = :shiftId AND paymentMethod = 'CORTESIA' AND status != 'CANCELLED'") fun courtesyForShift(shiftId: String): Long
     @Query("SELECT COALESCE(SUM(amountCentavos), 0) FROM cash_withdrawal WHERE shiftId = :shiftId") fun withdrawalsForShift(shiftId: String): Long
+    @Query("SELECT COUNT(*) FROM cash_withdrawal WHERE shiftId = :shiftId") fun withdrawalCountForShift(shiftId: String): Int
     @Query("SELECT COALESCE(SUM(totalCentavos), 0) FROM sale WHERE shiftId = :shiftId AND paymentMethod = 'CASH' AND status != 'CANCELLED'") fun cashSalesForShift(shiftId: String): Long
+    @Query("SELECT COALESCE(SUM(totalCentavos), 0) FROM sale WHERE shiftId = :shiftId AND paymentMethod = 'EXTERNAL_CARD_MP' AND status != 'CANCELLED'") fun cardSalesForShift(shiftId: String): Long
+    @Query("SELECT COALESCE(SUM(totalCentavos), 0) FROM sale WHERE shiftId = :shiftId AND paymentMethod = 'CASH' AND status = 'CANCELLED'") fun cancelledCashForShift(shiftId: String): Long
+    @Query("SELECT COALESCE(SUM(subtotalCentavos), 0) FROM sale_line WHERE lineType = :lineType AND saleId IN (SELECT id FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED')") fun lineAmountForShift(shiftId: String, lineType: String): Long
+    @Query("SELECT COALESCE(SUM(quantity), 0) FROM sale_line WHERE lineType = :lineType AND saleId IN (SELECT id FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED')") fun lineQuantityForShift(shiftId: String, lineType: String): Int
     @Query("SELECT * FROM cash_withdrawal WHERE shiftId = :shiftId ORDER BY createdAtEpochMillis DESC") fun withdrawals(shiftId: String): List<CashWithdrawalEntity>
     @Query("SELECT * FROM sale WHERE shiftId = :shiftId ORDER BY confirmedAtEpochMillis DESC") fun salesForShift(shiftId: String): List<SaleEntity>
     @Query("SELECT * FROM sale WHERE id = :saleId LIMIT 1") fun sale(saleId: String): SaleEntity?

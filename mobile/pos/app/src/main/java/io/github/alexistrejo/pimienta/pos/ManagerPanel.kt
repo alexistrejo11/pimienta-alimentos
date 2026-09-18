@@ -67,6 +67,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.domain.DashboardSummary
 import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
+import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseBreakdown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -262,10 +263,10 @@ private fun ZClosePanel(
 ) {
     var zCloseOpen by remember(shift.id) { mutableStateOf(false) }
     var withdrawalsOpen by remember(shift.id) { mutableStateOf(false) }
-    var expected by remember(shift.id) { mutableStateOf(0L) }
+    var close by remember(shift.id) { mutableStateOf<ShiftCloseBreakdown?>(null) }
 
     LaunchedEffect(shift.id, summary) {
-        expected = withContext(Dispatchers.IO) { repository.expectedCash(shift) }
+        close = withContext(Dispatchers.IO) { repository.shiftCloseBreakdown(shift) }
     }
 
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
@@ -279,6 +280,7 @@ private fun ZClosePanel(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            val expected = close?.expectedCashCentavos ?: 0L
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = MaterialTheme.shapes.extraSmall,
@@ -287,9 +289,11 @@ private fun ZClosePanel(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Efectivo teórico en cajón (Turno activo)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(Money.format(expected), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text("Fondo inicial asignado al turno: ${Money.format(shift.openingCashCentavos)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    close?.let { ShiftCashBreakdown(it) }
                 }
             }
+
+            close?.let { ShiftCommercialBreakdown(it) }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -297,12 +301,6 @@ private fun ZClosePanel(
             ) {
                 PosButton("Ver sangrías del turno", { withdrawalsOpen = true }, modifier = Modifier.weight(1f))
                 PosButton("Iniciar Corte de Caja", { zCloseOpen = true }, primary = true, modifier = Modifier.weight(1f))
-            }
-
-            summary?.let {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                Text("Resumen acumulado del día", style = MaterialTheme.typography.titleMedium)
-                MetricGrid(it, 0)
             }
         }
     }
@@ -312,7 +310,7 @@ private fun ZClosePanel(
             shift = shift,
             manager = manager,
             users = users,
-            expected = expected,
+            close = close,
             repository = repository,
             onDismiss = { zCloseOpen = false },
             onApprovedAndClosed = {
@@ -332,13 +330,66 @@ private fun ZClosePanel(
     }
 }
 
+// Shows the cash-drawer formula so open amounts, cancellations and sangrías can be audited.
+@Composable
+private fun ShiftCashBreakdown(close: ShiftCloseBreakdown) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        BreakdownLine("Fondo inicial", close.openingCashCentavos)
+        BreakdownLine("(+) Efectivo cobrado", close.cashSalesCentavos)
+        if (close.cancelledCount > 0) {
+            BreakdownLine("Canceladas efectivo (${close.cancelledCount})", close.cancelledCashCentavos, alreadyExcluded = true)
+        }
+        BreakdownLine("(-) Sangrías (${close.withdrawalCount})", close.withdrawalsCentavos)
+        BreakdownLine("(=) Efectivo esperado", close.expectedCashCentavos, emphasized = true)
+    }
+}
+
+// Shows the commercial mix of the active shift, not the whole calendar day.
+@Composable
+private fun ShiftCommercialBreakdown(close: ShiftCloseBreakdown) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = MaterialTheme.shapes.extraSmall,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Resumen comercial del turno", style = MaterialTheme.typography.titleMedium)
+            BreakdownLine("Venta bruta (${close.ticketCount} tickets)", close.grossCentavos)
+            BreakdownLine("(-) Descuentos / cortesías", close.discountsCentavos)
+            BreakdownLine("(=) Venta neta", close.netCentavos, emphasized = true)
+            BreakdownLine("Efectivo", close.cashSalesCentavos)
+            BreakdownLine("Tarjeta", close.cardSalesCentavos)
+            BreakdownLine("Cortesías (bruto regalado)", close.courtesyGrossCentavos)
+            BreakdownLine("Catálogo", close.catalogCentavos)
+            BreakdownLine("Monto abierto (${close.openAmountQuantity})", close.openAmountCentavos)
+            BreakdownLine("Sin catalogar (${close.pendingCatalogQuantity})", close.pendingCatalogCentavos)
+        }
+    }
+}
+
+@Composable
+private fun BreakdownLine(label: String, amount: Long, emphasized: Boolean = false, alreadyExcluded: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(
+            if (alreadyExcluded) "$label · ya fuera del esperado" else label,
+            style = if (emphasized) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodySmall,
+            color = if (emphasized) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            Money.format(amount),
+            style = if (emphasized) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodySmall,
+            fontWeight = if (emphasized) FontWeight.Bold else FontWeight.Normal,
+        )
+    }
+}
+
 // Displays the blind count and manager approval workflow in a modal dialog.
 @Composable
 private fun ZCloseDialog(
     shift: ShiftEntity,
     manager: LocalUserEntity,
     users: List<LocalUserEntity>,
-    expected: Long,
+    close: ShiftCloseBreakdown?,
     repository: PosRepository,
     onDismiss: () -> Unit,
     onApprovedAndClosed: () -> Unit,
@@ -398,8 +449,12 @@ private fun ZCloseDialog(
                     }
                     CountStage.VALIDATION -> {
                         val counted = attempt?.totalCentavos ?: 0
+                        val expected = close?.expectedCashCentavos ?: 0L
                         Text("Validar Corte de Caja · ${manager.displayName}", style = MaterialTheme.typography.titleLarge)
-                        Text("Efectivo esperado: ${Money.format(expected)}")
+                        close?.let {
+                            ShiftCommercialBreakdown(it)
+                            ShiftCashBreakdown(it)
+                        }
                         Text("Conteo físico: ${Money.format(counted)}")
                         Text("Diferencia: ${Money.format(counted - expected)}", fontWeight = FontWeight.Bold)
                         OutlinedTextField(
@@ -730,9 +785,9 @@ private fun StatusPanel(
     }
 }
 
-// Confirms a Manager PIN for high-impact actions such as sealing a shift.
+// Confirms a Manager PIN for high-impact actions such as sealing a shift or open amount.
 @Composable
-private fun ManagerPinDialog(
+internal fun ManagerPinDialog(
     users: List<LocalUserEntity>,
     title: String,
     initialManager: LocalUserEntity? = null,

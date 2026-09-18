@@ -300,7 +300,7 @@ internal fun CreatePosProductDialog(
     }
 }
 
-// Captures an open-amount line without requiring manager PIN authorization.
+// Captures category and amount; Manager PIN is requested by the sale screen afterwards.
 @Composable
 internal fun OpenAmountDialog(
     categories: List<String>,
@@ -825,20 +825,24 @@ internal fun CartPanel(
             } else {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
                     items(cart, key = { it.lineKey }) { line ->
+                        val quantityLocked = line.lineType == SaleLineType.OPEN_AMOUNT
                         CartLineRow(
                             line,
                             decrease = {
                                 onChange(cart.mapNotNull { current ->
                                     if (current.lineKey != line.lineKey) current
-                                    else if (current.quantity == 1) null
+                                    else if (quantityLocked || current.quantity == 1) null
                                     else current.copy(quantity = current.quantity - 1)
                                 })
                             },
                             increase = {
-                                onChange(cart.map { current ->
-                                    if (current.lineKey == line.lineKey) current.copy(quantity = current.quantity + 1) else current
-                                })
+                                if (!quantityLocked) {
+                                    onChange(cart.map { current ->
+                                        if (current.lineKey == line.lineKey) current.copy(quantity = current.quantity + 1) else current
+                                    })
+                                }
                             },
+                            quantityAdjustable = !quantityLocked,
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
                     }
@@ -889,7 +893,12 @@ private fun TotalLine(label: String, value: String, emphasized: Boolean = false)
 
 // Keeps quantities inline so a cashier can adjust a line without navigating away.
 @Composable
-internal fun CartLineRow(line: CartLine, decrease: () -> Unit, increase: () -> Unit) {
+internal fun CartLineRow(
+    line: CartLine,
+    decrease: () -> Unit,
+    increase: () -> Unit,
+    quantityAdjustable: Boolean = true,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -902,15 +911,16 @@ internal fun CartLineRow(line: CartLine, decrease: () -> Unit, increase: () -> U
         Spacer(Modifier.width(8.dp))
         QuantityButton("−", decrease)
         Text("${line.quantity}", modifier = Modifier.padding(horizontal = 8.dp), fontWeight = FontWeight.Bold)
-        QuantityButton("+", increase)
+        QuantityButton("+", increase, enabled = quantityAdjustable)
     }
 }
 
 // Provides a compact touch target for cart quantities without a pill-shaped control.
 @Composable
-internal fun QuantityButton(label: String, click: () -> Unit) {
+internal fun QuantityButton(label: String, click: () -> Unit, enabled: Boolean = true) {
     Button(
         onClick = click,
+        enabled = enabled,
         modifier = Modifier.size(36.dp),
         shape = MaterialTheme.shapes.extraSmall,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),

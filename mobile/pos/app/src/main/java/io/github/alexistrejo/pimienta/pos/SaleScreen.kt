@@ -95,6 +95,11 @@ internal fun Sale(
     var saleCategories by remember { mutableStateOf(emptyList<String>()) }
     var openAmountRequested by rememberSaveable { mutableStateOf(false) }
     var selectedOpenCategory by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingOpenAmountCategory by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingOpenAmountCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
+    val pendingOpenAmount = pendingOpenAmountCategory?.let { category ->
+        pendingOpenAmountCentavos?.let { category to it }
+    }
     var sectionsRequested by rememberSaveable { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -240,23 +245,33 @@ internal fun Sale(
         }
     }
 
-    // Adds an open amount line to the cart without requiring manager PIN authorization.
-    fun addOpenAmountLine(category: String, centavos: Long) {
-        if (busy || !openAmountAllowed || centavos <= 0) return
+    // Adds one authorized open-amount line. Quantity stays 1 so Corte Z can sum each capture.
+    fun addOpenAmountLine(category: String, centavos: Long, authorizer: LocalUserEntity) {
+        if (busy || !openAmountAllowed || centavos <= 0 || !authorizer.active || !authorizer.isManagerOrAdmin) return
+        val wasCheckout = checkout
         cart = cart + CartLine(
-            null,
-            "Producto abierto · ${category.trim()}",
-            category.trim(),
-            centavos,
-            "NOT_CONTROLLED",
-            1,
-            SaleLineType.OPEN_AMOUNT,
-            null,
-            null,
-            System.currentTimeMillis(),
+            productId = null,
+            name = "Producto abierto · ${category.trim()}",
+            category = category.trim(),
+            unitPriceCentavos = centavos,
+            stockPolicy = "NOT_CONTROLLED",
+            quantity = 1,
+            lineType = SaleLineType.OPEN_AMOUNT,
+            sourceBarcode = null,
+            authorizedByOperatorId = authorizer.id.toLongOrNull(),
+            authorizedAtEpochMillis = System.currentTimeMillis(),
+            cartLineId = java.util.UUID.randomUUID().toString(),
+            authorizedByUserId = authorizer.id,
         )
         openAmountRequested = false
+        pendingOpenAmountCategory = null
+        pendingOpenAmountCentavos = null
         updateDiscount(null)
+        if (wasCheckout) {
+            checkout = false
+            portraitPanel = PortraitPanel.CART
+            scope.launch { feedbackHost.showSnackbar("Se agregó producto abierto. Total actualizado.") }
+        }
     }
 
     // Starts the scanner and routes reads through the same catalog resolver as search.
@@ -286,20 +301,25 @@ internal fun Sale(
     fun confirm(method: PaymentMethod, tendered: Long) {
         scope.launch {
             busy = true
-            val sale = withContext(Dispatchers.IO) { repository.confirmSale(shift, cart, method, tendered, discount) }
+            val result = withContext(Dispatchers.IO) { repository.confirmSale(shift, cart, method, tendered, discount) }
             busy = false
-            sale?.let {
-                cart = emptyList()
-                checkout = false
-                portraitPanel = PortraitPanel.CATALOG
-                paymentMethodDraft = PaymentMethod.CASH
-                tenderedDraft = ""
-                updateDiscount(null)
-                completedFolio = it.folio
-                pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
-                PrintWorker.enqueue(context)
-                SyncWorker.enqueue(context)
-            }
+            result.fold(
+                onSuccess = { sale ->
+                    cart = emptyList()
+                    checkout = false
+                    portraitPanel = PortraitPanel.CATALOG
+                    paymentMethodDraft = PaymentMethod.CASH
+                    tenderedDraft = ""
+                    updateDiscount(null)
+                    completedFolio = sale.folio
+                    pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
+                    PrintWorker.enqueue(context)
+                    SyncWorker.enqueue(context)
+                },
+                onFailure = { error ->
+                    feedbackHost.showSnackbar(error.message ?: "No se pudo confirmar la venta. El carrito se conservó.")
+                },
+            )
         }
     }
 
@@ -411,9 +431,27 @@ internal fun Sale(
                         openAmountRequested = false
                         selectedOpenCategory = null
                     },
-                    onConfirm = ::addOpenAmountLine,
+                    onConfirm = { category, centavos ->
+                        openAmountRequested = false
+                        selectedOpenCategory = null
+                        pendingOpenAmountCategory = category
+                        pendingOpenAmountCentavos = centavos
+                    },
                     initialCategory = selectedOpenCategory
                 )
+            }
+            pendingOpenAmount?.let { (category, centavos) ->
+                ManagerPinDialog(
+                    users = users,
+                    title = "Autorizar monto abierto",
+                    repository = repository,
+                    onDismiss = {
+                        pendingOpenAmountCategory = null
+                        pendingOpenAmountCentavos = null
+                    },
+                ) { authorizer, _ ->
+                    addOpenAmountLine(category, centavos, authorizer)
+                }
             }
 
             if (sectionsRequested) {

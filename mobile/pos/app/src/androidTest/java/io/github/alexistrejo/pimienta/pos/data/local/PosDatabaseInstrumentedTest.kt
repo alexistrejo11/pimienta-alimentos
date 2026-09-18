@@ -9,7 +9,10 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.CashWithdrawalEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
+import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseCalculator
 import io.github.alexistrejo.pimienta.pos.data.sync.ProductDto
 import io.github.alexistrejo.pimienta.pos.data.sync.toProductEntity
 import kotlinx.coroutines.flow.first
@@ -113,5 +116,40 @@ class PosDatabaseInstrumentedTest {
    db.operationsDao().insertOutbox(OutboxEventEntity("event-1", 1, "RESTOCK_RECORDED", "movement-1", "PENDING", 1))
    db.operationsDao().insertMovements(listOf(InventoryMovementEntity("movement-1", "movement-1", "p1", 5, 1, "RESTOCK", "event-1")))
    Assert.assertEquals(10, db.productDao().getAll().single().stock.toBigDecimal().toInt())
+  }
+
+  // Corte Z: cash + open/pending lines enter the drawer; card, courtesy and cancelled cash do not.
+  @Test fun shiftCloseQueriesIncludeOpenPendingAndExcludeCourtesyCardAndCancelledCash() {
+   val dao = db.operationsDao()
+   val shiftId = "shift-1"
+   fun sale(id: String, folio: String, gross: Long, discount: Long, total: Long, method: String, status: String = "CONFIRMED") =
+    SaleEntity(id, folio, shiftId, "cashier", gross, discount, total, method, total, 0, 1, status)
+   dao.insertSale(sale("s-catalog", "F1", 10_000, 0, 10_000, "CASH"))
+   dao.insertSale(sale("s-open", "F2", 4_500, 0, 4_500, "CASH"))
+   dao.insertSale(sale("s-pending", "F3", 2_000, 0, 2_000, "CASH"))
+   dao.insertSale(sale("s-card", "F4", 3_000, 0, 3_000, "EXTERNAL_CARD_MP"))
+   dao.insertSale(sale("s-courtesy", "F5", 8_000, 8_000, 0, "CORTESIA"))
+   dao.insertSale(sale("s-cancelled", "F6", 5_000, 0, 5_000, "CASH", "CANCELLED"))
+   dao.insertLines(listOf(
+    SaleLineEntity("l1", "s-catalog", "p1", "Agua", "Bebidas", 1, 10_000, 10_000, "NOT_CONTROLLED", "CATALOG"),
+    SaleLineEntity("l2", "s-open", null, "Producto abierto · Snack", "Snack", 1, 4_500, 4_500, "NOT_CONTROLLED", "OPEN_AMOUNT"),
+    SaleLineEntity("l3", "s-pending", null, "Producto pendiente de catálogo · 999", "Pendiente de catálogo", 1, 2_000, 2_000, "UNLIMITED", "PENDING_CATALOG"),
+    SaleLineEntity("l4", "s-card", "p2", "Jugo", "Bebidas", 1, 3_000, 3_000, "NOT_CONTROLLED", "CATALOG"),
+    SaleLineEntity("l5", "s-courtesy", "p3", "Galleta", "Snack", 1, 8_000, 8_000, "NOT_CONTROLLED", "CATALOG"),
+    SaleLineEntity("l6", "s-cancelled", "p1", "Agua", "Bebidas", 1, 5_000, 5_000, "NOT_CONTROLLED", "CATALOG"),
+   ))
+   dao.insertWithdrawal(CashWithdrawalEntity("w1", "SG-1", shiftId, "cashier", 10_000, "RESGUARDO_EFECTIVO", "manager", "MANAGER", 1))
+
+   Assert.assertEquals(16_500L, dao.cashSalesForShift(shiftId))
+   Assert.assertEquals(3_000L, dao.cardSalesForShift(shiftId))
+   Assert.assertEquals(8_000L, dao.courtesyForShift(shiftId))
+   Assert.assertEquals(5_000L, dao.cancelledCashForShift(shiftId))
+   Assert.assertEquals(4_500L, dao.lineAmountForShift(shiftId, "OPEN_AMOUNT"))
+   Assert.assertEquals(2_000L, dao.lineAmountForShift(shiftId, "PENDING_CATALOG"))
+   Assert.assertEquals(21_000L, dao.lineAmountForShift(shiftId, "CATALOG"))
+   Assert.assertEquals(
+    56_500L,
+    ShiftCloseCalculator.expectedCashCentavos(50_000, dao.cashSalesForShift(shiftId), dao.withdrawalsForShift(shiftId)),
+   )
   }
  }

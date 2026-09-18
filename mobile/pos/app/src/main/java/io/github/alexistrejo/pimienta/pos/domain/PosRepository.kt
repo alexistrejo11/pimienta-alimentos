@@ -33,13 +33,15 @@ data class CartLine(
     val sourceBarcode: String? = null,
     val authorizedByOperatorId: Long? = null,
     val authorizedAtEpochMillis: Long? = null,
+    val cartLineId: String = "",
+    val authorizedByUserId: String? = null,
 ) {
-    // Stable cart identity for catalog ids or pending barcodes.
+    // Stable cart identity for catalog ids or pending barcodes. Open amounts stay unique.
     val lineKey: String
         get() = when (lineType) {
             SaleLineType.CATALOG -> productId.orEmpty()
             SaleLineType.PENDING_CATALOG -> "pending:${sourceBarcode.orEmpty()}:${unitPriceCentavos}"
-            SaleLineType.OPEN_AMOUNT -> "open:$category:$unitPriceCentavos"
+            SaleLineType.OPEN_AMOUNT -> "open:${cartLineId.ifBlank { "$category:$unitPriceCentavos:$authorizedAtEpochMillis" }}"
         }
 }
 
@@ -107,7 +109,30 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }
     fun withdrawals(shiftId: String) = database.operationsDao().withdrawals(shiftId)
     fun withdrawalTotal(shiftId: String) = database.operationsDao().withdrawalsForShift(shiftId)
-    fun expectedCash(shift: ShiftEntity): Long = database.operationsDao().let { shift.openingCashCentavos + it.cashSalesForShift(shift.id) - it.withdrawalsForShift(shift.id) }
+    // Builds the Corte Z snapshot used by Manager UI, print, and the sealed close row.
+    fun shiftCloseBreakdown(shift: ShiftEntity): ShiftCloseBreakdown {
+        val dao = database.operationsDao()
+        return ShiftCloseCalculator.breakdown(
+            openingCashCentavos = shift.openingCashCentavos,
+            cashSalesCentavos = dao.cashSalesForShift(shift.id),
+            cardSalesCentavos = dao.cardSalesForShift(shift.id),
+            courtesyGrossCentavos = dao.courtesyForShift(shift.id),
+            discountsCentavos = dao.discountsForShift(shift.id),
+            grossCentavos = dao.grossForShift(shift.id),
+            netCentavos = dao.netForShift(shift.id),
+            withdrawalsCentavos = dao.withdrawalsForShift(shift.id),
+            withdrawalCount = dao.withdrawalCountForShift(shift.id),
+            cancelledCount = dao.cancelledCountForShift(shift.id),
+            cancelledCashCentavos = dao.cancelledCashForShift(shift.id),
+            ticketCount = dao.ticketCountForShift(shift.id),
+            catalogCentavos = dao.lineAmountForShift(shift.id, SaleLineType.CATALOG.name),
+            openAmountCentavos = dao.lineAmountForShift(shift.id, SaleLineType.OPEN_AMOUNT.name),
+            openAmountQuantity = dao.lineQuantityForShift(shift.id, SaleLineType.OPEN_AMOUNT.name),
+            pendingCatalogCentavos = dao.lineAmountForShift(shift.id, SaleLineType.PENDING_CATALOG.name),
+            pendingCatalogQuantity = dao.lineQuantityForShift(shift.id, SaleLineType.PENDING_CATALOG.name),
+        )
+    }
+    fun expectedCash(shift: ShiftEntity): Long = shiftCloseBreakdown(shift).expectedCashCentavos
     fun salesForShift(shiftId: String) = database.operationsDao().salesForShift(shiftId)
     fun linesForSale(saleId: String) = database.operationsDao().linesForSale(saleId)
     fun inventoryMovements(from: Long, to: Long) = database.operationsDao().inventoryMovementsBetween(from, to)
@@ -262,7 +287,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         val closed = database.runInTransaction<Boolean> {
             val operations = database.operationsDao()
             if (operations.activeShift()?.id != shift.id) return@runInTransaction false
-            val close = ShiftCloseEntity(UUID.randomUUID().toString(), shift.id, expectedCash(shift), attempt.totalCentavos, attempt.totalCentavos - expectedCash(shift), manager.id, System.currentTimeMillis())
+            val expected = expectedCash(shift)
+            val close = ShiftCloseEntity(UUID.randomUUID().toString(), shift.id, expected, attempt.totalCentavos, ShiftCloseCalculator.differenceCentavos(attempt.totalCentavos, expected), manager.id, System.currentTimeMillis())
             operations.insertShiftClose(close)
             operations.updateCashCountStatus(attempt.id, "APPROVED", null)
             operations.updateShiftStatus(shift.id, "CLOSED")
@@ -316,39 +342,63 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         }
     }
 
-    fun confirmSale(shift: ShiftEntity, lines: List<CartLine>, method: PaymentMethod, tenderedCentavos: Long, discount: SaleDiscountDraft? = null): SaleEntity? {
-        if (lines.isEmpty()) return null
-        if (lines.any { it.quantity <= 0 || it.unitPriceCentavos <= 0 }) return null
+    fun confirmSale(shift: ShiftEntity, lines: List<CartLine>, method: PaymentMethod, tenderedCentavos: Long, discount: SaleDiscountDraft? = null): Result<SaleEntity> {
+        if (lines.isEmpty()) return Result.failure(IllegalArgumentException("El carrito está vacío."))
+        if (lines.any { it.quantity <= 0 || it.unitPriceCentavos <= 0 }) {
+            return Result.failure(IllegalArgumentException("Hay una línea con cantidad o precio inválido."))
+        }
         val policy = database.syncProjectionDao().policy()
         val allowedOpenCategories = openAmountCategories().toSet()
-        if (lines.any { line ->
-                when (line.lineType) {
-                    SaleLineType.CATALOG -> {
-                        val product = line.productId?.let { database.productDao().findById(it) } ?: return@any true
-                        if (!product.available) return@any true
-                        if (product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
-                            (product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO) < BigDecimal.valueOf(line.quantity.toLong())
-                        } else false
+        lines.forEach { line ->
+            when (line.lineType) {
+                SaleLineType.CATALOG -> {
+                    val product = line.productId?.let { database.productDao().findById(it) }
+                        ?: return Result.failure(IllegalArgumentException("No se encontró ${line.name} en el catálogo local."))
+                    if (!product.available) {
+                        return Result.failure(IllegalArgumentException("${product.name} no está disponible."))
                     }
-                    SaleLineType.PENDING_CATALOG -> false
-                    SaleLineType.OPEN_AMOUNT -> {
-                        val authorizer = line.authorizedByOperatorId?.toString()?.let { database.userDao().find(it) }
-                        !allowOpenProducts() || line.quantity != 1 || line.unitPriceCentavos <= 0 ||
-                            line.category.trim() !in allowedOpenCategories || line.productId != null ||
-                            !line.sourceBarcode.isNullOrBlank() || line.stockPolicy != "NOT_CONTROLLED" ||
-                            line.name != "Producto abierto · ${line.category.trim()}" ||
-                            line.authorizedAtEpochMillis == null || authorizer == null || !authorizer.active ||
-                            (authorizer.role != "MANAGER" && authorizer.role != "SUPERADMIN")
+                    if (product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
+                        val stock = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
+                        if (stock < BigDecimal.valueOf(line.quantity.toLong())) {
+                            return Result.failure(IllegalArgumentException("No hay existencias suficientes de ${product.name}."))
+                        }
                     }
                 }
-            }) return null
+                SaleLineType.PENDING_CATALOG -> Unit
+                SaleLineType.OPEN_AMOUNT -> {
+                    val authorizer = line.authorizedByUserId?.let { database.userDao().find(it) }
+                    when {
+                        !allowOpenProducts() ->
+                            return Result.failure(IllegalStateException("Monto abierto no está habilitado en esta sede."))
+                        line.quantity != 1 || line.unitPriceCentavos <= 0 ->
+                            return Result.failure(IllegalArgumentException("Cada monto abierto debe ser una línea de cantidad 1."))
+                        line.category.trim() !in allowedOpenCategories ->
+                            return Result.failure(IllegalArgumentException("La categoría ${line.category} no está permitida para monto abierto."))
+                        line.productId != null || !line.sourceBarcode.isNullOrBlank() || line.stockPolicy != "NOT_CONTROLLED" ->
+                            return Result.failure(IllegalArgumentException("La línea de monto abierto no es válida."))
+                        line.name != "Producto abierto · ${line.category.trim()}" ->
+                            return Result.failure(IllegalArgumentException("La descripción de monto abierto no coincide con la categoría."))
+                        line.authorizedAtEpochMillis == null || authorizer == null || !authorizer.active || !authorizer.isManagerOrAdmin ->
+                            return Result.failure(IllegalArgumentException("El monto abierto requiere autorización de Manager o Superadmin."))
+                    }
+                }
+            }
+        }
         val gross = lines.sumOf { it.unitPriceCentavos * it.quantity }
-        if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || (discount.authorizedBy.role != "MANAGER" && discount.authorizedBy.role != "SUPERADMIN"))) return null
+        if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || (discount.authorizedBy.role != "MANAGER" && discount.authorizedBy.role != "SUPERADMIN"))) {
+            return Result.failure(IllegalArgumentException("El descuento no es válido."))
+        }
         val total = gross - (discount?.amountCentavos ?: 0)
-        if (total == 0L && (method != PaymentMethod.CORTESIA || discount?.amountCentavos != gross)) return null
-        if (total > 0L && method == PaymentMethod.CORTESIA) return null
-        if (method == PaymentMethod.CASH && tenderedCentavos < total) return null
-        return database.runInTransaction<SaleEntity?> {
+        if (total == 0L && (method != PaymentMethod.CORTESIA || discount?.amountCentavos != gross)) {
+            return Result.failure(IllegalArgumentException("Una venta en cero debe registrarse como cortesía."))
+        }
+        if (total > 0L && method == PaymentMethod.CORTESIA) {
+            return Result.failure(IllegalArgumentException("La cortesía solo aplica cuando el descuento cubre el total."))
+        }
+        if (method == PaymentMethod.CASH && tenderedCentavos < total) {
+            return Result.failure(IllegalArgumentException("El efectivo recibido es menor al total."))
+        }
+        val sale = database.runInTransaction<SaleEntity?> {
             val operations = database.operationsDao()
             val liveShift = operations.activeShift() ?: return@runInTransaction null
             if (liveShift.id != shift.id) return@runInTransaction null
@@ -377,7 +427,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     line.stockPolicy,
                     line.lineType.name,
                     line.sourceBarcode,
-                    line.authorizedByOperatorId,
+                    line.authorizedByUserId?.toLongOrNull() ?: line.authorizedByOperatorId,
                     line.authorizedAtEpochMillis,
                 )
             }
@@ -399,6 +449,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             operations.updateFolioNumber(liveShift.id, liveShift.nextFolioNumber + 1)
             sale
         }
+        return if (sale != null) Result.success(sale)
+        else Result.failure(IllegalStateException("El turno ya no está activo en esta tablet."))
     }
     // Persists one outbox row with envelope metadata and advances the device sequence.
     private fun enqueueOutbox(
