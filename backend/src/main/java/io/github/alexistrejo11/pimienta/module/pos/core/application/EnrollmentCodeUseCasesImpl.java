@@ -14,8 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class EnrollmentCodeUseCasesImpl implements EnrollmentCodeUseCases {
 
-  private static final int TTL_MINUTES = 10;
-  private static final char[] ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
+  private static final int TTL_MINUTES = 15;
+  private static final int CODE_BOUND = 1_000_000;
   private static final SecureRandom RANDOM = new SecureRandom();
 
   private final PosEnrollmentCodeRepository enrollmentCodeRepository;
@@ -46,14 +46,6 @@ public class EnrollmentCodeUseCasesImpl implements EnrollmentCodeUseCases {
   }
 
   private static String generateCode() {
-    return "ENROLL-" + segment(4) + "-" + segment(4);
-  }
-
-  private static String segment(int length) {
-    StringBuilder sb = new StringBuilder(length);
-    for (int i = 0; i < length; i++) {
-      sb.append(ALPHABET[RANDOM.nextInt(ALPHABET.length)]);
-    }
-    return sb.toString();
+    return "%06d".formatted(RANDOM.nextInt(CODE_BOUND));
   }
 }

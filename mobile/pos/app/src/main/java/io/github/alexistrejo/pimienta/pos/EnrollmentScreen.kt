@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -23,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 // Collects the one-time enrollment code without exposing technical configuration.
@@ -61,11 +63,19 @@ internal fun EnrollmentScreen(
             }
             Text("Enrolar dispositivo", style = MaterialTheme.typography.headlineSmall)
             Text("Ingresa el código de un solo uso generado en la Web Central.")
-            OutlinedTextField(code, { code = it }, Modifier.fillMaxWidth(), label = { Text("Código de enrolamiento") })
+            // Restrict the code to the six digits expected by the enrollment API.
+            OutlinedTextField(
+                value = code,
+                onValueChange = { value -> code = value.filter(Char::isDigit).take(6) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Código de enrolamiento") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
             OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Nombre del dispositivo") })
             if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
             Button(
-                enabled = !busy && code.isNotBlank(),
+                enabled = !busy && code.length == 6,
                 onClick = { onEnroll(code.trim(), name.trim()) },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(if (busy) "Enrolando…" else "Enrolar dispositivo") }

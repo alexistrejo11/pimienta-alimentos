@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
 @DocPublicEndpoint
 @Operation(
     summary = "Enroll POS device",
-    description = "Consumes a one-time enrollment code (TTL 10 min) and returns device tokens.")
+    description = "Consumes a one-time six-digit numeric enrollment code (TTL 15 min) and returns device tokens.")
 @RequestBody(
     required = true,
     content =

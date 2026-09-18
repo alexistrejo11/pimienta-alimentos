@@ -64,7 +64,8 @@ public class DeviceAuthUseCasesImpl implements DeviceAuthUseCases {
   @Override
   @Transactional
   public EnrollResult enroll(EnrollDeviceCommand command) {
-    if (command.enrollmentCode() == null || command.enrollmentCode().isBlank()) {
+    String enrollmentCode = normalizeEnrollmentCode(command.enrollmentCode());
+    if (enrollmentCode == null) {
       throw new PosEnrollmentCodeInvalidException();
     }
     if (command.devicePublicId() == null) {
@@ -73,7 +74,7 @@ public class DeviceAuthUseCasesImpl implements DeviceAuthUseCases {
 
     PosEnrollmentCode code =
         enrollmentCodeRepository
-            .findByCode(command.enrollmentCode().strip())
+            .findByCode(enrollmentCode)
             .orElseThrow(PosEnrollmentCodeInvalidException::new);
 
     LocalDateTime now = LocalDateTime.now();
@@ -121,6 +122,14 @@ public class DeviceAuthUseCasesImpl implements DeviceAuthUseCases {
 
     DeviceIssuedTokens tokens = deviceTokenIssuer.issuePair(device);
     return new EnrollResult(device, tokens, toSiteSummary(hq));
+  }
+
+  private static String normalizeEnrollmentCode(String value) {
+    if (value == null) {
+      return null;
+    }
+    String normalized = value.replaceAll("\\s", "");
+    return normalized.matches("\\d{6}") ? normalized : null;
   }
 
   @Override

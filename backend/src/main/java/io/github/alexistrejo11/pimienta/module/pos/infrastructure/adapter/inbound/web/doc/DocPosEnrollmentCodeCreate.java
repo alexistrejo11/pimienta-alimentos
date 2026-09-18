@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
 @DocJwtSecured
 @Operation(
     summary = "Create enrollment code",
-    description = "One-time code, TTL 10 minutes, bound to a headquarter.")
+    description = "One-time six-digit numeric code, TTL 15 minutes, bound to a headquarter.")
 @RequestBody(
     required = true,
     content =

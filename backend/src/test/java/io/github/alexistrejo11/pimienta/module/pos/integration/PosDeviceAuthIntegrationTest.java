@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.integration;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,7 +53,9 @@ class PosDeviceAuthIntegrationTest {
         mockMvc
             .perform(
                 AccountTestRequests.postJson(
-                    "/api/v1/pos/devices/enroll", enrollJson(code, deviceId, "Caja 1")))
+                    "/api/v1/pos/devices/enroll",
+                    enrollJson(
+                        code.substring(0, 3) + " " + code.substring(3), deviceId, "Caja 1")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.deviceId").value(deviceId.toString()))
             .andExpect(jsonPath("$.status").value("AUTHORIZED"))
@@ -328,7 +331,7 @@ class PosDeviceAuthIntegrationTest {
                     staffToken,
                     "{\"headquarterId\": %d}".formatted(hqId)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.code", not(nullValue())))
+            .andExpect(jsonPath("$.code", matchesPattern("\\d{6}")))
             .andReturn();
     return JsonPath.read(r.getResponse().getContentAsString(), "$.code");
   }
