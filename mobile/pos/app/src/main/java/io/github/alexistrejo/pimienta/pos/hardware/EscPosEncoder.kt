@@ -2,6 +2,9 @@ package io.github.alexistrejo.pimienta.pos.hardware
 
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 // Encodes structured POS documents into protocol bytes without Android dependencies.
 class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.genericEscPos58) {
@@ -16,7 +19,7 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         writeLine(output, document.title, centered = true, bold = true)
         if (document is TicketDocument && document.duplicate) writeLine(output, "REIMPRESION", centered = true)
         writeLine(output, "Folio: ${folio(document)}")
-        writeLine(output, "Fecha: ${document.occurredAt}")
+        writeLine(output, "Fecha: ${formatDate(document.occurredAt)}")
         if (document is TicketDocument) {
             document.siteName?.takeIf { it.isNotBlank() }?.let { writeLine(output, it, centered = true) }
             document.siteAddress?.takeIf { it.isNotBlank() }?.let { writeLine(output, it) }
@@ -24,21 +27,30 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         output.write("-".repeat(profile.paperWidth.columns).toByteArray(charset))
         output.write('\n'.code)
         document.lines.forEach { line ->
-            val amount = formatAmount(line.amountCentavos)
-            writeLine(output, "${line.quantity} ${line.label}".take(profile.paperWidth.columns - amount.length) + amount)
+            val amountStr = line.amountCentavos?.let { formatAmount(it) } ?: ""
+            val qtyStr = if (line.quantity.isNotBlank()) "${line.quantity} " else ""
+            val left = "$qtyStr${line.label}"
+            if (amountStr.isBlank()) {
+                writeLine(output, left.take(profile.paperWidth.columns))
+            } else {
+                val maxLeft = (profile.paperWidth.columns - amountStr.length - 1).coerceAtLeast(1)
+                val leftTruncated = left.take(maxLeft).padEnd(maxLeft)
+                writeLine(output, "$leftTruncated $amountStr")
+            }
         }
         output.write("-".repeat(profile.paperWidth.columns).toByteArray(charset))
         output.write('\n'.code)
         if (document is TicketDocument && document.discountCentavos > 0) {
             writeLine(output, "Descuento -${formatAmount(document.discountCentavos)}")
         }
-        writeLine(output, "TOTAL ${formatAmount(document.totalCentavos)}", bold = true)
+        if (document.totalCentavos > 0 || document is TicketDocument) {
+            writeLine(output, "TOTAL ${formatAmount(document.totalCentavos)}", bold = true)
+        }
         document.paymentLabel?.let { writeLine(output, "Pago: $it") }
         if (document is TicketDocument && document.tenderedCentavos != null) {
             writeLine(output, "Recibido ${formatAmount(document.tenderedCentavos)}")
             document.changeCentavos?.let { writeLine(output, "Cambio ${formatAmount(it)}") }
         }
-        writeLine(output, "Si no te entregamos tu ticket, tu consumo es GRATIS", centered = true)
         output.write(byteArrayOf(0x1B, 0x64, 0x03))
         if (openDrawer && profile.supportsCashDrawer) {
             val pulse = profile.drawerPulse ?: DrawerPulse()
@@ -53,11 +65,30 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         is OperationalDocument -> document.folio
     }
 
+    private fun formatDate(instant: Instant): String {
+        return try {
+            val zone = ZoneId.systemDefault()
+            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            instant.atZone(zone).format(formatter)
+        } catch (e: Exception) {
+            instant.toString().take(19).replace('T', ' ')
+        }
+    }
+
     private fun writeLine(output: ByteArrayOutputStream, text: String, centered: Boolean = false, bold: Boolean = false) {
         output.write(byteArrayOf(0x1B, 0x45, if (bold) 1 else 0))
-        val value = if (centered) text.padStart((profile.paperWidth.columns + text.length) / 2).takeLast(profile.paperWidth.columns) else text
-        output.write(value.toByteArray(charset))
-        output.write('\n'.code)
+        val columns = profile.paperWidth.columns
+        if (text.length <= columns) {
+            val value = if (centered) text.padStart((columns + text.length) / 2).padEnd(columns) else text
+            output.write(value.toByteArray(charset))
+            output.write('\n'.code)
+        } else {
+            text.chunked(columns).forEach { chunk ->
+                val value = if (centered) chunk.padStart((columns + chunk.length) / 2).padEnd(columns) else chunk
+                output.write(value.toByteArray(charset))
+                output.write('\n'.code)
+            }
+        }
     }
 
     private fun formatAmount(centavos: Long): String = "${centavos / 100}.${(centavos % 100).toString().padStart(2, '0')}"

@@ -50,7 +50,11 @@ sealed interface PrintableDocument {
 }
 
 // Represents one line in a printable POS document.
-data class PrintableLine(val label: String, val quantity: String, val amountCentavos: Long)
+data class PrintableLine(
+    val label: String,
+    val quantity: String = "",
+    val amountCentavos: Long? = null,
+)
 
 // Represents a sale or reprintable ticket document.
 data class TicketDocument(

@@ -44,7 +44,10 @@ import kotlinx.coroutines.flow.Flow
     @Query("SELECT * FROM sale WHERE id = :saleId LIMIT 1") fun sale(saleId: String): SaleEntity?
     @Query("SELECT * FROM cash_withdrawal WHERE id = :id LIMIT 1") fun withdrawal(id: String): CashWithdrawalEntity?
     @Query("SELECT * FROM shift_close WHERE id = :id LIMIT 1") fun shiftClose(id: String): ShiftCloseEntity?
+    @Query("SELECT * FROM shift WHERE id = :id LIMIT 1") fun findShift(id: String): ShiftEntity?
+    @Query("SELECT * FROM local_user WHERE id = :id LIMIT 1") fun findUser(id: String): LocalUserEntity?
     @Query("SELECT * FROM sale_line WHERE saleId = :saleId ORDER BY id") fun linesForSale(saleId: String): List<SaleLineEntity>
+    @Query("SELECT * FROM sale_line WHERE saleId IN (SELECT id FROM sale WHERE shiftId = :shiftId AND status != 'CANCELLED')") fun linesForShift(shiftId: String): List<SaleLineEntity>
     @Query("SELECT * FROM inventory_movement WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun movementsBetween(from: Long, to: Long): List<InventoryMovementEntity>
     @Query("SELECT * FROM sale WHERE confirmedAtEpochMillis BETWEEN :from AND :to ORDER BY confirmedAtEpochMillis DESC") fun salesBetween(from: Long, to: Long): List<SaleEntity>
     @Query("SELECT * FROM sale_line WHERE saleId IN (SELECT id FROM sale WHERE confirmedAtEpochMillis BETWEEN :from AND :to AND status != 'CANCELLED') ORDER BY subtotalCentavos DESC") fun linesBetween(from: Long, to: Long): List<SaleLineEntity>

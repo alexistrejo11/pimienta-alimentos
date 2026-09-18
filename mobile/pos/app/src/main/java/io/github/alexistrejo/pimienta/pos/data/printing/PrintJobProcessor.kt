@@ -64,14 +64,67 @@ class PrintJobProcessor(
             }
             "SHIFT_CLOSE" -> {
                 val close = dao.shiftClose(job.saleId) ?: return PrintResult.Failed(PrintFailure.UNSUPPORTED)
-                OperationalDocument("Corte Z", close.shiftId, Instant.ofEpochMilli(close.approvedAtEpochMillis), listOf(
-                    PrintableLine("Efectivo esperado", "1", close.expectedCashCentavos),
-                    PrintableLine("Efectivo contado", "1", close.countedCashCentavos),
-                    PrintableLine("Diferencia", "1", close.differenceCentavos),
-                ), close.countedCashCentavos)
+                val shift = dao.findShift(close.shiftId)
+                val cashier = shift?.cashierId?.let { dao.findUser(it)?.displayName } ?: shift?.cashierId ?: "Cajero"
+                val manager = dao.findUser(close.approvedByUserId)?.displayName ?: close.approvedByUserId
+                val gross = dao.grossForShift(close.shiftId)
+                val discounts = dao.discountsForShift(close.shiftId)
+                val net = dao.netForShift(close.shiftId)
+                val courtesy = dao.courtesyForShift(close.shiftId)
+                val ticketCount = dao.ticketCountForShift(close.shiftId)
+                val withdrawals = dao.withdrawals(close.shiftId)
+                val withdrawalTotal = dao.withdrawalsForShift(close.shiftId)
+                val lines = dao.linesForShift(close.shiftId)
+
+                val docLines = mutableListOf<PrintableLine>()
+                docLines.add(PrintableLine("Cajero: $cashier"))
+                docLines.add(PrintableLine("Autorizo: $manager"))
+                if (shift != null) {
+                    val openedStr = formatTime(shift.openedAtEpochMillis)
+                    val closedStr = formatTime(close.approvedAtEpochMillis)
+                    docLines.add(PrintableLine("Horario: $openedStr - $closedStr"))
+                    docLines.add(PrintableLine("Fondo inicial", "1", shift.openingCashCentavos))
+                }
+                docLines.add(PrintableLine("Ventas brutas ($ticketCount tks)", "", gross))
+                if (discounts > 0) docLines.add(PrintableLine("Descuentos", "", discounts))
+                docLines.add(PrintableLine("Ventas netas", "", net))
+                if (courtesy > 0) docLines.add(PrintableLine("Cortesias", "", courtesy))
+                if (withdrawals.isNotEmpty()) docLines.add(PrintableLine("Sangrias (${withdrawals.size})", "", withdrawalTotal))
+                docLines.add(PrintableLine("Efectivo esperado", "1", close.expectedCashCentavos))
+                docLines.add(PrintableLine("Efectivo contado", "1", close.countedCashCentavos))
+                docLines.add(PrintableLine("Diferencia", "1", close.differenceCentavos))
+
+                val productSummary = lines.groupBy { it.productName }.map { (name, items) ->
+                    val qty = items.sumOf { it.quantity }
+                    val subtotal = items.sumOf { it.subtotalCentavos }
+                    PrintableLine(name, "$qty", subtotal)
+                }.sortedByDescending { it.amountCentavos ?: 0L }
+
+                if (productSummary.isNotEmpty()) {
+                    docLines.add(PrintableLine("--- PRODUCTOS VENDIDOS ---"))
+                    docLines.addAll(productSummary)
+                }
+
+                OperationalDocument(
+                    title = "Corte de Caja",
+                    folio = close.shiftId.take(8).uppercase(),
+                    occurredAt = Instant.ofEpochMilli(close.approvedAtEpochMillis),
+                    lines = docLines,
+                    totalCentavos = close.countedCashCentavos,
+                )
             }
             else -> return PrintResult.Failed(PrintFailure.UNSUPPORTED)
         }
         return printer.print(encoder.encode(document, openDrawer = openDrawer))
+    }
+
+    private fun formatTime(epochMillis: Long): String {
+        return try {
+            val zone = java.time.ZoneId.systemDefault()
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm")
+            java.time.Instant.ofEpochMilli(epochMillis).atZone(zone).format(formatter)
+        } catch (_: Exception) {
+            ""
+        }
     }
 }

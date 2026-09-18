@@ -248,9 +248,17 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     }
 
     // Approves the latest count, seals the shift and creates its durable print/sync work.
-    fun approveShiftClose(shift: ShiftEntity, attempt: CashCountAttemptEntity, manager: LocalUserEntity, pin: String): Boolean {
-        if (!authenticate(manager.id, pin) || (manager.role != "MANAGER" && manager.role != "SUPERADMIN")) return false
-        return database.runInTransaction<Boolean> {
+    fun approveShiftClose(shift: ShiftEntity, attempt: CashCountAttemptEntity, manager: LocalUserEntity, pin: String, printTicket: Boolean = true): Result<Boolean> {
+        if (!manager.active) {
+            return Result.failure(IllegalArgumentException("El usuario ${manager.displayName} no se encuentra activo."))
+        }
+        if (manager.role != "MANAGER" && manager.role != "SUPERADMIN") {
+            return Result.failure(IllegalArgumentException("El perfil de ${manager.displayName} no tiene permisos de Manager o Superadmin."))
+        }
+        if (!authenticate(manager.id, pin)) {
+            return Result.failure(IllegalArgumentException("PIN de ${manager.displayName} incorrecto."))
+        }
+        val closed = database.runInTransaction<Boolean> {
             val operations = database.operationsDao()
             if (operations.activeShift()?.id != shift.id) return@runInTransaction false
             val close = ShiftCloseEntity(UUID.randomUUID().toString(), shift.id, expectedCash(shift), attempt.totalCentavos, attempt.totalCentavos - expectedCash(shift), manager.id, System.currentTimeMillis())
@@ -262,9 +270,13 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                 operations, device, shift.siteId, shift.id, "SHIFT_CLOSED", close.id,
                 OutboxPayloadBuilder.shiftClosed(close), close.approvedAtEpochMillis
             )
-            operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), close.id, "PENDING", false, System.currentTimeMillis(), "SHIFT_CLOSE"))
+            if (printTicket) {
+                operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), close.id, "PENDING", false, System.currentTimeMillis(), "SHIFT_CLOSE"))
+            }
             true
         }
+        return if (closed) Result.success(true)
+        else Result.failure(IllegalStateException("El turno ya fue cerrado o no se encuentra activo en esta tablet."))
     }
 
     // Queues a reprint from durable ticket data without creating a new sale.
