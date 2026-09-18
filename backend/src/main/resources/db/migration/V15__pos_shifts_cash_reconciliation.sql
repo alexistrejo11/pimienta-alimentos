@@ -18,6 +18,12 @@ CREATE TABLE pos_shifts (
     CONSTRAINT ck_pos_shifts_status CHECK (status IN ('OPEN', 'CLOSED'))
 );
 CREATE INDEX idx_pos_shifts_hq_opened_at ON pos_shifts (headquarter_id, opened_at);
+CREATE UNIQUE INDEX ux_pos_shifts_active_device
+    ON pos_shifts (device_id)
+    WHERE status = 'OPEN';
+CREATE UNIQUE INDEX ux_pos_shifts_active_operator
+    ON pos_shifts (cashier_operator_id)
+    WHERE status = 'OPEN' AND cashier_operator_id IS NOT NULL;
 
 CREATE TABLE pos_cash_movements (
     movement_id UUID PRIMARY KEY,

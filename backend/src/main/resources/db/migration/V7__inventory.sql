@@ -161,6 +161,7 @@ CREATE TABLE inventory_transactions (
     status              VARCHAR(32)  NOT NULL,
     external_reference  VARCHAR(120),
     notes               VARCHAR(4000),
+    exit_reason         VARCHAR(32),
     initiated_by_id     BIGINT,
     approved_by_id      BIGINT,
     approved_at         TIMESTAMP,
@@ -173,10 +174,22 @@ CREATE TABLE inventory_transactions (
     CONSTRAINT ck_inventory_transactions_type
         CHECK (type IN (
             'PURCHASE_RECEIPT', 'SALE_DISPATCH', 'INTERNAL_TRANSFER', 'PHYSICAL_COUNT',
-            'RETURN_FROM_CLIENT', 'RETURN_TO_SUPPLIER', 'PRODUCTION_ISSUE', 'SCRAP_WRITE_OFF'
+            'ADJUSTMENT', 'RETURN_FROM_CLIENT', 'RETURN_TO_SUPPLIER', 'PRODUCTION_ISSUE',
+            'SCRAP_WRITE_OFF'
         )),
     CONSTRAINT ck_inventory_transactions_status
-        CHECK (status IN ('DRAFT', 'PENDING', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'))
+        CHECK (status IN ('DRAFT', 'PENDING', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
+    CONSTRAINT chk_inventory_transactions_exit_reason
+        CHECK (
+            exit_reason IS NULL
+            OR exit_reason IN (
+                'SCRAP',
+                'DAMAGED',
+                'EXPIRED',
+                'INTERNAL_USE',
+                'INVENTORY_ADJUSTMENT'
+            )
+        )
 );
 
 CREATE INDEX idx_inventory_transactions_status ON inventory_transactions (status);
@@ -184,13 +197,15 @@ CREATE INDEX idx_inventory_transactions_type ON inventory_transactions (type);
 CREATE INDEX idx_inventory_transactions_deleted_at ON inventory_transactions (deleted_at);
 
 COMMENT ON TABLE inventory_transactions IS 'Grouped inventory operations (receipts, transfers, adjustments).';
+COMMENT ON COLUMN inventory_transactions.exit_reason IS
+    'Structured exit reason for SCRAP_WRITE_OFF; null for other transaction types.';
 
 CREATE TABLE inventory_movements (
     id                      BIGSERIAL PRIMARY KEY,
     item_id                 BIGINT         NOT NULL REFERENCES inventory_items (id),
-    source_location_id      BIGINT REFERENCES storage_locations (id) ON DELETE SET NULL,
-    destination_location_id BIGINT REFERENCES storage_locations (id) ON DELETE SET NULL,
-    transaction_id          BIGINT REFERENCES inventory_transactions (id) ON DELETE SET NULL,
+    source_location_id      BIGINT,
+    destination_location_id BIGINT,
+    transaction_id          BIGINT,
     quantity                INTEGER        NOT NULL,
     unit_cost               NUMERIC(19, 6) NOT NULL DEFAULT 0,
     type                    VARCHAR(32)    NOT NULL,
@@ -208,7 +223,13 @@ CREATE TABLE inventory_movements (
             'USAGE', 'SCRAP', 'TRANSFER', 'ADJUSTMENT_PLUS', 'ADJUSTMENT_MINUS'
         )),
     CONSTRAINT ck_inventory_movements_direction
-        CHECK (direction IN ('IN', 'OUT', 'NEUTRAL'))
+        CHECK (direction IN ('IN', 'OUT', 'NEUTRAL')),
+    CONSTRAINT fk_inventory_movements_source_location
+        FOREIGN KEY (source_location_id) REFERENCES storage_locations (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_inventory_movements_destination_location
+        FOREIGN KEY (destination_location_id) REFERENCES storage_locations (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_inventory_movements_transaction
+        FOREIGN KEY (transaction_id) REFERENCES inventory_transactions (id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_inventory_movements_item_id ON inventory_movements (item_id);
@@ -219,3 +240,15 @@ CREATE INDEX idx_inventory_movements_destination_location_id ON inventory_moveme
 CREATE INDEX idx_inventory_movements_created_at ON inventory_movements (created_at);
 
 COMMENT ON TABLE inventory_movements IS 'Append-only ledger of quantity changes per item and location.';
+
+-- Historical records must never be detached or removed by deleting their parents.
+CREATE OR REPLACE FUNCTION prevent_inventory_movement_delete()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'inventory_movements are append-only';
+END;
+$$;
+
+CREATE TRIGGER trg_prevent_inventory_movement_delete
+    BEFORE DELETE ON inventory_movements
+    FOR EACH ROW EXECUTE FUNCTION prevent_inventory_movement_delete();
