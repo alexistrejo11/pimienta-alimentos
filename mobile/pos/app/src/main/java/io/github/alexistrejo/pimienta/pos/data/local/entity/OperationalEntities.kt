@@ -7,6 +7,9 @@ import androidx.room.PrimaryKey
 // Stores a locally verifiable POS user snapshot, never a plaintext PIN.
 @Entity(tableName = "local_user") data class LocalUserEntity(@PrimaryKey val id: String, val displayName: String, val role: String, val pinHash: String, val active: Boolean) {
     val isManagerOrAdmin: Boolean get() = role.equals("MANAGER", ignoreCase = true) || role.equals("SUPERADMIN", ignoreCase = true)
+    val isSuperAdmin: Boolean get() = role.equals("SUPERADMIN", ignoreCase = true)
+    val isManager: Boolean get() = role.equals("MANAGER", ignoreCase = true)
+    val isCashier: Boolean get() = role.equals("CASHIER", ignoreCase = true)
     fun displayTitle(isTraining: Boolean = false): String =
         if (isTraining || pinHash == "3383b6e47c9df8a2ff5f39fc976ddf7ae2591fa84434bb58594eef7a45981354") "$displayName (PIN: 1234)" else displayName
 }
