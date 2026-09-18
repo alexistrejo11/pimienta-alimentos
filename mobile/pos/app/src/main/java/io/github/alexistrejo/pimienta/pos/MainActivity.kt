@@ -63,6 +63,7 @@ import io.github.alexistrejo.pimienta.pos.data.sync.DeviceSessionPolicy
 import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
+import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
@@ -222,13 +223,13 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             }
             if (requiresPinForSwitch) {
                 val productionRepository = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION)
+                val activeRepo = PosRepository(app.databaseProvider)
                 val manager = withContext(Dispatchers.IO) {
-                    productionRepository.users().firstOrNull {
-                        it.active && (it.role.equals("MANAGER", true) || it.role.equals("SUPERADMIN", true))
-                    }
+                    productionRepository.users().firstOrNull { it.active && it.isManagerOrAdmin }
+                        ?: activeRepo.users().firstOrNull { it.active && it.isManagerOrAdmin }
                 }
                 val valid = withContext(Dispatchers.IO) {
-                    manager != null && productionRepository.authenticate(manager.id, pin ?: "")
+                    manager != null && (productionRepository.authenticate(manager.id, pin ?: "") || activeRepo.authenticate(manager.id, pin ?: ""))
                 }
                 if (!valid) {
                     notice = "PIN de Manager/Superadmin invalido"
@@ -279,13 +280,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         if (users.isNotEmpty() && products.isNotEmpty()) return@LaunchedEffect
         productionCatalogSyncAttempted = true
         notice = "Sincronizando con el servidor…"
-        val result = withContext(Dispatchers.IO) {
-            ProvisioningRepository(context, app.databaseProvider).syncCatalogNow()
-        }
-        notice = result.fold(
-            onSuccess = { report -> report.userMessage() },
-            onFailure = { PosApiUserMessages.from(it) },
-        )
+        notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
         reload()
     }
 
@@ -304,8 +299,11 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 onSwitchRequested = ::switchMode,
                 onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
                 onForceSync = {
-                    SyncWorker.enqueue(context)
-                    notice = "Sincronización solicitada."
+                    scope.launch {
+                        notice = "Sincronizando con el servidor…"
+                        notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                        reload()
+                    }
                 },
             )
         }
@@ -361,14 +359,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                                 scope.launch {
                                     productionCatalogSyncAttempted = true
                                     notice = "Sincronizando con el servidor…"
-                                    val result = withContext(Dispatchers.IO) {
-                                        ProvisioningRepository(context, app.databaseProvider).syncCatalogNow()
-                                    }
-                                    notice = result.fold(
-                                        onSuccess = { report -> report.userMessage() },
-                                        onFailure = { PosApiUserMessages.from(it) },
-                                    )
-                                    SyncWorker.enqueue(context)
+                                    notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
                                     reload()
                                 }
                             },
@@ -541,7 +532,7 @@ private fun Access(
                     click = {
                         scope.launch {
                             val authorized = withContext(Dispatchers.IO) {
-                                (user.role == "MANAGER" || user.role == "SUPERADMIN") && repository.authenticate(user.id, pin)
+                                user.isManagerOrAdmin && repository.authenticate(user.id, pin)
                             }
                             if (authorized) openManagerDashboard(user) else message("El PIN no corresponde a un perfil Manager.")
                         }

@@ -27,8 +27,12 @@ class PosApiUserMessagesTest {
             PosApiUserMessages.messageFor("POS_ENROLLMENT_CODE_CONSUMED", 409),
         )
         assertEquals(
-            "Esta tablet ya está enrolada.",
-            PosApiUserMessages.messageFor("POS_DEVICE_ALREADY_ENROLLED", 409),
+            "Ya existe un producto con ese código de barras.",
+            PosApiUserMessages.messageFor("ITEM_BARCODE_ALREADY_EXISTS", 409),
+        )
+        assertEquals(
+            "Esa categoría de venta no existe en esta sede.",
+            PosApiUserMessages.messageFor("POS_SALE_CATEGORY_NOT_FOUND", 404),
         )
     }
 

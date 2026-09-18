@@ -148,6 +148,64 @@ class ProvisioningRepository(private val context: Context, private val provider:
         }
     }
 
+    /**
+     * Creates a POS-sellable product on the server and upserts it into Room.
+     * Does not invent a local id when the call fails.
+     */
+    suspend fun createProduct(
+        name: String,
+        salePriceCentavos: Long,
+        saleCategory: String,
+        barcode: String?,
+        createdByOperatorId: Long?,
+        controlledStock: Boolean,
+    ): Result<ProductEntity> {
+        val state = db.syncDao().state()
+        val baseUrl = state?.baseUrl?.trim()?.takeIf { it.isNotEmpty() }
+            ?: return Result.failure(IllegalStateException("Dispositivo no enrolado."))
+        val access = credentials.access()
+            ?: return Result.failure(IllegalStateException("Sesión del dispositivo inválida. Vuelve a enrolar."))
+        val request = CreatePosProductRequest(
+            name = name.trim(),
+            salePriceCentavos = salePriceCentavos,
+            saleCategory = saleCategory.trim(),
+            barcode = barcode?.trim()?.takeIf { it.isNotEmpty() },
+            createdByOperatorId = createdByOperatorId,
+            stockPolicy = if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
+        )
+        return try {
+            Result.success(persistCreatedProduct(retrofit(baseUrl, access).createProduct(request)))
+        } catch (e: HttpException) {
+            if (e.code() == 401) {
+                val refresh = credentials.refresh()
+                    ?: return Result.failure(IllegalStateException(DeviceSessionPolicy.missingRefreshTokenMessage()))
+                try {
+                    val tokens = retrofit(baseUrl, null).refresh(RefreshRequest(refresh))
+                    credentials.save(tokens.accessToken, tokens.refreshToken)
+                    Result.success(persistCreatedProduct(retrofit(baseUrl, tokens.accessToken).createProduct(request)))
+                } catch (refreshError: Exception) {
+                    Result.failure(refreshError)
+                }
+            } else {
+                Result.failure(e)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun persistCreatedProduct(dto: ProductDto): ProductEntity {
+        val product = dto.toProductEntity()
+        db.runInTransaction {
+            db.productDao().insertAll(listOf(product))
+            val siteId = db.siteDao().current()?.id
+            if (siteId != null && product.saleCategory.isNotBlank()) {
+                db.syncProjectionDao().insertCategories(listOf(CatalogCategoryEntity(siteId, product.saleCategory)))
+            }
+        }
+        return product
+    }
+
     private suspend fun refreshAccessAndPullCatalog(
         baseUrl: String,
         state: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity,
@@ -224,7 +282,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
                     "product" -> when (op.op.lowercase()) {
                         "deactivate" -> db.productDao().deleteById(op.id)
                         "upsert" -> {
-                            val product = op.data?.let { json.decodeFromJsonElement(ProductDto.serializer(), it).toProduct() }
+                            val product = op.data?.let { json.decodeFromJsonElement(ProductDto.serializer(), it).toProductEntity() }
                                 ?: throw IllegalArgumentException("Product upsert has no payload")
                             db.productDao().insertAll(listOf(product))
                             db.syncProjectionDao().insertCategories(
@@ -276,27 +334,6 @@ class ProvisioningRepository(private val context: Context, private val provider:
             syncedEvents.forEach { db.syncDao().markSynced(it.eventId, it.status, it.incidentId, it.message) }
         }
     }
-    private fun ProductDto.toProduct() = ProductEntity(
-        id,
-        null,
-        sku,
-        barcode,
-        null,
-        name,
-        saleCategory,
-        unit,
-        BigDecimal.valueOf(priceCentavos, 2).toPlainString(),
-        BigDecimal.valueOf(costCentavos, 2).toPlainString(),
-        available,
-        stockQuantity.toString(),
-        stockMinQuantity.toString(),
-        stockPolicy,
-        negativeStockLimit,
-        null,
-    )
-    private fun OperatorDto.toUser() = LocalUserEntity(id, displayName, role, pinHash, active)
-    private fun SiteDto.toSite() = SiteEntity(id, name, address, currency)
-
     private fun PoliciesDto.toEntity(siteId: String) = PosPolicyEntity(
         siteId = siteId,
         allowNegativeStock = allowNegativeStock,
@@ -335,7 +372,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
                     ),
                 )
             }
-            db.productDao().insertAll(snapshot.products.map { it.toProduct() })
+            db.productDao().insertAll(snapshot.products.map { it.toProductEntity() })
             db.userDao().insertAll(snapshot.operators.map { it.toUser() })
             val categories = (snapshot.products.map { it.saleCategory } + snapshot.openAmountCategories)
                 .filter(String::isNotBlank)

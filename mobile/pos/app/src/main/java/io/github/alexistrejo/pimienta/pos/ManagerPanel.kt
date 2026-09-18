@@ -47,6 +47,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
+import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
 import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
@@ -74,7 +75,7 @@ private enum class CountStage { OPEN, COUNTING, VALIDATION }
 // Requests Manager authorization without changing the cashier session.
 @Composable
 internal fun ManagerAccess(users: List<LocalUserEntity>, repository: PosRepository, onDismiss: () -> Unit, onAuthorized: (LocalUserEntity) -> Unit) {
-    val managers = users.filter { it.role == "MANAGER" || it.role == "SUPERADMIN" }
+    val managers = users.filter { it.isManagerOrAdmin }
     var selected by remember { mutableStateOf(managers.firstOrNull()) }
     var pin by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
@@ -436,8 +437,10 @@ private fun StatusPanel(
                     Text("Offline-first · los eventos permanecen en Room hasta sincronizar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     PosButton("Intentar sincronizar ahora", {
                         if (mode == RuntimeMode.PRODUCTION) {
-                            SyncWorker.enqueue(context)
-                            syncMessage = "Sincronización encolada."
+                            syncMessage = "Sincronizando…"
+                            scope.launch {
+                                syncMessage = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                            }
                         } else {
                             syncMessage = "Sandbox no envía eventos al backend."
                         }

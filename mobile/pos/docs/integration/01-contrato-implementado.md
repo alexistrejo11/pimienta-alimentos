@@ -27,11 +27,24 @@ abiertos; ver [../implementation/00-estado-actual.md](../implementation/00-estad
 | `GET /api/v1/pos/sync/bootstrap` | Descargar snapshot plano y atómico de la sede. |
 | `GET /api/v1/pos/sync/changes?cursor=` | Descargar `upsert`/`deactivate`; cursor ajeno o inválido devuelve 409 y exige bootstrap. |
 | `POST /api/v1/pos/sync/events` | Enviar lote ordenado por secuencia y recibir resultado individual. |
+| `POST /api/v1/pos/sync/products` | Alta síncrona de un producto vendible en la sede del dispositivo. JWT de tablet; sede del claim. |
 
 El access JWT representa al dispositivo (`typ=device`, `scope=pos:sync`), no
-al cajero. Revocación devuelve 401/403 al reconectar: se detiene sync y la app
+al cajero. El PIN del operador no viaja. `createdByOperatorId` en el alta de
+producto es auditoría (cajero del turno). Revocación devuelve 401/403 al reconectar: se detiene sync y la app
 deja de usar esas credenciales. Reasignar una tablet significa revocarla y
 enrolarla de nuevo; no hay transferencia in-place.
+
+### Alta de producto desde caja
+
+Body: `name`, `salePriceCentavos`, `saleCategory` (nombre activo de la sede),
+`barcode` opcional, `createdByOperatorId` opcional, `stockPolicy` opcional
+(`NOT_CONTROLLED` por defecto). Barcode vacío → `null` y SKU interno del
+servidor. Respuesta: la misma proyección de producto que bootstrap. 409
+`ITEM_BARCODE_ALREADY_EXISTS` si el código ya existe.
+
+Un barcode desconocido en caja sigue pudiendo cobrarse como `PENDING_CATALOG`
+sin crear maestro. Monto abierto no cambia.
 
 ## Bootstrap y deltas
 

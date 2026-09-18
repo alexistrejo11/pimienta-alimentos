@@ -8,7 +8,9 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.Head
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosSaleCategoryRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.CatalogRole;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemBarcodeConflictException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,13 +33,19 @@ public class PosProductManagementUseCasesImpl implements PosProductManagementUse
     var category = categories.findById(headquarterId, c.posSaleCategoryId())
         .filter(v -> v.isActive()).orElseThrow(() -> new PosSaleCategoryNotFoundException(c.posSaleCategoryId()));
     String sku = items.nextInternalSku();
+    String barcode = blankToNull(c.barcode());
+    if (barcode != null && items.existsByBarcodeIgnoreCaseExcludingId(barcode, null)) {
+      throw new ItemBarcodeConflictException(barcode);
+    }
     Item item = Item.create(sku, c.name(), c.description(), c.costPrice(),
         c.category() != null ? c.category() : ItemCategory.FINISHED_GOOD, c.unit(), c.reorderPoint(), c.reorderQuantity());
-    item.setBrand(c.brand()); item.setBarcode(blankToNull(c.barcode()));
+    item.setBrand(c.brand());
+    item.setBarcode(barcode);
+    item.setCatalogRole(CatalogRole.POS_SELLABLE);
     Item saved = items.save(item);
     HeadquarterItem row = HeadquarterItem.builder().withHeadquarterId(headquarterId).withItemId(saved.getId())
         .withPosSaleCategoryId(category.getId()).withSaleCategory(category.getName())
-        .withSalePrice(c.salePrice()).withAvailable(c.available()).withStockPolicy(c.stockPolicy() != null ? c.stockPolicy() : StockPolicy.CONTROLLED)
+        .withSalePrice(c.salePrice()).withAvailable(c.available() == null || c.available()).withStockPolicy(c.stockPolicy() != null ? c.stockPolicy() : StockPolicy.CONTROLLED)
         .withNegativeStockLimit(c.negativeStockLimit()).register();
     return new CreatedPosProduct(saved, catalog.save(row));
   }
