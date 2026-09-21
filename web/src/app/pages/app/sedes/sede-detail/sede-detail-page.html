@@ -2,14 +2,14 @@
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <app-page-header
       [title]="sede()?.name ?? 'Detalle de sede'"
-      backLink="/app/sedes"
+      backLink="/app/ops/sedes"
       backLabel="Sedes"
     />
     <div class="flex flex-wrap gap-2">
       @if (session.isAdmin()) {
         @if (sede(); as s) {
           <a
-            [routerLink]="['/app/sedes', s.id, 'editar']"
+            [routerLink]="['/app/ops/sedes', s.id, 'editar']"
             class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
           >
             <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">edit</span>

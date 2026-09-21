@@ -1,9 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { SessionContextService } from '../../../core/auth/session-context.service';
+import { coerceWorkspaceUrl } from '../../../core/auth/workspace-area';
 import {
   fieldMessage,
   parseApiError,
@@ -19,6 +21,7 @@ import type { LoginRequest } from '../../../core/model/account/auth.dto';
 export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  private readonly session = inject(SessionContextService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -50,20 +53,23 @@ export class Login {
 
     this.auth
       .login(request)
-      .pipe(finalize(() => this.submitting.set(false)))
-      .subscribe({
-        next: (tokens) => {
+      .pipe(
+        switchMap((tokens) => {
+          this.session.clear();
           sessionStorage.setItem('accessToken', tokens.accessToken);
           sessionStorage.setItem('refreshToken', tokens.refreshToken);
+          return this.session.ensureLoaded();
+        }),
+        finalize(() => this.submitting.set(false)),
+      )
+      .subscribe({
+        next: (context) => {
           const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-          const safeReturn =
-            returnUrl &&
-            returnUrl.startsWith('/') &&
-            !returnUrl.startsWith('//') &&
-            !returnUrl.includes(':')
-              ? returnUrl
-              : '/app/dashboard';
-          void this.router.navigateByUrl(safeReturn);
+          const target = coerceWorkspaceUrl(returnUrl, {
+            roles: context.roles,
+            accountStatus: context.accountStatus,
+          });
+          void this.router.navigateByUrl(target);
         },
         error: (err: unknown) => {
           const parsed = parseApiError(err);

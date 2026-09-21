@@ -128,7 +128,7 @@ export class TareaDetailPageComponent implements OnInit {
       .delete(t.id)
       .pipe(finalize(() => this.deleting.set(false)))
       .subscribe({
-        next: () => void this.router.navigateByUrl('/app/tareas'),
+        next: () => void this.router.navigateByUrl('/app/erp/tareas'),
         error: (err: unknown) => this.actionError.set(parseApiError(err)),
       });
   }

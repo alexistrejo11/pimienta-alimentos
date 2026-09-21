@@ -1,7 +1,7 @@
 <div class="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <app-page-header title="Conteos físicos" subtitle="Auditoría con captura ciega y aprobación administrativa" />
-    <a routerLink="/app/inventario/conteos/nuevo" class="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2.5 font-bold text-on-primary">Nuevo conteo</a>
+    <a routerLink="/app/ops/inventario/conteos/nuevo" class="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2.5 font-bold text-on-primary">Nuevo conteo</a>
   </div>
 
   <app-headquarter-select class="max-w-xs" label="Sede" [value]="selectedHeadquarterId" (valueChange)="onHeadquarterChange($event)" />
@@ -27,7 +27,7 @@
               <td class="px-4 py-3">{{ inventoryCountTypeLabel(session.type) }}</td>
               <td class="px-4 py-3">{{ inventoryCountStatusLabel(session.status) }}</td>
               <td class="px-4 py-3 text-right">
-                <a class="inline-flex min-h-11 items-center font-semibold text-primary" [routerLink]="['/app/inventario/conteos', session.id]">Abrir</a>
+                <a class="inline-flex min-h-11 items-center font-semibold text-primary" [routerLink]="['/app/ops/inventario/conteos', session.id]">Abrir</a>
               </td>
             </tr>
           }

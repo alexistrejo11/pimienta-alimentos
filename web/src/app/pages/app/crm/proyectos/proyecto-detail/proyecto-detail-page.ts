@@ -90,7 +90,7 @@ export class ProyectoDetailPageComponent implements OnInit {
       .deleteProject(p.id)
       .pipe(finalize(() => this.deleting.set(false)))
       .subscribe({
-        next: () => void this.router.navigateByUrl('/app/crm/proyectos'),
+        next: () => void this.router.navigateByUrl('/app/erp/crm/proyectos'),
         error: (err: unknown) => this.deleteError.set(parseApiError(err)),
       });
   }

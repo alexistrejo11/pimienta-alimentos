@@ -1,182 +1,154 @@
 <div class="flex flex-col gap-8 p-4 sm:p-6 lg:p-8">
-  <header class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+  <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div>
-      <h1 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface">
-        Panel general
-      </h1>
-      <p class="text-on-surface-variant max-w-xl text-sm">
-        Resumen operativo del día: POS y métricas de gestión.
+      <h1 class="font-headline text-2xl font-extrabold tracking-tight text-on-surface">Operaciones</h1>
+      <p class="max-w-xl text-sm text-on-surface-variant">
+        Resumen del día: punto de venta e inventario.
       </p>
     </div>
-    <button
-      type="button"
-      class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold text-on-surface transition hover:bg-surface-container disabled:opacity-50"
-      [disabled]="loading()"
-      (click)="reload()"
-    >
-      Actualizar
-    </button>
+    <div class="flex flex-wrap items-end gap-3">
+      <app-headquarter-select
+        class="w-full sm:w-auto sm:min-w-[12rem]"
+        label="Sede"
+        [allowAll]="isAdmin()"
+        [value]="session.activeHeadquarterId()"
+        (valueChange)="onHeadquarterChange($event)"
+      />
+      <button
+        type="button"
+        class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold text-on-surface transition hover:bg-surface-container"
+        (click)="reload()"
+      >
+        Actualizar
+      </button>
+    </div>
   </header>
 
-  @if (session.canAccessPos()) {
-    <section class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <h2 class="font-headline text-lg font-bold text-on-surface">Punto de venta — hoy</h2>
-        <app-headquarter-select
-          class="w-full sm:w-auto sm:min-w-[12rem]"
-          label="Sede"
-          [allowAll]="isAdmin()"
-          [value]="session.activeHeadquarterId()"
-          (valueChange)="onHeadquarterChange($event)"
-        />
-      </div>
-
-      @if (posLoading()) {
-        <p class="text-on-surface-variant text-sm">Cargando resumen POS…</p>
-      } @else if (posError(); as err) {
-        <div
-          class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40"
-          role="alert"
-        >
-          {{ err.message }}
-        </div>
-      } @else if (isAdmin()) {
-        <div class="responsive-table responsive-table--wide ui-panel">
-          <table class="w-full text-sm">
-            <thead class="ui-panel-muted border-b border-outline-variant/20">
-              <tr>
-                <th class="px-4 py-3 text-left">Sede</th>
-                <th class="px-4 py-3 text-left">Ventas</th>
-                <th class="px-4 py-3 text-left">Tickets</th>
-                <th class="px-4 py-3 text-left">Mermas</th>
-                <th class="px-4 py-3 text-left">Cancelaciones</th>
-                <th class="px-4 py-3 text-left">Incidencias</th>
-                <th class="px-4 py-3 text-left">Abiertos</th>
-                <th class="px-4 py-3 text-left">Dispositivos</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-outline-variant/15">
-              @for (row of posSummary(); track row.headquarterId) {
-                <tr>
-                  <td class="px-4 py-3 font-semibold">{{ hqName(row.headquarterId) }}</td>
-                  <td class="px-4 py-3 tabular-nums">{{ formatCentavos(row.salesCentavos) }}</td>
-                  <td class="px-4 py-3 tabular-nums">{{ row.ticketCount }}</td>
-                  <td class="px-4 py-3 tabular-nums">{{ row.wasteCount }}</td>
-                  <td class="px-4 py-3 tabular-nums">{{ row.cancellationCount }}</td>
-                  <td class="px-4 py-3 tabular-nums">{{ row.openIncidentCount }}</td>
-                  <td class="px-4 py-3 tabular-nums">{{ formatCentavos(row.openProductCentavos) }} <span class="ui-badge-warning">{{ row.openProductPendingReviewCount }} pendientes</span></td>
-                  <td class="px-4 py-3 tabular-nums">{{ row.deviceCount }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      } @else if (!isAdmin() && posSummary().length > 0) {
-        @for (row of posSummary(); track row.headquarterId) {
-          <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
-            <li class="ui-panel p-5 shadow-sm">
-              <p class="text-on-surface-variant text-xs font-medium uppercase">Ventas hoy</p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">
-                {{ formatCentavos(row.salesCentavos) }}
-              </p>
-            </li>
-            <li class="ui-panel p-5 shadow-sm">
-              <p class="text-on-surface-variant text-xs font-medium uppercase">Productos abiertos</p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(row.openProductCentavos) }}</p>
-              <p class="mt-1 text-xs text-on-surface-variant">{{ row.openProductLineCount }} líneas · {{ row.openProductPendingReviewCount }} por revisar</p>
-            </li>
-            <li class="ui-panel p-5 shadow-sm">
-              <p class="text-on-surface-variant text-xs font-medium uppercase">Tickets</p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">
-                {{ row.ticketCount }}
-              </p>
-            </li>
-            <li class="ui-panel p-5 shadow-sm">
-              <p class="text-on-surface-variant text-xs font-medium uppercase">Mermas</p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ row.wasteCount }}</p>
-            </li>
-            <li class="ui-panel p-5 shadow-sm">
-              <p class="text-on-surface-variant text-xs font-medium uppercase">
-                Incidencias abiertas
-              </p>
-              <p class="font-headline mt-2 text-3xl font-bold tabular-nums">
-                {{ row.openIncidentCount }}
-              </p>
-            </li>
-          </ul>
-        }
-      } @else {
-        <p class="text-on-surface-variant text-sm">Sin actividad POS registrada hoy.</p>
-      }
-    </section>
-  }
-
   <section class="flex flex-col gap-4">
-    <h2 class="font-headline text-lg font-bold text-on-surface">Gestión operativa</h2>
-
-    @if (loading()) {
-      <p class="text-on-surface-variant text-sm">Cargando métricas…</p>
-    } @else if (error(); as err) {
-      <div
-        class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
-        role="alert"
-      >
-        <p class="font-semibold">No se pudo cargar el panel</p>
-        <p class="mt-1 text-sm opacity-90">{{ err.message }}</p>
-        <button
-          type="button"
-          class="mt-3 rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-900"
-          (click)="reload()"
-        >
-          Reintentar
-        </button>
-      </div>
-    } @else if (dashboard(); as dash) {
+    <h2 class="font-headline text-lg font-bold text-on-surface">Punto de venta — hoy</h2>
+    @if (posLoading() && !hasPosRows()) {
+      <p class="text-sm text-on-surface-variant">Cargando resumen POS…</p>
+    } @else if (posError(); as err) {
+      <p class="text-sm text-error" role="alert">{{ err.message }}</p>
+    } @else {
       <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
-        @for (m of metrics; track m.key) {
-          <li class="ui-panel p-5 shadow-sm">
-            <p class="text-on-surface-variant text-xs font-medium uppercase tracking-wide">
-              {{ m.label }}
-            </p>
-            <p
-              class="font-headline mt-2 text-3xl font-bold tabular-nums text-on-surface"
-              [attr.aria-label]="m.label"
-            >
-              {{ valueFor(dash, m.key) }}
-            </p>
-            <p class="text-on-surface-variant mt-2 text-xs leading-snug">
-              {{ m.hint }}
-            </p>
-          </li>
-        }
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Ventas</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(posTotals().salesCentavos) }}</p>
+        </li>
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Tickets</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ posTotals().ticketCount }}</p>
+        </li>
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Mermas</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ posTotals().wasteCount }}</p>
+        </li>
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Cancelaciones</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ posTotals().cancellationCount }}</p>
+        </li>
+        <li class="ui-panel p-5">
+          <a routerLink="/app/ops/pos/incidencias" class="block">
+            <p class="text-xs font-medium uppercase text-on-surface-variant">Incidencias abiertas</p>
+            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ posTotals().openIncidentCount }}</p>
+          </a>
+        </li>
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Productos abiertos</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(posTotals().openProductCentavos) }}</p>
+          <p class="mt-1 text-xs text-on-surface-variant">
+            {{ posTotals().openProductLineCount }} líneas · {{ posTotals().openProductPendingReviewCount }} por revisar
+          </p>
+        </li>
+        <li class="ui-panel p-5">
+          <a routerLink="/app/ops/pos/dispositivos" class="block">
+            <p class="text-xs font-medium uppercase text-on-surface-variant">Dispositivos</p>
+            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ posTotals().deviceCount }}</p>
+          </a>
+        </li>
       </ul>
     }
   </section>
 
-  @if (session.canAccessPos() && session.activeHeadquarterId() != null) {
+  <section class="flex flex-col gap-4">
+    <h2 class="font-headline text-lg font-bold text-on-surface">Inventario</h2>
+    @if (inventoryLoading() && !inventoryDash()) {
+      <p class="text-sm text-on-surface-variant">Cargando inventario…</p>
+    } @else if (inventoryError(); as err) {
+      <p class="text-sm text-error" role="alert">{{ err.message }}</p>
+    } @else if (inventoryDash(); as inv) {
+      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="list">
+        <li class="ui-panel p-5">
+          <a routerLink="/app/ops/inventario" class="block">
+            <p class="text-xs font-medium uppercase text-on-surface-variant">SKUs con existencia</p>
+            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ inv.skuCount }}</p>
+          </a>
+        </li>
+        <li class="ui-panel p-5">
+          <a routerLink="/app/ops/inventario" class="block">
+            <p class="text-xs font-medium uppercase text-on-surface-variant">Bajo stock</p>
+            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ inv.lowStockCount }}</p>
+          </a>
+        </li>
+        <li class="ui-panel p-5">
+          <a routerLink="/app/ops/inventario" class="block">
+            <p class="text-xs font-medium uppercase text-on-surface-variant">Sin existencias</p>
+            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ inv.outOfStockCount }}</p>
+          </a>
+        </li>
+        <li class="ui-panel p-5">
+          <a routerLink="/app/ops/inventario/conteos" class="block">
+            <p class="text-xs font-medium uppercase text-on-surface-variant">Conteos abiertos</p>
+            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ inv.openCountSessionCount }}</p>
+          </a>
+        </li>
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Unidades disponibles</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ inv.totalAvailableQuantity }}</p>
+        </li>
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Valor en stock</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatStockValue(inv.totalStockValue) }}</p>
+        </li>
+      </ul>
+    }
+  </section>
+
+  @if (session.activeHeadquarterId() != null) {
     <section class="flex flex-col gap-4">
       <div class="flex items-end justify-between gap-3">
         <div>
           <h2 class="font-headline text-lg font-bold text-on-surface">Actividad reciente</h2>
-          <p class="text-on-surface-variant text-sm">Ventas recibidas hoy. Se actualiza automáticamente.</p>
+          <p class="text-sm text-on-surface-variant">Ventas de hoy. Se actualiza automáticamente.</p>
         </div>
-        <span class="text-on-surface-variant hidden text-xs sm:inline">Cada 30 s</span>
+        <span class="hidden text-xs text-on-surface-variant sm:inline">Cada 30 s</span>
       </div>
       @if (activityLoading() && activity().length === 0) {
-        <p class="text-on-surface-variant text-sm">Cargando actividad…</p>
+        <p class="text-sm text-on-surface-variant">Cargando actividad…</p>
       } @else if (activityError(); as err) {
-        <p class="text-error text-sm" role="alert">{{ err.message }}</p>
+        <p class="text-sm text-error" role="alert">{{ err.message }}</p>
       } @else if (activity().length === 0) {
-        <p class="text-on-surface-variant text-sm">Sin ventas registradas hoy.</p>
+        <p class="text-sm text-on-surface-variant">Sin ventas registradas hoy.</p>
       } @else {
         <div class="responsive-table ui-panel">
           <table class="w-full text-sm">
             <thead class="ui-panel-muted">
-              <tr><th class="px-4 py-3 text-left">Folio</th><th class="px-4 py-3 text-left">Dispositivo</th><th class="px-4 py-3 text-left">Hora</th><th class="px-4 py-3 text-right">Total</th></tr>
+              <tr>
+                <th class="px-4 py-3 text-left">Folio</th>
+                <th class="px-4 py-3 text-left">Dispositivo</th>
+                <th class="px-4 py-3 text-left">Hora</th>
+                <th class="px-4 py-3 text-right">Total</th>
+              </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant/15">
               @for (sale of activity(); track sale.saleId) {
-                <tr><td class="px-4 py-3 font-mono">{{ sale.folio }}</td><td class="px-4 py-3">{{ sale.deviceId }}</td><td class="px-4 py-3">{{ sale.occurredAt | date: 'shortTime' }}</td><td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(sale.totalCentavos) }}</td></tr>
+                <tr>
+                  <td class="px-4 py-3 font-mono">{{ sale.folio }}</td>
+                  <td class="px-4 py-3">{{ sale.deviceId }}</td>
+                  <td class="px-4 py-3">{{ sale.occurredAt | date: 'shortTime' }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(sale.totalCentavos) }}</td>
+                </tr>
               }
             </tbody>
           </table>

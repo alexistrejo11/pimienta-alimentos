@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.inventory.core.port.input;
 
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.InventoryDashboard;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.InventorySearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
 import java.util.List;
@@ -24,4 +25,6 @@ public interface InventoryManagementUseCases {
   Inventory createInitialStock(long itemId, long locationId, int initialQuantity);
 
   Page<InventoryGlobalSummary> searchGlobalSummary(String search, io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory category, Inventory.InventoryStatus status, java.math.BigDecimal minCost, java.math.BigDecimal maxCost, java.util.List<Long> headquarterIds, Pageable pageable);
+
+  InventoryDashboard dashboard(List<Long> headquarterIds);
 }

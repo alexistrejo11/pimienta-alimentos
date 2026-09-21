@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
  *   <app-page-header
  *     title="Detalle de empleado"
  *     subtitle="Información completa del colaborador"
- *     backLink="/app/empleados"
+ *     backLink="/app/erp/empleados"
  *     backLabel="Empleados"
  *   />
  */

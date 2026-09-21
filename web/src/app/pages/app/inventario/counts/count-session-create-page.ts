@@ -80,7 +80,7 @@ export class CountSessionCreatePageComponent implements OnInit {
         itemIds: this.type === 'PARTIAL' ? [...this.selected] : undefined,
       })
       .subscribe({
-        next: (s) => void this.router.navigate(['/app/inventario/conteos', s.id]),
+        next: (s) => void this.router.navigate(['/app/ops/inventario/conteos', s.id]),
         error: () => {
           this.error.set('No se pudo abrir el conteo.');
           this.busy.set(false);

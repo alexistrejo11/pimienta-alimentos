@@ -35,6 +35,18 @@ public class InventoryCountRepositoryImpl implements InventoryCountRepository {
   }
 
   @Override
+  public long countOpen(List<Long> headquarterIds) {
+    var open = List.of(InventoryCountSession.Status.DRAFT, InventoryCountSession.Status.SUBMITTED);
+    if (headquarterIds != null && headquarterIds.isEmpty()) {
+      return 0;
+    }
+    if (headquarterIds == null) {
+      return sessions.countByStatusIn(open);
+    }
+    return sessions.countOpenInHeadquarters(headquarterIds, open);
+  }
+
+  @Override
   public Optional<InventoryCountSession> findById(long id) {
     return sessions
         .findById(id)

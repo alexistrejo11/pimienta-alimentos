@@ -18,6 +18,9 @@
       <p class="font-headline text-xl font-extrabold leading-tight tracking-tighter text-primary">
         Pimienta Alimentos
       </p>
+      <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+        {{ area() === 'erp' ? 'Oficina' : 'Operaciones' }}
+      </p>
     </div>
     <button
       type="button"
@@ -28,6 +31,25 @@
       <span class="material-symbols-outlined" aria-hidden="true">close</span>
     </button>
   </div>
+
+  @if (isAdmin()) {
+    <div class="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-surface-container p-1" role="navigation" aria-label="Cambiar área">
+      <a
+        [routerLink]="opsHome"
+        class="rounded-md px-2 py-2 text-center text-xs font-bold"
+        [class.bg-surface-container-lowest]="area() === 'ops'"
+        [class.text-primary]="area() === 'ops'"
+        [class.text-on-surface-variant]="area() !== 'ops'"
+      >Operaciones</a>
+      <a
+        [routerLink]="erpHome"
+        class="rounded-md px-2 py-2 text-center text-xs font-bold"
+        [class.bg-surface-container-lowest]="area() === 'erp'"
+        [class.text-primary]="area() === 'erp'"
+        [class.text-on-surface-variant]="area() !== 'erp'"
+      >Oficina</a>
+    </div>
+  }
 
   <nav class="flex flex-grow flex-col space-y-1 overflow-y-auto" aria-label="Secciones">
     @for (section of navigation(); track section.id) {
@@ -88,7 +110,7 @@
               <a
                 [routerLink]="item.route"
                 routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
-                [routerLinkActiveOptions]="{ exact: item.route === '/app/dashboard' }"
+                [routerLinkActiveOptions]="{ exact: item.route === opsHome || item.route === erpHome }"
                 [class]="navLinkInactive"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>

@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.inventory.core.application.usecase;
 
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.InventoryDashboard;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.InventorySearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryGlobalSummary;
@@ -14,6 +15,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.Invento
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.StorageLocationRepository;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryCountRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryGlobalSummaryRepository;
 import io.github.alexistrejo11.pimienta.shared.exception.BusinessValidationException;
 import java.util.List;
@@ -33,21 +35,37 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
   private final ItemRepository itemRepository;
   private final StorageLocationRepository storageLocationRepository;
   private final InventoryGlobalSummaryRepository globalSummaryRepository;
+  private final InventoryCountRepository inventoryCountRepository;
 
   public InventoryManagementUseCasesImpl(
       InventoryRepository inventoryRepository,
       ItemRepository itemRepository,
       StorageLocationRepository storageLocationRepository,
-      InventoryGlobalSummaryRepository globalSummaryRepository) {
+      InventoryGlobalSummaryRepository globalSummaryRepository,
+      InventoryCountRepository inventoryCountRepository) {
     this.inventoryRepository = inventoryRepository;
     this.itemRepository = itemRepository;
     this.storageLocationRepository = storageLocationRepository;
     this.globalSummaryRepository = globalSummaryRepository;
+    this.inventoryCountRepository = inventoryCountRepository;
   }
 
   @Override
   public Page<InventoryGlobalSummary> searchGlobalSummary(String search, Item.ItemCategory category, Inventory.InventoryStatus status, java.math.BigDecimal minCost, java.math.BigDecimal maxCost, List<Long> headquarterIds, Pageable pageable) {
     return globalSummaryRepository.search(search, category, status, minCost, maxCost, headquarterIds, pageable);
+  }
+
+  @Override
+  public InventoryDashboard dashboard(List<Long> headquarterIds) {
+    InventoryDashboard stock = globalSummaryRepository.stockKpis(headquarterIds);
+    long openCounts = inventoryCountRepository.countOpen(headquarterIds);
+    return new InventoryDashboard(
+        stock.skuCount(),
+        stock.lowStockCount(),
+        stock.outOfStockCount(),
+        openCounts,
+        stock.totalAvailableQuantity(),
+        stock.totalStockValue());
   }
 
   @Override

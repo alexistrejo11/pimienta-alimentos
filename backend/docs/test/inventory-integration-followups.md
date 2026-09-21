@@ -13,3 +13,9 @@ No extra follow-ups from RBAC/count-session test pass beyond the items above.
 - **Omitted `catalogRole` on PUT:** `Item.setCatalogRole(null)` stores `INVENTORY_ONLY`. A client that omits the field on update will reset a `POS_SELLABLE` item. The web form always sends the field; consider `@NotNull` on `ItemUpdateRequest.catalogRole` if other clients should be forced to send it.
 
 No extra follow-ups from this pass beyond the item above.
+
+## 2026-09-20 — Inventory dashboard KPIs
+
+- **Low-stock vs row lists:** `GET /inventory/dashboard` groups by item (suma de ubicaciones), igual que el resumen global. `GET /inventory/stock/low-stock` sigue siendo por fila de ubicación; los conteos pueden no coincidir 1:1.
+
+No extra follow-ups from this pass beyond the item above.

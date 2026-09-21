@@ -3,6 +3,13 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { filter } from 'rxjs';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
+import {
+  ERP_HOME,
+  ERP_PATH,
+  OPS_HOME,
+  OPS_PATH,
+  type WorkspaceArea,
+} from '../../../core/auth/workspace-area';
 import { AppRole } from '../../../core/model/account/enums';
 import { BRAND_LOGO_URL } from '../../../pages/home/brand';
 
@@ -25,38 +32,66 @@ export interface WorkspaceNavSection {
 }
 
 const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
-const STAFF = [AppRole.ADMIN, AppRole.MANAGER];
 const POS_OPERATION = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
 const INVENTORY_READ = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
 const ADMIN_ONLY = [AppRole.ADMIN];
 
-/** The sidebar catalog is the UI's role-filtered navigation contract. */
-export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
+export const ERP_NAVIGATION: readonly WorkspaceNavSection[] = [
   {
     id: 'overview',
     label: 'Resumen',
     items: [
-      { label: 'Resumen', icon: 'dashboard', route: '/app/dashboard', roles: STAFF },
+      { label: 'Resumen', icon: 'dashboard', route: `${ERP_PATH}/dashboard`, roles: ADMIN_ONLY },
     ],
   },
   {
     id: 'crm',
     label: 'CRM',
     items: [
-      { label: 'Oportunidades', icon: 'trending_up', route: '/app/crm/oportunidades', roles: ADMIN_MANAGER },
-      { label: 'Proyectos', icon: 'folder_open', route: '/app/crm/proyectos', roles: ADMIN_MANAGER },
+      { label: 'Oportunidades', icon: 'trending_up', route: `${ERP_PATH}/crm/oportunidades`, roles: ADMIN_ONLY },
+      { label: 'Proyectos', icon: 'folder_open', route: `${ERP_PATH}/crm/proyectos`, roles: ADMIN_ONLY },
     ],
   },
   {
-    id: 'operations',
-    label: 'Operaciones',
+    id: 'people',
+    label: 'Personas',
     items: [
-      { label: 'Sedes', icon: 'location_on', route: '/app/sedes', roles: ADMIN_MANAGER },
-      { label: 'Empleados', icon: 'badge', route: '/app/empleados', roles: ADMIN_MANAGER },
-      { label: 'Nómina', icon: 'payments', route: '/app/nomina', roles: ADMIN_MANAGER },
-      { label: 'Tareas', icon: 'task_alt', route: '/app/tareas', roles: STAFF },
-      { label: 'Archivos', icon: 'folder', route: '/app/archivos', roles: STAFF },
-      { label: 'Contratos', icon: 'contract', route: '/app/contratos', roles: ADMIN_MANAGER },
+      { label: 'Empleados', icon: 'badge', route: `${ERP_PATH}/empleados`, roles: ADMIN_ONLY },
+      { label: 'Nómina', icon: 'payments', route: `${ERP_PATH}/nomina`, roles: ADMIN_ONLY },
+      { label: 'Asistencia', icon: 'today', route: `${ERP_PATH}/asistencia`, roles: ADMIN_ONLY },
+      { label: 'Contratos', icon: 'contract', route: `${ERP_PATH}/contratos`, roles: ADMIN_ONLY },
+    ],
+  },
+  {
+    id: 'work',
+    label: 'Trabajo',
+    items: [
+      { label: 'Tareas', icon: 'task_alt', route: `${ERP_PATH}/tareas`, roles: ADMIN_ONLY },
+      { label: 'Archivos', icon: 'folder', route: `${ERP_PATH}/archivos`, roles: ADMIN_ONLY },
+    ],
+  },
+  {
+    id: 'administration',
+    label: 'Administración',
+    items: [
+      { label: 'Usuarios', icon: 'manage_accounts', route: `${ERP_PATH}/usuarios`, roles: ADMIN_ONLY },
+    ],
+  },
+];
+
+export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
+  {
+    id: 'overview',
+    label: 'Resumen',
+    items: [
+      { label: 'Resumen', icon: 'dashboard', route: `${OPS_PATH}/dashboard`, roles: POS_OPERATION },
+    ],
+  },
+  {
+    id: 'sites',
+    label: 'Sedes',
+    items: [
+      { label: 'Sedes', icon: 'location_on', route: `${OPS_PATH}/sedes`, roles: ADMIN_MANAGER },
     ],
   },
   {
@@ -64,19 +99,19 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
     label: 'Punto de venta',
     roles: POS_OPERATION,
     items: [
-      { label: 'Catálogo por sede', icon: 'storefront', route: '/app/pos/catalogo', roles: ADMIN_MANAGER },
-      { label: 'Ventas', icon: 'receipt_long', route: '/app/pos/ventas', roles: POS_OPERATION },
-      { label: 'Turnos', icon: 'point_of_sale', route: '/app/pos/turnos', roles: ADMIN_MANAGER },
+      { label: 'Catálogo por sede', icon: 'storefront', route: `${OPS_PATH}/pos/catalogo`, roles: ADMIN_MANAGER },
+      { label: 'Ventas', icon: 'receipt_long', route: `${OPS_PATH}/pos/ventas`, roles: POS_OPERATION },
+      { label: 'Turnos', icon: 'point_of_sale', route: `${OPS_PATH}/pos/turnos`, roles: ADMIN_MANAGER },
       {
         label: 'Configuración POS',
         icon: 'settings',
         roles: ADMIN_MANAGER,
         children: [
-          { label: 'Políticas de caja', icon: 'tune', route: '/app/pos/configuracion', roles: ADMIN_MANAGER },
-          { label: 'Dispositivos', icon: 'tablet_android', route: '/app/pos/dispositivos', roles: ADMIN_MANAGER },
-          { label: 'Enrolamiento', icon: 'qr_code_2', route: '/app/pos/enrolamiento', roles: ADMIN_MANAGER },
-          { label: 'Operadores', icon: 'group', route: '/app/pos/operadores', roles: ADMIN_MANAGER },
-          { label: 'Incidencias', icon: 'sync_problem', route: '/app/pos/incidencias', roles: [AppRole.ADMIN] },
+          { label: 'Políticas de caja', icon: 'tune', route: `${OPS_PATH}/pos/configuracion`, roles: ADMIN_MANAGER },
+          { label: 'Dispositivos', icon: 'tablet_android', route: `${OPS_PATH}/pos/dispositivos`, roles: ADMIN_MANAGER },
+          { label: 'Enrolamiento', icon: 'qr_code_2', route: `${OPS_PATH}/pos/enrolamiento`, roles: ADMIN_MANAGER },
+          { label: 'Operadores', icon: 'group', route: `${OPS_PATH}/pos/operadores`, roles: ADMIN_MANAGER },
+          { label: 'Incidencias', icon: 'sync_problem', route: `${OPS_PATH}/pos/incidencias`, roles: ADMIN_ONLY },
         ],
       },
     ],
@@ -86,31 +121,22 @@ export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
     label: 'Inventario',
     roles: INVENTORY_READ,
     items: [
-      { label: 'Existencias', icon: 'warehouse', route: '/app/inventario', roles: INVENTORY_READ },
-      { label: 'Libro de movimientos', icon: 'receipt_long', route: '/app/inventario/ledger', roles: INVENTORY_READ },
-      { label: 'Entradas (IN)', icon: 'add_shopping_cart', route: '/app/inventario/entradas', roles: ADMIN_MANAGER },
-      { label: 'Transferencias', icon: 'swap_horiz', route: '/app/inventario/transferencias', roles: ADMIN_MANAGER },
-      { label: 'Mermas (OUT)', icon: 'delete_sweep', route: '/app/inventario/mermas', roles: ADMIN_MANAGER },
-      { label: 'Ajustes', icon: 'tune', route: '/app/inventario/ajustes', roles: ADMIN_ONLY },
-      { label: 'Conteos físicos', icon: 'fact_check', route: '/app/inventario/conteos', roles: ADMIN_MANAGER },
-      { label: 'Artículos maestros', icon: 'inventory_2', route: '/app/catalogo', roles: ADMIN_ONLY },
+      { label: 'Existencias', icon: 'warehouse', route: `${OPS_PATH}/inventario`, roles: INVENTORY_READ },
+      { label: 'Libro de movimientos', icon: 'receipt_long', route: `${OPS_PATH}/inventario/ledger`, roles: INVENTORY_READ },
+      { label: 'Entradas (IN)', icon: 'add_shopping_cart', route: `${OPS_PATH}/inventario/entradas`, roles: ADMIN_MANAGER },
+      { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: ADMIN_MANAGER },
+      { label: 'Mermas (OUT)', icon: 'delete_sweep', route: `${OPS_PATH}/inventario/mermas`, roles: ADMIN_MANAGER },
+      { label: 'Ajustes', icon: 'tune', route: `${OPS_PATH}/inventario/ajustes`, roles: ADMIN_ONLY },
+      { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: ADMIN_MANAGER },
+      { label: 'Artículos maestros', icon: 'inventory_2', route: `${OPS_PATH}/catalogo`, roles: ADMIN_ONLY },
     ],
   },
-  {
-    id: 'attendance',
-    label: 'Asistencia',
-    items: [
-      { label: 'Asistencia', icon: 'today', route: '/app/asistencia', roles: ADMIN_MANAGER },
-      { label: 'Mi asistencia', icon: 'schedule', route: '/app/mi-asistencia', roles: [AppRole.EMPLOYEE] },
-    ],
-  },
-  {
-    id: 'administration',
-    label: 'Administración',
-    items: [
-      { label: 'Usuarios', icon: 'manage_accounts', route: '/app/usuarios', roles: ADMIN_ONLY },
-    ],
-  },
+];
+
+/** @deprecated Use ERP_NAVIGATION / OPS_NAVIGATION. */
+export const WORKSPACE_NAVIGATION: readonly WorkspaceNavSection[] = [
+  ...ERP_NAVIGATION,
+  ...OPS_NAVIGATION,
 ];
 
 export const WORKSPACE_ACTIONS: readonly WorkspaceNavItem[] = [];
@@ -127,13 +153,18 @@ export class WorkspaceSidebarComponent {
 
   readonly logoUrl = BRAND_LOGO_URL;
   readonly abierta = input(false);
-  readonly navigation = computed(() => WORKSPACE_NAVIGATION
+  readonly area = input<WorkspaceArea>('ops');
+  readonly catalog = computed(() => (this.area() === 'erp' ? ERP_NAVIGATION : OPS_NAVIGATION));
+  readonly navigation = computed(() => this.catalog()
     .map((section) => ({ ...section, items: this.visibleItems(section.items) }))
     .filter((section) => section.items.length > 0));
   readonly actions = computed(() => WORKSPACE_ACTIONS.filter((item) => this.canSee(item)));
   readonly currentUrl = signal(this.router.url);
   readonly expandedSections = signal<ReadonlySet<string>>(new Set());
   readonly expandedItems = signal<ReadonlySet<string>>(new Set());
+  readonly isAdmin = this.session.isAdmin;
+  readonly opsHome = OPS_HOME;
+  readonly erpHome = ERP_HOME;
 
   readonly cerrar = output<void>();
   readonly abrirAsistenciaHoy = output<void>();

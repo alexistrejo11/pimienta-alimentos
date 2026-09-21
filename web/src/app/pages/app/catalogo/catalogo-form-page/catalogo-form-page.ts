@@ -142,7 +142,7 @@ export class CatalogoFormPageComponent implements OnInit {
     request$.pipe(finalize(() => this.loading.set(false))).subscribe({
       next: () => {
         markFormPristine(this.form);
-        void this.router.navigate(['/app/catalogo']);
+        void this.router.navigate(['/app/ops/catalogo']);
       },
       error: (err: unknown) => this.apiError.set(parseApiError(err)),
     });

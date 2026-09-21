@@ -2,7 +2,7 @@
   <app-page-header
     [title]="globalMode() ? 'Catálogo POS por sede' : 'Catálogo POS — ' + (sedeName() || 'Sede')"
     subtitle="Surtido, categorías de venta y precios por sede"
-    [backLink]="globalMode() ? '/app/dashboard' : '/app/sedes/' + headquarterId()"
+    [backLink]="globalMode() ? '/app/ops/dashboard' : '/app/ops/sedes/' + headquarterId()"
     [backLabel]="globalMode() ? 'Dashboard' : 'Detalle de sede'"
   />
 
@@ -28,7 +28,7 @@
         <h2 class="font-headline text-lg font-bold text-on-surface">Categorías de venta</h2>
         <p class="mt-1 text-sm text-on-surface-variant">
           Agrupan productos en el POS. Para renombrar, ordenar o archivar, usa
-          <a routerLink="/app/pos/configuracion" class="font-semibold text-primary">Políticas de caja</a>.
+          <a routerLink="/app/ops/pos/configuracion" class="font-semibold text-primary">Políticas de caja</a>.
         </p>
         @if (canEditCatalog()) {
           <div class="mt-4 flex flex-wrap gap-2">

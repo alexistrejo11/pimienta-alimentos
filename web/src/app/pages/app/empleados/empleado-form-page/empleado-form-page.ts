@@ -121,7 +121,7 @@ export class EmpleadoFormPageComponent implements OnInit {
     if (idRaw) {
       const id = Number(idRaw);
       if (!Number.isFinite(id) || id <= 0) {
-        void this.router.navigateByUrl('/app/empleados');
+        void this.router.navigateByUrl('/app/erp/empleados');
         return;
       }
       this.employeeId.set(id);
@@ -179,7 +179,7 @@ export class EmpleadoFormPageComponent implements OnInit {
         .subscribe({
           next: (created) => {
             markFormPristine(this.form);
-            void this.router.navigateByUrl(`/app/empleados/${created.id}`);
+            void this.router.navigateByUrl(`/app/erp/empleados/${created.id}`);
           },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
@@ -190,7 +190,7 @@ export class EmpleadoFormPageComponent implements OnInit {
         .subscribe({
           next: () => {
             markFormPristine(this.form);
-            void this.router.navigateByUrl(`/app/empleados/${id}`);
+            void this.router.navigateByUrl(`/app/erp/empleados/${id}`);
           },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });

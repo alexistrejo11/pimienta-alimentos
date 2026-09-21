@@ -10,6 +10,7 @@
   ></button>
 
   <app-workspace-sidebar
+    [area]="area"
     [abierta]="mobileNavOpen()"
     (cerrar)="closeMobileNav()"
     (abrirAsistenciaHoy)="mobileNavOpen.set(false); mostrarAsistenciaHoy.set(true)"

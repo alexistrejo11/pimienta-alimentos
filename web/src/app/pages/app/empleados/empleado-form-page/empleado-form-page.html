@@ -6,7 +6,7 @@
         ? 'Modifique solo los campos que necesite; el resto conserva los valores actuales.'
         : 'Solo nombre y apellido son obligatorios; el resto puede completarse después.'
     "
-    backLink="/app/empleados"
+    backLink="/app/erp/empleados"
     backLabel="Empleados"
   />
 
@@ -426,7 +426,7 @@
           {{ loading() ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Registrar empleado' }}
         </button>
         <a
-          [routerLink]="isEdit ? ['/app/empleados', employeeId()] : ['/app/empleados']"
+          [routerLink]="isEdit ? ['/app/erp/empleados', employeeId()] : ['/app/erp/empleados']"
           class="inline-flex items-center justify-center rounded-lg border border-stone-200 bg-white px-5 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition hover:bg-surface-container dark:border-stone-700 dark:bg-stone-950 dark:hover:bg-stone-900"
         >
           Cancelar

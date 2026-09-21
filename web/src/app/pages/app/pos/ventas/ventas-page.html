@@ -69,7 +69,7 @@
               <td class="px-4 py-3">{{ ticketStatusLabel(s.status) }}</td>
               <td class="px-4 py-3">
                 @if (s.syncStatus === 'REQUIRES_REVIEW') {
-                  <a class="ui-badge-warning underline" routerLink="/app/pos/incidencias">{{ syncStatusLabel(s.syncStatus) }}</a>
+                  <a class="ui-badge-warning underline" routerLink="/app/ops/pos/incidencias">{{ syncStatusLabel(s.syncStatus) }}</a>
                 } @else {
                   {{ syncStatusLabel(s.syncStatus) }}
                 }

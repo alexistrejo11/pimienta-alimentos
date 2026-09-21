@@ -31,7 +31,7 @@
         <tbody class="divide-y divide-outline-variant/15">
           @for (d of devices(); track d.id) {
             <tr>
-              <td class="px-4 py-3 font-mono"><a class="font-semibold text-primary hover:underline" [routerLink]="['/app/pos/dispositivos', d.id]">{{ d.visibleCode }}</a></td>
+              <td class="px-4 py-3 font-mono"><a class="font-semibold text-primary hover:underline" [routerLink]="['/app/ops/pos/dispositivos', d.id]">{{ d.visibleCode }}</a></td>
               <td class="px-4 py-3">{{ d.deviceName || '—' }}</td>
               <td class="px-4 py-3">{{ hqName(d.headquarterId) }}</td>
               <td class="px-4 py-3">{{ d.appVersion || '—' }}</td>
@@ -56,7 +56,7 @@
     <div class="space-y-3 md:hidden">
       @for (d of devices(); track d.id) {
         <article class="ui-panel rounded-xl p-4">
-          <div class="flex items-start justify-between gap-3"><a class="font-mono font-semibold text-primary" [routerLink]="['/app/pos/dispositivos', d.id]">{{ d.visibleCode }}</a><span class="text-sm text-on-surface-variant">{{ posDeviceStatusLabel(d.status) }}</span></div>
+          <div class="flex items-start justify-between gap-3"><a class="font-mono font-semibold text-primary" [routerLink]="['/app/ops/pos/dispositivos', d.id]">{{ d.visibleCode }}</a><span class="text-sm text-on-surface-variant">{{ posDeviceStatusLabel(d.status) }}</span></div>
           <p class="mt-2 text-sm">{{ d.deviceName || 'Sin nombre' }}</p><p class="text-xs text-on-surface-variant">{{ hqName(d.headquarterId) }} · {{ d.appVersion || 'Sin versión' }}</p>
           @if (d.status !== 'REVOKED') { <button type="button" class="mt-3 min-h-11 rounded-lg bg-error/10 px-3 text-sm font-semibold text-error" [disabled]="revokingId() === d.id" (click)="revoke(d)">Revocar</button> }
         </article>

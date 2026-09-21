@@ -79,7 +79,7 @@ export class TareaFormPageComponent {
       .subscribe({
         next: (created) => {
           markFormPristine(this.form);
-          void this.router.navigateByUrl(`/app/tareas/${created.id}`);
+          void this.router.navigateByUrl(`/app/erp/tareas/${created.id}`);
         },
         error: (err: unknown) => this.apiError.set(parseApiError(err)),
       });

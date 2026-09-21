@@ -66,11 +66,11 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "8027:8027"
+      - "8000:8000"
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      API_PORT: "8027"
+      API_PORT: "8000"
       POSTGRES_DB: pimienta_alimentos
       POSTGRES_USER: pimienta_dba
       POSTGRES_PASSWORD: pimienta_dba

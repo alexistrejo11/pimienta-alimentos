@@ -1,8 +1,9 @@
 import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
+import type { WorkspaceArea } from '../../../core/auth/workspace-area';
 import { WorkspaceFooterComponent } from '../workspace-footer/workspace-footer';
 import { WorkspaceSidebarComponent } from '../workspace-sidebar/workspace-sidebar';
 import { AsistenciaHoyModalComponent } from '../../ui/asistencia-hoy-modal/asistencia-hoy-modal';
@@ -26,7 +27,9 @@ import { BRAND_LOGO_URL } from '../../../pages/home/brand';
 export class WorkspaceShellComponent implements OnInit {
   private readonly session = inject(SessionContextService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
+  readonly area = (this.route.snapshot.data['workspaceArea'] as WorkspaceArea | undefined) ?? 'ops';
   readonly logoUrl = BRAND_LOGO_URL;
   readonly mobileNavOpen = signal(false);
   readonly mostrarAsistenciaHoy = signal(false);

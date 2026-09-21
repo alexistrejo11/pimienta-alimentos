@@ -7,6 +7,10 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.InventoryDashboard;
+
 public interface InventoryGlobalSummaryRepository {
   Page<InventoryGlobalSummary> search(String search, ItemCategory category, InventoryStatus status, java.math.BigDecimal minCost, java.math.BigDecimal maxCost, List<Long> headquarterIds, Pageable pageable);
+
+  InventoryDashboard stockKpis(List<Long> headquarterIds);
 }

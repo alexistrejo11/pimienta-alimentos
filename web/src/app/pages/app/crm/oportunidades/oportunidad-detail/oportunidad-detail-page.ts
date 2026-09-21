@@ -87,7 +87,7 @@ export class OportunidadDetailPageComponent implements OnInit {
       .deleteOpportunity(op.id)
       .pipe(finalize(() => this.deleting.set(false)))
       .subscribe({
-        next: () => void this.router.navigateByUrl('/app/crm/oportunidades'),
+        next: () => void this.router.navigateByUrl('/app/erp/crm/oportunidades'),
         error: (err: unknown) => this.deleteError.set(parseApiError(err)),
       });
   }

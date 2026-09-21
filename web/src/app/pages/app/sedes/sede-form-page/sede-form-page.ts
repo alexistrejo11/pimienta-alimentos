@@ -15,7 +15,7 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
 
 /**
  * Formulario único create/edit de sede.
- * Rutas: `/app/sedes/nueva` y `/app/sedes/:id/editar` (ROLE_ADMIN).
+ * Rutas: `/app/ops/sedes/nueva` y `/app/ops/sedes/:id/editar` (ROLE_ADMIN).
  */
 @Component({
   selector: 'app-sede-form-page',
@@ -96,7 +96,7 @@ export class SedeFormPageComponent implements OnInit {
     request$.pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (sede) => {
         markFormPristine(this.form);
-        void this.router.navigate(['/app/sedes', sede.id]);
+        void this.router.navigate(['/app/ops/sedes', sede.id]);
       },
       error: (err: unknown) => this.apiError.set(parseApiError(err)),
     });

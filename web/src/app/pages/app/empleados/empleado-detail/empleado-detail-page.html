@@ -6,13 +6,13 @@
         empleado() ? empleado()!.firstName + ' ' + empleado()!.lastName : 'Detalle de empleado'
       "
       subtitle="Información completa del colaborador"
-      backLink="/app/empleados"
+      backLink="/app/erp/empleados"
       backLabel="Empleados"
     />
     @if (empleado(); as e) {
       @if (session.isAdmin()) {
         <a
-          [routerLink]="['/app/empleados', e.id, 'editar']"
+          [routerLink]="['/app/erp/empleados', e.id, 'editar']"
           class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
         >
           <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">edit</span>

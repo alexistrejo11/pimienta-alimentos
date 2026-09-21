@@ -15,4 +15,7 @@ public interface InventoryCountRepository {
   Page<InventoryCountSession> search(InventoryCountSearchCriteria criteria, Pageable pageable);
 
   boolean existsActiveByLocationId(long locationId);
+
+  /** Null headquarters means all sites; empty list means none. */
+  long countOpen(java.util.List<Long> headquarterIds);
 }

@@ -42,6 +42,51 @@ class InventoryIntegrationTest {
   }
 
   @Test
+  void dashboard_withoutToken_returns401() throws Exception {
+    mockMvc.perform(get("/api/v1/inventory/dashboard")).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void dashboard_admin_returnsStockKpis() throws Exception {
+    String token = obtainAccessToken();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    long locId = createWarehouseLocation(token, "WH-DASH-" + suffix, "Dash WH " + suffix);
+    String itemBody =
+        """
+        {
+          "sku": "SKU-DASH-%s",
+          "name": "Dash item",
+          "description": "IT",
+          "costPrice": 10.00,
+          "category": "CONSUMABLE",
+          "unit": "PIECE",
+          "reorderPoint": 10,
+          "reorderQuantity": 20
+        }
+        """
+            .formatted(suffix);
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson("/api/v1/inventory/items", itemBody)
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long itemId = extractLongId(created.getResponse().getContentAsString(), "$.id");
+    createInitialStock(token, itemId, locId, 4);
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/dashboard", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.skuCount").value(1))
+        .andExpect(jsonPath("$.lowStockCount").value(1))
+        .andExpect(jsonPath("$.outOfStockCount").value(0))
+        .andExpect(jsonPath("$.openCountSessionCount").value(0))
+        .andExpect(jsonPath("$.totalAvailableQuantity").value(4))
+        .andExpect(jsonPath("$.totalStockValue").value(40.0));
+  }
+
+  @Test
   void items_create_withoutToken_returns401() throws Exception {
     mockMvc
         .perform(AccountTestRequests.postJson("/api/v1/inventory/items", minimalItemCreateJson("X", "N")))

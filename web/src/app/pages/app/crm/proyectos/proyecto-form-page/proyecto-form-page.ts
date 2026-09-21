@@ -96,7 +96,7 @@ export class ProyectoFormPageComponent implements OnInit {
     if (idRaw) {
       const id = Number(idRaw);
       if (!Number.isFinite(id) || id <= 0) {
-        void this.router.navigateByUrl('/app/crm/proyectos');
+        void this.router.navigateByUrl('/app/erp/crm/proyectos');
         return;
       }
       this.projectId.set(id);
@@ -162,7 +162,7 @@ export class ProyectoFormPageComponent implements OnInit {
         .subscribe({
           next: (created) => {
             markFormPristine(this.form);
-            void this.router.navigateByUrl(`/app/crm/proyectos/${created.id}`);
+            void this.router.navigateByUrl(`/app/erp/crm/proyectos/${created.id}`);
           },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
@@ -173,7 +173,7 @@ export class ProyectoFormPageComponent implements OnInit {
         .subscribe({
           next: () => {
             markFormPristine(this.form);
-            void this.router.navigateByUrl(`/app/crm/proyectos/${id}`);
+            void this.router.navigateByUrl(`/app/erp/crm/proyectos/${id}`);
           },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });

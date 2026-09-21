@@ -18,6 +18,7 @@ import type {
   InventoryStockSearchParams,
   GlobalInventoryResponse,
   GlobalInventorySearchParams,
+  InventoryDashboardResponse,
   InventoryTransactionResponse,
   ItemCreateRequest,
   ItemResponse,
@@ -107,6 +108,14 @@ export class InventoryService {
 
   createInitialStock(body: CreateInitialStockRequest): Observable<InventoryStockResponse> {
     return this.http.post<InventoryStockResponse>(this.stockBase, body);
+  }
+
+  getDashboard(headquarterId?: number | null): Observable<InventoryDashboardResponse> {
+    let params = new HttpParams();
+    if (headquarterId != null) {
+      params = params.set('headquarterId', String(headquarterId));
+    }
+    return this.http.get<InventoryDashboardResponse>(`${API_BASE_URL}/inventory/dashboard`, { params });
   }
 
   searchLocations(params: StorageLocationSearchParams = {}): Observable<PagedResponse<StorageLocationResponse>> {

@@ -70,4 +70,27 @@ public interface InventoryJpaRepository
       HAVING (:status IS NULL OR CASE WHEN SUM(s.available_quantity) <= 0 THEN 'OUT_OF_STOCK' WHEN SUM(s.available_quantity) <= i.reorder_point THEN 'LOW_STOCK' ELSE 'NORMAL' END = :status)) x
       """, nativeQuery = true)
   Page<InventoryGlobalSummaryProjection> searchGlobalSummary(@Param("search") String search, @Param("category") String category, @Param("status") String status, @Param("minCost") java.math.BigDecimal minCost, @Param("maxCost") java.math.BigDecimal maxCost, @Param("headquarters") List<Long> headquarters, Pageable pageable);
+
+  @Query(
+      value =
+          """
+          SELECT COUNT(*) AS skuCount,
+                 COALESCE(SUM(CASE WHEN availableQty > 0 AND availableQty <= reorderPoint THEN 1 ELSE 0 END), 0) AS lowStockCount,
+                 COALESCE(SUM(CASE WHEN availableQty <= 0 THEN 1 ELSE 0 END), 0) AS outOfStockCount,
+                 COALESCE(SUM(availableQty), 0) AS totalAvailableQuantity,
+                 COALESCE(SUM(stockValue), 0) AS totalStockValue
+          FROM (
+            SELECT SUM(s.available_quantity) AS availableQty,
+                   i.reorder_point AS reorderPoint,
+                   i.cost_price * SUM(s.available_quantity + s.reserved_quantity) AS stockValue
+            FROM inventory_stock s
+            JOIN inventory_items i ON i.id = s.item_id
+            JOIN storage_locations l ON l.id = s.location_id
+            WHERE s.deleted_at IS NULL AND i.deleted_at IS NULL AND l.deleted_at IS NULL
+              AND (:headquarters IS NULL OR l.headquarter_id IN (:headquarters))
+            GROUP BY s.item_id, i.reorder_point, i.cost_price
+          ) x
+          """,
+      nativeQuery = true)
+  InventoryDashboardProjection dashboardKpis(@Param("headquarters") List<Long> headquarters);
 }

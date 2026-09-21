@@ -2,7 +2,7 @@
   <app-page-header
     [title]="itemId() ? 'Editar producto' : 'Nuevo producto'"
     subtitle="Catálogo maestro de inventario"
-    backLink="/app/catalogo"
+    backLink="/app/ops/catalogo"
     backLabel="Catálogo"
   />
 
@@ -136,7 +136,7 @@
           {{ loading() ? 'Guardando…' : 'Guardar' }}
         </button>
         <a
-          routerLink="/app/catalogo"
+          routerLink="/app/ops/catalogo"
           class="rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold"
           >Cancelar</a
         >

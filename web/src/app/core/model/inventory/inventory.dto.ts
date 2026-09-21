@@ -142,6 +142,16 @@ export interface GlobalInventorySearchParams {
   maxCost?: number;
 }
 
+/** GET /api/v1/inventory/dashboard */
+export interface InventoryDashboardResponse {
+  skuCount: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+  openCountSessionCount: number;
+  totalAvailableQuantity: number;
+  totalStockValue: number;
+}
+
 /** GET /api/v1/inventory/locations */
 export interface StorageLocationResponse {
   id: number;

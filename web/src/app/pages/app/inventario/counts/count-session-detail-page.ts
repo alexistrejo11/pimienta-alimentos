@@ -135,7 +135,7 @@ export class CountSessionDetailPageComponent implements OnInit {
     if (!s || !confirm('¿Cancelar esta sesión de conteo?')) return;
     this.busy.set(true);
     this.inventory.cancelCount(s.id).subscribe({
-      next: () => void this.router.navigate(['/app/inventario/conteos']),
+      next: () => void this.router.navigate(['/app/ops/inventario/conteos']),
       error: (err) => {
         this.error.set(parseApiError(err).message);
         this.busy.set(false);
