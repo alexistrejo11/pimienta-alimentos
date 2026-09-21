@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import { itemCategoryLabel, itemStatusLabel, itemUnitLabel, catalogRoleLabel } from '../../../../core/i18n/enum-labels';
@@ -75,6 +76,7 @@ export class CatalogoFormPageComponent implements OnInit {
         .pipe(finalize(() => this.loadingExisting.set(false)))
         .subscribe({
           next: (item) => {
+            this.form.controls.sku.addValidators(Validators.required);
             this.form.patchValue({
               sku: item.sku,
               name: item.name,
@@ -89,6 +91,8 @@ export class CatalogoFormPageComponent implements OnInit {
               status: item.status,
               catalogRole: item.catalogRole,
             });
+            this.form.controls.sku.updateValueAndValidity({ emitEvent: false });
+            markFormPristine(this.form);
           },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
@@ -108,7 +112,7 @@ export class CatalogoFormPageComponent implements OnInit {
 
     const request$ = id
       ? this.inventory.updateItem(id, {
-           sku: v.sku,
+          sku: v.sku.trim(),
           name: v.name,
           description: v.description || undefined,
           costPrice: v.costPrice,
@@ -118,11 +122,11 @@ export class CatalogoFormPageComponent implements OnInit {
           reorderQuantity: v.reorderQuantity,
           brand: v.brand || undefined,
           barcode: v.barcode || undefined,
-           status: v.status,
-           catalogRole: v.catalogRole,
+          status: v.status,
+          catalogRole: v.catalogRole,
         })
       : this.inventory.createItem({
-           sku: v.sku || undefined,
+          sku: v.sku.trim() || undefined,
           name: v.name,
           description: v.description || undefined,
           costPrice: v.costPrice,
@@ -131,12 +135,15 @@ export class CatalogoFormPageComponent implements OnInit {
           reorderPoint: v.reorderPoint,
           reorderQuantity: v.reorderQuantity,
           brand: v.brand || undefined,
-           barcode: v.barcode || undefined,
-           catalogRole: v.catalogRole,
+          barcode: v.barcode || undefined,
+          catalogRole: v.catalogRole,
         });
 
     request$.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: () => this.router.navigate(['/app/catalogo']),
+      next: () => {
+        markFormPristine(this.form);
+        void this.router.navigate(['/app/catalogo']);
+      },
       error: (err: unknown) => this.apiError.set(parseApiError(err)),
     });
   }

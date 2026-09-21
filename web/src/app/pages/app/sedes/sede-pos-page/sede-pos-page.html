@@ -7,27 +7,164 @@
   />
 
   @if (!canAccess()) {
-    <p class="text-sm text-red-700" role="alert">
-      No tienes acceso al catálogo POS de esta sede.
-    </p>
+    <p class="text-sm text-red-700" role="alert">No tienes acceso al catálogo POS de esta sede.</p>
   } @else {
     @if (globalMode()) {
       <section class="ui-panel p-6">
-        <app-headquarter-select
-          label="Sede a configurar"
-          [value]="headquarterId()"
-          (valueChange)="onHeadquarterChange($event)"
-        />
+        <h2 class="font-headline text-lg font-bold text-on-surface">Sede</h2>
+        <p class="mt-1 text-sm text-on-surface-variant">Elige la sede cuyo surtido y categorías vas a revisar.</p>
+        <div class="mt-4">
+          <app-headquarter-select
+            label="Sede a configurar"
+            [value]="headquarterId()"
+            (valueChange)="onHeadquarterChange($event)"
+          />
+        </div>
       </section>
     }
     <app-data-state [loading]="loading()" [error]="error()" [empty]="false">
+      <div class="flex flex-col gap-6">
+      <section class="ui-panel p-6">
+        <h2 class="font-headline text-lg font-bold text-on-surface">Categorías de venta</h2>
+        <p class="mt-1 text-sm text-on-surface-variant">
+          Agrupan productos en el POS. Para renombrar, ordenar o archivar, usa
+          <a routerLink="/app/pos/configuracion" class="font-semibold text-primary">Políticas de caja</a>.
+        </p>
+        @if (canEditCatalog()) {
+          <div class="mt-4 flex flex-wrap gap-2">
+            <input
+              class="min-w-40 flex-1 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+              placeholder="Nueva categoría de venta"
+              [(ngModel)]="newCategoryName"
+              [ngModelOptions]="{ standalone: true }"
+            />
+            <button
+              type="button"
+              class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
+              (click)="createCategory()"
+              [disabled]="creatingCategory()"
+            >
+              {{ creatingCategory() ? 'Creando…' : 'Crear categoría' }}
+            </button>
+          </div>
+        }
+        @if (saleCategories().length === 0) {
+          <p class="mt-4 text-sm text-on-surface-variant">Aún no hay categorías de venta en esta sede.</p>
+        } @else {
+          <ul class="mt-4 flex flex-wrap gap-2">
+            @for (category of saleCategories(); track category.id) {
+              <li class="rounded-lg bg-surface-container px-3 py-1.5 text-sm text-on-surface">
+                {{ category.name }}
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      @if (canEditCatalog()) {
+        <section class="ui-panel p-6">
+          <h2 class="font-headline text-lg font-bold text-on-surface">Agregar o configurar producto</h2>
+          <p class="mt-1 text-sm text-on-surface-variant">
+            Asigna un artículo maestro vendible en POS a esta sede y define precio, categoría y stock.
+          </p>
+          <div class="mt-4 flex flex-wrap items-end gap-2">
+            <app-item-select
+              class="min-w-[16rem] flex-1"
+              label="Artículo maestro vendible"
+              placeholder="Buscar CAF-104, nombre…"
+              catalogRole="POS_SELLABLE"
+              [value]="pendingItemId()"
+              (valueChange)="onPendingItemChange($event)"
+              (itemChange)="onPendingItemPicked($event)"
+            />
+            <button
+              type="button"
+              class="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+              (click)="configurePendingItem()"
+              [disabled]="pendingItemId() == null"
+            >
+              Configurar artículo
+            </button>
+          </div>
+
+          @if (editingItemId(); as editId) {
+            <form
+              class="mt-4 grid gap-3 rounded-lg border border-outline-variant/30 p-4 sm:grid-cols-2"
+              [formGroup]="catalogForm"
+              (ngSubmit)="saveCatalogItem(editId)"
+            >
+              <p class="sm:col-span-2 text-sm font-semibold">Configurar: {{ itemName(editId) }}</p>
+              <label class="flex flex-col gap-1 text-sm">
+                <span>Categoría venta</span>
+                <select
+                  class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                  formControlName="saleCategory"
+                >
+                  @for (category of saleCategories(); track category.id) {
+                    <option [value]="category.name">{{ category.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="flex flex-col gap-1 text-sm">
+                <span>Precio venta sede</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                  formControlName="salePrice"
+                />
+              </label>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" formControlName="available" />
+                Disponible en POS
+              </label>
+              <label class="flex flex-col gap-1 text-sm">
+                <span>Política de stock</span>
+                <select
+                  class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                  formControlName="stockPolicy"
+                >
+                  @for (p of stockPolicies; track p) {
+                    <option [value]="p">{{ stockPolicyLabel(p) }}</option>
+                  }
+                </select>
+              </label>
+              <label class="flex flex-col gap-1 text-sm">
+                <span>Límite de stock negativo</span>
+                <input
+                  type="number"
+                  class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                  formControlName="negativeStockLimit"
+                />
+              </label>
+              <div class="sm:col-span-2">
+                <button
+                  type="submit"
+                  class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+                  [disabled]="savingCatalogId() === editId"
+                >
+                  Guardar en catálogo
+                </button>
+                <button
+                  type="button"
+                  class="ml-2 rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold"
+                  [disabled]="savingCatalogId() === editId"
+                  (click)="cancelCatalogEdit()"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          }
+        </section>
+      }
+
       <section class="ui-panel p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 class="font-headline text-lg font-bold text-on-surface">Catálogo surtido</h2>
+            <h2 class="font-headline text-lg font-bold text-on-surface">Surtido</h2>
             <p class="mt-1 text-sm text-on-surface-variant">
-              Los productos nuevos reciben un SKU interno automáticamente. Las políticas de caja están
-              en Configuración POS.
+              Productos ya asignados a esta sede. Filtra, imprime etiquetas o retira del POS.
             </p>
           </div>
           <button
@@ -38,112 +175,48 @@
             Imprimir etiquetas
           </button>
         </div>
-        <div class="mt-4 flex flex-wrap items-end gap-2">
-          <app-item-select
-            class="min-w-[16rem] flex-1"
-            label="Agregar artículo al catálogo"
-            placeholder="Buscar CAF-104, nombre…"
-            catalogRole="POS_SELLABLE"
-            [value]="pendingItemId()"
-            (valueChange)="onPendingItemChange($event)"
-            (itemChange)="onPendingItemPicked($event)"
-            [disabled]="!canEditCatalog()"
-          />
-          <button
-            type="button"
-            class="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
-            (click)="configurePendingItem()"
-            [disabled]="!canEditCatalog() || pendingItemId() == null"
-          >
-            Configurar artículo
-          </button>
-        </div>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <input
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
-            placeholder="Nueva categoría de venta"
-            [(ngModel)]="newCategoryName"
-            [ngModelOptions]="{ standalone: true }"
-          />
-          <button
-            type="button"
-            class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
-            (click)="createCategory()"
-            [disabled]="creatingCategory() || !canEditCatalog()"
-          >
-            {{ creatingCategory() ? 'Creando…' : 'Crear categoría' }}
-          </button>
-        </div>
 
         <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" placeholder="Buscar nombre, SKU o código" [ngModel]="catalogSearch()" (ngModelChange)="onCatalogSearchChange($event)" [ngModelOptions]="{ standalone: true }" />
-          <select class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" [ngModel]="catalogCategory()" (ngModelChange)="catalogCategory.set($event); onCatalogFilterChange()" [ngModelOptions]="{ standalone: true }">
+          <input
+            class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+            placeholder="Buscar nombre, SKU o código"
+            [ngModel]="catalogSearch()"
+            (ngModelChange)="onCatalogSearchChange($event)"
+            [ngModelOptions]="{ standalone: true }"
+          />
+          <select
+            class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+            [ngModel]="catalogCategory()"
+            (ngModelChange)="catalogCategory.set($event); onCatalogFilterChange()"
+            [ngModelOptions]="{ standalone: true }"
+          >
             <option value="">Todas las categorías</option>
-            @for (category of saleCategories(); track category.id) { <option [value]="category.name">{{ category.name }}</option> }
+            @for (category of saleCategories(); track category.id) {
+              <option [value]="category.name">{{ category.name }}</option>
+            }
           </select>
-          <select class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" [ngModel]="catalogAvailability()" (ngModelChange)="catalogAvailability.set($event); onCatalogFilterChange()" [ngModelOptions]="{ standalone: true }">
-            <option value="">Cualquier disponibilidad</option><option value="true">Disponible</option><option value="false">No disponible</option>
+          <select
+            class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+            [ngModel]="catalogAvailability()"
+            (ngModelChange)="catalogAvailability.set($event); onCatalogFilterChange()"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            <option value="">Cualquier disponibilidad</option>
+            <option value="true">Disponible</option>
+            <option value="false">No disponible</option>
           </select>
-          <select class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm" [ngModel]="catalogStockPolicy()" (ngModelChange)="catalogStockPolicy.set($event); onCatalogFilterChange()" [ngModelOptions]="{ standalone: true }">
+          <select
+            class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+            [ngModel]="catalogStockPolicy()"
+            (ngModelChange)="catalogStockPolicy.set($event); onCatalogFilterChange()"
+            [ngModelOptions]="{ standalone: true }"
+          >
             <option value="">Todas las políticas</option>
-            @for (policy of stockPolicies; track policy) { <option [value]="policy">{{ stockPolicyLabel(policy) }}</option> }
+            @for (policy of stockPolicies; track policy) {
+              <option [value]="policy">{{ stockPolicyLabel(policy) }}</option>
+            }
           </select>
         </div>
-
-        @if (editingItemId(); as editId) {
-          <form
-            class="mt-4 grid gap-3 rounded-lg border border-outline-variant/30 p-4 sm:grid-cols-2"
-            [formGroup]="catalogForm"
-            (ngSubmit)="saveCatalogItem(editId)"
-          >
-            <p class="sm:col-span-2 text-sm font-semibold">Configurar: {{ itemName(editId) }}</p>
-            <label class="flex flex-col gap-1 text-sm">
-              <span>Categoría venta</span>
-              <select
-                class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-                formControlName="saleCategory"
-              >
-                @for (category of saleCategories(); track category.id) {
-                  <option [value]="category.name">{{ category.name }}</option>
-                }
-              </select>
-            </label>
-            <label class="flex flex-col gap-1 text-sm">
-              <span>Precio venta sede</span>
-              <input
-                type="number"
-                step="0.01"
-                class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-                formControlName="salePrice"
-              />
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <input type="checkbox" formControlName="available" />
-              Disponible en POS
-            </label>
-            <label class="flex flex-col gap-1 text-sm">
-              <span>Política de stock</span>
-              <select
-                class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-                formControlName="stockPolicy"
-              >
-                @for (p of stockPolicies; track p) {
-                  <option [value]="p">{{ stockPolicyLabel(p) }}</option>
-                }
-              </select>
-            </label>
-            <div class="sm:col-span-2">
-              <button
-                type="submit"
-                class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
-                 [disabled]="savingCatalogId() === editId || !canEditCatalog()"
-              >
-                 Guardar en catálogo
-               </button>
-               <button type="button" class="ml-2 rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold" [disabled]="savingCatalogId() === editId" (click)="cancelCatalogEdit()">Cancelar</button>
-            </div>
-          </form>
-        }
 
         <div class="responsive-table mt-4">
           <table class="w-full text-sm">
@@ -168,11 +241,7 @@
                   <td class="px-3 py-2">{{ stockPolicyLabel(row.stockPolicy) }}</td>
                   <td class="px-3 py-2">{{ row.available ? 'Sí' : 'No' }}</td>
                   <td class="px-3 py-2 text-right">
-                    <button
-                      type="button"
-                      class="mr-3 text-sm font-semibold text-primary"
-                      (click)="printItemLabel(row)"
-                    >
+                    <button type="button" class="mr-3 text-sm font-semibold text-primary" (click)="printItemLabel(row)">
                       Etiqueta
                     </button>
                     <button
@@ -183,24 +252,49 @@
                     >
                       Editar
                     </button>
-                    <button type="button" class="ml-3 text-sm font-semibold text-error" [disabled]="!canEditCatalog()" (click)="removeCatalogItem(row)">Retirar</button>
+                    <button
+                      type="button"
+                      class="ml-3 text-sm font-semibold text-error"
+                      [disabled]="!canEditCatalog()"
+                      (click)="removeCatalogItem(row)"
+                    >
+                      Retirar
+                    </button>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
+        @if (catalog().length === 0) {
+          <p class="mt-3 text-sm text-on-surface-variant">No hay productos en el surtido con estos filtros.</p>
+        }
         @if (catalogMetadata(); as pageInfo) {
           <div class="mt-3 flex items-center justify-between text-sm text-on-surface-variant">
             <span>{{ pageInfo.totalElements }} productos</span>
             <div class="flex items-center gap-2">
-              <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="previousCatalogPage()">Anterior</button>
+              <button
+                type="button"
+                class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+                [disabled]="!pageInfo.hasPrevious"
+                (click)="previousCatalogPage()"
+              >
+                Anterior
+              </button>
               <span>Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span>
-              <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="nextCatalogPage()">Siguiente</button>
+              <button
+                type="button"
+                class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+                [disabled]="!pageInfo.hasNext"
+                (click)="nextCatalogPage()"
+              >
+                Siguiente
+              </button>
             </div>
           </div>
         }
       </section>
+      </div>
     </app-data-state>
   }
 </div>

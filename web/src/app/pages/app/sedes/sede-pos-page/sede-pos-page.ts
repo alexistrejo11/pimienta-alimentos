@@ -1,9 +1,10 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
+import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
 import { PosCatalogService } from '../../../../core/headquarters/pos-catalog.service';
 import { PosLabelPrintService } from '../../../../core/pos/pos-label-print.service';
@@ -28,6 +29,7 @@ import { ItemSelectComponent } from '../../../../shared/ui/item-select/item-sele
     DataStateComponent,
     ReactiveFormsModule,
     FormsModule,
+    RouterLink,
     HeadquarterSelectComponent,
     ItemSelectComponent,
   ],
@@ -159,8 +161,7 @@ export class SedePosPageComponent implements OnInit {
       stockPolicy: 'CONTROLLED',
       negativeStockLimit: null,
     });
-    this.catalogForm.markAsPristine();
-    this.catalogForm.markAsUntouched();
+    markFormPristine(this.catalogForm);
   }
 
   removeCatalogItem(row: HeadquarterPosCatalogItemResponse): void {
@@ -182,8 +183,7 @@ export class SedePosPageComponent implements OnInit {
       stockPolicy: row.stockPolicy,
       negativeStockLimit: row.negativeStockLimit,
     });
-    this.catalogForm.markAsPristine();
-    this.catalogForm.markAsUntouched();
+    markFormPristine(this.catalogForm);
   }
 
   saveCatalogItem(itemId: number): void {
@@ -235,6 +235,7 @@ export class SedePosPageComponent implements OnInit {
       stockPolicy: 'CONTROLLED',
       negativeStockLimit: null,
     });
+    markFormPristine(this.catalogForm);
   }
 
   createCategory(): void {

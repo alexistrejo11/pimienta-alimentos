@@ -1,5 +1,6 @@
 package io.github.alexistrejo.pimienta.pos.data.sync
 
+import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -27,6 +28,17 @@ class CatalogMappingsTest {
         assertNull(entity.barcode)
         assertEquals("NOT_CONTROLLED", entity.stockPolicy)
         assertEquals(1_500L, io.github.alexistrejo.pimienta.pos.domain.Money.fromCatalog(entity.price))
+    }
+
+    @Test
+    fun operatorAdminRoleIsStoredAsAdminAndLabeledInSpanish() {
+        val fromApi = OperatorDto("op-1", "Luis", "admin", "hash", true).toUser()
+        val fromLegacy = OperatorDto("op-2", "Luis", "SUPERADMIN", "hash", true).toUser()
+        assertEquals("ADMIN", fromApi.role)
+        assertEquals("ADMIN", fromLegacy.role)
+        assertEquals("Administrador", fromApi.spanishRoleLabel)
+        assertEquals("Gerente", LocalUserEntity.spanishRoleLabel("MANAGER"))
+        assertEquals("Cajero", LocalUserEntity.spanishRoleLabel("CASHIER"))
     }
 
     @Test

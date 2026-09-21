@@ -102,7 +102,7 @@ class TrainingBootstrapImporter(private val context: Context) {
     private fun JSONObject.toUserEntity(): LocalUserEntity = LocalUserEntity(
         id = getString("id"),
         displayName = getString("displayName"),
-        role = getString("role"),
+        role = LocalUserEntity.normalizeRole(getString("role")),
         pinHash = getString("pinHash"),
         active = getBoolean("active"),
     )

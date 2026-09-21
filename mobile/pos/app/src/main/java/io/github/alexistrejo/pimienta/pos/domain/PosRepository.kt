@@ -256,7 +256,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun recordWithdrawal(shift: ShiftEntity, amountCentavos: Long, authorizedById: String, pin: String): CashWithdrawalEntity? {
         if (amountCentavos <= 0) return null
         val authorizer = database.userDao().find(authorizedById) ?: return null
-        if (!authorizer.active || (authorizer.role != "MANAGER" && authorizer.role != "SUPERADMIN") || !authenticate(authorizedById, pin)) return null
+        if (!authorizer.active || !authorizer.isManagerOrAdmin || !authenticate(authorizedById, pin)) return null
         return database.runInTransaction<CashWithdrawalEntity?> {
             val operations = database.operationsDao()
             val liveShift = operations.activeShift() ?: return@runInTransaction null
@@ -326,8 +326,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         if (!manager.active) {
             throw IllegalArgumentException("El usuario ${manager.displayName} no se encuentra activo.")
         }
-        if (manager.role != "MANAGER" && manager.role != "SUPERADMIN") {
-            throw IllegalArgumentException("El perfil de ${manager.displayName} no tiene permisos de Manager o Superadmin.")
+        if (!manager.isManagerOrAdmin) {
+            throw IllegalArgumentException("El perfil de ${manager.displayName} no tiene permisos de Gerente o Administrador.")
         }
         if (!authenticate(manager.id, pin)) {
             throw IllegalArgumentException("PIN de ${manager.displayName} incorrecto.")
@@ -368,7 +368,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     // Cancels only a cash sale from the active shift and records the full audit trail.
     fun cancelCashSale(sale: SaleEntity, manager: LocalUserEntity, pin: String, reason: String): Boolean {
         if (sale.status == "CANCELLED" || sale.paymentMethod != PaymentMethod.CASH.name || reason.isBlank()) return false
-        if ((manager.role != "MANAGER" && manager.role != "SUPERADMIN") || !authenticate(manager.id, pin)) return false
+        if (!manager.isManagerOrAdmin || !authenticate(manager.id, pin)) return false
         return database.runInTransaction<Boolean> {
             val operations = database.operationsDao()
             val liveShift = operations.activeShift() ?: return@runInTransaction false
@@ -429,13 +429,13 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                         line.name != "Producto abierto · ${line.category.trim()}" ->
                             return Result.failure(IllegalArgumentException("La descripción de monto abierto no coincide con la categoría."))
                         line.authorizedAtEpochMillis == null || authorizer == null || !authorizer.active || !authorizer.isManagerOrAdmin ->
-                            return Result.failure(IllegalArgumentException("El monto abierto requiere autorización de Manager o Superadmin."))
+                            return Result.failure(IllegalArgumentException("El monto abierto requiere autorización de Gerente o Administrador."))
                     }
                 }
             }
         }
         val gross = SaleCalculator.grossCentavos(lines)
-        if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || (discount.authorizedBy.role != "MANAGER" && discount.authorizedBy.role != "SUPERADMIN"))) {
+        if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || !discount.authorizedBy.isManagerOrAdmin)) {
             return Result.failure(IllegalArgumentException("El descuento no es válido."))
         }
         val total = SaleCalculator.netCentavos(gross, discount?.amountCentavos ?: 0)

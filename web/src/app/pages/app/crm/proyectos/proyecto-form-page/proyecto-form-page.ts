@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { CrmService } from '../../../../../core/crm/crm.service';
+import { markFormPristine } from '../../../../../core/forms/mark-form-pristine';
 import { fieldMessage, parseApiError, type ParsedApiError } from '../../../../../core/http/parse-api-error';
 import type { ProjectPriority, ProjectType } from '../../../../../core/model/crm/crm.enums';
 import type {
@@ -127,6 +128,7 @@ export class ProyectoFormPageComponent implements OnInit {
         });
         this.form.controls.clientId.disable({ emitEvent: false });
         this.form.controls.originOpportunityId.disable({ emitEvent: false });
+        markFormPristine(this.form);
         this.loadingExisting.set(false);
       },
       error: (err: unknown) => {
@@ -158,7 +160,10 @@ export class ProyectoFormPageComponent implements OnInit {
         .createProject(this.buildCreateBody())
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
-          next: (created) => void this.router.navigateByUrl(`/app/crm/proyectos/${created.id}`),
+          next: (created) => {
+            markFormPristine(this.form);
+            void this.router.navigateByUrl(`/app/crm/proyectos/${created.id}`);
+          },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     } else {
@@ -166,7 +171,10 @@ export class ProyectoFormPageComponent implements OnInit {
         .updateProject(id, this.buildUpdateBody())
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
-          next: () => void this.router.navigateByUrl(`/app/crm/proyectos/${id}`),
+          next: () => {
+            markFormPristine(this.form);
+            void this.router.navigateByUrl(`/app/crm/proyectos/${id}`);
+          },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     }

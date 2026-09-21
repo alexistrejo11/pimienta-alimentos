@@ -7,10 +7,17 @@
   aria-label="Panel de navegación"
 >
   <div class="mb-8 flex items-start gap-3 px-2">
-    <img class="h-10 w-10 rounded-lg object-contain" [src]="logoUrl" width="40" height="40" alt="Pimienta Alimentos" />
+    <img
+      class="h-10 w-10 rounded-lg object-contain"
+      [src]="logoUrl"
+      width="40"
+      height="40"
+      alt="Pimienta Alimentos"
+    />
     <div>
-      <p class="font-headline text-xl font-extrabold leading-tight tracking-tighter text-primary">Pimienta Alimentos</p>
-      <p class="font-headline text-[10px] font-bold uppercase tracking-tight text-on-surface-variant">Precision Kitchen Management</p>
+      <p class="font-headline text-xl font-extrabold leading-tight tracking-tighter text-primary">
+        Pimienta Alimentos
+      </p>
     </div>
     <button
       type="button"
@@ -34,10 +41,16 @@
             (click)="toggleSection(section.id)"
           >
             <span>{{ section.label }}</span>
-            <span class="material-symbols-outlined text-base" aria-hidden="true">{{ isExpanded(section.id) ? 'expand_less' : 'expand_more' }}</span>
+            <span class="material-symbols-outlined text-base" aria-hidden="true">{{
+              isExpanded(section.id) ? 'expand_less' : 'expand_more'
+            }}</span>
           </button>
         </h2>
-        <div [id]="'workspace-section-' + section.id" [hidden]="!isExpanded(section.id)" class="space-y-1">
+        <div
+          [id]="'workspace-section-' + section.id"
+          [hidden]="!isExpanded(section.id)"
+          class="space-y-1"
+        >
           @for (item of section.items; track item.label) {
             @if (item.children) {
               <button
@@ -49,16 +62,24 @@
               >
                 <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
                 <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
-                <span class="material-symbols-outlined ml-auto text-base" aria-hidden="true">{{ isItemExpanded(section.id, item) ? 'expand_less' : 'expand_more' }}</span>
+                <span class="material-symbols-outlined ml-auto text-base" aria-hidden="true">{{
+                  isItemExpanded(section.id, item) ? 'expand_less' : 'expand_more'
+                }}</span>
               </button>
-              <div [id]="'workspace-item-' + section.id" [hidden]="!isItemExpanded(section.id, item)" class="ml-3 space-y-1 border-l border-outline-variant/20 pl-2">
+              <div
+                [id]="'workspace-item-' + section.id"
+                [hidden]="!isItemExpanded(section.id, item)"
+                class="ml-3 space-y-1 border-l border-outline-variant/20 pl-2"
+              >
                 @for (child of item.children; track child.label) {
                   <a
                     [routerLink]="child.route"
                     routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
                     [class]="navLinkInactive"
                   >
-                    <span class="material-symbols-outlined" aria-hidden="true">{{ child.icon }}</span>
+                    <span class="material-symbols-outlined" aria-hidden="true">{{
+                      child.icon
+                    }}</span>
                     <span class="font-headline font-bold tracking-tight">{{ child.label }}</span>
                   </a>
                 }
@@ -74,11 +95,19 @@
                 <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
               </a>
             } @else {
-              <button type="button" [class]="navLinkInactive + ' w-full text-left'" (click)="activate(item)">
+              <button
+                type="button"
+                [class]="navLinkInactive + ' w-full text-left'"
+                (click)="activate(item)"
+              >
                 <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
                 <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
                 @if (item.action === 'attendance-today') {
-                  <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white" aria-hidden="true">↗</span>
+                  <span
+                    class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white"
+                    aria-hidden="true"
+                    >↗</span
+                  >
                 }
               </button>
             }
@@ -89,7 +118,11 @@
   </nav>
 
   <div class="mt-auto space-y-1 border-t border-outline-variant/10 pt-6">
-    <p class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60">Acciones</p>
+    <p
+      class="mb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+    >
+      Acciones
+    </p>
     @for (item of actions(); track item.label) {
       <a
         [routerLink]="item.route"
@@ -100,7 +133,11 @@
         <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
       </a>
     }
-    <button type="button" [class]="navLinkInactive + ' w-full text-left'" (click)="abrirPerfil.emit()">
+    <button
+      type="button"
+      [class]="navLinkInactive + ' w-full text-left'"
+      (click)="abrirPerfil.emit()"
+    >
       <span class="material-symbols-outlined" aria-hidden="true">person</span>
       <span class="font-headline font-bold tracking-tight">Mi perfil</span>
     </button>

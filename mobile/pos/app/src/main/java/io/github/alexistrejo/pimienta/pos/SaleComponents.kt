@@ -452,7 +452,7 @@ internal fun CashWithdrawalAuthorization(
                 Text("Motivo: Resguardo de efectivo", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
-                Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
+                Text("PIN de Gerente o Administrador", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -779,7 +779,7 @@ internal fun DiscountAuthorization(
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe fijo en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
-                Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
+                Text("PIN de Gerente o Administrador", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

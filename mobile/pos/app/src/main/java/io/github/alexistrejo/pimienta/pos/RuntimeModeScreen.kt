@@ -112,7 +112,7 @@ internal fun RuntimeModeBanner(
                         OutlinedTextField(
                             value = pin,
                             onValueChange = { pin = it },
-                            label = { Text("PIN de Manager/Superadmin") },
+                            label = { Text("PIN de Gerente o Administrador") },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,

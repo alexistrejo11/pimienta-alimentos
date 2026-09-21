@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import { fieldMessage, parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { TaskPriority } from '../../../../core/model/task/task.enums';
 import type { ChecklistLineRequest, TaskRequest } from '../../../../core/model/task/task.dto';
@@ -76,7 +77,10 @@ export class TareaFormPageComponent {
       .create(this.buildRequest())
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
-        next: (created) => void this.router.navigateByUrl(`/app/tareas/${created.id}`),
+        next: (created) => {
+          markFormPristine(this.form);
+          void this.router.navigateByUrl(`/app/tareas/${created.id}`);
+        },
         error: (err: unknown) => this.apiError.set(parseApiError(err)),
       });
   }

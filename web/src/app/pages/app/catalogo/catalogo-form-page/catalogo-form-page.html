@@ -21,7 +21,9 @@
     <form class="flex max-w-2xl flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()">
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">SKU (automático si se omite)</span>
+          <span class="font-medium text-on-surface">{{
+            itemId() ? 'SKU' : 'SKU (automático si se omite)'
+          }}</span>
           <input
             class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
             formControlName="sku"

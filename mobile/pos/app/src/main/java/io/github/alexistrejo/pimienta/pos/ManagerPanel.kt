@@ -857,7 +857,7 @@ internal fun ManagerPinDialog(
     onApproved: (LocalUserEntity, String) -> Unit
 ) {
     val managers = remember(users) {
-        users.filter { it.active && (it.role.equals("MANAGER", ignoreCase = true) || it.role.equals("SUPERADMIN", ignoreCase = true)) }
+        users.filter { it.active && it.isManagerOrAdmin }
     }
     var selected by remember { mutableStateOf(initialManager ?: managers.firstOrNull()) }
     var pin by remember { mutableStateOf("") }
@@ -868,7 +868,7 @@ internal fun ManagerPinDialog(
     fun submit() {
         val authorizer = selected
         if (authorizer == null) {
-            error = "Selecciona un perfil de Manager o Superadmin."
+            error = "Selecciona un perfil de Gerente o Administrador."
             return
         }
         if (pin.length < 4) {
@@ -902,9 +902,9 @@ internal fun ManagerPinDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(title, style = MaterialTheme.typography.titleLarge)
-                Text("Selecciona el autorizador Manager / Superadmin:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Selecciona el autorizador (Gerente o Administrador):", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (managers.isEmpty()) {
-                    Text("No hay usuarios Manager o Superadmin activos.", color = MaterialTheme.colorScheme.error)
+                    Text("No hay usuarios Gerente o Administrador activos.", color = MaterialTheme.colorScheme.error)
                 } else {
                     Row(
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -919,7 +919,7 @@ internal fun ManagerPinDialog(
                         }
                     }
                 }
-                Text("PIN de ${selected?.displayName ?: "Manager"}", style = MaterialTheme.typography.labelLarge)
+                Text("PIN de ${selected?.displayName ?: "Gerente o Administrador"}", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

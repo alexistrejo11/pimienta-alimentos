@@ -6,12 +6,35 @@ import androidx.room.PrimaryKey
 
 // Stores a locally verifiable POS user snapshot, never a plaintext PIN.
 @Entity(tableName = "local_user") data class LocalUserEntity(@PrimaryKey val id: String, val displayName: String, val role: String, val pinHash: String, val active: Boolean) {
-    val isManagerOrAdmin: Boolean get() = role.equals("MANAGER", ignoreCase = true) || role.equals("SUPERADMIN", ignoreCase = true)
-    val isSuperAdmin: Boolean get() = role.equals("SUPERADMIN", ignoreCase = true)
-    val isManager: Boolean get() = role.equals("MANAGER", ignoreCase = true)
-    val isCashier: Boolean get() = role.equals("CASHIER", ignoreCase = true)
+    val isAdmin: Boolean get() = normalizeRole(role) == ROLE_ADMIN
+    val isManager: Boolean get() = normalizeRole(role) == ROLE_MANAGER
+    val isCashier: Boolean get() = normalizeRole(role) == ROLE_CASHIER
+    val isManagerOrAdmin: Boolean get() = isManager || isAdmin
+    // Spanish label for cashiers/managers; never show the raw API role on screen.
+    val spanishRoleLabel: String get() = spanishRoleLabel(role)
     fun displayTitle(isTraining: Boolean = false): String =
         if (isTraining || pinHash == "3383b6e47c9df8a2ff5f39fc976ddf7ae2591fa84434bb58594eef7a45981354") "$displayName (PIN: 1234)" else displayName
+
+    companion object {
+        const val ROLE_ADMIN = "ADMIN"
+        const val ROLE_MANAGER = "MANAGER"
+        const val ROLE_CASHIER = "CASHIER"
+
+        // Device API may send admin; older tablets stored SUPERADMIN. Both become ADMIN locally.
+        fun normalizeRole(raw: String): String = when (raw.trim().uppercase()) {
+            "ADMIN", "SUPERADMIN" -> ROLE_ADMIN
+            "MANAGER" -> ROLE_MANAGER
+            "CASHIER" -> ROLE_CASHIER
+            else -> raw.trim()
+        }
+
+        fun spanishRoleLabel(raw: String): String = when (normalizeRole(raw)) {
+            ROLE_ADMIN -> "Administrador"
+            ROLE_MANAGER -> "Gerente"
+            ROLE_CASHIER -> "Cajero"
+            else -> raw
+        }
+    }
 }
 // Stores the stable debug device identity and its local event sequence.
 @Entity(tableName = "device") data class DeviceEntity(@PrimaryKey val id: String, val name: String, val visibleCode: String, val nextEventSequence: Long, val siteId: String? = null, val status: String = "SANDBOX", val minAppVersion: String? = null, val schemaVersionsJson: String? = null)

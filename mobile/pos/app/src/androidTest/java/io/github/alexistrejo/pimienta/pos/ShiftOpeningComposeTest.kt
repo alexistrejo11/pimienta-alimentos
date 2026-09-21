@@ -40,7 +40,7 @@ class ShiftOpeningComposeTest {
 
     private val mgr1 = LocalUserEntity("user-mgr-1", "Gerente Carlos", "MANAGER", pinHash1234, true)
     private val mgr2 = LocalUserEntity("user-mgr-2", "Gerente Ana", "MANAGER", pinHash1234, true)
-    private val super1 = LocalUserEntity("user-super-1", "Super Admin Luis", "SUPERADMIN", pinHash1234, true)
+    private val admin1 = LocalUserEntity("user-admin-1", "Administrador Luis", "ADMIN", pinHash1234, true)
     private val cashier1 = LocalUserEntity("user-cashier-1", "Cajero Pedro", "CASHIER", pinHash1234, true)
 
     @Before
@@ -59,8 +59,8 @@ class ShiftOpeningComposeTest {
     }
 
     @Test
-    fun step1DisplaysOnlyManagersAndSuperadmins() {
-        val users = listOf(mgr1, super1, cashier1)
+    fun step1DisplaysOnlyManagersAndAdmins() {
+        val users = listOf(mgr1, admin1, cashier1)
 
         composeRule.setContent {
             PosTheme(darkTheme = true) {
@@ -75,9 +75,9 @@ class ShiftOpeningComposeTest {
             }
         }
 
-        // Authorizer selection must show Manager and Superadmin but NOT Cashier
+        // Authorizer selection must show Manager and Admin but NOT Cashier
         composeRule.onNodeWithText(mgr1.displayTitle(true)).assertIsDisplayed()
-        composeRule.onNodeWithText(super1.displayTitle(true)).assertIsDisplayed()
+        composeRule.onNodeWithText(admin1.displayTitle(true)).assertIsDisplayed()
         composeRule.onAllNodesWithText(cashier1.displayTitle(true)).assertCountEquals(0)
     }
 
@@ -134,7 +134,7 @@ class ShiftOpeningComposeTest {
 
         // Verify Step 2 is shown
         composeRule.onNodeWithText("Paso 2: Asignación de cajero y fondo inicial").assertIsDisplayed()
-        composeRule.onNodeWithText("Autorizado por: ${mgr1.displayName} (${mgr1.role})").assertIsDisplayed()
+        composeRule.onNodeWithText("Autorizado por: ${mgr1.displayName} (${mgr1.spanishRoleLabel})").assertIsDisplayed()
 
         // Gerente Carlos can select himself and Cajero Pedro, but NOT Gerente Ana
         composeRule.onNodeWithText(mgr1.displayTitle(true)).assertIsDisplayed()

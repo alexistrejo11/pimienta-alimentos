@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
+import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import {
   fieldMessage,
   parseApiError,
@@ -62,6 +63,7 @@ export class SedeFormPageComponent implements OnInit {
             address: sede.address ?? '',
             description: sede.description ?? '',
           });
+          markFormPristine(this.form);
         },
         error: (err: unknown) => this.apiError.set(parseApiError(err)),
       });
@@ -92,7 +94,10 @@ export class SedeFormPageComponent implements OnInit {
     const request$ = id != null ? this.service.update(id, body) : this.service.create(body);
 
     request$.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (sede) => void this.router.navigate(['/app/sedes', sede.id]),
+      next: (sede) => {
+        markFormPristine(this.form);
+        void this.router.navigate(['/app/sedes', sede.id]);
+      },
       error: (err: unknown) => this.apiError.set(parseApiError(err)),
     });
   }

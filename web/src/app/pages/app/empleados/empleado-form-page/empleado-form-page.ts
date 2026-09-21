@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { EmployeeService } from '../../../../core/employees/employee.service';
+import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import {
   fieldMessage,
   parseApiError,
@@ -176,7 +177,10 @@ export class EmpleadoFormPageComponent implements OnInit {
         .register(this.buildRegisterBody(), photo)
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
-          next: (created) => void this.router.navigateByUrl(`/app/empleados/${created.id}`),
+          next: (created) => {
+            markFormPristine(this.form);
+            void this.router.navigateByUrl(`/app/empleados/${created.id}`);
+          },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     } else {
@@ -184,7 +188,10 @@ export class EmpleadoFormPageComponent implements OnInit {
         .update(id, this.buildUpdateBody(), photo)
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
-          next: () => void this.router.navigateByUrl(`/app/empleados/${id}`),
+          next: () => {
+            markFormPristine(this.form);
+            void this.router.navigateByUrl(`/app/empleados/${id}`);
+          },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     }
@@ -233,6 +240,7 @@ export class EmpleadoFormPageComponent implements OnInit {
       integrationFactor: e.integrationFactor != null ? String(e.integrationFactor) : '',
       birthDate: e.birthDate ?? '',
     });
+    markFormPristine(this.form);
   }
 
   private optionalString(value: string | null | undefined): string | null {

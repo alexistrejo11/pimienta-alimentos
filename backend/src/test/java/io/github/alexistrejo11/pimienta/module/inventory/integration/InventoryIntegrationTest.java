@@ -399,7 +399,8 @@ class InventoryIntegrationTest {
               "unit": "PIECE",
               "reorderPoint": 2,
               "reorderQuantity": 10,
-              "status": "ACTIVE"
+              "status": "ACTIVE",
+              "catalogRole": "POS_SELLABLE"
             }
             """
             .formatted(sku);
@@ -407,7 +408,13 @@ class InventoryIntegrationTest {
         .perform(
             AccountTestRequests.putJsonBearer("/api/v1/inventory/items/" + itemId, token, updateItem))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.name").value("Flow item updated"));
+        .andExpect(jsonPath("$.name").value("Flow item updated"))
+        .andExpect(jsonPath("$.catalogRole").value("POS_SELLABLE"));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/" + itemId, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.catalogRole").value("POS_SELLABLE"));
 
     String stockBody =
         "{\"itemId\": %d, \"locationId\": %d, \"initialQuantity\": 100}".formatted(itemId, locationId);

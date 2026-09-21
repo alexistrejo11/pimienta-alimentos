@@ -232,7 +232,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                     manager != null && (productionRepository.authenticate(manager.id, pin ?: "") || activeRepo.authenticate(manager.id, pin ?: ""))
                 }
                 if (!valid) {
-                    notice = "PIN de Manager/Superadmin invalido"
+                    notice = "PIN de Gerente o Administrador inválido"
                     return@launch
                 }
             }
@@ -459,11 +459,11 @@ private fun Loading(
 // Determines which users can be assigned a shift based on the authenticated authorizer's role.
 internal fun allowedShiftAssignees(authorizer: LocalUserEntity, users: List<LocalUserEntity>): List<LocalUserEntity> {
     val activeUsers = users.filter { it.active }
-    return if (authorizer.isSuperAdmin) {
-        // Superadmin can assign shifts to anyone (themselves, cashiers, managers, other superadmins).
+    return if (authorizer.isAdmin) {
+        // Admin can assign the shift to any active profile.
         activeUsers
     } else {
-        // Managers can only assign shifts to themselves or cashiers (not other managers or superadmins).
+        // Managers can only assign shifts to themselves or cashiers (not other managers or admins).
         activeUsers.filter { it.id == authorizer.id || !it.isManagerOrAdmin }
     }
 }
@@ -538,7 +538,7 @@ internal fun Access(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Filters active managers and superadmins eligible to authorize shift opening.
+    // Filters active managers and admins eligible to authorize shift opening.
     val authorizers = remember(users) { users.filter { it.active && it.isManagerOrAdmin } }
     var stage by remember { mutableStateOf(AccessStage.AUTHENTICATE_AUTHORIZER) }
     var selectedAuthorizer by remember(authorizers) { mutableStateOf(authorizers.firstOrNull()) }
@@ -595,7 +595,7 @@ internal fun Access(
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            "Selecciona tu perfil (Gerente o Superadmin) e ingresa tu PIN de seguridad para autorizar la apertura del turno.",
+                            "Selecciona tu perfil (Gerente o Administrador) e ingresa tu PIN de seguridad para autorizar la apertura del turno.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium,
                         )
@@ -619,7 +619,7 @@ internal fun Access(
 
                     if (authorizers.isEmpty()) {
                         Text(
-                            "No hay usuarios Manager o Superadmin activos registrados en la tablet.",
+                            "No hay usuarios Gerente o Administrador activos registrados en la tablet.",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium,
                         )
@@ -652,7 +652,7 @@ internal fun Access(
                             click = {
                                 val authorizer = selectedAuthorizer
                                 if (authorizer == null) {
-                                    localError = "Selecciona un perfil de Manager o Superadmin."
+                                    localError = "Selecciona un perfil de Gerente o Administrador."
                                     return@PosButton
                                 }
                                 scope.launch {
@@ -693,7 +693,7 @@ internal fun Access(
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 )
                                 Text(
-                                    "Autorizado por: ${authenticatedAuthorizer?.displayName ?: ""} (${authenticatedAuthorizer?.role ?: ""})",
+                                    "Autorizado por: ${authenticatedAuthorizer?.displayName ?: ""} (${authenticatedAuthorizer?.spanishRoleLabel ?: ""})",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 )
@@ -720,8 +720,8 @@ internal fun Access(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("1. ¿Quién operará la caja en este turno?", style = MaterialTheme.typography.titleSmall)
                         Text(
-                            if (auth?.isSuperAdmin == true) {
-                                "Como Superadmin, puedes asignar este turno a cualquier perfil registrado."
+                            if (auth?.isAdmin == true) {
+                                "Como Administrador, puedes asignar este turno a cualquier perfil registrado."
                             } else {
                                 "Como Gerente, puedes asignar el turno a ti mismo o a un cajero. (No se permite asignar turno a otros gerentes)."
                             },

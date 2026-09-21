@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { CrmService } from '../../../../../core/crm/crm.service';
+import { markFormPristine } from '../../../../../core/forms/mark-form-pristine';
 import { fieldMessage, parseApiError, type ParsedApiError } from '../../../../../core/http/parse-api-error';
 import type { OpportunitySource } from '../../../../../core/model/crm/crm.enums';
 import type {
@@ -113,6 +114,7 @@ export class OportunidadFormPageComponent implements OnInit {
       expectedCloseDate: op.expectedCloseDate ? op.expectedCloseDate.slice(0, 10) : '',
       assignedSalesmanId: op.assignedSalesmanId,
     });
+    markFormPristine(this.form);
   }
 
   get isEdit(): boolean {
@@ -132,7 +134,10 @@ export class OportunidadFormPageComponent implements OnInit {
         .createOpportunity(this.buildCreateBody())
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
-          next: (created) => void this.router.navigateByUrl(`/app/crm/oportunidades/${created.id}`),
+          next: (created) => {
+            markFormPristine(this.form);
+            void this.router.navigateByUrl(`/app/crm/oportunidades/${created.id}`);
+          },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     } else {
@@ -140,7 +145,10 @@ export class OportunidadFormPageComponent implements OnInit {
         .updateOpportunity(id, this.buildUpdateBody())
         .pipe(finalize(() => this.loading.set(false)))
         .subscribe({
-          next: () => void this.router.navigateByUrl(`/app/crm/oportunidades/${id}`),
+          next: () => {
+            markFormPristine(this.form);
+            void this.router.navigateByUrl(`/app/crm/oportunidades/${id}`);
+          },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     }

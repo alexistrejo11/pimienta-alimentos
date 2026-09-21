@@ -12,13 +12,14 @@ class ShiftOpeningPolicyTest {
 
     private val mgr1 = LocalUserEntity(id = "mgr-1", displayName = "Manager 1", role = "MANAGER", pinHash = "hash", active = true)
     private val mgr2 = LocalUserEntity(id = "mgr-2", displayName = "Manager 2", role = "MANAGER", pinHash = "hash", active = true)
-    private val superAdmin1 = LocalUserEntity(id = "super-1", displayName = "Super Admin 1", role = "SUPERADMIN", pinHash = "hash", active = true)
-    private val superAdmin2 = LocalUserEntity(id = "super-2", displayName = "Super Admin 2", role = "SUPERADMIN", pinHash = "hash", active = true)
+    private val admin1 = LocalUserEntity(id = "admin-1", displayName = "Admin 1", role = "ADMIN", pinHash = "hash", active = true)
+    private val admin2 = LocalUserEntity(id = "admin-2", displayName = "Admin 2", role = "admin", pinHash = "hash", active = true)
+    private val legacySuperAdmin = LocalUserEntity(id = "legacy-super", displayName = "Legacy Admin", role = "SUPERADMIN", pinHash = "hash", active = true)
     private val cashier1 = LocalUserEntity(id = "cashier-1", displayName = "Cashier 1", role = "CASHIER", pinHash = "hash", active = true)
     private val cashier2 = LocalUserEntity(id = "cashier-2", displayName = "Cashier 2", role = "CASHIER", pinHash = "hash", active = true)
     private val inactiveCashier = LocalUserEntity(id = "cashier-3", displayName = "Inactive Cashier", role = "CASHIER", pinHash = "hash", active = false)
 
-    private val allUsers = listOf(mgr1, mgr2, superAdmin1, superAdmin2, cashier1, cashier2, inactiveCashier)
+    private val allUsers = listOf(mgr1, mgr2, admin1, admin2, legacySuperAdmin, cashier1, cashier2, inactiveCashier)
 
     @Test
     fun managerCanOnlyAssignShiftToSelfAndCashiers() {
@@ -30,21 +31,23 @@ class ShiftOpeningPolicyTest {
         assertTrue(allowedIds.contains("cashier-1"))
         assertTrue(allowedIds.contains("cashier-2"))
 
-        // Manager 1 cannot select other managers or superadmins or inactive users
+        // Manager 1 cannot select other managers, admins, or inactive users
         assertFalse(allowedIds.contains("mgr-2"))
-        assertFalse(allowedIds.contains("super-1"))
-        assertFalse(allowedIds.contains("super-2"))
+        assertFalse(allowedIds.contains("admin-1"))
+        assertFalse(allowedIds.contains("admin-2"))
+        assertFalse(allowedIds.contains("legacy-super"))
         assertFalse(allowedIds.contains("cashier-3"))
     }
 
     @Test
-    fun superAdminCanAssignShiftToAnyoneActive() {
-        val allowed = allowedShiftAssignees(authorizer = superAdmin1, users = allUsers)
+    fun adminCanAssignShiftToAnyoneActive() {
+        val allowed = allowedShiftAssignees(authorizer = admin1, users = allUsers)
         val allowedIds = allowed.map { it.id }
 
-        // Superadmin can select all active users including other superadmins, managers, and cashiers
-        assertTrue(allowedIds.contains("super-1"))
-        assertTrue(allowedIds.contains("super-2"))
+        // Admin can select all active users including other admins, managers, and cashiers
+        assertTrue(allowedIds.contains("admin-1"))
+        assertTrue(allowedIds.contains("admin-2"))
+        assertTrue(allowedIds.contains("legacy-super"))
         assertTrue(allowedIds.contains("mgr-1"))
         assertTrue(allowedIds.contains("mgr-2"))
         assertTrue(allowedIds.contains("cashier-1"))
@@ -52,6 +55,13 @@ class ShiftOpeningPolicyTest {
 
         // Inactive user must still be excluded
         assertFalse(allowedIds.contains("cashier-3"))
+    }
+
+    @Test
+    fun legacySuperAdminRoleStillCountsAsAdmin() {
+        val allowed = allowedShiftAssignees(authorizer = legacySuperAdmin, users = allUsers)
+        assertTrue(allowed.map { it.id }.contains("admin-1"))
+        assertEquals("Administrador", legacySuperAdmin.spanishRoleLabel)
     }
 
     @Test

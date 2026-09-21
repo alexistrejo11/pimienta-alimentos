@@ -126,6 +126,7 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
     existing.setReorderPoint(merged.getReorderPoint());
     existing.setReorderQuantity(merged.getReorderQuantity());
     existing.setStatus(merged.getStatus());
+    existing.setCatalogRole(merged.getCatalogRole());
 
     Item saved = itemRepository.save(existing);
     appendCatalogChanges(saved.getId());

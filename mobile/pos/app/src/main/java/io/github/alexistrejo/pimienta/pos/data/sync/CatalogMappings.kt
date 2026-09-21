@@ -48,6 +48,6 @@ internal fun trainingProductEntity(
     stockPolicy = if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
 ).toProductEntity()
 
-internal fun OperatorDto.toUser() = LocalUserEntity(id, displayName, role, pinHash, active)
+internal fun OperatorDto.toUser() = LocalUserEntity(id, displayName, LocalUserEntity.normalizeRole(role), pinHash, active)
 
 internal fun SiteDto.toSite() = SiteEntity(id, name, address, currency)
