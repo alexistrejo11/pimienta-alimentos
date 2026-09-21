@@ -43,6 +43,8 @@ data class CartLine(
             SaleLineType.PENDING_CATALOG -> "pending:${sourceBarcode.orEmpty()}:${unitPriceCentavos}"
             SaleLineType.OPEN_AMOUNT -> "open:${cartLineId.ifBlank { "$category:$unitPriceCentavos:$authorizedAtEpochMillis" }}"
         }
+
+    val subtotalCentavos: Long get() = SaleCalculator.lineSubtotalCentavos(unitPriceCentavos, quantity)
 }
 
 // Represents the payment choice exposed by the first local checkout.
@@ -73,11 +75,44 @@ data class DashboardSummary(
 // Represents a compact top-product row without exposing database entities to Compose.
 data class TopProductSummary(val name: String, val quantity: Int, val amountCentavos: Long)
 
-// Converts and formats money without using floating point values.
+// Converts and formats money as integer centavos so POS totals never use floating point.
 object Money {
-    fun fromCatalog(value: String): Long = BigDecimal(value).movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact()
-    fun fromInput(value: String): Long? = value.toBigDecimalOrNull()?.movePointRight(2)?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
-    fun format(centavos: Long): String = "$" + BigDecimal.valueOf(centavos, 2).setScale(2).toPlainString()
+    // Catalog prices are decimal peso strings persisted from Device API centavos.
+    fun fromCatalog(value: String): Long =
+        fromInput(value) ?: error("Precio de catálogo inválido: $value")
+
+    // Accepts keypad or typed pesos with at most two decimals. Commas are treated as the decimal mark.
+    fun fromInput(value: String): Long? {
+        val normalized = value.trim().replace(',', '.')
+        if (normalized.isEmpty() || normalized == "." || normalized.contains('e', ignoreCase = true)) return null
+        val fraction = normalized.substringAfter('.', missingDelimiterValue = "")
+        if (normalized.count { it == '.' } > 1 || fraction.length > 2) return null
+        val decimal = normalized.toBigDecimalOrNull() ?: return null
+        if (decimal.signum() < 0) return null
+        return runCatching {
+            decimal.movePointRight(2).setScale(0, RoundingMode.UNNECESSARY).longValueExact()
+        }.getOrNull()
+    }
+
+    // Ticket-safe amount without a currency symbol, including shortages such as -20.50.
+    fun formatAmount(centavos: Long): String {
+        val sign = if (centavos < 0) "-" else ""
+        val absolute = if (centavos == Long.MIN_VALUE) Long.MAX_VALUE else if (centavos < 0) -centavos else centavos
+        return "$sign${absolute / 100}.${(absolute % 100).toString().padStart(2, '0')}"
+    }
+
+    fun format(centavos: Long): String {
+        val amount = formatAmount(centavos)
+        return if (amount.startsWith("-")) "-\$${amount.drop(1)}" else "\$$amount"
+    }
+
+    // Rounds the mean ticket to the nearest centavo instead of truncating toward zero.
+    fun averageCentavos(totalCentavos: Long, count: Int): Long {
+        if (count <= 0) return 0
+        return BigDecimal.valueOf(totalCentavos)
+            .divide(BigDecimal.valueOf(count.toLong()), 0, RoundingMode.HALF_UP)
+            .longValueExact()
+    }
 }
 
 // Holds the local rules and atomic persistence needed by the Phase 1 POS flow.
@@ -154,7 +189,20 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         val top = dao.linesBetween(from, to).groupBy { it.productName }.map { (name, lines) ->
             TopProductSummary(name, lines.sumOf { it.quantity }, lines.sumOf { it.subtotalCentavos })
         }.sortedWith(compareByDescending<TopProductSummary> { it.quantity }.thenByDescending { it.amountCentavos }).take(5)
-        return DashboardSummary(gross, discounts, net, validSales.size, if (validSales.isEmpty()) 0 else net / validSales.size, validSales.filter { it.paymentMethod == "CASH" }.sumOf { it.totalCentavos }, withdrawals.sumOf { it.amountCentavos }, withdrawals.size, sales.count { it.status == "CANCELLED" }, movements.count { it.movementType == "WASTE" }, dao.pendingEventCount(), top)
+        return DashboardSummary(
+            gross,
+            discounts,
+            net,
+            validSales.size,
+            Money.averageCentavos(net, validSales.size),
+            validSales.filter { it.paymentMethod == "CASH" }.sumOf { it.totalCentavos },
+            withdrawals.sumOf { it.amountCentavos },
+            withdrawals.size,
+            sales.count { it.status == "CANCELLED" },
+            movements.count { it.movementType == "WASTE" },
+            dao.pendingEventCount(),
+            top,
+        )
     }
     fun authenticate(userId: String, pin: String): Boolean =
         database.userDao().find(userId)?.let { it.active && PinVerifier.matches(pin, it.pinHash, mode == RuntimeMode.SANDBOX) } ?: false
@@ -274,20 +322,22 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     }
 
     // Approves the latest count, seals the shift and creates its durable print/sync work.
-    fun approveShiftClose(shift: ShiftEntity, attempt: CashCountAttemptEntity, manager: LocalUserEntity, pin: String, printTicket: Boolean = true): Result<Boolean> {
+    fun approveShiftClose(shift: ShiftEntity, attempt: CashCountAttemptEntity, manager: LocalUserEntity, pin: String, printTicket: Boolean = true): Result<Boolean> = runCatching {
         if (!manager.active) {
-            return Result.failure(IllegalArgumentException("El usuario ${manager.displayName} no se encuentra activo."))
+            throw IllegalArgumentException("El usuario ${manager.displayName} no se encuentra activo.")
         }
         if (manager.role != "MANAGER" && manager.role != "SUPERADMIN") {
-            return Result.failure(IllegalArgumentException("El perfil de ${manager.displayName} no tiene permisos de Manager o Superadmin."))
+            throw IllegalArgumentException("El perfil de ${manager.displayName} no tiene permisos de Manager o Superadmin.")
         }
         if (!authenticate(manager.id, pin)) {
-            return Result.failure(IllegalArgumentException("PIN de ${manager.displayName} incorrecto."))
+            throw IllegalArgumentException("PIN de ${manager.displayName} incorrecto.")
         }
         val closed = database.runInTransaction<Boolean> {
             val operations = database.operationsDao()
             if (operations.activeShift()?.id != shift.id) return@runInTransaction false
-            val expected = expectedCash(shift)
+            val breakdown = shiftCloseBreakdown(shift)
+            if (!breakdown.commercialMixIsConsistent() || !breakdown.lineMixIsConsistent()) return@runInTransaction false
+            val expected = breakdown.expectedCashCentavos
             val close = ShiftCloseEntity(UUID.randomUUID().toString(), shift.id, expected, attempt.totalCentavos, ShiftCloseCalculator.differenceCentavos(attempt.totalCentavos, expected), manager.id, System.currentTimeMillis())
             operations.insertShiftClose(close)
             operations.updateCashCountStatus(attempt.id, "APPROVED", null)
@@ -304,8 +354,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             }
             true
         }
-        return if (closed) Result.success(true)
-        else Result.failure(IllegalStateException("El turno ya fue cerrado o no se encuentra activo en esta tablet."))
+        if (closed) true
+        else throw IllegalStateException("No se pudo sellar el corte: el turno no está activo o los totales del turno no cuadran.")
     }
 
     // Queues a reprint from durable ticket data without creating a new sale.
@@ -384,12 +434,12 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                 }
             }
         }
-        val gross = lines.sumOf { it.unitPriceCentavos * it.quantity }
+        val gross = SaleCalculator.grossCentavos(lines)
         if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || (discount.authorizedBy.role != "MANAGER" && discount.authorizedBy.role != "SUPERADMIN"))) {
             return Result.failure(IllegalArgumentException("El descuento no es válido."))
         }
-        val total = gross - (discount?.amountCentavos ?: 0)
-        if (total == 0L && (method != PaymentMethod.CORTESIA || discount?.amountCentavos != gross)) {
+        val total = SaleCalculator.netCentavos(gross, discount?.amountCentavos ?: 0)
+        if (total == 0L && (method != PaymentMethod.CORTESIA || !SaleCalculator.isFullCourtesy(gross, discount?.amountCentavos ?: 0))) {
             return Result.failure(IllegalArgumentException("Una venta en cero debe registrarse como cortesía."))
         }
         if (total > 0L && method == PaymentMethod.CORTESIA) {
@@ -406,7 +456,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val saleId = UUID.randomUUID().toString()
             val eventId = UUID.randomUUID().toString()
             val confirmedAt = System.currentTimeMillis()
-            val change = if (method == PaymentMethod.CASH) tenderedCentavos - total else 0
+            val change = if (method == PaymentMethod.CASH) SaleCalculator.changeCentavos(tenderedCentavos, total) else 0
             val folio = "${device.visibleCode}-${liveShift.id.take(4).uppercase()}-${liveShift.nextFolioNumber.toString().padStart(4, '0')}"
             val sale = SaleEntity(saleId, folio, liveShift.id, liveShift.cashierId, gross, discount?.amountCentavos ?: 0, total, method.name, if (method == PaymentMethod.CASH) tenderedCentavos else total, change, confirmedAt)
             operations.insertSale(sale)
@@ -423,7 +473,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     line.category,
                     line.quantity,
                     line.unitPriceCentavos,
-                    line.unitPriceCentavos * line.quantity,
+                    line.subtotalCentavos,
                     line.stockPolicy,
                     line.lineType.name,
                     line.sourceBarcode,

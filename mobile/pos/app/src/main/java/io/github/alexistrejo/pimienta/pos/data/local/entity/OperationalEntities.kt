@@ -16,7 +16,7 @@ import androidx.room.PrimaryKey
 // Stores the stable debug device identity and its local event sequence.
 @Entity(tableName = "device") data class DeviceEntity(@PrimaryKey val id: String, val name: String, val visibleCode: String, val nextEventSequence: Long, val siteId: String? = null, val status: String = "SANDBOX", val minAppVersion: String? = null, val schemaVersionsJson: String? = null)
 // Stores the one active cash shift permitted for a device.
-@Entity(tableName = "shift", indices = [Index(value = ["deviceId", "status"], unique = true)]) data class ShiftEntity(@PrimaryKey val id: String, val deviceId: String, val siteId: String, val cashierId: String, val openingCashCentavos: Long, val openedAtEpochMillis: Long, val status: String, val nextFolioNumber: Long)
+@Entity(tableName = "shift", indices = [Index(value = ["deviceId", "status"])]) data class ShiftEntity(@PrimaryKey val id: String, val deviceId: String, val siteId: String, val cashierId: String, val openingCashCentavos: Long, val openedAtEpochMillis: Long, val status: String, val nextFolioNumber: Long)
 // Stores a confirmed sale as an immutable local fact.
 @Entity(tableName = "sale", indices = [Index(value = ["folio"], unique = true)]) data class SaleEntity(@PrimaryKey val id: String, val folio: String, val shiftId: String, val cashierId: String, val grossCentavos: Long, val discountCentavos: Long, val totalCentavos: Long, val paymentMethod: String, val tenderedCentavos: Long, val changeCentavos: Long, val confirmedAtEpochMillis: Long, val status: String = "CONFIRMED")
 // Stores the single authorized discount attached to a confirmed sale.

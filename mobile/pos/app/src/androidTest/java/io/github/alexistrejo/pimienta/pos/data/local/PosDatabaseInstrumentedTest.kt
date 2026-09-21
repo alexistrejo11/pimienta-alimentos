@@ -11,6 +11,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CashWithdrawalEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
 import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseCalculator
 import io.github.alexistrejo.pimienta.pos.data.sync.ProductDto
@@ -26,6 +28,29 @@ class PosDatabaseInstrumentedTest {
  @Before fun setUp(){db=Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(),PosDatabase::class.java).allowMainThreadQueries().build()}
  @After fun tearDown(){db.close()}
  @Test fun syncStatePersistsCursor(){db.syncDao().saveState(SyncStateEntity(baseUrl="https://backend/",changesCursor="c1",status="ONLINE"));Assert.assertEquals("c1",db.syncDao().state()?.changesCursor)}
+
+ @Test fun multipleShiftsCanBeClosedOnSameDeviceWithoutUniqueConstraintFailure() {
+  val dao = db.operationsDao()
+  val device = DeviceEntity("dev-1", "Tablet 1", "T1", 1)
+  dao.insertDevice(device)
+
+  val shift1 = ShiftEntity("shift-1", device.id, "site-1", "user-1", 1000, 1000, "OPEN", 1)
+  dao.insertShift(shift1)
+  dao.updateShiftStatus(shift1.id, "CLOSED")
+
+  val shift2 = ShiftEntity("shift-2", device.id, "site-1", "user-1", 1000, 2000, "OPEN", 1)
+  dao.insertShift(shift2)
+  dao.updateShiftStatus(shift2.id, "CLOSED")
+
+  val shift3 = ShiftEntity("shift-3", device.id, "site-1", "user-1", 1000, 3000, "OPEN", 1)
+  dao.insertShift(shift3)
+  dao.updateShiftStatus(shift3.id, "CLOSED")
+
+  Assert.assertNull(dao.activeShift())
+  Assert.assertEquals("CLOSED", dao.findShift("shift-1")?.status)
+  Assert.assertEquals("CLOSED", dao.findShift("shift-2")?.status)
+  Assert.assertEquals("CLOSED", dao.findShift("shift-3")?.status)
+ }
 
  // Verifies the Phase 3 projections and cursor commit together in one Room transaction.
  @Test fun phase3ProjectionStoresPoliciesCategoriesAndSequenceCursorAtomically(){
@@ -124,7 +149,7 @@ class PosDatabaseInstrumentedTest {
    val shiftId = "shift-1"
    fun sale(id: String, folio: String, gross: Long, discount: Long, total: Long, method: String, status: String = "CONFIRMED") =
     SaleEntity(id, folio, shiftId, "cashier", gross, discount, total, method, total, 0, 1, status)
-   dao.insertSale(sale("s-catalog", "F1", 10_000, 0, 10_000, "CASH"))
+   dao.insertSale(sale("s-catalog", "F1", 10_000, 1_000, 9_000, "CASH"))
    dao.insertSale(sale("s-open", "F2", 4_500, 0, 4_500, "CASH"))
    dao.insertSale(sale("s-pending", "F3", 2_000, 0, 2_000, "CASH"))
    dao.insertSale(sale("s-card", "F4", 3_000, 0, 3_000, "EXTERNAL_CARD_MP"))
@@ -140,16 +165,37 @@ class PosDatabaseInstrumentedTest {
    ))
    dao.insertWithdrawal(CashWithdrawalEntity("w1", "SG-1", shiftId, "cashier", 10_000, "RESGUARDO_EFECTIVO", "manager", "MANAGER", 1))
 
-   Assert.assertEquals(16_500L, dao.cashSalesForShift(shiftId))
+   Assert.assertEquals(15_500L, dao.cashSalesForShift(shiftId))
    Assert.assertEquals(3_000L, dao.cardSalesForShift(shiftId))
    Assert.assertEquals(8_000L, dao.courtesyForShift(shiftId))
    Assert.assertEquals(5_000L, dao.cancelledCashForShift(shiftId))
    Assert.assertEquals(4_500L, dao.lineAmountForShift(shiftId, "OPEN_AMOUNT"))
    Assert.assertEquals(2_000L, dao.lineAmountForShift(shiftId, "PENDING_CATALOG"))
    Assert.assertEquals(21_000L, dao.lineAmountForShift(shiftId, "CATALOG"))
-   Assert.assertEquals(
-    56_500L,
-    ShiftCloseCalculator.expectedCashCentavos(50_000, dao.cashSalesForShift(shiftId), dao.withdrawalsForShift(shiftId)),
+   Assert.assertEquals(27_500L, dao.grossForShift(shiftId))
+   Assert.assertEquals(9_000L, dao.discountsForShift(shiftId))
+   Assert.assertEquals(18_500L, dao.netForShift(shiftId))
+   val close = ShiftCloseCalculator.breakdown(
+    openingCashCentavos = 50_000,
+    cashSalesCentavos = dao.cashSalesForShift(shiftId),
+    cardSalesCentavos = dao.cardSalesForShift(shiftId),
+    courtesyGrossCentavos = dao.courtesyForShift(shiftId),
+    discountsCentavos = dao.discountsForShift(shiftId),
+    grossCentavos = dao.grossForShift(shiftId),
+    netCentavos = dao.netForShift(shiftId),
+    withdrawalsCentavos = dao.withdrawalsForShift(shiftId),
+    withdrawalCount = dao.withdrawalCountForShift(shiftId),
+    cancelledCount = dao.cancelledCountForShift(shiftId),
+    cancelledCashCentavos = dao.cancelledCashForShift(shiftId),
+    ticketCount = dao.ticketCountForShift(shiftId),
+    catalogCentavos = dao.lineAmountForShift(shiftId, "CATALOG"),
+    openAmountCentavos = dao.lineAmountForShift(shiftId, "OPEN_AMOUNT"),
+    openAmountQuantity = dao.lineQuantityForShift(shiftId, "OPEN_AMOUNT"),
+    pendingCatalogCentavos = dao.lineAmountForShift(shiftId, "PENDING_CATALOG"),
+    pendingCatalogQuantity = dao.lineQuantityForShift(shiftId, "PENDING_CATALOG"),
    )
+   Assert.assertEquals(55_500L, close.expectedCashCentavos)
+   Assert.assertTrue(close.commercialMixIsConsistent())
+   Assert.assertTrue(close.lineMixIsConsistent())
   }
  }

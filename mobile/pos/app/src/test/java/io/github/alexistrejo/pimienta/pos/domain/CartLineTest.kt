@@ -17,6 +17,7 @@ class CartLineTest {
         val first = CartLine("p1", "Agua", "Bebidas", 1500, "NOT_CONTROLLED", 1)
         val second = CartLine("p1", "Agua", "Bebidas", 1500, "NOT_CONTROLLED", 2)
         assertEquals(first.lineKey, second.lineKey)
+        assertEquals(3_000L, second.subtotalCentavos)
     }
 
     private fun openLine(id: String) = CartLine(

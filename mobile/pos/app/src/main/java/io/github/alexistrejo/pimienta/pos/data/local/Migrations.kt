@@ -203,4 +203,12 @@ object Migrations {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_inventory_movement_syncEventId` ON `inventory_movement` (`syncEventId`)")
         }
     }
+
+    // Replaces the unique constraint on (deviceId, status) with a non-unique index so multiple closed shifts can exist for a device.
+    val V15_TO_V16 = object : Migration(15, 16) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("DROP INDEX IF EXISTS `index_shift_deviceId_status`")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_shift_deviceId_status` ON `shift` (`deviceId`, `status`)")
+        }
+    }
 }

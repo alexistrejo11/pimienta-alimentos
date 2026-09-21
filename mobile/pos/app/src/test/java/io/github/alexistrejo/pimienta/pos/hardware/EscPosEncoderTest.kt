@@ -103,4 +103,19 @@ class EscPosEncoderTest {
         assertTrue(text.contains("Pan Dulce"))
         assertFalse(text.contains("Si no te entregamos tu ticket, tu consumo es GRATIS"))
     }
+
+    @Test
+    fun shift_close_shortage_prints_a_signed_amount_not_a_broken_remainder() {
+        val document = OperationalDocument(
+            title = "Corte de Caja",
+            folio = "SHIFT-02",
+            occurredAt = Instant.parse("2026-09-10T18:00:00Z"),
+            lines = listOf(PrintableLine("Diferencia", "1", -2_050)),
+            totalCentavos = 57_950,
+        )
+
+        val text = EscPosEncoder(PrinterProfiles.pos5890A).encode(document).toString(Charset.forName("CP850"))
+        assertTrue(text.contains("-20.50"))
+        assertFalse(text.contains(".-"))
+    }
 }

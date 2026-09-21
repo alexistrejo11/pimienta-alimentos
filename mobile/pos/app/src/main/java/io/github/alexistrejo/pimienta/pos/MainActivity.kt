@@ -557,42 +557,64 @@ internal fun Access(
                     .widthIn(max = 600.dp)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(28.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 // Header with step progress bar
-                ShiftOpeningStepHeader(stage)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (stage == AccessStage.AUTHENTICATE_AUTHORIZER) {
+                        Text("Abrir turno", style = MaterialTheme.typography.headlineSmall)
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("Abrir turno", style = MaterialTheme.typography.headlineSmall)
+                            PosButton(
+                                label = "← Cambiar autorizador",
+                                click = {
+                                    stage = AccessStage.AUTHENTICATE_AUTHORIZER
+                                    authenticatedAuthorizer = null
+                                    pin = ""
+                                    localError = null
+                                },
+                                primary = false,
+                            )
+                        }
+                    }
+                    ShiftOpeningStepHeader(stage)
+                }
 
                 if (stage == AccessStage.AUTHENTICATE_AUTHORIZER) {
                     // Step 1: Authorizer election and PIN verification
-                    Text("Abrir turno", style = MaterialTheme.typography.headlineSmall)
-                    Text(
-                        "Paso 1: Identificación del autorizador",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        "Selecciona tu perfil (Gerente o Superadmin) e ingresa tu PIN de seguridad para autorizar la apertura del turno.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-
-                    // Operational warning regarding sale mode constraints during active shifts.
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = if (mode == RuntimeMode.SANDBOX) {
-                                "Modo capacitación: Una vez abierto el turno, el sistema permanecerá en modo de venta hasta completar el corte de caja."
-                            } else {
-                                "Aviso importante: Al abrir turno, la tablet queda en modo de venta exclusivo y no se podrá salir ni cambiar de modo hasta realizar el corte de caja."
-                            },
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(12.dp),
+                            "Paso 1: Identificación del autorizador",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
                         )
+                        Text(
+                            "Selecciona tu perfil (Gerente o Superadmin) e ingresa tu PIN de seguridad para autorizar la apertura del turno.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = if (mode == RuntimeMode.SANDBOX) {
+                                    "Modo capacitación: Una vez abierto el turno, el sistema permanecerá en modo de venta hasta completar el corte de caja."
+                                } else {
+                                    "Aviso importante: Al abrir turno, la tablet queda en modo de venta exclusivo y no se podrá salir ni cambiar de modo hasta realizar el corte de caja."
+                                },
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(12.dp),
+                            )
+                        }
                     }
 
                     if (authorizers.isEmpty()) {
@@ -602,178 +624,173 @@ internal fun Access(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
-                        Text("1. Selecciona el perfil del autorizador:", style = MaterialTheme.typography.titleSmall)
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(authorizers, key = { it.id }) { profile ->
-                                PosButton(
-                                    profile.displayTitle(mode == RuntimeMode.SANDBOX),
-                                    { selectedAuthorizer = profile },
-                                    selected = selectedAuthorizer?.id == profile.id,
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("1. Selecciona el perfil del autorizador:", style = MaterialTheme.typography.titleSmall)
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(authorizers, key = { it.id }) { profile ->
+                                    PosButton(
+                                        profile.displayTitle(mode == RuntimeMode.SANDBOX),
+                                        { selectedAuthorizer = profile },
+                                        selected = selectedAuthorizer?.id == profile.id,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("2. Ingresa tu PIN de autorización:", style = MaterialTheme.typography.titleSmall)
+                        Numpad(pin, { pin = it }, masked = true)
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val activeErr1 = localError ?: notice?.takeIf { !it.startsWith("✓") }
+                        activeErr1?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+
+                        PosButton(
+                            label = if (busy) "Verificando PIN…" else "Continuar a asignar cajero y fondo →",
+                            click = {
+                                val authorizer = selectedAuthorizer
+                                if (authorizer == null) {
+                                    localError = "Selecciona un perfil de Manager o Superadmin."
+                                    return@PosButton
+                                }
+                                scope.launch {
+                                    busy = true
+                                    localError = null
+                                    val valid = withContext(Dispatchers.IO) {
+                                        repository.authenticate(authorizer.id, pin)
+                                    }
+                                    busy = false
+                                    if (!valid) {
+                                        localError = "El PIN no corresponde al perfil seleccionado."
+                                    } else {
+                                        authenticatedAuthorizer = authorizer
+                                        val allowed = allowedShiftAssignees(authorizer, users)
+                                        selectedAssignee = allowed.firstOrNull { it.id == authorizer.id } ?: allowed.firstOrNull()
+                                        stage = AccessStage.SELECT_ASSIGNEE_AND_CASH
+                                        localError = null
+                                    }
+                                }
+                            },
+                            enabled = !busy && selectedAuthorizer != null,
+                            primary = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                } else {
+                    // Step 2: Assignee election and initial cash float
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(
+                                    "AUTORIZACIÓN CONFIRMADA",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                                Text(
+                                    "Autorizado por: ${authenticatedAuthorizer?.displayName ?: ""} (${authenticatedAuthorizer?.role ?: ""})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 )
                             }
                         }
-                    }
 
-                    Text("2. Ingresa tu PIN de autorización:", style = MaterialTheme.typography.titleSmall)
-                    Numpad(pin, { pin = it }, masked = true)
-
-                    val activeError = localError ?: notice
-                    activeError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-
-                    PosButton(
-                        label = if (busy) "Verificando PIN…" else "Continuar a asignar cajero y fondo →",
-                        click = {
-                            val authorizer = selectedAuthorizer
-                            if (authorizer == null) {
-                                localError = "Selecciona un perfil de Manager o Superadmin."
-                                return@PosButton
-                            }
-                            scope.launch {
-                                busy = true
-                                localError = null
-                                val valid = withContext(Dispatchers.IO) {
-                                    repository.authenticate(authorizer.id, pin)
-                                }
-                                busy = false
-                                if (!valid) {
-                                    localError = "El PIN no corresponde al perfil seleccionado."
-                                } else {
-                                    authenticatedAuthorizer = authorizer
-                                    val allowed = allowedShiftAssignees(authorizer, users)
-                                    selectedAssignee = allowed.firstOrNull { it.id == authorizer.id } ?: allowed.firstOrNull()
-                                    stage = AccessStage.SELECT_ASSIGNEE_AND_CASH
-                                    localError = null
-                                }
-                            }
-                        },
-                        enabled = !busy && selectedAuthorizer != null,
-                        primary = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else {
-                    // Step 2: Assignee election and initial cash float
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("Abrir turno", style = MaterialTheme.typography.headlineSmall)
-                        PosButton(
-                            label = "← Cambiar autorizador",
-                            click = {
-                                stage = AccessStage.AUTHENTICATE_AUTHORIZER
-                                authenticatedAuthorizer = null
-                                pin = ""
-                                localError = null
-                            },
-                            primary = false,
+                        Text(
+                            "Paso 2: Asignación de cajero y fondo inicial",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            "Elige la persona que operará la caja durante este turno e ingresa el efectivo inicial con el que iniciará el cajón de dinero.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
-
-                    // Authenticated Manager banner badge
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text(
-                                "AUTORIZACIÓN CONFIRMADA",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
-                            Text(
-                                "Autorizado por: ${authenticatedAuthorizer?.displayName ?: ""} (${authenticatedAuthorizer?.role ?: ""})",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
-                        }
-                    }
-
-                    Text(
-                        "Paso 2: Asignación de cajero y fondo inicial",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        "Elige la persona que operará la caja durante este turno e ingresa el efectivo inicial con el que iniciará el cajón de dinero.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
 
                     val auth = authenticatedAuthorizer
                     val allowedAssignees = remember(auth, users) {
                         if (auth != null) allowedShiftAssignees(auth, users) else emptyList()
                     }
 
-                    Text("1. ¿Quién operará la caja en este turno?", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        if (auth?.isSuperAdmin == true) {
-                            "Como Superadmin, puedes asignar este turno a cualquier perfil registrado."
-                        } else {
-                            "Como Gerente, puedes asignar el turno a ti mismo o a un cajero. (No se permite asignar turno a otros gerentes)."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("1. ¿Quién operará la caja en este turno?", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            if (auth?.isSuperAdmin == true) {
+                                "Como Superadmin, puedes asignar este turno a cualquier perfil registrado."
+                            } else {
+                                "Como Gerente, puedes asignar el turno a ti mismo o a un cajero. (No se permite asignar turno a otros gerentes)."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
 
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(allowedAssignees, key = { it.id }) { profile ->
-                            PosButton(
-                                profile.displayTitle(mode == RuntimeMode.SANDBOX),
-                                { selectedAssignee = profile },
-                                selected = selectedAssignee?.id == profile.id,
-                            )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(allowedAssignees, key = { it.id }) { profile ->
+                                PosButton(
+                                    profile.displayTitle(mode == RuntimeMode.SANDBOX),
+                                    { selectedAssignee = profile },
+                                    selected = selectedAssignee?.id == profile.id,
+                                )
+                            }
                         }
                     }
 
-                    Text("2. Fondo inicial en efectivo (Cajón de dinero):", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        "Ingresa la cantidad exacta de efectivo entregada para iniciar caja.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(Money.format(Money.fromInput(opening) ?: 0), style = MaterialTheme.typography.headlineMedium)
-                    Numpad(opening, { opening = it })
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("2. Fondo inicial en efectivo (Cajón de dinero):", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Ingresa la cantidad exacta de efectivo entregada para iniciar caja.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(Money.format(Money.fromInput(opening) ?: 0), style = MaterialTheme.typography.headlineMedium)
+                        Numpad(opening, { opening = it })
+                    }
 
-                    val activeError = localError ?: notice
-                    activeError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val activeErr2 = localError ?: notice?.takeIf { !it.startsWith("✓") }
+                        activeErr2?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-                    PosButton(
-                        label = if (busy) "Abriendo turno…" else "Confirmar y abrir turno",
-                        click = {
-                            val cash = Money.fromInput(opening) ?: -1
-                            val assignee = selectedAssignee
-                            if (cash < 0) {
-                                localError = "Ingresa un fondo inicial válido."
-                                return@PosButton
-                            }
-                            if (assignee == null) {
-                                localError = "Selecciona la persona a la que se asignará el turno."
-                                return@PosButton
-                            }
-                            scope.launch {
-                                busy = true
-                                localError = null
-                                val result = withContext(Dispatchers.IO) {
-                                    repository.openShift(assignee.id, cash)?.let { Result.success(it) }
-                                        ?: Result.failure(IllegalStateException("No se pudo abrir el turno local."))
+                        PosButton(
+                            label = if (busy) "Abriendo turno…" else "Confirmar y abrir turno",
+                            click = {
+                                val cash = Money.fromInput(opening) ?: -1
+                                val assignee = selectedAssignee
+                                if (cash < 0) {
+                                    localError = "Ingresa un fondo inicial válido."
+                                    return@PosButton
                                 }
-                                busy = false
-                                result.onSuccess { shift ->
-                                    SyncWorker.enqueue(context)
-                                    opened(shift)
-                                }.onFailure { ex ->
-                                    val err = ex.message ?: "No se pudo abrir el turno."
-                                    localError = err
-                                    message(err)
+                                if (assignee == null) {
+                                    localError = "Selecciona la persona a la que se asignará el turno."
+                                    return@PosButton
                                 }
-                            }
-                        },
-                        enabled = !busy && selectedAssignee != null,
-                        primary = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                                scope.launch {
+                                    busy = true
+                                    localError = null
+                                    val result = withContext(Dispatchers.IO) {
+                                        repository.openShift(assignee.id, cash)?.let { Result.success(it) }
+                                            ?: Result.failure(IllegalStateException("No se pudo abrir el turno local."))
+                                    }
+                                    busy = false
+                                    result.onSuccess { shift ->
+                                        SyncWorker.enqueue(context)
+                                        opened(shift)
+                                    }.onFailure { ex ->
+                                        val err = ex.message ?: "No se pudo abrir el turno."
+                                        localError = err
+                                        message(err)
+                                    }
+                                }
+                            },
+                            enabled = !busy && selectedAssignee != null,
+                            primary = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }

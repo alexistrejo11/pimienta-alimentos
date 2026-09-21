@@ -26,6 +26,7 @@ class CatalogMappingsTest {
         assertEquals("0.00", entity.cost)
         assertNull(entity.barcode)
         assertEquals("NOT_CONTROLLED", entity.stockPolicy)
+        assertEquals(1_500L, io.github.alexistrejo.pimienta.pos.domain.Money.fromCatalog(entity.price))
     }
 
     @Test

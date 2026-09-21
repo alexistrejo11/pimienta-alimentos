@@ -26,20 +26,44 @@ data class ShiftCloseBreakdown(
             cashSalesCentavos,
             withdrawalsCentavos,
         )
+
+    // Gross − discounts equals net, and net is only cash + card (courtesy contributes 0).
+    fun commercialMixIsConsistent(): Boolean =
+        netCentavos == ShiftCloseCalculator.commercialNetCentavos(grossCentavos, discountsCentavos) &&
+            netCentavos == ShiftCloseCalculator.collectedNetCentavos(cashSalesCentavos, cardSalesCentavos)
+
+    // Catalog + open amount + pending catalog is the pre-discount sale gross.
+    fun lineMixIsConsistent(): Boolean =
+        grossCentavos == ShiftCloseCalculator.lineGrossCentavos(
+            catalogCentavos,
+            openAmountCentavos,
+            pendingCatalogCentavos,
+        )
 }
 
 // Computes Corte Z drawer totals without floating-point money.
 object ShiftCloseCalculator {
-    // Expected drawer = opening float + net cash collected - safeguard withdrawals.
-    // Cancelled cash sales are already excluded from cashSalesCentavos by the DAO.
+    // Drawer formula: opening + net confirmed cash − sangrías.
+    // Cancelled cash is already absent from cashSalesCentavos (DAO excludes CANCELLED), so refunds are not subtracted again.
     fun expectedCashCentavos(
         openingCashCentavos: Long,
         cashSalesCentavos: Long,
         withdrawalsCentavos: Long,
-    ): Long = openingCashCentavos + cashSalesCentavos - withdrawalsCentavos
+    ): Long = Math.subtractExact(Math.addExact(openingCashCentavos, cashSalesCentavos), withdrawalsCentavos)
 
     fun differenceCentavos(countedCashCentavos: Long, expectedCashCentavos: Long): Long =
-        countedCashCentavos - expectedCashCentavos
+        Math.subtractExact(countedCashCentavos, expectedCashCentavos)
+
+    // Commercial mix: gross − discounts = net = cash + card (courtesy net is always 0).
+    fun commercialNetCentavos(grossCentavos: Long, discountsCentavos: Long): Long =
+        Math.subtractExact(grossCentavos, discountsCentavos)
+
+    fun collectedNetCentavos(cashSalesCentavos: Long, cardSalesCentavos: Long): Long =
+        Math.addExact(cashSalesCentavos, cardSalesCentavos)
+
+    // Line mix is the sale gross before the sale-level discount.
+    fun lineGrossCentavos(catalogCentavos: Long, openAmountCentavos: Long, pendingCatalogCentavos: Long): Long =
+        Math.addExact(Math.addExact(catalogCentavos, openAmountCentavos), pendingCatalogCentavos)
 
     fun breakdown(
         openingCashCentavos: Long,

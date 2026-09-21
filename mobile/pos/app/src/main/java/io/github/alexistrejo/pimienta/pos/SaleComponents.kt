@@ -453,7 +453,7 @@ internal fun CashWithdrawalAuthorization(
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
-                Numpad(pin, { pin = it }, masked = true, onSubmit = ::record)
+                Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
@@ -520,7 +520,7 @@ internal fun LockedCashRegister(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Numpad(pin, { pin = it }, masked = true, onSubmit = ::unlock)
+                Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center) }
                 PosButton(
                     label = if (busy) "Desbloqueando…" else "Desbloquear caja",
@@ -722,7 +722,7 @@ internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
                 }
                 product.sku.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }?.let { sku ->
                     Text(
-                        text = "SKU: $sku",
+                        text = sku,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -780,7 +780,7 @@ internal fun DiscountAuthorization(
                 OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Manager/Superadmin", style = MaterialTheme.typography.labelLarge)
-                Numpad(pin, { pin = it }, masked = true, onSubmit = ::authorize)
+                Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
@@ -803,7 +803,7 @@ internal fun CartPanel(
 ) {
     val gross = cart.totalCentavos()
     val discountAmount = discount?.amountCentavos ?: 0
-    val total = gross - discountAmount
+    val total = SaleCalculator.netCentavos(gross, discountAmount)
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().padding(12.dp)) {
             Text("Venta activa", style = MaterialTheme.typography.titleMedium)
@@ -907,7 +907,7 @@ internal fun CartLineRow(
             Text(line.name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text("${line.quantity} × ${Money.format(line.unitPriceCentavos)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text(Money.format(line.unitPriceCentavos * line.quantity), fontWeight = FontWeight.Bold)
+        Text(Money.format(line.subtotalCentavos), fontWeight = FontWeight.Bold)
         Spacer(Modifier.width(8.dp))
         QuantityButton("−", decrease)
         Text("${line.quantity}", modifier = Modifier.padding(horizontal = 8.dp), fontWeight = FontWeight.Bold)
@@ -1031,7 +1031,7 @@ internal fun CashPayment(value: String, changed: (String) -> Unit, total: Long) 
 @Composable
 internal fun CashEntry(modifier: Modifier, value: String, changed: (String) -> Unit, total: Long = 0) {
     val received = Money.fromInput(value) ?: 0
-    val change = (received - total).coerceAtLeast(0)
+    val change = SaleCalculator.changeCentavos(received, total).coerceAtLeast(0)
 
     Column(modifier) {
         Row(
@@ -1124,11 +1124,18 @@ internal fun Numpad(
     masked: Boolean = false,
     onSubmit: (() -> Unit)? = null,
     revealValue: Boolean = false,
+    showEnter: Boolean = onSubmit != null,
 ) {
-    val keys = if (masked) {
-        listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "⌫", "Entrar")
-    } else {
-        listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
+    val keys = when {
+        masked && showEnter && onSubmit != null -> {
+            listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "⌫", "Entrar")
+        }
+        masked || (!value.contains('.') && showEnter && onSubmit != null) -> {
+            listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "", "0", "⌫")
+        }
+        else -> {
+            listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
+        }
     }
     // Dots only while typing; empty state stays quiet so the parent can label the field.
     if (masked && !revealValue && value.isNotBlank()) {
@@ -1150,25 +1157,33 @@ internal fun Numpad(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 row.forEach { key ->
-                    PosButton(
-                        key,
-                        {
-                            when (key) {
-                                "⌫" -> {
-                                    when {
-                                        value.endsWith(".00") -> changed(value.dropLast(3))
-                                        value.endsWith(".0") -> changed(value.dropLast(2))
-                                        else -> changed(value.dropLast(1))
+                    if (key.isEmpty()) {
+                        Spacer(modifier = Modifier.weight(1f).height(48.dp))
+                    } else {
+                        PosButton(
+                            key,
+                            {
+                                when (key) {
+                                    "⌫" -> {
+                                        when {
+                                            value.endsWith(".00") -> changed(value.dropLast(3))
+                                            value.endsWith(".0") -> changed(value.dropLast(2))
+                                            else -> changed(value.dropLast(1))
+                                        }
+                                    }
+                                    "Entrar" -> onSubmit?.invoke()
+                                    "." -> if (!value.contains('.')) changed(if (value.isBlank()) "0." else "$value.")
+                                    else -> {
+                                        val fraction = value.substringAfter('.', missingDelimiterValue = "")
+                                        val blocksExtraDecimals = value.contains('.') && fraction.length >= 2
+                                        if (!blocksExtraDecimals && value.length < 8) changed(value + key)
                                     }
                                 }
-                                "Entrar" -> onSubmit?.invoke()
-                                "." -> if (!value.contains('.')) changed(if (value.isBlank()) "0." else "$value.")
-                                else -> if (value.length < 8) changed(value + key)
-                            }
-                        },
-                        enabled = key != "Entrar" || (onSubmit != null && value.isNotBlank()),
-                        modifier = Modifier.weight(1f).height(48.dp),
-                    )
+                            },
+                            enabled = key != "Entrar" || (onSubmit != null && value.isNotBlank()),
+                            modifier = Modifier.weight(1f).height(48.dp),
+                        )
+                    }
                 }
             }
         }
@@ -1176,7 +1191,7 @@ internal fun Numpad(
 }
 
 // Sums the immutable price snapshots already captured in the draft cart.
-internal fun List<CartLine>.totalCentavos(): Long = sumOf { it.unitPriceCentavos * it.quantity }
+internal fun List<CartLine>.totalCentavos(): Long = SaleCalculator.grossCentavos(this)
 
 // Supplies filled inputs with the POS surface treatment instead of a heavy outline.
 @Composable

@@ -68,6 +68,7 @@ import io.github.alexistrejo.pimienta.pos.domain.DashboardSummary
 import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
 import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseBreakdown
+import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseCalculator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -76,40 +77,23 @@ import kotlinx.coroutines.withContext
 // Describes the local Manager workspace navigation.
 private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte de Caja"), HISTORY("Historial"), STATUS("Estado") }
 // Tracks the blind-count workflow before a shift is sealed.
-private enum class CountStage { OPEN, COUNTING, VALIDATION }
+private enum class CountStage { OPEN, COUNTING, VALIDATION, COMPLETED }
 
 // Requests Manager authorization without changing the cashier session.
 @Composable
-internal fun ManagerAccess(users: List<LocalUserEntity>, repository: PosRepository, onDismiss: () -> Unit, onAuthorized: (LocalUserEntity) -> Unit) {
-    val managers = users.filter { it.isManagerOrAdmin }
-    var selected by remember { mutableStateOf(managers.firstOrNull()) }
-    var pin by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-    fun authorize() {
-        val user = selected ?: return
-        scope.launch { if (withContext(Dispatchers.IO) { repository.authenticate(user.id, pin) }) onAuthorized(user) else message = "El PIN no corresponde al perfil seleccionado." }
-    }
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
-            // Allows the dialog content to scroll when multiple manager profiles are present
-            Column(
-                modifier = Modifier
-                    .widthIn(max = 520.dp)
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("Autorizar acceso a Manager", style = MaterialTheme.typography.titleLarge)
-                Text("La venta y el carrito permanecerán activos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
-                Text("PIN de Manager", style = MaterialTheme.typography.labelLarge)
-                Numpad(pin, { pin = it }, masked = true, onSubmit = ::authorize)
-                message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f)); PosButton("Autorizar", ::authorize, primary = true, modifier = Modifier.weight(1f)) }
-            }
-        }
-    }
+internal fun ManagerAccess(
+    users: List<LocalUserEntity>,
+    repository: PosRepository,
+    onDismiss: () -> Unit,
+    onAuthorized: (LocalUserEntity) -> Unit
+) {
+    ManagerPinDialog(
+        users = users,
+        title = "Autorizar acceso a Manager",
+        repository = repository,
+        onDismiss = onDismiss,
+        onApproved = { manager, _ -> onAuthorized(manager) },
+    )
 }
 
 // Shows the local dashboard when no shift is open; operational actions stay unavailable.
@@ -220,18 +204,25 @@ private fun DashboardPanel(summary: DashboardSummary?, pendingEvents: Int, modif
 // Renders the dashboard metric grid responsively.
 @Composable
 private fun MetricGrid(summary: DashboardSummary, pendingEvents: Int) {
-    val metrics = listOf(
-        "Ventas netas" to Money.format(summary.netCentavos),
-        "Ventas brutas" to Money.format(summary.grossCentavos),
-        "Descuentos / cortesías" to Money.format(summary.discountsCentavos),
-        "Tickets" to summary.ticketCount.toString(),
-        "Ticket promedio" to Money.format(summary.averageTicketCentavos),
-        "Efectivo cobrado" to Money.format(summary.cashCollectedCentavos),
-        "Sangrías" to "${summary.withdrawalCount} · ${Money.format(summary.withdrawalsCentavos)}",
-        "Mermas" to summary.wasteCount.toString(),
-        "Ventas canceladas" to summary.cancelledCount.toString(),
-        "Pendientes sync" to pendingEvents.toString(),
+    MetricTiles(
+        listOf(
+            "Ventas netas" to Money.format(summary.netCentavos),
+            "Ventas brutas" to Money.format(summary.grossCentavos),
+            "Descuentos / cortesías" to Money.format(summary.discountsCentavos),
+            "Tickets" to summary.ticketCount.toString(),
+            "Ticket promedio" to Money.format(summary.averageTicketCentavos),
+            "Efectivo cobrado" to Money.format(summary.cashCollectedCentavos),
+            "Sangrías" to "${summary.withdrawalCount} · ${Money.format(summary.withdrawalsCentavos)}",
+            "Mermas" to summary.wasteCount.toString(),
+            "Ventas canceladas" to summary.cancelledCount.toString(),
+            "Pendientes sync" to pendingEvents.toString(),
+        )
     )
+}
+
+// Lays out compact supervision tiles without exposing an accounting ledger.
+@Composable
+private fun MetricTiles(metrics: List<Pair<String, String>>) {
     BoxWithConstraints {
         val columns = if (maxWidth >= 540.dp) 3 else 2
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -276,24 +267,28 @@ private fun ZClosePanel(
         ) {
             Text("Caja y Corte de Caja", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Arqueo de caja y cierre exclusivo del turno activo (${shift.id.take(4).uppercase()}). Incluye conteo ciego de efectivo y firma de entrega.",
+                "Resumen del turno activo (${shift.id.take(4).uppercase()}). El desglose de arqueo y mix comercial se muestra al validar el corte, después del conteo ciego.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            val expected = close?.expectedCashCentavos ?: 0L
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = MaterialTheme.shapes.extraSmall,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Efectivo teórico en cajón (Turno activo)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(Money.format(expected), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    close?.let { ShiftCashBreakdown(it) }
-                }
+            val shiftSummary = close
+            if (shiftSummary == null) {
+                Text("Cargando resumen del turno…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                MetricTiles(
+                    listOf(
+                        "Ventas netas" to Money.format(shiftSummary.netCentavos),
+                        "Ventas brutas" to Money.format(shiftSummary.grossCentavos),
+                        "Descuentos / cortesías" to Money.format(shiftSummary.discountsCentavos),
+                        "Tickets" to shiftSummary.ticketCount.toString(),
+                        "Efectivo cobrado" to Money.format(shiftSummary.cashSalesCentavos),
+                        "Tarjeta" to Money.format(shiftSummary.cardSalesCentavos),
+                        "Sangrías" to "${shiftSummary.withdrawalCount} · ${Money.format(shiftSummary.withdrawalsCentavos)}",
+                        "Ventas canceladas" to shiftSummary.cancelledCount.toString(),
+                        "Efectivo teórico" to Money.format(shiftSummary.expectedCashCentavos),
+                    )
+                )
             }
-
-            close?.let { ShiftCommercialBreakdown(it) }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -330,10 +325,11 @@ private fun ZClosePanel(
     }
 }
 
-// Shows the cash-drawer formula so open amounts, cancellations and sangrías can be audited.
+// Shows the cash-drawer formula only after a blind count is submitted.
 @Composable
 private fun ShiftCashBreakdown(close: ShiftCloseBreakdown) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Arqueo de efectivo", style = MaterialTheme.typography.titleMedium)
         BreakdownLine("Fondo inicial", close.openingCashCentavos)
         BreakdownLine("(+) Efectivo cobrado", close.cashSalesCentavos)
         if (close.cancelledCount > 0) {
@@ -344,7 +340,7 @@ private fun ShiftCashBreakdown(close: ShiftCloseBreakdown) {
     }
 }
 
-// Shows the commercial mix of the active shift, not the whole calendar day.
+// Shows the commercial mix only on Corte Z validation, not while preparing the count.
 @Composable
 private fun ShiftCommercialBreakdown(close: ShiftCloseBreakdown) {
     Surface(
@@ -402,7 +398,12 @@ private fun ZCloseDialog(
     var message by remember(shift.id) { mutableStateOf<String?>(null) }
     var pinRequested by remember(shift.id) { mutableStateOf(false) }
     var printSummaryTicket by remember { mutableStateOf(true) }
+    var liveClose by remember(shift.id) { mutableStateOf(close) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(shift.id, stage) {
+        liveClose = withContext(Dispatchers.IO) { repository.shiftCloseBreakdown(shift) }
+    }
 
     fun submit() {
         val amount = Money.fromInput(count)
@@ -449,14 +450,17 @@ private fun ZCloseDialog(
                     }
                     CountStage.VALIDATION -> {
                         val counted = attempt?.totalCentavos ?: 0
-                        val expected = close?.expectedCashCentavos ?: 0L
+                        val expected = liveClose?.expectedCashCentavos ?: 0L
                         Text("Validar Corte de Caja · ${manager.displayName}", style = MaterialTheme.typography.titleLarge)
-                        close?.let {
+                        liveClose?.let {
                             ShiftCommercialBreakdown(it)
                             ShiftCashBreakdown(it)
                         }
                         Text("Conteo físico: ${Money.format(counted)}")
-                        Text("Diferencia: ${Money.format(counted - expected)}", fontWeight = FontWeight.Bold)
+                        Text(
+                            "Diferencia: ${Money.format(ShiftCloseCalculator.differenceCentavos(counted, expected))}",
+                            fontWeight = FontWeight.Bold,
+                        )
                         OutlinedTextField(
                             value = rejectionReason,
                             onValueChange = { rejectionReason = it },
@@ -491,6 +495,63 @@ private fun ZCloseDialog(
                             PosButton("Aprobar con PIN", { pinRequested = true }, primary = true, modifier = Modifier.weight(1f))
                         }
                     }
+                    CountStage.COMPLETED -> {
+                        val counted = attempt?.totalCentavos ?: 0
+                        val expected = liveClose?.expectedCashCentavos ?: 0L
+                        val diff = ShiftCloseCalculator.differenceCentavos(counted, expected)
+
+                        Surface(
+                            shape = MaterialTheme.shapes.extraSmall,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    "✓ Corte de Caja Completado",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                                Text(
+                                    "El turno ha sido sellado correctamente en la base de datos local.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        }
+
+                        Text("Resumen del Corte Z", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Conteo físico en caja: ${Money.format(counted)}")
+                        Text("Efectivo teórico esperado: ${Money.format(expected)}")
+                        Text(
+                            "Diferencia final: ${Money.format(diff)}",
+                            fontWeight = FontWeight.Bold,
+                            color = if (diff == 0L) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+
+                        if (printSummaryTicket) {
+                            Text(
+                                "Se ha enviado el ticket comprobante de Corte de Caja a la cola de impresión.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        Text(
+                            "Haz clic en el botón a continuación para concluir y salir a la pantalla de apertura de turno.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        PosButton(
+                            label = "Finalizar y salir al inicio →",
+                            click = {
+                                onApprovedAndClosed()
+                            },
+                            primary = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }
@@ -510,7 +571,7 @@ private fun ZCloseDialog(
                 pinRequested = false
                 result.onSuccess {
                     SyncWorker.enqueue(context)
-                    onApprovedAndClosed()
+                    stage = CountStage.COMPLETED
                 }.onFailure { ex ->
                     message = ex.message ?: "No se pudo cerrar el turno."
                 }
@@ -859,11 +920,17 @@ internal fun ManagerPinDialog(
                     }
                 }
                 Text("PIN de ${selected?.displayName ?: "Manager"}", style = MaterialTheme.typography.labelLarge)
-                Numpad(pin, { pin = it }, masked = true, onSubmit = ::submit)
+                Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, enabled = !busy, modifier = Modifier.weight(1f))
-                    PosButton(if (busy) "Verificando…" else "Firmar", ::submit, enabled = !busy && pin.length >= 4 && selected != null, primary = true, modifier = Modifier.weight(1f))
+                    PosButton(
+                        label = if (busy) "Verificando…" else if (title.contains("Autorizar", ignoreCase = true)) "Autorizar" else "Firmar",
+                        click = ::submit,
+                        enabled = !busy && pin.length >= 4 && selected != null,
+                        primary = true,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }

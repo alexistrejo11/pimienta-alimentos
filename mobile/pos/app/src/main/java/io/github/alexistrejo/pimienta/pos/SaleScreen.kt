@@ -486,8 +486,8 @@ internal fun Sale(
                     if (checkout) {
                         Checkout(
                             modifier = Modifier.weight(0.4f).fillMaxHeight().padding(12.dp),
-                            total = cart.totalCentavos() - (discount?.amountCentavos ?: 0),
-                            courtesy = discount?.amountCentavos == cart.totalCentavos() && cart.isNotEmpty(),
+                            total = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0),
+                            courtesy = SaleCalculator.isFullCourtesy(cart.totalCentavos(), discount?.amountCentavos ?: 0),
                             busy = busy,
                             method = paymentMethodDraft,
                             onMethodChanged = { paymentMethodDraft = it },
@@ -503,8 +503,8 @@ internal fun Sale(
             } else if (checkout) {
                 Checkout(
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(12.dp),
-                    total = cart.totalCentavos() - (discount?.amountCentavos ?: 0),
-                    courtesy = discount?.amountCentavos == cart.totalCentavos() && cart.isNotEmpty(),
+                    total = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0),
+                    courtesy = SaleCalculator.isFullCourtesy(cart.totalCentavos(), discount?.amountCentavos ?: 0),
                     busy = busy,
                     method = paymentMethodDraft,
                     onMethodChanged = { paymentMethodDraft = it },

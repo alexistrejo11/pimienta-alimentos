@@ -1,5 +1,6 @@
 package io.github.alexistrejo.pimienta.pos.hardware
 
+import io.github.alexistrejo.pimienta.pos.domain.Money
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
 import java.time.Instant
@@ -91,5 +92,5 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         }
     }
 
-    private fun formatAmount(centavos: Long): String = "${centavos / 100}.${(centavos % 100).toString().padStart(2, '0')}"
+    private fun formatAmount(centavos: Long): String = Money.formatAmount(centavos)
 }
