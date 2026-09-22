@@ -4,7 +4,7 @@
 
 Permitir que un cajero venda sin detener la fila cuando el lector entrega un barcode que no existe en el catálogo local. No crea un `Product`, no pide texto libre y no modifica inventario.
 
-Se diferencia de [Monto abierto manual](02-monto-abierto.md): aquí existe evidencia física en forma de barcode escaneado, por lo que no requiere PIN de Manager. El cajero todavía debe confirmar el importe; un escaneo por sí solo nunca agrega una línea cobrable.
+Se diferencia de [Monto abierto manual](02-monto-abierto.md): aquí existe evidencia física en forma de barcode escaneado. Ninguno de los dos flujos pide PIN de Manager. El cajero todavía debe confirmar el importe; un escaneo por sí solo nunca agrega una línea cobrable.
 
 ## Flujo
 

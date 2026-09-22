@@ -5,7 +5,7 @@ Esta carpeta conserva la arquitectura de pantallas, estados y flujos táctiles d
 ## Documentos
 
 - [Pantalla de venta y cobro](01-venta-y-cobro.md): wireframe funcional del flujo principal de cajero.
-- [Monto abierto manual](02-monto-abierto.md): wireframe y excepción autorizada sin barcode.
+- [Monto abierto manual](02-monto-abierto.md): wireframe y excepción de catálogo sin barcode ni PIN.
 - [Producto pendiente de catálogo](04-producto-pendiente-catalogo.md): excepción rápida para barcode desconocido.
 - [Panel local de Manager](03-panel-manager.md): operación, supervisión y diagnóstico de una tablet.
 

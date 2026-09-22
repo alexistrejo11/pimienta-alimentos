@@ -12,7 +12,8 @@ public class StubPosApkReleaseStoragePort implements PosApkReleaseStoragePort {
 
   private final AtomicReference<PosApkManifest> manifest =
       new AtomicReference<>(
-          new PosApkManifest("1.0", 1, "pimienta/releases/pos/android/latest.apk"));
+          new PosApkManifest(
+              "1.0", 1, "pimienta/releases/pos/android/latest.apk", "2026-01-01T00:00:00Z"));
 
   public void setManifest(PosApkManifest value) {
     manifest.set(value);

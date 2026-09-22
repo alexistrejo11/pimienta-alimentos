@@ -70,8 +70,8 @@ sí automáticamente.
 - requiere importe positivo y cantidad `1`;
 - usa `productId=null` y `rawBarcode=null`;
 - usa `stockPolicy=NOT_CONTROLLED`;
-- requiere PIN local de `MANAGER` o `SUPERADMIN` por línea;
-- conserva `authorizedByOperatorId` y `authorizedAt`;
+- no requiere PIN; el cajero confirma categoría e importe;
+- `authorizedByOperatorId` y `authorizedAt` pueden ser nulos;
 - no genera movimiento de inventario;
 - el backend conserva la venta y devuelve `REQUIRES_REVIEW` con incidencia
   `OPEN_PRODUCT`.

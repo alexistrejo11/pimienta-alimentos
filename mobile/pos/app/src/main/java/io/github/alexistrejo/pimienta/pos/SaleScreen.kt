@@ -93,13 +93,9 @@ internal fun Sale(
     var createProductError by remember { mutableStateOf<String?>(null) }
     var syncBusy by remember { mutableStateOf(false) }
     var saleCategories by remember { mutableStateOf(emptyList<String>()) }
+    var deviceVisibleCode by remember { mutableStateOf<String?>(null) }
     var openAmountRequested by rememberSaveable { mutableStateOf(false) }
     var selectedOpenCategory by rememberSaveable { mutableStateOf<String?>(null) }
-    var pendingOpenAmountCategory by rememberSaveable { mutableStateOf<String?>(null) }
-    var pendingOpenAmountCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
-    val pendingOpenAmount = pendingOpenAmountCategory?.let { category ->
-        pendingOpenAmountCentavos?.let { category to it }
-    }
     var sectionsRequested by rememberSaveable { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -116,6 +112,9 @@ internal fun Sale(
 
     LaunchedEffect(repository) {
         repository.observePendingEvents().collect { pending = it }
+    }
+    LaunchedEffect(repository) {
+        deviceVisibleCode = withContext(Dispatchers.IO) { repository.device()?.visibleCode }
     }
     LaunchedEffect(products) {
         saleCategories = withContext(Dispatchers.IO) {
@@ -245,9 +244,9 @@ internal fun Sale(
         }
     }
 
-    // Adds one authorized open-amount line. Quantity stays 1 so Corte Z can sum each capture.
-    fun addOpenAmountLine(category: String, centavos: Long, authorizer: LocalUserEntity) {
-        if (busy || !openAmountAllowed || centavos <= 0 || !authorizer.active || !authorizer.isManagerOrAdmin) return
+    // Adds one open-amount line. Quantity stays 1 so Corte Z can sum each capture.
+    fun addOpenAmountLine(category: String, centavos: Long) {
+        if (busy || !openAmountAllowed || centavos <= 0) return
         val wasCheckout = checkout
         cart = cart + CartLine(
             productId = null,
@@ -258,14 +257,10 @@ internal fun Sale(
             quantity = 1,
             lineType = SaleLineType.OPEN_AMOUNT,
             sourceBarcode = null,
-            authorizedByOperatorId = authorizer.id.toLongOrNull(),
-            authorizedAtEpochMillis = System.currentTimeMillis(),
             cartLineId = java.util.UUID.randomUUID().toString(),
-            authorizedByUserId = authorizer.id,
         )
         openAmountRequested = false
-        pendingOpenAmountCategory = null
-        pendingOpenAmountCentavos = null
+        selectedOpenCategory = null
         updateDiscount(null)
         if (wasCheckout) {
             checkout = false
@@ -365,6 +360,7 @@ internal fun Sale(
                 printerLabel = printerLabel,
                 printerAlert = printerAlert,
                 scannerLabel = "Lector HID",
+                deviceVisibleCode = deviceVisibleCode,
                 onCreateProduct = {
                     createProductLockedBarcode = null
                     createProductError = null
@@ -432,26 +428,10 @@ internal fun Sale(
                         selectedOpenCategory = null
                     },
                     onConfirm = { category, centavos ->
-                        openAmountRequested = false
-                        selectedOpenCategory = null
-                        pendingOpenAmountCategory = category
-                        pendingOpenAmountCentavos = centavos
+                        addOpenAmountLine(category, centavos)
                     },
                     initialCategory = selectedOpenCategory
                 )
-            }
-            pendingOpenAmount?.let { (category, centavos) ->
-                ManagerPinDialog(
-                    users = users,
-                    title = "Autorizar monto abierto",
-                    repository = repository,
-                    onDismiss = {
-                        pendingOpenAmountCategory = null
-                        pendingOpenAmountCentavos = null
-                    },
-                ) { authorizer, _ ->
-                    addOpenAmountLine(category, centavos, authorizer)
-                }
             }
 
             if (sectionsRequested) {

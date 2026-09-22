@@ -12,8 +12,8 @@ cross-app canónico se mantiene en `mobile/pos/docs/integration/03-fase-0-contra
   objetivo.
 - `OPEN_AMOUNT` requiere `allowOpenProducts=true`, una categoría permitida,
   importe positivo y cantidad exactamente igual a uno.
-- Cada línea `OPEN_AMOUNT` requiere PIN local de un operador `MANAGER` o
-  `SUPERADMIN`, conservando `authorizedByOperatorId` y `authorizedAt`.
+- Una línea `OPEN_AMOUNT` no requiere PIN. El cajero captura categoría e
+  importe; `authorizedByOperatorId` y `authorizedAt` pueden ir nulos.
 - Una línea `OPEN_AMOUNT` usa `productId=null`, `rawBarcode=null`,
   `stockPolicy=NOT_CONTROLLED` y nunca genera movimiento de inventario.
 - El barcode desconocido conserva el flujo `PENDING_CATALOG`. No se convierte

@@ -38,6 +38,10 @@ public class PosApkReleaseUseCasesImpl implements PosApkReleaseUseCases {
     String url = storagePort.presignedDownloadUrl(apkKey);
 
     return new PosApkReleaseResult(
-        manifest.versionName(), manifest.versionCode(), url, PRESIGN_TTL_SECONDS);
+        manifest.versionName(),
+        manifest.versionCode(),
+        url,
+        PRESIGN_TTL_SECONDS,
+        manifest.uploadedAt());
   }
 }

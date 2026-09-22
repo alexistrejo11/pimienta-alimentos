@@ -31,6 +31,10 @@ public class PosApkReleaseController {
   public PosApkReleaseResponse latestAndroid() {
     PosApkReleaseResult result = posApkReleaseUseCases.getLatestAndroidRelease();
     return new PosApkReleaseResponse(
-        result.versionName(), result.versionCode(), result.url(), result.expiresInSeconds());
+        result.versionName(),
+        result.versionCode(),
+        result.url(),
+        result.expiresInSeconds(),
+        result.uploadedAt());
   }
 }

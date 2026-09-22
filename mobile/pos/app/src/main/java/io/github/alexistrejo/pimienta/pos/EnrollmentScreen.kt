@@ -19,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -46,11 +45,6 @@ internal fun EnrollmentScreen(
             Text("Enrolar dispositivo", style = MaterialTheme.typography.headlineSmall)
             Text("Ingresa el código de un solo uso generado en la Web Central.")
             Text("Código de enrolamiento", style = MaterialTheme.typography.labelLarge)
-            Text(
-                code.ifEmpty { "------" },
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
             // Tablet-safe digits: Compose buttons, not the system keyboard stolen by the HID wedge.
             Numpad(
                 value = code,

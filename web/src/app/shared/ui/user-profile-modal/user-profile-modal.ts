@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { authTokenStorage } from '../../../core/auth/auth-token.storage';
 import { SessionContextService } from '../../../core/auth/session-context.service';
 import {
   fieldMessage,
@@ -138,8 +139,7 @@ export class UserProfileModalComponent {
       .logout()
       .pipe(
         finalize(() => {
-          sessionStorage.removeItem('accessToken');
-          sessionStorage.removeItem('refreshToken');
+          authTokenStorage.clear();
           this.session.clear();
           this.loggingOut.set(false);
           void this.router.navigate(['/auth/login']);

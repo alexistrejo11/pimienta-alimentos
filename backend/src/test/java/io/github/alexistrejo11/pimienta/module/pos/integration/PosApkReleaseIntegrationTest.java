@@ -48,7 +48,7 @@ class PosApkReleaseIntegrationTest {
     StubPosApkReleaseStoragePort stub = (StubPosApkReleaseStoragePort) storagePort;
     stub.setManifest(
         new io.github.alexistrejo11.pimienta.module.pos.core.domain.PosApkManifest(
-            "1.0", 1, "pimienta/releases/pos/android/latest.apk"));
+            "1.0", 1, "pimienta/releases/pos/android/latest.apk", "2026-01-01T00:00:00Z"));
   }
 
   @Test
@@ -59,6 +59,7 @@ class PosApkReleaseIntegrationTest {
         .andExpect(jsonPath("$.versionName").value("1.0"))
         .andExpect(jsonPath("$.versionCode").value(1))
         .andExpect(jsonPath("$.expiresInSeconds").value(86400))
+        .andExpect(jsonPath("$.uploadedAt").value("2026-01-01T00:00:00Z"))
         .andExpect(
             jsonPath(
                 "$.url",

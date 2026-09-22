@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { authTokenStorage } from '../auth/auth-token.storage';
 import { WebTelemetryService } from './web-telemetry.service';
 
 describe('WebTelemetryService', () => {
@@ -9,7 +10,7 @@ describe('WebTelemetryService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    sessionStorage.setItem('accessToken', 'test-token');
+    authTokenStorage.setTokens('test-token', 'test-refresh');
     TestBed.configureTestingModule({
       providers: [WebTelemetryService, provideHttpClient(), provideHttpClientTesting()],
     });
@@ -18,7 +19,7 @@ describe('WebTelemetryService', () => {
   });
 
   afterEach(() => {
-    sessionStorage.removeItem('accessToken');
+    authTokenStorage.clear();
     http.verify();
   });
 
@@ -39,7 +40,7 @@ describe('WebTelemetryService', () => {
   });
 
   it('does not send without an access token', () => {
-    sessionStorage.removeItem('accessToken');
+    authTokenStorage.clear();
 
     telemetry.reportError(new Error('not sent'));
 

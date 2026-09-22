@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { EMPTY, expand, finalize, reduce } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
@@ -58,6 +58,8 @@ export class SedePosPageComponent implements OnInit {
   readonly catalogCategory = signal('');
   readonly catalogAvailability = signal('');
   readonly catalogStockPolicy = signal('');
+  readonly printingLabels = signal(false);
+  readonly printNotice = signal<string | null>(null);
 
   readonly stockPolicies: StockPolicy[] = ['CONTROLLED', 'NOT_CONTROLLED'];
   readonly stockPolicyLabel = stockPolicyLabel;
@@ -165,9 +167,21 @@ export class SedePosPageComponent implements OnInit {
   }
 
   removeCatalogItem(row: HeadquarterPosCatalogItemResponse): void {
-    if (!confirm(`¿Retirar ${this.itemName(row.itemId)} del catálogo POS?`)) return;
+    const name = row.itemName || this.itemName(row.itemId);
+    if (
+      !confirm(
+        `¿Quitar «${name}» del catálogo POS de esta sede?\n\nDejará de aparecer en el POS tras el próximo sync. El artículo maestro del inventario no se borra.`,
+      )
+    ) {
+      return;
+    }
     this.posCatalog.deleteCatalogItem(this.headquarterId(), row.itemId).subscribe({
-      next: () => this.cargar(this.headquarterId()),
+      next: () => {
+        this.printNotice.set(
+          `«${name}» se quitó de la sede. El POS lo eliminará en el próximo sync.`,
+        );
+        this.cargar(this.headquarterId());
+      },
       error: (err: unknown) => this.error.set(parseApiError(err)),
     });
   }
@@ -269,20 +283,73 @@ export class SedePosPageComponent implements OnInit {
   }
 
   printCatalogLabels(): void {
-    this.labelPrint.print(
-      this.catalog()
-        .map((row) => ({
-          sku: row.itemSku || this.itemSku(row.itemId),
-          name: row.itemName || this.itemName(row.itemId),
-          price: row.salePrice,
-        }))
-        .filter((label) => label.sku),
-    );
+    const id = this.headquarterId();
+    if (id <= 0 || this.printingLabels()) return;
+
+    this.printNotice.set(null);
+    this.printingLabels.set(true);
+
+    const filters = {
+      search: this.catalogSearch(),
+      saleCategory: this.catalogCategory(),
+      available: this.catalogAvailability() === '' ? undefined : this.catalogAvailability() === 'true',
+      stockPolicy: this.catalogStockPolicy() || undefined,
+    };
+    const pageSize = 100;
+
+    this.posCatalog
+      .listCatalog(id, 0, pageSize, filters)
+      .pipe(
+        expand((page) =>
+          page.metadata.hasNext
+            ? this.posCatalog.listCatalog(id, page.metadata.pageNumber + 1, pageSize, filters)
+            : EMPTY,
+        ),
+        reduce(
+          (acc, page) => acc.concat(page.items),
+          [] as HeadquarterPosCatalogItemResponse[],
+        ),
+        finalize(() => this.printingLabels.set(false)),
+      )
+      .subscribe({
+        next: (rows) => {
+          const labels = rows
+            .map((row) => ({
+              sku: row.itemSku || '',
+              name: row.itemName || this.itemName(row.itemId),
+              price: row.salePrice,
+            }))
+            .filter((label) => label.sku);
+          const skipped = rows.length - labels.length;
+          if (!labels.length) {
+            this.printNotice.set(
+              skipped > 0
+                ? 'Ningún producto del filtro tiene SKU para imprimir.'
+                : 'No hay productos para imprimir con el filtro actual.',
+            );
+            return;
+          }
+          if (skipped > 0) {
+            this.printNotice.set(
+              `Se omitieron ${skipped} producto${skipped === 1 ? '' : 's'} sin SKU.`,
+            );
+          }
+          void this.labelPrint.print(labels);
+        },
+        error: (err: unknown) => this.error.set(parseApiError(err)),
+      });
   }
 
   printItemLabel(row: HeadquarterPosCatalogItemResponse): void {
     const sku = row.itemSku || this.itemSku(row.itemId);
-    if (sku) this.labelPrint.print([{ sku, name: row.itemName || this.itemName(row.itemId), price: row.salePrice }]);
+    if (!sku) {
+      this.printNotice.set('Este producto no tiene SKU; no se puede imprimir la etiqueta.');
+      return;
+    }
+    this.printNotice.set(null);
+    void this.labelPrint.print([
+      { sku, name: row.itemName || this.itemName(row.itemId), price: row.salePrice },
+    ]);
   }
 
   canAccess(): boolean {

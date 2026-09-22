@@ -20,8 +20,9 @@ import java.lang.annotation.Target;
 @Operation(
     summary = "Latest Android POS APK",
     description =
-        "Returns version metadata and a pre-signed download URL for the CI-published APK "
-            + "at the fixed S3 release prefix. Public; no JWT required.")
+        "Returns version metadata and a pre-signed download URL for the CI-published APK. "
+            + "The manifest current.json points at the versioned S3 object (and CI also "
+            + "maintains a latest.apk alias). Public; no JWT required.")
 @ApiResponse(
     responseCode = "200",
     description = "Release metadata and download URL.",

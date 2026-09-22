@@ -2,12 +2,14 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject, PLATFORM_ID } from '@angular/core';
 
+import { authTokenStorage } from '../auth/auth-token.storage';
+
 function isPublicAuthApiUrl(url: string): boolean {
   return url.includes('/api/v1/auth/');
 }
 
 /**
- * Añade {@code Authorization: Bearer …} con el access token de {@code sessionStorage}
+ * Añade {@code Authorization: Bearer …} con el access token de {@code localStorage}
  * a las peticiones HTTP (excepto si el caller ya envió {@code Authorization}).
  */
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
@@ -18,7 +20,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   if (isPublicAuthApiUrl(req.url)) {
     return next(req);
   }
-  const token = sessionStorage.getItem('accessToken');
+  const token = authTokenStorage.getAccessToken();
   if (!token || req.headers.has('Authorization')) {
     return next(req);
   }

@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CashCountAttemptEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CashWithdrawalEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
@@ -53,6 +54,9 @@ import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
+import io.github.alexistrejo.pimienta.pos.data.update.ApkInstallOutcome
+import io.github.alexistrejo.pimienta.pos.data.update.PosAppUpdater
+import io.github.alexistrejo.pimienta.pos.data.update.ReleaseCheckOutcome
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
 import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
@@ -436,12 +440,7 @@ private fun ZCloseDialog(
                             "Captura el efectivo físico en cajón. No se muestra el monto esperado ni la diferencia.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(
-                            Money.format(Money.fromInput(count) ?: 0),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Numpad(count, { count = it })
+                        Numpad(count, { count = it }, decimal = true)
                         message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
@@ -570,6 +569,7 @@ private fun ZCloseDialog(
                 val result = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, currentAttempt, signingManager, pin, printSummaryTicket) }
                 pinRequested = false
                 result.onSuccess {
+                    PrintWorker.enqueue(context)
                     SyncWorker.enqueue(context)
                     stage = CountStage.COMPLETED
                 }.onFailure { ex ->
@@ -662,6 +662,7 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
 @Composable
 private fun SaleHistoryRow(sale: SaleEntity, repository: PosRepository, notice: (String) -> Unit, cancel: () -> Unit) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -670,7 +671,7 @@ private fun SaleHistoryRow(sale: SaleEntity, repository: PosRepository, notice: 
             }
             Text("${sale.paymentMethod} · ${if (sale.status == "CANCELLED") "CANCELADA" else "CONFIRMADA"}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PosButton("Reimprimir", { scope.launch { withContext(Dispatchers.IO) { repository.requestReprint(sale.id) }; notice("Reimpresión agregada a la cola local.") } }, modifier = Modifier.weight(1f))
+                PosButton("Reimprimir", { scope.launch { withContext(Dispatchers.IO) { repository.requestReprint(sale.id) }; PrintWorker.enqueue(context); notice("Reimpresión enviada a la impresora o a la cola local.") } }, modifier = Modifier.weight(1f))
                 if (sale.paymentMethod == "CASH" && sale.status != "CANCELLED") PosButton("Cancelar efectivo", cancel, modifier = Modifier.weight(1f))
             }
         }
@@ -736,9 +737,14 @@ private fun StatusPanel(
     val printJobs = remember { mutableStateOf(emptyList<PrintJobEntity>()) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
     var peripheralMessage by remember { mutableStateOf<String?>(null) }
+    var device by remember { mutableStateOf<DeviceEntity?>(null) }
+    var updateMessage by remember { mutableStateOf<String?>(null) }
+    var updateBusy by remember { mutableStateOf(false) }
+    var availableUpdateName by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val mode = repository.mode()
+    val updater = remember(context) { PosAppUpdater(context) }
     var printerStatus by remember(mode) { mutableStateOf(PrinterFactory.printerStatus(context, mode)) }
 
     LaunchedEffect(mode) {
@@ -759,12 +765,114 @@ private fun StatusPanel(
         }
     }
 
-    LaunchedEffect(Unit) { refreshPrintJobs() }
+    fun applyCheckOutcome(outcome: ReleaseCheckOutcome, announceUpToDate: Boolean) {
+        when (outcome) {
+            is ReleaseCheckOutcome.UpdateAvailable -> {
+                availableUpdateName = outcome.remote.versionName
+                updateMessage = "Hay una versión nueva: v${outcome.remote.versionName}."
+            }
+            is ReleaseCheckOutcome.UpToDate -> {
+                availableUpdateName = null
+                if (announceUpToDate) {
+                    val remoteName = outcome.remote.versionName.ifBlank { BuildConfig.VERSION_NAME }
+                    updateMessage = "Estás al día (v$remoteName)."
+                }
+            }
+            is ReleaseCheckOutcome.Failed -> {
+                updateMessage = outcome.message
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshPrintJobs()
+        device = withContext(Dispatchers.IO) { repository.device() }
+        availableUpdateName = updater.cachedUpdateVersionName()
+        updateBusy = true
+        val outcome = withContext(Dispatchers.IO) { updater.check(force = false) }
+        updateBusy = false
+        applyCheckOutcome(outcome, announceUpToDate = false)
+    }
 
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("Estado y periféricos", style = MaterialTheme.typography.headlineSmall)
             MetricTile("Eventos pendientes", pendingEvents.toString())
+            Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Aplicación", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Versión ${BuildConfig.VERSION_NAME} (código ${BuildConfig.VERSION_CODE})",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        if (mode == RuntimeMode.SANDBOX) "Modo Capacitación" else "Modo Venta",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val currentDevice = device
+                    if (currentDevice != null) {
+                        Text(
+                            "Dispositivo ${currentDevice.name} · ${currentDevice.visibleCode}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "Estado ${currentDevice.status}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "Mínima requerida ${currentDevice.minAppVersion ?: "—"}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            "Dispositivo aún no enrolado en este modo.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    PosButton(
+                        if (updateBusy) "Consultando…" else "Buscar actualización",
+                        {
+                            scope.launch {
+                                updateBusy = true
+                                updateMessage = null
+                                val outcome = withContext(Dispatchers.IO) { updater.check(force = true) }
+                                updateBusy = false
+                                applyCheckOutcome(outcome, announceUpToDate = true)
+                            }
+                        },
+                        enabled = !updateBusy,
+                    )
+                    val pendingName = availableUpdateName
+                    if (pendingName != null) {
+                        PosButton(
+                            if (updateBusy) "Descargando…" else "Actualizar a v$pendingName",
+                            {
+                                scope.launch {
+                                    updateBusy = true
+                                    updateMessage = "Descargando APK…"
+                                    when (val result = withContext(Dispatchers.IO) { updater.downloadAndInstall() }) {
+                                        ApkInstallOutcome.Started ->
+                                            updateMessage =
+                                                "Instalador abierto. Confirma la actualización sin desinstalar la app."
+                                        ApkInstallOutcome.NeedsInstallPermission -> {
+                                            updateMessage =
+                                                "Activa «Instalar apps desconocidas» para Pimienta POS y vuelve a intentar."
+                                            runCatching {
+                                                context.startActivity(updater.installPermissionSettingsIntent())
+                                            }
+                                        }
+                                        is ApkInstallOutcome.Failed -> updateMessage = result.message
+                                    }
+                                    updateBusy = false
+                                }
+                            },
+                            enabled = !updateBusy,
+                            primary = true,
+                        )
+                    }
+                    updateMessage?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            }
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Sincronización", style = MaterialTheme.typography.titleMedium)
@@ -846,7 +954,7 @@ private fun StatusPanel(
     }
 }
 
-// Confirms a Manager PIN for high-impact actions such as sealing a shift or open amount.
+// Confirms a Manager PIN for high-impact actions such as sealing a shift.
 @Composable
 internal fun ManagerPinDialog(
     users: List<LocalUserEntity>,

@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -80,6 +81,7 @@ internal fun StatusBar(
     printerLabel: String,
     printerAlert: Boolean,
     scannerLabel: String,
+    deviceVisibleCode: String? = null,
     onCreateProduct: () -> Unit = {},
     onSyncNow: () -> Unit = {},
     syncBusy: Boolean = false,
@@ -154,7 +156,7 @@ internal fun StatusBar(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     StatusChip(syncLabel, alert = syncLabel.contains("desactualizado", ignoreCase = true))
-                    StatusChip("Tablet T1")
+                    StatusChip(deviceVisibleCode?.takeIf { it.isNotBlank() } ?: "Sin código")
                     StatusChip(scannerLabel)
                 }
             }
@@ -201,8 +203,7 @@ internal fun PendingCatalogDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text("Importe", style = MaterialTheme.typography.labelLarge)
-                Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
-                Numpad(amount, { amount = it }, onSubmit = ::submit)
+                Numpad(amount, { amount = it }, decimal = true, onSubmit = ::submit)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
@@ -288,8 +289,7 @@ internal fun CreatePosProductDialog(
                     Text("Controla inventario")
                 }
                 Text("Precio", style = MaterialTheme.typography.labelLarge)
-                Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
-                Numpad(amount, { amount = it }, onSubmit = ::submit)
+                Numpad(amount, { amount = it }, decimal = true, onSubmit = ::submit)
                 (error ?: localError)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f), enabled = !busy)
@@ -300,7 +300,7 @@ internal fun CreatePosProductDialog(
     }
 }
 
-// Captures category and amount; Manager PIN is requested by the sale screen afterwards.
+// Captures category and amount; the cashier adds the line without a manager PIN.
 @Composable
 internal fun OpenAmountDialog(
     categories: List<String>,
@@ -345,8 +345,7 @@ internal fun OpenAmountDialog(
                 Text("Descripción generada", style = MaterialTheme.typography.labelLarge)
                 Text("Producto abierto · ${selectedCategory.ifBlank { "categoría" }}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Importe", style = MaterialTheme.typography.labelLarge)
-                Text(Money.format(Money.fromInput(amount) ?: 0), style = MaterialTheme.typography.headlineSmall)
-                Numpad(amount, { amount = it }, onSubmit = ::submit)
+                Numpad(amount, { amount = it }, decimal = true, onSubmit = ::submit)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
@@ -433,6 +432,7 @@ internal fun CashWithdrawalAuthorization(
         else scope.launch {
             val withdrawal = withContext(Dispatchers.IO) { repository.recordWithdrawal(shift, cents, user.id, pin) }
             if (withdrawal == null) error = "No se pudo autorizar la sangría." else {
+                PrintWorker.enqueue(context)
                 SyncWorker.enqueue(context)
                 onRecorded(withdrawal)
             }
@@ -450,7 +450,8 @@ internal fun CashWithdrawalAuthorization(
             ) {
                 Text("Registrar sangría", style = MaterialTheme.typography.titleLarge)
                 Text("Motivo: Resguardo de efectivo", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(amount, { amount = it }, label = { Text("Importe en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Text("Importe en pesos", style = MaterialTheme.typography.labelLarge)
+                Numpad(amount, { amount = it }, decimal = true, onSubmit = ::record)
                 managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Gerente o Administrador", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true)
@@ -1058,7 +1059,7 @@ internal fun CashEntry(modifier: Modifier, value: String, changed: (String) -> U
             }
         }
         Spacer(Modifier.height(6.dp))
-        Numpad(value, changed)
+        Numpad(value, changed, decimal = true, showDisplay = false)
     }
 }
 
@@ -1116,73 +1117,88 @@ internal fun SaleCompleted(folio: String?, onFinished: (String) -> Unit) {
     }
 }
 
+// Keeps the typed value at a fixed height so the keys never jump on the first digit.
+@Composable
+private fun NumpadDisplay(
+    value: String,
+    decimal: Boolean,
+    masked: Boolean,
+    revealValue: Boolean,
+) {
+    val shown = when {
+        decimal -> Money.format(Money.fromInput(value) ?: 0)
+        masked && !revealValue -> if (value.isBlank()) "----" else "•".repeat(value.length)
+        else -> value.ifEmpty { "------" }
+    }
+    Text(
+        shown,
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 40.dp),
+    )
+    Spacer(Modifier.height(4.dp))
+}
+
 // Provides number-only input without a nested scroll grid so parent screens can scroll the full pad.
 @Composable
 internal fun Numpad(
     value: String,
     changed: (String) -> Unit,
+    decimal: Boolean = false,
     masked: Boolean = false,
     onSubmit: (() -> Unit)? = null,
     revealValue: Boolean = false,
-    showEnter: Boolean = onSubmit != null,
+    showDisplay: Boolean = true,
 ) {
     val keys = when {
-        masked && showEnter && onSubmit != null -> {
-            listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "⌫", "Entrar")
-        }
-        masked || (!value.contains('.') && showEnter && onSubmit != null) -> {
-            listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "", "0", "⌫")
-        }
-        else -> {
-            listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
-        }
+        decimal -> listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
+        onSubmit != null -> listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "⌫", "Entrar")
+        else -> listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "", "0", "⌫")
     }
-    // Dots only while typing; empty state stays quiet so the parent can label the field.
-    if (masked && !revealValue && value.isNotBlank()) {
-        Text(
-            "•".repeat(value.length),
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center,
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (showDisplay) {
+            NumpadDisplay(value, decimal, masked, revealValue)
+        }
+        Column(
             modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(4.dp))
-    }
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(7.dp),
-    ) {
-        keys.chunked(3).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
-            ) {
-                row.forEach { key ->
-                    if (key.isEmpty()) {
-                        Spacer(modifier = Modifier.weight(1f).height(48.dp))
-                    } else {
-                        PosButton(
-                            key,
-                            {
-                                when (key) {
-                                    "⌫" -> {
-                                        when {
-                                            value.endsWith(".00") -> changed(value.dropLast(3))
-                                            value.endsWith(".0") -> changed(value.dropLast(2))
-                                            else -> changed(value.dropLast(1))
+            verticalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            keys.chunked(3).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    row.forEach { key ->
+                        if (key.isEmpty()) {
+                            Spacer(modifier = Modifier.weight(1f).height(48.dp))
+                        } else {
+                            PosButton(
+                                key,
+                                {
+                                    when (key) {
+                                        "⌫" -> {
+                                            when {
+                                                value.endsWith(".00") -> changed(value.dropLast(3))
+                                                value.endsWith(".0") -> changed(value.dropLast(2))
+                                                else -> changed(value.dropLast(1))
+                                            }
+                                        }
+                                        "Entrar" -> onSubmit?.invoke()
+                                        "." -> if (!value.contains('.')) changed(if (value.isBlank()) "0." else "$value.")
+                                        else -> {
+                                            val fraction = value.substringAfter('.', missingDelimiterValue = "")
+                                            val blocksExtraDecimals = value.contains('.') && fraction.length >= 2
+                                            if (!blocksExtraDecimals && value.length < 8) changed(value + key)
                                         }
                                     }
-                                    "Entrar" -> onSubmit?.invoke()
-                                    "." -> if (!value.contains('.')) changed(if (value.isBlank()) "0." else "$value.")
-                                    else -> {
-                                        val fraction = value.substringAfter('.', missingDelimiterValue = "")
-                                        val blocksExtraDecimals = value.contains('.') && fraction.length >= 2
-                                        if (!blocksExtraDecimals && value.length < 8) changed(value + key)
-                                    }
-                                }
-                            },
-                            enabled = key != "Entrar" || (onSubmit != null && value.isNotBlank()),
-                            modifier = Modifier.weight(1f).height(48.dp),
-                        )
+                                },
+                                enabled = key != "Entrar" || (onSubmit != null && value.isNotBlank()),
+                                modifier = Modifier.weight(1f).height(48.dp),
+                            )
+                        }
                     }
                 }
             }

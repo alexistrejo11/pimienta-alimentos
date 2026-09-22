@@ -9,4 +9,8 @@ public record PosApkReleaseResponse(
     @Schema(description = "Android versionCode from the published manifest.", example = "1")
         int versionCode,
     @Schema(description = "Pre-signed S3 GET URL for the APK.") String url,
-    @Schema(description = "URL lifetime in seconds.", example = "86400") long expiresInSeconds) {}
+    @Schema(description = "URL lifetime in seconds.", example = "86400") long expiresInSeconds,
+    @Schema(
+            description = "UTC publish timestamp from the manifest (ISO-8601), when available.",
+            example = "2026-03-21T15:30:00Z")
+        String uploadedAt) {}

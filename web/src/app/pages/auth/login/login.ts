@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, switchMap } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { authTokenStorage } from '../../../core/auth/auth-token.storage';
+import { authUserMessage } from '../../../core/auth/auth-user-message';
 import { SessionContextService } from '../../../core/auth/session-context.service';
 import { coerceWorkspaceUrl } from '../../../core/auth/workspace-area';
 import {
@@ -12,6 +14,7 @@ import {
   type ParsedApiError,
 } from '../../../core/http/parse-api-error';
 import type { LoginRequest } from '../../../core/model/account/auth.dto';
+import { BRAND_LOGO_URL, LANDING_COVER_IMAGE } from '../../home/brand';
 
 @Component({
   selector: 'app-login',
@@ -25,8 +28,11 @@ export class Login {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  readonly logoUrl = BRAND_LOGO_URL;
+  readonly coverImageUrl = LANDING_COVER_IMAGE;
   readonly submitting = signal(false);
   readonly apiError = signal<ParsedApiError | null>(null);
+  readonly apiErrorMessage = signal<string | null>(null);
 
   /**
    * Mirrors backend {@link LoginRequest}: {@code email} + {@code password} with Bean Validation
@@ -39,6 +45,7 @@ export class Login {
 
   submit(): void {
     this.apiError.set(null);
+    this.apiErrorMessage.set(null);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -56,8 +63,7 @@ export class Login {
       .pipe(
         switchMap((tokens) => {
           this.session.clear();
-          sessionStorage.setItem('accessToken', tokens.accessToken);
-          sessionStorage.setItem('refreshToken', tokens.refreshToken);
+          authTokenStorage.setTokens(tokens.accessToken, tokens.refreshToken);
           return this.session.ensureLoaded();
         }),
         finalize(() => this.submitting.set(false)),
@@ -77,7 +83,11 @@ export class Login {
             void this.router.navigate(['/auth/pendiente-aprobacion']);
             return;
           }
+          if (parsed.traceId) {
+            console.warn('[auth/login]', parsed.errorCode, parsed.traceId);
+          }
           this.apiError.set(parsed);
+          this.apiErrorMessage.set(authUserMessage(parsed, 'login'));
         },
       });
   }

@@ -10,6 +10,7 @@ import { inject, PLATFORM_ID } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, shareReplay, switchMap, throwError } from 'rxjs';
 
+import { authTokenStorage } from '../auth/auth-token.storage';
 import { API_BASE_URL } from '../config/api.config';
 import type { TokenResponse } from '../model/account/auth.dto';
 
@@ -27,7 +28,7 @@ let refreshInFlight: Observable<TokenResponse> | null = null;
 /** POST /auth/refresh — issues a new access token; the refresh token is reused (not rotated). */
 function refreshAccessToken(http: HttpClient): Observable<TokenResponse> {
   if (!refreshInFlight) {
-    const refreshToken = sessionStorage.getItem('refreshToken');
+    const refreshToken = authTokenStorage.getRefreshToken();
     if (!refreshToken) {
       return throwError(() => new Error('Missing refresh token'));
     }
@@ -44,8 +45,7 @@ function refreshAccessToken(http: HttpClient): Observable<TokenResponse> {
 }
 
 function clearSessionAndRedirect(router: Router, err: HttpErrorResponse): Observable<never> {
-  sessionStorage.removeItem('accessToken');
-  sessionStorage.removeItem('refreshToken');
+  authTokenStorage.clear();
   const returnUrl = router.url.startsWith('/app') ? router.url : undefined;
   void router.navigate(['/auth/login'], returnUrl ? { queryParams: { returnUrl } } : {});
   return throwError(() => err);
@@ -103,14 +103,14 @@ export const authSessionInterceptor: HttpInterceptorFn = (req, next) => {
       if (req.context.get(AUTH_RETRY_AFTER_REFRESH)) {
         return clearSessionAndRedirect(router, err);
       }
-      const refreshToken = sessionStorage.getItem('refreshToken');
+      const refreshToken = authTokenStorage.getRefreshToken();
       if (!refreshToken) {
         return clearSessionAndRedirect(router, err);
       }
 
       return refreshAccessToken(bareHttp).pipe(
         switchMap((tokens) => {
-          sessionStorage.setItem('accessToken', tokens.accessToken);
+          authTokenStorage.setAccessToken(tokens.accessToken);
           const retryReq = req.clone({
             context: req.context.set(AUTH_RETRY_AFTER_REFRESH, true),
             headers: req.headers.delete('Authorization'),

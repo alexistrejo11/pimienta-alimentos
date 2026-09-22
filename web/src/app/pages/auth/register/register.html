@@ -3,7 +3,7 @@
     <img
       class="h-full w-full object-cover opacity-10 grayscale"
       alt=""
-      src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4b3gbryQF21tWscOqM-XYw0VPFHDtlAw48-aylYxmiLc9GliAP4qW07_G4ATzs7QDBEtItZ24PcFd3UB-OejbZ2_lAsH3j3ctSky5GhpXk9dT4DVW0GLiYtidzYyu4WSKvpKCcpc6OOsMGFSurwghCnnghvUeUFoL-Q4i9t5DmElqX8FqyBzkMsX1vjS-dRkICRB2UASC0UgaF0X85fnagZnDQ2aZ7G0KTcSgD5QL93aOh-Hy2nGTfv8cPLteHz8hoh6yoYd2QZii"
+      [src]="coverImageUrl"
     />
     <div class="auth-shell__overlay absolute inset-0"></div>
   </div>
@@ -24,7 +24,7 @@
         <img
           class="h-20 w-auto"
           alt="Pimienta Alimentos"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCegkw-1LQCVStE7rfhXP1VVsteI9fbRnfHhHaE_oS1meKM7TbGz5tzGCf0Js70wcM1Rg0FyU7dWUf7fDNhQKxkDp1NgxqnT8DlLwHd7A5LZplpxpOkpbTJ5go2A8ldl82nkUaEA651gRmosACiaITRfeaBtUf0BxYse6Cq0hlw8J7h1wVnOBoRuUpC75uZNiIh1-Vxq0OmUcXgsXJu-pux1CsdAjkfMf_6ZS5sXMarZbWQ5MlpE1y4hnuBo9pR646nrJnqXgwmyQzP"
+          [src]="logoUrl"
         />
       </div>
 
@@ -82,23 +82,19 @@
               </div>
             </div>
           } @else {
-            @if (apiError(); as err) {
+            @if (apiErrorMessage(); as msg) {
               <div role="alert" class="auth-alert">
-                <p class="auth-alert__title">{{ err.message }}</p>
-                @if (err.traceId) {
-                  <p class="auth-alert__meta">Referencia (soporte): {{ err.traceId }}</p>
-                }
-                @if (err.errorCode) {
-                  <p class="auth-alert__meta">Código: {{ err.errorCode }}</p>
-                }
-                @if (err.fieldErrors.length > 0) {
-                  <ul class="mt-3 list-disc space-y-1 pl-5">
-                    @for (fe of err.fieldErrors; track fe.field + fe.message) {
-                      <li>
-                        <span class="font-medium">{{ fe.field }}</span>: {{ fe.message }}
-                      </li>
-                    }
-                  </ul>
+                <p class="auth-alert__title">{{ msg }}</p>
+                @if (apiError(); as err) {
+                  @if (err.fieldErrors.length > 0) {
+                    <ul class="mt-3 list-disc space-y-1 pl-5">
+                      @for (fe of err.fieldErrors; track fe.field + fe.message) {
+                        <li>
+                          <span class="font-medium">{{ fe.field }}</span>: {{ fe.message }}
+                        </li>
+                      }
+                    </ul>
+                  }
                 }
               </div>
             }

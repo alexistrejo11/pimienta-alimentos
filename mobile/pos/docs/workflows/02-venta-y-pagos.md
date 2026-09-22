@@ -137,10 +137,7 @@ El flujo completo está en [Monto abierto](../ux/02-monto-abierto.md). Se resume
 flowchart TD
     A[Tarjeta Monto abierto] --> B[Elegir categoría]
     B --> C[Capturar importe positivo con numpad]
-    C --> D[Solicitar PIN Manager/Superadmin]
-    D --> E{Autorizado?}
-    E -- Sí --> F[Agregar línea generada al carrito]
-    E -- No o cancelar --> G[Carrito intacto]
+    C --> D[Agregar línea generada al carrito]
 ```
 
 La línea se llama `Producto abierto · {categoría}`, no modifica inventario y queda marcada para revisión posterior.
@@ -167,7 +164,7 @@ Después de **Confirmar cobro e imprimir**, ni el precio capturado ni el descuen
 2. Una venta confirmada genera folio, evento de sincronización y trabajo de impresión en la misma transacción local.
 3. Cancelar tarjeta declinada no pierde artículos del carrito.
 4. Una impresión fallida no permite confirmar la misma venta otra vez ni revierte dinero.
-5. Monto abierto requiere categoría, importe y autorización, sin teclado alfanumérico.
+5. Monto abierto requiere categoría e importe, sin teclado alfanumérico ni PIN.
 6. Un scanner desconocido solo agrega una línea pendiente después de que el cajero capture importe y confirme explícitamente.
 7. Un producto válido leído o tocado durante un borrador de cobro vuelve automáticamente al carrito, lo agrega y recalcula el total sin crear un pago.
 8. Tras iniciar la confirmación atómica, el POS no acepta lecturas ni cambios hasta concluir el registro local.

@@ -119,6 +119,8 @@ object Money {
 class PosRepository(private val provider: PosDatabaseProvider, private val mode: RuntimeMode = provider.modes.mode()) {
     private val database get() = provider.database(mode)
     fun mode() = mode
+    // Local enrolled device row (name, visibleCode, minAppVersion) for diagnostics UI.
+    fun device(): DeviceEntity? = database.operationsDao().device()
     fun syncState() = database.syncDao().state()
     fun users() = database.userDao().activeUsers()
     fun products() = database.productDao().getAll()
@@ -416,7 +418,6 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                 }
                 SaleLineType.PENDING_CATALOG -> Unit
                 SaleLineType.OPEN_AMOUNT -> {
-                    val authorizer = line.authorizedByUserId?.let { database.userDao().find(it) }
                     when {
                         !allowOpenProducts() ->
                             return Result.failure(IllegalStateException("Monto abierto no está habilitado en esta sede."))
@@ -428,8 +429,6 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                             return Result.failure(IllegalArgumentException("La línea de monto abierto no es válida."))
                         line.name != "Producto abierto · ${line.category.trim()}" ->
                             return Result.failure(IllegalArgumentException("La descripción de monto abierto no coincide con la categoría."))
-                        line.authorizedAtEpochMillis == null || authorizer == null || !authorizer.active || !authorizer.isManagerOrAdmin ->
-                            return Result.failure(IllegalArgumentException("El monto abierto requiere autorización de Gerente o Administrador."))
                     }
                 }
             }

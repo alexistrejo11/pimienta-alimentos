@@ -50,6 +50,7 @@ public class S3PosApkReleaseStorageAdapter implements PosApkReleaseStoragePort {
       String versionName = textOrEmpty(root, "versionName");
       int versionCode = root.path("versionCode").asInt(0);
       String s3Key = textOrEmpty(root, "s3Key");
+      String uploadedAt = textOrEmpty(root, "uploadedAt");
       if (!StringUtils.hasText(versionName) || versionCode <= 0) {
         log.warn("POS APK manifest incomplete key={}", manifestKey);
         return Optional.empty();
@@ -57,7 +58,9 @@ public class S3PosApkReleaseStorageAdapter implements PosApkReleaseStoragePort {
       if (!StringUtils.hasText(s3Key)) {
         s3Key = defaultApkKey;
       }
-      return Optional.of(new PosApkManifest(versionName, versionCode, s3Key));
+      return Optional.of(
+          new PosApkManifest(
+              versionName, versionCode, s3Key, StringUtils.hasText(uploadedAt) ? uploadedAt : null));
     } catch (NoSuchKeyException e) {
       log.info("POS APK manifest missing key={}", manifestKey);
       return Optional.empty();

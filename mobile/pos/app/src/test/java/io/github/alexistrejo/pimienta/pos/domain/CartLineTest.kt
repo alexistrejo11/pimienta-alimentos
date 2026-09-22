@@ -29,7 +29,5 @@ class CartLineTest {
         quantity = 1,
         lineType = SaleLineType.OPEN_AMOUNT,
         cartLineId = id,
-        authorizedByUserId = "user-debug-manager",
-        authorizedAtEpochMillis = 1L,
     )
 }

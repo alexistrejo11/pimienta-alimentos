@@ -405,15 +405,14 @@ class PosSyncEventsIntegrationTest {
   }
 
   @Test
-  void openAmount_enabledWithManager_isAuditedAndDoesNotMoveInventory() throws Exception {
+  void openAmount_enabled_isAuditedAndDoesNotMoveInventory() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-OPEN-" + UUID.randomUUID());
     putPosSettings(staffToken, hqId, true);
     long itemId = createItem(staffToken, "SKU-OPEN-" + UUID.randomUUID(), "Open seed");
-    long managerId = createOperator(staffToken, hqId, "Manager Open", "MANAGER");
     EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Open");
 
-    String body = openSaleEventJson(device, hqId, UUID.randomUUID(), UUID.randomUUID(), itemId, managerId);
+    String body = openSaleEventJson(device, hqId, UUID.randomUUID(), UUID.randomUUID(), itemId);
     mockMvc.perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"))
@@ -722,15 +721,14 @@ class PosSyncEventsIntegrationTest {
   }
 
   private String openSaleEventJson(
-      EnrolledDevice device, long siteId, UUID eventId, UUID saleId, long seedProductId, long authorizerId)
+      EnrolledDevice device, long siteId, UUID eventId, UUID saleId, long seedProductId)
       throws Exception {
-    String body = saleEventJson(device, siteId, eventId, saleId, seedProductId, authorizerId, 1, 4000, false);
+    String body = saleEventJson(device, siteId, eventId, saleId, seedProductId, 1L, 1, 4000, false);
     return body
         .replace("\"productId\": \"" + seedProductId + "\"", "\"lineType\": \"OPEN_AMOUNT\",\n                     \"productId\": null")
         .replace("\"productName\": \"Producto\"", "\"productName\": \"Producto abierto · MISC\"")
         .replace("\"saleCategory\": \"Bebidas\"", "\"saleCategory\": \"MISC\"")
-        .replace("\"stockPolicy\": \"CONTROLLED\"", "\"stockPolicy\": \"NOT_CONTROLLED\"")
-        .replace("\"rawBarcode\": null", "\"rawBarcode\": null,\n                     \"authorizedByOperatorId\": " + authorizerId + ",\n                     \"authorizedAt\": \"2026-09-14T17:00:00Z\"");
+        .replace("\"stockPolicy\": \"CONTROLLED\"", "\"stockPolicy\": \"NOT_CONTROLLED\"");
   }
 
   private void putCatalog(

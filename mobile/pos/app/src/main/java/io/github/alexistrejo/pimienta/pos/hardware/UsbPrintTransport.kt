@@ -9,6 +9,7 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
+import android.os.Build
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,12 +43,14 @@ class UsbPrintTransport(
 
     companion object {
         const val ACTION_USB_PERMISSION = "io.github.alexistrejo.pimienta.pos.USB_PERMISSION"
+        internal val permissionGate = UsbPermissionGate()
 
         // Opens the first compatible USB printer discovered on the bus.
         fun open(context: Context): UsbPrintTransport? {
             val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
             val device = manager.deviceList.values.firstOrNull(::isPrinterCandidate) ?: return null
-            if (!manager.hasPermission(device) && !requestPermission(context, manager, device)) {
+            if (!manager.hasPermission(device)) {
+                requestPermission(context, manager, device)
                 return null
             }
             return openDevice(context, manager, device)
@@ -61,30 +64,41 @@ class UsbPrintTransport(
         }
 
         // Prompts for USB access when a printer is visible but not yet authorized.
-        fun requestPermissionIfNeeded(context: Context) {
+        fun requestPermissionIfNeeded(context: Context, device: UsbDevice? = null) {
             val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-            val device = manager.deviceList.values.firstOrNull(::isPrinterCandidate) ?: return
-            if (!manager.hasPermission(device)) {
-                requestPermission(context, manager, device)
+            val target = device ?: manager.deviceList.values.firstOrNull(::isPrinterCandidate) ?: return
+            if (!isPrinterCandidate(target)) return
+            if (!manager.hasPermission(target)) {
+                requestPermission(context, manager, target)
             }
         }
 
-        private fun isPrinterCandidate(device: UsbDevice): Boolean {
-            if (device.deviceClass == UsbConstants.USB_CLASS_PRINTER) return true
-            for (index in 0 until device.interfaceCount) {
-                if (device.getInterface(index).interfaceClass == UsbConstants.USB_CLASS_PRINTER) return true
-            }
-            return false
+        fun isPrinterCandidate(device: UsbDevice): Boolean {
+            val interfaces = (0 until device.interfaceCount).map { device.getInterface(it).interfaceClass }
+            return permissionGate.isPrinterCandidate(device.deviceClass, interfaces)
         }
+
+        fun markPermissionResolved(device: UsbDevice) {
+            permissionGate.markResolved(device.deviceId)
+        }
+
+        @Suppress("DEPRECATION")
+        fun deviceFrom(intent: Intent): UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
 
         private fun requestPermission(context: Context, manager: UsbManager, device: UsbDevice): Boolean {
-            val intent = PendingIntent.getBroadcast(
+            val isPrinter = isPrinterCandidate(device)
+            if (!permissionGate.shouldPrompt(device.deviceId, isPrinter, manager.hasPermission(device))) {
+                return false
+            }
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+            val pending = PendingIntent.getBroadcast(
                 context,
                 0,
                 Intent(ACTION_USB_PERMISSION).setPackage(context.packageName),
-                PendingIntent.FLAG_IMMUTABLE,
+                flags,
             )
-            manager.requestPermission(device, intent)
+            manager.requestPermission(device, pending)
             return false
         }
 

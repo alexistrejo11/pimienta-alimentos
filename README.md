@@ -71,7 +71,8 @@ cd mobile/pos
 - Changes under `web/` publish and deploy the web container from `main`.
 - Changes under `backend/` publish and deploy the API container from `main`.
 - Changes under `mobile/pos/` run Android tests, build a signed release APK,
-  and publish `latest.apk` plus its manifest to S3 from `main`.
+  and publish a versioned S3 object plus `latest.apk` alias and `current.json`
+  from `main` (bump `versionCode` in Gradle before merge).
 - Required production credentials are stored in GitHub Actions and deployment
   environments, never in this repository.
 

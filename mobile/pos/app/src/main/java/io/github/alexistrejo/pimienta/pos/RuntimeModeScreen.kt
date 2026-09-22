@@ -38,11 +38,13 @@ internal fun RuntimeModeBanner(
     onTheme: ((Boolean) -> Unit)? = null,
     onResetDemo: (() -> Unit)? = null,
     onForceSync: (() -> Unit)? = null,
+    availableUpdateVersionName: String? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     var pin by remember { mutableStateOf("") }
     val isTraining = mode == RuntimeMode.SANDBOX
     val label = if (isTraining) "Modo Capacitación" else "Modo Venta"
+    val versionLabel = "Pimienta POS · v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
 
     // Tight bar: sits flush above the sale StatusBar (no extra bottom gap).
     Row(
@@ -50,12 +52,26 @@ internal fun RuntimeModeBanner(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            label,
-            color = if (isTraining) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                label,
+                color = if (isTraining) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                versionLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+            )
+            if (!availableUpdateVersionName.isNullOrBlank()) {
+                Text(
+                    "Hay actualización disponible (v$availableUpdateVersionName) · Panel Manager → Estado",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

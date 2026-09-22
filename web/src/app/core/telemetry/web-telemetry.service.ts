@@ -3,6 +3,7 @@ import { HttpBackend, HttpClient } from '@angular/common/http';
 import { ErrorHandler, inject, Injectable, PLATFORM_ID } from '@angular/core';
 
 import { API_BASE_URL, WEB_RELEASE } from '../config/api.config';
+import { authTokenStorage } from '../auth/auth-token.storage';
 
 type WebTelemetryPayload = {
   schemaVersion: number;
@@ -55,7 +56,7 @@ export class WebTelemetryService {
   }
 
   private send(payload: WebTelemetryPayload): void {
-    const accessToken = sessionStorage.getItem('accessToken');
+    const accessToken = authTokenStorage.getAccessToken();
     if (!accessToken) return;
 
     // Telemetry is best effort and must never affect the user operation.

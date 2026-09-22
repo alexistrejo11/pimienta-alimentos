@@ -53,9 +53,9 @@ si no se puede reconstruir alguno, queda bloqueado y nunca se elimina.
 
 El cliente persiste `allowOpenProducts` y `openAmountCategories` desde el
 bootstrap y cada delta de `policies`. Antes de agregar la línea solicita una
-categoría configurada, un importe positivo y autorización local de
-Manager/Superadmin. El payload conserva `lineType`, la identidad nula de
-producto, el snapshot generado, `authorizedByOperatorId` y `authorizedAt`.
+categoría configurada y un importe positivo, sin PIN de Manager. El payload
+conserva `lineType`, la identidad nula de producto y el snapshot generado.
+`authorizedByOperatorId` y `authorizedAt` pueden ir nulos.
 
 ## Corte III — worker único y no bloqueante
 

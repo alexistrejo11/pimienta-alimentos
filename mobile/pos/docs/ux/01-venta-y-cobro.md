@@ -71,7 +71,7 @@ Cada tarjeta debe mostrar nombre, precio efectivo y el estado relevante:
 - producto controlado normal: puede mostrar disponibilidad;
 - stock bajo/cero/negativo: muestra advertencia, sin bloquear por defecto;
 - no disponible por administración: permanece visible pero no permite agregar;
-- monto abierto: tarjeta diferenciada que inicia su flujo autorizado.
+- monto abierto: tarjeta diferenciada que inicia su flujo de categoría e importe.
 
 Tocar una tarjeta agrega una unidad. Si la línea ya existe en el carrito, aumenta su cantidad y conserva el precio capturado en la línea. Si un producto pasa a no disponible mientras ya está en el carrito, esa línea puede cobrarse, pero no aumentarse sin override.
 
@@ -179,7 +179,7 @@ No se usan para navegar entre catálogo, carrito y cobro.
 
 ## Monto abierto
 
-El monto abierto manual es una excepción autorizada que se documenta en [Monto abierto](02-monto-abierto.md). Usa categoría, numpad y PIN; el POS genera su descripción sin requerir teclado alfanumérico. Un barcode no encontrado usa el flujo separado de [Producto pendiente de catálogo](04-producto-pendiente-catalogo.md).
+El monto abierto manual es una excepción de catálogo que se documenta en [Monto abierto](02-monto-abierto.md). Usa categoría y numpad, sin PIN; el POS genera su descripción sin requerir teclado alfanumérico. Un barcode no encontrado usa el flujo separado de [Producto pendiente de catálogo](04-producto-pendiente-catalogo.md).
 
 ## Pendiente de diseñar
 

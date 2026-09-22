@@ -29,7 +29,7 @@ class PrintWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
     }
 
     companion object {
-        // Schedules one non-blocking attempt while preserving a single queue drainer.
+        // Starts a drain now: prints immediately when a printer is ready, otherwise jobs stay queued.
         fun enqueue(context: Context) {
             WorkManager.getInstance(context).enqueueUniqueWork(
                 UNIQUE_PRINT,

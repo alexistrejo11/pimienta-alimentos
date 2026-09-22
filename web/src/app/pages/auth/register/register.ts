@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { authUserMessage } from '../../../core/auth/auth-user-message';
 import {
   fieldMessage,
   parseApiError,
@@ -12,6 +13,7 @@ import {
 import type { RegisterRequest, RegisterResponse } from '../../../core/model/account/auth.dto';
 import type { Gender } from '../../../core/model/account/enums';
 import { accountStatusLabel, genderLabel } from '../../../core/i18n/enum-labels';
+import { BRAND_LOGO_URL, LANDING_COVER_IMAGE } from '../../home/brand';
 
 @Component({
   selector: 'app-register',
@@ -22,6 +24,9 @@ export class Register {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
 
+  readonly logoUrl = BRAND_LOGO_URL;
+  readonly coverImageUrl = LANDING_COVER_IMAGE;
+
   /** Options for {@link RegisterRequest.gender}; labels are UI-only. */
   readonly genderOptions: { value: Gender; label: string }[] = (
     ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER', 'PREFER_NOT_TO_SAY'] as Gender[]
@@ -30,6 +35,7 @@ export class Register {
   readonly submitting = signal(false);
   /** Set when the API returns an error (parsed {@link ParsedApiError} for template + logging). */
   readonly apiError = signal<ParsedApiError | null>(null);
+  readonly apiErrorMessage = signal<string | null>(null);
   /** Set on successful registration (no session; user must wait for approval, then use login). */
   readonly registerSuccess = signal<RegisterResponse | null>(null);
 
@@ -55,6 +61,7 @@ export class Register {
 
   submit(): void {
     this.apiError.set(null);
+    this.apiErrorMessage.set(null);
     this.registerSuccess.set(null);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -87,7 +94,12 @@ export class Register {
           this.form.reset();
         },
         error: (err: unknown) => {
-          this.apiError.set(parseApiError(err));
+          const parsed = parseApiError(err);
+          if (parsed.traceId) {
+            console.warn('[auth/register]', parsed.errorCode, parsed.traceId);
+          }
+          this.apiError.set(parsed);
+          this.apiErrorMessage.set(authUserMessage(parsed, 'register'));
         },
       });
   }

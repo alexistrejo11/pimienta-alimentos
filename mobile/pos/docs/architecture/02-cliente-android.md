@@ -56,7 +56,7 @@ Contiene casos de uso explícitos, por ejemplo:
 - `OpenShift`, `RecordCashWithdrawal` y `SubmitCashCount`;
 - `ApproveShiftClose` y `RejectCashCount`;
 - `AddProductToCart` y `AddWeightedLabelToCart`;
-- `AddOpenAmountWithAuthorization`;
+- `AddOpenAmount`;
 - `ApplySaleDiscountWithAuthorization`;
 - `ConfirmSale`;
 - `CancelCashSale`;

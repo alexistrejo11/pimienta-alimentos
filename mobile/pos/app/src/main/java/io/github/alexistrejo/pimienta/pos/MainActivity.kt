@@ -68,6 +68,8 @@ import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
 import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
+import io.github.alexistrejo.pimienta.pos.data.update.PosAppUpdater
+import io.github.alexistrejo.pimienta.pos.data.update.ReleaseCheckOutcome
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.FakeBarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.HidKeyboardBarcodeScanner
@@ -94,6 +96,7 @@ class MainActivity : ComponentActivity() {
         PosScannerRegistry.fake = fakeScanner
         PosScannerRegistry.primary = barcodeScanner
         registerUsbReceiver()
+        handleUsbAttachIntent(intent)
 
         val preferences = getSharedPreferences("pos-demo", MODE_PRIVATE)
 
@@ -110,6 +113,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUsbAttachIntent(intent)
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (hidScanner.onKeyEvent(event)) return true
         return super.dispatchKeyEvent(event)
@@ -121,6 +130,12 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    // Keeps the current activity when a printer attaches instead of stacking a new Sale screen.
+    private fun handleUsbAttachIntent(intent: Intent?) {
+        if (intent?.action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return
+        onUsbPrinterEvent(this, intent)
+    }
+
     // Refreshes printer status and drains queued tickets after USB permission or reconnect.
     private fun registerUsbReceiver() {
         val filter = IntentFilter().apply {
@@ -130,23 +145,36 @@ class MainActivity : ComponentActivity() {
         }
         usbReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                when (intent.action) {
-                    UsbPrintTransport.ACTION_USB_PERMISSION -> {
-                        PosPrinterRegistry.notifyChanged()
-                        if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                            PrintWorker.enqueue(context)
-                        }
-                    }
-                    UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                        PosPrinterRegistry.notifyChanged()
-                        UsbPrintTransport.requestPermissionIfNeeded(context)
-                        PrintWorker.enqueue(context)
-                    }
-                    UsbManager.ACTION_USB_DEVICE_DETACHED -> PosPrinterRegistry.notifyChanged()
-                }
+                onUsbPrinterEvent(context, intent)
             }
         }
         ContextCompat.registerReceiver(this, usbReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+    }
+
+    companion object {
+        // Ignores hub/HID attaches and coalesces printer permission prompts.
+        private fun onUsbPrinterEvent(context: Context, intent: Intent) {
+            val device = UsbPrintTransport.deviceFrom(intent)
+            when (intent.action) {
+                UsbPrintTransport.ACTION_USB_PERMISSION -> {
+                    if (device != null) UsbPrintTransport.markPermissionResolved(device)
+                    PosPrinterRegistry.notifyChanged()
+                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                        PrintWorker.enqueue(context)
+                    }
+                }
+                UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    if (device != null && !UsbPrintTransport.isPrinterCandidate(device)) return
+                    PosPrinterRegistry.notifyChanged()
+                    UsbPrintTransport.requestPermissionIfNeeded(context, device)
+                    PrintWorker.enqueue(context)
+                }
+                UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    if (device != null) UsbPrintTransport.markPermissionResolved(device)
+                    PosPrinterRegistry.notifyChanged()
+                }
+            }
+        }
     }
 }
 
@@ -171,6 +199,8 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     var enrolled by remember { mutableStateOf(false) }
     var loadGeneration by remember { mutableStateOf(0) }
     var productionCatalogSyncAttempted by remember { mutableStateOf(false) }
+    var availableUpdateVersionName by remember { mutableStateOf<String?>(null) }
+    val updater = remember(context) { PosAppUpdater(context) }
 
     fun reload() {
         val generation = loadGeneration + 1
@@ -211,6 +241,16 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     LaunchedEffect(Unit) {
         if (!BuildConfig.DEBUG) {
             enrolled = withContext(Dispatchers.IO) { TrainingModePolicy.isEnrolled(app.databaseProvider) }
+        }
+    }
+    // Throttled silent release check for the mode-banner notice (no auto-install).
+    LaunchedEffect(Unit) {
+        availableUpdateVersionName = updater.cachedUpdateVersionName()
+        when (val outcome = withContext(Dispatchers.IO) { updater.check(force = false) }) {
+            is ReleaseCheckOutcome.UpdateAvailable ->
+                availableUpdateVersionName = outcome.remote.versionName
+            is ReleaseCheckOutcome.UpToDate -> availableUpdateVersionName = null
+            is ReleaseCheckOutcome.Failed -> Unit
         }
     }
     val requiresPinForSwitch = TrainingModePolicy.requiresPinForModeSwitch(isEnrolled = enrolled)
@@ -304,6 +344,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 requiresPinForSwitch = requiresPinForSwitch,
                 onSwitchRequested = ::switchMode,
                 onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
+                availableUpdateVersionName = availableUpdateVersionName,
                 onForceSync = {
                     scope.launch {
                         notice = "Sincronizando con el servidor…"
@@ -747,8 +788,7 @@ internal fun Access(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Text(Money.format(Money.fromInput(opening) ?: 0), style = MaterialTheme.typography.headlineMedium)
-                        Numpad(opening, { opening = it })
+                        Numpad(opening, { opening = it }, decimal = true)
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

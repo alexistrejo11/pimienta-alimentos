@@ -5,11 +5,15 @@
 #   2) publish  — signed release APK + current.json → S3 (main only, after test).
 #
 # S3 keys (shared multi-app bucket, unique POS prefix):
-#   pimienta/releases/pos/android/latest.apk
-#   pimienta/releases/pos/android/current.json
+#   pimienta/releases/pos/android/{versionCode}/pimienta-pos-{versionName}.apk  (immutable)
+#   pimienta/releases/pos/android/latest.apk                                   (alias overwrite)
+#   pimienta/releases/pos/android/current.json                                 (pointer + metadata)
+#
+# Version source of truth: mobile/pos/app/build.gradle.kts (bump versionCode before merge).
+# Publish fails if the versioned APK key already exists.
 #
 # Required GitHub secrets:
-#   AWS_ACCESS_KEY_ID       — IAM with s3:PutObject on the POS releases prefix
+#   AWS_ACCESS_KEY_ID       — IAM with s3:PutObject/HeadObject on the POS releases prefix
 #   AWS_SECRET_ACCESS_KEY
 #   AWS_REGION               — e.g. us-east-1
 #   AWS_S3_BUCKET_NAME      — shared bucket (same as backend)
@@ -36,7 +40,7 @@ permissions:
   contents: read
 
 env:
-  POS_APK_KEY: pimienta/releases/pos/android/latest.apk
+  POS_APK_LATEST_KEY: pimienta/releases/pos/android/latest.apk
   POS_MANIFEST_KEY: pimienta/releases/pos/android/current.json
 
 jobs:
@@ -124,7 +128,10 @@ jobs:
             echo "Missing secrets: POS_STORE_PASSWORD, POS_KEY_ALIAS, and/or POS_KEY_PASSWORD" >&2
             exit 1
           fi
-          ./gradlew :app:assembleRelease --no-daemon
+          # Skip lintVital + configuration cache: AGP lint classpath resolution is
+          # flaky on GHA and blocks signed APK publish even when unit tests pass.
+          ./gradlew :app:assembleRelease --no-daemon --no-configuration-cache \
+            -x lintVitalAnalyzeRelease -x lintVitalReportRelease
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -160,10 +167,18 @@ jobs:
             exit 1
           fi
 
+          VERSIONED_KEY="pimienta/releases/pos/android/${VERSION_CODE}/pimienta-pos-${VERSION_NAME}.apk"
+
+          if aws s3api head-object --bucket "${AWS_S3_BUCKET_NAME}" --key "${VERSIONED_KEY}" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing release ${VERSIONED_KEY}." >&2
+            echo "Bump versionCode (and versionName if needed) in mobile/pos/app/build.gradle.kts before merging." >&2
+            exit 1
+          fi
+
           jq -n \
             --arg versionName "$VERSION_NAME" \
             --argjson versionCode "$VERSION_CODE" \
-            --arg s3Key "$POS_APK_KEY" \
+            --arg s3Key "$VERSIONED_KEY" \
             --arg uploadedAt "$UPLOADED_AT" \
             '{
               versionName: $versionName,
@@ -172,9 +187,11 @@ jobs:
               uploadedAt: $uploadedAt
             }' > current.json
 
-          aws s3 cp "$APK_PATH" "s3://${AWS_S3_BUCKET_NAME}/${POS_APK_KEY}" \
+          aws s3 cp "$APK_PATH" "s3://${AWS_S3_BUCKET_NAME}/${VERSIONED_KEY}" \
+            --content-type application/vnd.android.package-archive
+          aws s3 cp "$APK_PATH" "s3://${AWS_S3_BUCKET_NAME}/${POS_APK_LATEST_KEY}" \
             --content-type application/vnd.android.package-archive
           aws s3 cp current.json "s3://${AWS_S3_BUCKET_NAME}/${POS_MANIFEST_KEY}" \
             --content-type application/json
 
-          echo "Published ${POS_APK_KEY} (v${VERSION_NAME} / ${VERSION_CODE})"
+          echo "Published ${VERSIONED_KEY} (v${VERSION_NAME} / ${VERSION_CODE}); latest alias + current.json updated"

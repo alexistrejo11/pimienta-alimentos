@@ -181,7 +181,7 @@ Existen dos excepciones deliberadamente distintas. Ninguna crea un producto maes
 
 ### Monto abierto manual
 
-Se usa cuando el cajero necesita vender un importe sin un código físico reconocido. El cajero selecciona una categoría predefinida y captura un monto mayor a cero con numpad táctil; el POS genera una descripción como `Producto abierto · Bebidas`. Cada línea requiere autorización inmediata por PIN de Manager o Superadmin.
+Se usa cuando el cajero necesita vender un importe sin un código físico reconocido. El cajero selecciona una categoría predefinida y captura un monto mayor a cero con numpad táctil; el POS genera una descripción como `Producto abierto · Bebidas`. No requiere PIN de Manager o Superadmin; la línea queda marcada para revisión posterior en la web.
 
 ### Producto pendiente de catálogo por barcode desconocido
 
@@ -257,7 +257,7 @@ Si una tablet se extravía, se roba o se retira, un superadmin revoca su acceso 
 
 ### Roles
 
-- **Cajero:** puede abrir turno, escanear o seleccionar productos, iniciar monto abierto con autorización, registrar un barcode desconocido como producto pendiente de catálogo y cobrar. No puede aplicar descuentos, cortesías ni cancelaciones por cuenta propia.
+- **Cajero:** puede abrir turno, escanear o seleccionar productos, registrar monto abierto, registrar un barcode desconocido como producto pendiente de catálogo y cobrar. No puede aplicar descuentos, cortesías ni cancelaciones por cuenta propia.
 - **Manager (encargado o staff):** puede cerrar y realizar corte de caja, gestionar el catálogo disponible localmente, consultar reportes e historial y autorizar acciones restringidas.
 - **Superadmin:** tiene acceso total al POS y backend; administra usuarios y puede cambiar configuraciones críticas, incluido el modo operativo de inventario. También puede solicitar limpieza local bajo las restricciones de seguridad descritas abajo.
 

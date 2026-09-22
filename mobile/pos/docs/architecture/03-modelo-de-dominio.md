@@ -214,7 +214,7 @@ Hecho local 1 ── 1 OutboxEvent
 4. El total pagado aplicado equivale al total final de la venta.
 5. Un descuento requiere autorización y existe como máximo uno por venta MVP.
 6. Una venta confirmada no permite cambiar precios ni descuentos; toda modificación posterior sigue el flujo de cancelación autorizado.
-7. El monto abierto manual requiere importe positivo, categoría, descripción y autorización. Una línea pendiente de catálogo requiere barcode crudo e importe positivo, usa categoría generada y no tiene `productId`.
+7. El monto abierto manual requiere importe positivo, categoría y descripción. Una línea pendiente de catálogo requiere barcode crudo e importe positivo, usa categoría generada y no tiene `productId`.
 8. Solo una venta totalmente en efectivo puede cancelarse después del cobro en MVP.
 9. Solo productos con inventario controlado generan movimientos de stock por venta.
 10. Folio visible y UUID interno nunca se reutilizan.

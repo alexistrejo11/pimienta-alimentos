@@ -17,6 +17,7 @@ successful merge to `main`.
 - Operator access and manager controls
 - Device enrollment and credential refresh
 - Background synchronization with the central API
+- Manual in-app APK update from Manager → Estado (installs over the existing app)
 - POS telemetry and recovery from stale synchronization cursors
 - Android hardware integration foundation
 
@@ -50,10 +51,28 @@ The release build requires the signing environment variables used by CI:
 
 ## Release Delivery
 
-The POS workflow runs JVM tests, builds the signed release APK, and publishes
-`latest.apk` with its `current.json` manifest under the POS release prefix in
-S3. The web application obtains a time-limited download URL from the backend;
-the APK is not deployed as a Docker service.
+Version source of truth is `app/build.gradle.kts` (`versionName` + `versionCode`).
+Bump **`versionCode`** (required) and adjust **`versionName`** (semver) before
+merging a POS change that should ship to devices. CI refuses to overwrite an
+already-published `versionCode` object in S3.
+
+On a successful push to `main`, the POS workflow:
+
+1. Runs JVM unit tests and builds the signed release APK.
+2. Uploads an immutable object:
+   `pimienta/releases/pos/android/{versionCode}/pimienta-pos-{versionName}.apk`
+3. Overwrites the alias `pimienta/releases/pos/android/latest.apk`.
+4. Writes `pimienta/releases/pos/android/current.json` with
+   `versionName`, `versionCode`, `s3Key` (the versioned key), and `uploadedAt`.
+
+The public API `GET /api/v1/pos/releases/android/latest` reads `current.json`
+and returns a time-limited pre-signed download URL for that `s3Key`. The web
+home CTA and (later) in-app updates must use this endpoint — do not hardcode
+Spring Boot or web versions to match the APK; the match is
+**Gradle → APK BuildConfig + current.json → API**.
+
+The installed app shows the build version on the mode banner and in
+Manager → Estado.
 
 ## Documentation
 

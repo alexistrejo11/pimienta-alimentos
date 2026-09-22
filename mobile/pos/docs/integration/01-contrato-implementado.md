@@ -79,16 +79,15 @@ forma:
   "subtotalCentavos": 4000,
   "stockPolicy": "NOT_CONTROLLED",
   "rawBarcode": null,
-  "authorizedByOperatorId": "42",
-  "authorizedAt": "2026-09-14T17:00:00Z"
+  "authorizedByOperatorId": null,
+  "authorizedAt": null
 }
 ```
 
 Para `OPEN_AMOUNT`, `productId` y `rawBarcode` son nulos, `quantity` es `1`,
 el importe es positivo y el subtotal coincide. La categoría debe estar
-configurada en la sede y `allowOpenProducts` debe estar activo. El autorizador
-debe ser un operador activo asignado a la sede con rol `MANAGER` o `SUPERADMIN`;
-el PIN plano nunca se transmite ni se persiste.
+configurada en la sede y `allowOpenProducts` debe estar activo. No se exige
+autorizador ni PIN; esos campos pueden viajar nulos.
 
 Estas líneas no mueven inventario. El servidor conserva sus snapshots y siempre
 devuelve `REQUIRES_REVIEW` con una incidencia `OPEN_PRODUCT` para auditoría.

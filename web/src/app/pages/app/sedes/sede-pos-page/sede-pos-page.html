@@ -114,9 +114,15 @@
                   formControlName="salePrice"
                 />
               </label>
-              <label class="flex items-center gap-2 text-sm">
-                <input type="checkbox" formControlName="available" />
-                Disponible en POS
+              <label class="flex flex-col gap-1 text-sm sm:col-span-2">
+                <span class="flex items-center gap-2">
+                  <input type="checkbox" formControlName="available" />
+                  Disponible en POS
+                </span>
+                <span class="text-xs text-on-surface-variant">
+                  Si lo desmarca, el producto sigue en la sede pero aparece como «No disponible» en
+                  el POS. Para eliminarlo por completo use «Quitar de la sede» en la tabla.
+                </span>
               </label>
               <label class="flex flex-col gap-1 text-sm">
                 <span>Política de stock</span>
@@ -164,17 +170,30 @@
           <div>
             <h2 class="font-headline text-lg font-bold text-on-surface">Surtido</h2>
             <p class="mt-1 text-sm text-on-surface-variant">
-              Productos ya asignados a esta sede. Filtra, imprime etiquetas o retira del POS.
+              Productos asignados a esta sede. Marcar como
+              <span class="font-medium text-on-surface">no disponible</span> los deja en el POS
+              (tarjeta gris).
+              <span class="font-medium text-on-surface">Quitar de la sede</span> los elimina del
+              catálogo; en el próximo sync desaparecen del dispositivo.
             </p>
           </div>
           <button
             type="button"
-            class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold"
+            class="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             (click)="printCatalogLabels()"
+            [disabled]="printingLabels()"
           >
-            Imprimir etiquetas
+            @if (printingLabels()) {
+              Preparando etiquetas…
+            } @else {
+              Imprimir etiquetas
+            }
           </button>
         </div>
+
+        @if (printNotice(); as notice) {
+          <p class="mt-3 text-sm text-on-surface-variant" role="status">{{ notice }}</p>
+        }
 
         <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <input
@@ -257,8 +276,9 @@
                       class="ml-3 text-sm font-semibold text-error"
                       [disabled]="!canEditCatalog()"
                       (click)="removeCatalogItem(row)"
+                      title="Elimina el producto de esta sede; el POS lo quita en el próximo sync"
                     >
-                      Retirar
+                      Quitar de la sede
                     </button>
                   </td>
                 </tr>

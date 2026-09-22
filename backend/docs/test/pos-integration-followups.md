@@ -47,3 +47,10 @@ No extra follow-ups blocking this pass.
 - Empty barcode is omitted from JSON (`NON_NULL`) rather than returned as `null`.
 
 No extra follow-ups from this pass.
+
+## 2026-09-21 — Open amount without PIN
+
+- Ingest of `OPEN_AMOUNT` no longer requires `authorizedByOperatorId` / `authorizedAt`. Sales still land in `REQUIRES_REVIEW` with `OPEN_PRODUCT`.
+- `OPEN_PRODUCT_AUTHORIZATION_INVALID` remains mapped for historic incidents but is no longer emitted.
+
+No extra follow-ups from this pass.

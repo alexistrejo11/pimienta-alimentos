@@ -11,6 +11,7 @@ import type {
   RegisterResponse,
   TokenResponse,
 } from '../model/account/auth.dto';
+import { authTokenStorage } from './auth-token.storage';
 
 /**
  * Authentication API calls against `/api/v1/auth`.
@@ -63,10 +64,10 @@ export class AuthService {
 
   /**
    * Revoca la sesión en el servidor (`POST /api/v1/auth/logout` → {@code 204}).
-   * Idempotente; el caller debe limpiar {@code sessionStorage} después.
+   * Idempotente; el caller debe limpiar tokens con {@link authTokenStorage.clear} después.
    */
   logout(request: LogoutRequest = {}): Observable<void> {
-    const refreshToken = request.refreshToken ?? sessionStorage.getItem('refreshToken');
+    const refreshToken = request.refreshToken ?? authTokenStorage.getRefreshToken();
     const body: LogoutRequest = refreshToken ? { refreshToken } : {};
     return this.http.post<void>(`${this.authUrl}/logout`, body);
   }

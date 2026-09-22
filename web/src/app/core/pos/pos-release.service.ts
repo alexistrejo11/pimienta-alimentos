@@ -10,6 +10,7 @@ export interface PosApkReleaseResponse {
   versionCode: number;
   url: string;
   expiresInSeconds: number;
+  uploadedAt?: string | null;
 }
 
 /** Public POS APK release metadata (no auth). */
