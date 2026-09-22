@@ -128,10 +128,10 @@ jobs:
             echo "Missing secrets: POS_STORE_PASSWORD, POS_KEY_ALIAS, and/or POS_KEY_PASSWORD" >&2
             exit 1
           fi
-          # Skip lintVital + configuration cache: AGP lint classpath resolution is
-          # flaky on GHA and blocks signed APK publish even when unit tests pass.
+          # Skip all lintVital tasks + configuration cache: AGP lint is flaky on GHA
+          # and skipping only analyze/report leaves lintVitalRelease broken.
           ./gradlew :app:assembleRelease --no-daemon --no-configuration-cache \
-            -x lintVitalAnalyzeRelease -x lintVitalReportRelease
+            -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

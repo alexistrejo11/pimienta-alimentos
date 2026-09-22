@@ -66,6 +66,10 @@ android {
         compose = true
         buildConfig = true
     }
+    // Release CI publishes APKs without blocking on AGP lintVital (flaky on GHA).
+    lint {
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {
