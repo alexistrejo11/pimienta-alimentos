@@ -22,6 +22,13 @@ class PrintJobProcessor(
     suspend fun processNext(now: Long = System.currentTimeMillis()): Boolean {
         val dao = database.operationsDao()
         val job = dao.nextPrintJob() ?: return false
+
+        // Automatic print jobs older than 30 minutes (or from closed shifts) expire automatically to avoid wasting paper.
+        if (shouldExpire(job, dao, now)) {
+            dao.finishPrintJob(job.id, "EXPIRED", "EXPIRED_STALE_JOB")
+            return true
+        }
+
         if (dao.markPrintJobPrinting(job.id, now) == 0) return true
         val result = runCatching { print(job) }.getOrElse { PrintResult.Failed(PrintFailure.TRANSPORT_ERROR) }
         when (result) {
@@ -29,6 +36,37 @@ class PrintJobProcessor(
             is PrintResult.Failed -> dao.finishPrintJob(job.id, "FAILED", result.reason.name)
         }
         return true
+    }
+
+    companion object {
+        // Automatic print jobs older than 30 minutes expire automatically to avoid paper waste when reconnecting.
+        const val STALE_PRINT_JOB_MAX_AGE_MILLIS = 30 * 60 * 1000L // 30 minutes
+
+        // Determines if an automatic ticket job is stale and should be expired without printing.
+        internal fun shouldExpire(
+            job: PrintJobEntity,
+            dao: io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao,
+            now: Long,
+            maxAgeMillis: Long = STALE_PRINT_JOB_MAX_AGE_MILLIS,
+        ): Boolean {
+            // Manual reprint requests (duplicate = true) are explicitly requested by the user and never auto-expire.
+            if (job.duplicate) return false
+
+            // Expire if the job is older than the max age threshold (default 30 minutes).
+            val ageMillis = now - job.createdAtEpochMillis
+            if (ageMillis > maxAgeMillis) return true
+
+            // Expire ticket print jobs if the shift in which the sale occurred is already CLOSED.
+            if (job.documentType == "SALE") {
+                val sale = dao.sale(job.saleId)
+                if (sale != null) {
+                    val shift = dao.findShift(sale.shiftId)
+                    if (shift?.status == "CLOSED") return true
+                }
+            }
+
+            return false
+        }
     }
 
     // Builds the current sale snapshot and sends it through the configured printer.

@@ -13,8 +13,8 @@ android {
         applicationId = "io.github.alexistrejo.pimienta.pos"
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "2.2.8"
+        versionCode = 5
+        versionName = "2.2.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,10 +65,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-    // Release CI publishes APKs without blocking on AGP lintVital (flaky on GHA).
-    lint {
-        checkReleaseBuilds = false
     }
 }
 

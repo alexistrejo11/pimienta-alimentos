@@ -802,7 +802,7 @@ private fun StatusPanel(
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Aplicación", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Versión ${BuildConfig.VERSION_NAME} (código ${BuildConfig.VERSION_CODE})",
+                        "Versión ${BuildConfig.VERSION_NAME}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(

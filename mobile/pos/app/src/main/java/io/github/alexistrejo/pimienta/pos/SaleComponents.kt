@@ -800,6 +800,7 @@ internal fun CartPanel(
     discount: SaleDiscountDraft?,
     onChange: (List<CartLine>) -> Unit,
     applyDiscount: () -> Unit,
+    onShowCatalog: (() -> Unit)? = null,
     checkout: () -> Unit,
 ) {
     val gross = cart.totalCentavos()
@@ -807,7 +808,20 @@ internal fun CartPanel(
     val total = SaleCalculator.netCentavos(gross, discountAmount)
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().padding(12.dp)) {
-            Text("Venta activa", style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Venta activa", style = MaterialTheme.typography.titleMedium)
+                if (onShowCatalog != null) {
+                    PosButton(
+                        "▶ Ver catálogo",
+                        onShowCatalog,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Folio al confirmar", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("${cart.sumOf { it.quantity }} artículos", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -934,7 +948,7 @@ internal fun QuantityButton(label: String, click: () -> Unit, enabled: Boolean =
     }
 }
 
-// Collects payment in a scrollable center area with fixed cancel and confirm actions.
+// Collects payment methods and cash inputs, positioned cleanly without redundant top headers.
 @Composable
 internal fun Checkout(
     modifier: Modifier,
@@ -952,22 +966,9 @@ internal fun Checkout(
 
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().padding(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PosButton(
-                    "← Volver al carrito",
-                    back,
-                    enabled = !busy,
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
             Column(
-                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Row(
                     modifier = Modifier
@@ -998,7 +999,7 @@ internal fun Checkout(
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PosButton("Cancelar", back, enabled = !busy, modifier = Modifier.weight(1f))
+                PosButton("Volver", back, enabled = !busy, modifier = Modifier.weight(1f))
                 PosButton(
                     if (busy) "Confirmando…" else if (courtesy) "Confirmar cortesía" else "Confirmar cobro",
                     { confirm(if (courtesy) PaymentMethod.CORTESIA else method, if (courtesy) 0 else if (method == PaymentMethod.CASH) tenderedMoney else total) },

@@ -10,6 +10,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.mutableFloatStateOf
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
@@ -56,6 +60,7 @@ internal fun Sale(
     var search by rememberSaveable { mutableStateOf("") }
     var checkout by rememberSaveable { mutableStateOf(false) }
     var portraitPanel by rememberSaveable { mutableStateOf(PortraitPanel.CATALOG) }
+    var catalogSplitWeight by rememberSaveable { mutableFloatStateOf(0.6f) }
     var completedFolio by rememberSaveable { mutableStateOf<String?>(null) }
     var pending by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -444,40 +449,68 @@ internal fun Sale(
             }
 
             if (landscape) {
-                Row(Modifier.weight(1f).fillMaxWidth()) {
-                        CatalogPanel(
-                            modifier = Modifier.weight(0.6f).fillMaxHeight(),
-                            categories = categories,
-                            selectedCategory = category,
-                            onCategory = { category = it },
-                            search = search,
-                            onSearch = { search = it },
-                            products = filtered,
-                            onProduct = ::add,
-                            openAmountEnabled = openAmountAllowed,
-                            onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
-                            openAmountCategories = openAmountCategories,
-                            onOpenAmountCategory = { cat ->
-                                selectedOpenCategory = cat
-                                openAmountRequested = true
-                            },
-                            onOpenSections = { sectionsRequested = true },
-                        )
-                    if (checkout) {
-                        Checkout(
-                            modifier = Modifier.weight(0.4f).fillMaxHeight().padding(12.dp),
-                            total = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0),
-                            courtesy = SaleCalculator.isFullCourtesy(cart.totalCentavos(), discount?.amountCentavos ?: 0),
-                            busy = busy,
-                            method = paymentMethodDraft,
-                            onMethodChanged = { paymentMethodDraft = it },
-                            tendered = tenderedDraft,
-                            onTenderedChanged = { tenderedDraft = it },
-                            back = { checkout = false },
-                            confirm = ::confirm,
-                        )
-                    } else {
-                        CartPanel(Modifier.weight(0.4f).fillMaxHeight(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }) { checkout = true }
+                val isCatalogVisible = catalogSplitWeight > 0.05f
+                val cartWeight = (1f - catalogSplitWeight).coerceAtLeast(0.2f)
+
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    val totalWidthPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+
+                    Row(Modifier.fillMaxSize()) {
+                        if (isCatalogVisible) {
+                            CatalogPanel(
+                                modifier = Modifier.weight(catalogSplitWeight).fillMaxHeight(),
+                                categories = categories,
+                                selectedCategory = category,
+                                onCategory = { category = it },
+                                search = search,
+                                onSearch = { search = it },
+                                products = filtered,
+                                onProduct = ::add,
+                                openAmountEnabled = openAmountAllowed,
+                                onOpenAmount = { pendingCatalogBarcode = null; openAmountRequested = true },
+                                openAmountCategories = openAmountCategories,
+                                onOpenAmountCategory = { cat ->
+                                    selectedOpenCategory = cat
+                                    openAmountRequested = true
+                                },
+                                onOpenSections = { sectionsRequested = true },
+                            )
+
+                            CatalogSplitDivider(
+                                onDragDelta = { deltaX ->
+                                    val newWeight = (catalogSplitWeight + deltaX / totalWidthPx).coerceIn(0f, 0.8f)
+                                    catalogSplitWeight = if (newWeight < 0.15f) 0f else newWeight
+                                },
+                                onCollapse = { catalogSplitWeight = 0f },
+                            )
+                        }
+
+                        Box(Modifier.weight(if (isCatalogVisible) cartWeight else 1f).fillMaxHeight()) {
+                            if (checkout) {
+                                Checkout(
+                                    modifier = Modifier.fillMaxSize().padding(12.dp),
+                                    total = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0),
+                                    courtesy = SaleCalculator.isFullCourtesy(cart.totalCentavos(), discount?.amountCentavos ?: 0),
+                                    busy = busy,
+                                    method = paymentMethodDraft,
+                                    onMethodChanged = { paymentMethodDraft = it },
+                                    tendered = tenderedDraft,
+                                    onTenderedChanged = { tenderedDraft = it },
+                                    back = { checkout = false },
+                                    confirm = ::confirm,
+                                )
+                            } else {
+                                CartPanel(
+                                    modifier = Modifier.fillMaxSize(),
+                                    cart = cart,
+                                    discount = discount,
+                                    onChange = { cart = it; updateDiscount(null) },
+                                    applyDiscount = { discountRequested = true },
+                                    onShowCatalog = if (!isCatalogVisible) { { catalogSplitWeight = 0.6f } } else null,
+                                    checkout = { checkout = true },
+                                )
+                            }
+                        }
                     }
                 }
             } else if (checkout) {
@@ -535,6 +568,47 @@ internal fun Sale(
             hostState = feedbackHost,
             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
         )
+    }
+}
+
+// Provides a draggable splitter between catalog and cart with a quick collapse toggle button.
+@Composable
+private fun CatalogSplitDivider(
+    onDragDelta: (Float) -> Unit,
+    onCollapse: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(16.dp)
+            .background(MaterialTheme.colorScheme.surface)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { change, dragAmount ->
+                    change.consume()
+                    onDragDelta(dragAmount)
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        VerticalDivider(
+            modifier = Modifier.fillMaxHeight(),
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+        )
+        Surface(
+            onClick = onCollapse,
+            shape = MaterialTheme.shapes.extraSmall,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+            modifier = Modifier.width(16.dp).height(40.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    "◀",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

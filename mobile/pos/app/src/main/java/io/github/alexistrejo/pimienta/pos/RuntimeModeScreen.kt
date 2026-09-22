@@ -44,7 +44,7 @@ internal fun RuntimeModeBanner(
     var pin by remember { mutableStateOf("") }
     val isTraining = mode == RuntimeMode.SANDBOX
     val label = if (isTraining) "Modo Capacitación" else "Modo Venta"
-    val versionLabel = "Pimienta POS · v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+    val versionLabel = "Pimienta POS · v${BuildConfig.VERSION_NAME}"
 
     // Tight bar: sits flush above the sale StatusBar (no extra bottom gap).
     Row(
