@@ -254,37 +254,51 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         }
     }
     val requiresPinForSwitch = TrainingModePolicy.requiresPinForModeSwitch(isEnrolled = enrolled)
+    var switchAuthorizers by remember { mutableStateOf<List<LocalUserEntity>>(emptyList()) }
 
-    fun switchMode(target: RuntimeMode, pin: String?) {
-        scope.launch {
-            if (shift != null) {
-                notice = "Cierra el turno antes de cambiar de modo"
-                return@launch
+    // Fetch active managers across DBs for mode switch authorization.
+    LaunchedEffect(users, mode, requiresPinForSwitch) {
+        if (requiresPinForSwitch) {
+            switchAuthorizers = withContext(Dispatchers.IO) {
+                val prodUsers = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION).users()
+                val activeUsers = PosRepository(app.databaseProvider).users()
+                (prodUsers + activeUsers)
+                    .filter { it.active && it.isManagerOrAdmin }
+                    .distinctBy { it.id }
             }
-            if (requiresPinForSwitch) {
-                val productionRepository = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION)
-                val activeRepo = PosRepository(app.databaseProvider)
-                val manager = withContext(Dispatchers.IO) {
-                    productionRepository.users().firstOrNull { it.active && it.isManagerOrAdmin }
-                        ?: activeRepo.users().firstOrNull { it.active && it.isManagerOrAdmin }
-                }
-                val valid = withContext(Dispatchers.IO) {
-                    manager != null && (productionRepository.authenticate(manager.id, pin ?: "") || activeRepo.authenticate(manager.id, pin ?: ""))
-                }
-                if (!valid) {
-                    notice = "PIN de Gerente o Administrador inválido"
-                    return@launch
-                }
-            }
-            initialized = false
-            withContext(Dispatchers.IO) {
-                if (target == RuntimeMode.SANDBOX) app.enterTrainingMode() else app.exitTrainingMode()
-            }
-            repository = PosRepository(app.databaseProvider)
-            shift = null
-            notice = null
-            reload()
+        } else {
+            switchAuthorizers = emptyList()
         }
+    }
+
+    suspend fun switchMode(target: RuntimeMode, authorizer: LocalUserEntity?, pin: String?): Boolean {
+        if (shift != null) {
+            notice = "Cierra el turno antes de cambiar de modo"
+            return false
+        }
+        if (requiresPinForSwitch) {
+            if (authorizer == null || pin.isNullOrBlank()) {
+                notice = "Selecciona un perfil de Gerente o Administrador"
+                return false
+            }
+            val productionRepository = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION)
+            val activeRepo = PosRepository(app.databaseProvider)
+            val valid = withContext(Dispatchers.IO) {
+                productionRepository.authenticate(authorizer.id, pin) || activeRepo.authenticate(authorizer.id, pin)
+            }
+            if (!valid) {
+                return false
+            }
+        }
+        initialized = false
+        withContext(Dispatchers.IO) {
+            if (target == RuntimeMode.SANDBOX) app.enterTrainingMode() else app.exitTrainingMode()
+        }
+        repository = PosRepository(app.databaseProvider)
+        shift = null
+        notice = null
+        reload()
+        return true
     }
 
     fun resetTrainingDemo() {
@@ -342,6 +356,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 dark = dark,
                 onTheme = onTheme,
                 requiresPinForSwitch = requiresPinForSwitch,
+                authorizers = switchAuthorizers,
                 onSwitchRequested = ::switchMode,
                 onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
                 availableUpdateVersionName = availableUpdateVersionName,

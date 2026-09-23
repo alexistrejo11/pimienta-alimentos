@@ -89,8 +89,9 @@ el importe es positivo y el subtotal coincide. La categoría debe estar
 configurada en la sede y `allowOpenProducts` debe estar activo. No se exige
 autorizador ni PIN; esos campos pueden viajar nulos.
 
-Estas líneas no mueven inventario. El servidor conserva sus snapshots y siempre
-devuelve `REQUIRES_REVIEW` con una incidencia `OPEN_PRODUCT` para auditoría.
+Estas líneas no mueven inventario. El servidor conserva sus snapshots y acepta
+la venta (`ACCEPTED`). No abre incidencia ni pide revisión en la web. Un
+barcode desconocido (`PENDING_CATALOG`) también se acepta con `productId` nulo.
 
 ## Envelope y resultados
 
