@@ -224,25 +224,6 @@ export interface UpdatePosOperatorRequest {
   headquarterIds?: number[];
 }
 
-/** GET /api/v1/pos/admin/sync-incidents */
-export interface PosSyncIncidentResponse {
-  id: string;
-  eventId: string;
-  headquarterId: number;
-  reasonCode: string;
-  detail: string;
-  acceptedAt: string | null;
-  acceptedBy: number | null;
-  acceptLabel: string | null;
-  acceptNote: string | null;
-  createdAt: string;
-}
-
-export interface AcceptPosSyncIncidentRequest {
-  label: string;
-  note: string;
-}
-
 /** GET /api/v1/pos/admin/reports/summary */
 export interface PosReportSummaryResponse {
   rows: PosReportSummaryItemResponse[];

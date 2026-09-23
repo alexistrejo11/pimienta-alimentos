@@ -49,16 +49,10 @@
           <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ posTotals().cancellationCount }}</p>
         </li>
         <li class="ui-panel p-5">
-          <a routerLink="/app/ops/pos/incidencias" class="block">
-            <p class="text-xs font-medium uppercase text-on-surface-variant">Incidencias abiertas</p>
-            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ posTotals().openIncidentCount }}</p>
-          </a>
-        </li>
-        <li class="ui-panel p-5">
           <p class="text-xs font-medium uppercase text-on-surface-variant">Productos abiertos</p>
           <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(posTotals().openProductCentavos) }}</p>
           <p class="mt-1 text-xs text-on-surface-variant">
-            {{ posTotals().openProductLineCount }} líneas · {{ posTotals().openProductPendingReviewCount }} por revisar
+            {{ posTotals().openProductLineCount }} líneas
           </p>
         </li>
         <li class="ui-panel p-5">

@@ -215,15 +215,26 @@ const opsChildren: Routes = [
     canActivate: [roleGuard],
     data: { access: { roles: ADMIN_MANAGER } },
   },
+  { path: 'catalogo/nuevo', redirectTo: 'catalogo' },
   {
-    path: 'catalogo/nuevo',
+    path: 'catalogo/nuevo/pos',
     loadComponent: () =>
       import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
         (m) => m.CatalogoFormPageComponent,
       ),
     canDeactivate: [dirtyFormGuard],
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
+    data: { access: { roles: ADMIN_MANAGER }, itemKind: 'pos' },
+  },
+  {
+    path: 'catalogo/nuevo/almacen',
+    loadComponent: () =>
+      import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
+        (m) => m.CatalogoFormPageComponent,
+      ),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: ADMIN_MANAGER }, itemKind: 'warehouse' },
   },
   {
     path: 'catalogo/:id/editar',
@@ -233,14 +244,14 @@ const opsChildren: Routes = [
       ),
     canDeactivate: [dirtyFormGuard],
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
+    data: { access: { roles: ADMIN_MANAGER } },
   },
   {
     path: 'catalogo',
     loadComponent: () =>
       import('./pages/app/catalogo/catalogo-page').then((m) => m.CatalogoPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
+    data: { access: { roles: ADMIN_MANAGER } },
   },
   {
     path: 'inventario',
@@ -249,15 +260,7 @@ const opsChildren: Routes = [
     canActivate: [roleGuard],
     data: { access: { roles: INVENTORY_READ } },
   },
-  {
-    path: 'inventario/entradas',
-    loadComponent: () =>
-      import('./pages/app/inventario/entradas/entradas-page').then(
-        (m) => m.InventarioEntradasPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
-  },
+  { path: 'inventario/entradas', redirectTo: 'inventario/ledger' },
   {
     path: 'inventario/ledger',
     loadComponent: () =>
@@ -276,24 +279,8 @@ const opsChildren: Routes = [
     canActivate: [roleGuard],
     data: { access: { roles: ADMIN_MANAGER } },
   },
-  {
-    path: 'inventario/mermas',
-    loadComponent: () =>
-      import('./pages/app/inventario/mermas/mermas-hq-page').then(
-        (m) => m.InventarioMermasPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
-  },
-  {
-    path: 'inventario/ajustes',
-    loadComponent: () =>
-      import('./pages/app/inventario/ajustes/ajustes-page').then(
-        (m) => m.InventarioAjustesPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
-  },
+  { path: 'inventario/mermas', redirectTo: 'inventario/ledger' },
+  { path: 'inventario/ajustes', redirectTo: 'inventario/ledger' },
   {
     path: 'inventario/conteos/nuevo',
     loadComponent: () =>
@@ -384,13 +371,6 @@ const opsChildren: Routes = [
       import('./pages/app/pos/cortes/cortes-redirect').then((m) => m.CortesRedirectComponent),
     canActivate: [roleGuard],
     data: { access: { roles: POS_STAFF } },
-  },
-  {
-    path: 'pos/incidencias',
-    loadComponent: () =>
-      import('./pages/app/pos/incidencias/incidencias-page').then((m) => m.IncidenciasPageComponent),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
   },
 ];
 

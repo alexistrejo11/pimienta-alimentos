@@ -2,7 +2,6 @@ package io.github.alexistrejo11.pimienta.module.pos.integration;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,12 +36,10 @@ class PosAdminSyncIncidentIntegrationTest {
   @Autowired private UserJpaRepository userJpaRepository;
 
   @Test
-  void syncIncidents_acceptAdminOnly_doesNotMutateSale_andUnlocksReports() throws Exception {
+  void saleConfirmed_isAcceptedWithoutIncident_andCountsInReports() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
-    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
 
     long hqId = createHeadquarter(admin.token(), "POS-B6-HQ-" + UUID.randomUUID());
-    assignHeadquarters(admin.token(), manager.userId(), hqId);
     putPosSettings(admin.token(), hqId);
     long itemId = createItem(admin.token(), "SKU-B6-" + UUID.randomUUID(), "Refresco B6");
     putCatalog(admin.token(), hqId, itemId, "Bebidas", "25.00", "CONTROLLED");
@@ -54,74 +51,17 @@ class PosAdminSyncIncidentIntegrationTest {
     String reviewBody =
         saleEventJson(device, hqId, reviewEventId, reviewSaleId, itemId, operatorId, 2, 2500, true);
 
-    MvcResult reviewIngest =
-        mockMvc
-            .perform(
-                AccountTestRequests.postJsonBearer(
-                    "/api/v1/pos/sync/events", device.accessToken(), reviewBody))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"))
-            .andExpect(jsonPath("$.results[0].incidentId").isNotEmpty())
-            .andReturn();
-    String incidentId =
-        JsonPath.read(reviewIngest.getResponse().getContentAsString(), "$.results[0].incidentId");
-
-    mockMvc
-        .perform(get("/api/v1/pos/admin/sync-incidents/" + incidentId))
-        .andExpect(status().isUnauthorized());
-
-    mockMvc
-        .perform(
-            AccountTestRequests.getBearer("/api/v1/pos/admin/sync-incidents/" + incidentId, manager.token()))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(incidentId))
-        .andExpect(jsonPath("$.acceptedAt", nullValue()));
-
     mockMvc
         .perform(
             AccountTestRequests.postJsonBearer(
-                "/api/v1/pos/admin/sync-incidents/" + incidentId + "/accept",
-                manager.token(),
-                """
-                {"label":"OK","note":"manager cannot accept"}
-                """))
-        .andExpect(status().isForbidden());
+                "/api/v1/pos/sync/events", device.accessToken(), reviewBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
 
     String reportsUrl =
         "/api/v1/pos/admin/reports/sales?headquarterId=%d&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
             .formatted(hqId);
-    mockMvc
-        .perform(AccountTestRequests.getBearer(reportsUrl, admin.token()))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items", hasSize(1)))
-        .andExpect(jsonPath("$.items[0].saleId").value(reviewSaleId.toString()))
-        .andExpect(jsonPath("$.items[0].syncStatus").value("REQUIRES_REVIEW"));
-
-    mockMvc
-        .perform(
-            AccountTestRequests.postJsonBearer(
-                "/api/v1/pos/admin/sync-incidents/" + incidentId + "/accept",
-                admin.token(),
-                """
-                {"label":"REVIEWED","note":"Neg stock acknowledged"}
-                """))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.acceptLabel").value("REVIEWED"))
-        .andExpect(jsonPath("$.acceptNote").value("Neg stock acknowledged"))
-        .andExpect(jsonPath("$.acceptedBy").value(admin.userId().intValue()))
-        .andExpect(jsonPath("$.acceptedAt").isNotEmpty());
-
-    mockMvc
-        .perform(
-            AccountTestRequests.postJsonBearer(
-                "/api/v1/pos/admin/sync-incidents/" + incidentId + "/accept",
-                admin.token(),
-                """
-                {"label":"AGAIN","note":"should conflict"}
-                """))
-        .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.errorCode").value("POS_SYNC_INCIDENT_ALREADY_ACCEPTED"));
-
     mockMvc
         .perform(AccountTestRequests.getBearer(reportsUrl, admin.token()))
         .andExpect(status().isOk())
@@ -493,19 +433,5 @@ class PosAdminSyncIncidentIntegrationTest {
             .andReturn();
     Number n = JsonPath.read(r.getResponse().getContentAsString(), "$.id");
     return n.longValue();
-  }
-
-  private void assignHeadquarters(String adminToken, long userId, long headquarterId)
-      throws Exception {
-    mockMvc
-        .perform(
-            AccountTestRequests.postJsonBearer(
-                "/api/v1/users/management/" + userId + "/headquarters",
-                adminToken,
-                """
-                {"headquarterIds":[%d]}
-                """
-                    .formatted(headquarterId)))
-        .andExpect(status().isOk());
   }
 }

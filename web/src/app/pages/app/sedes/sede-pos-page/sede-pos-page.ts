@@ -1,16 +1,14 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { EMPTY, expand, finalize, reduce } from 'rxjs';
+import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { EMPTY, expand, finalize, forkJoin, reduce } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
-import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
 import { PosCatalogService } from '../../../../core/headquarters/pos-catalog.service';
 import { PosLabelPrintService } from '../../../../core/pos/pos-label-print.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import { stockPolicyLabel } from '../../../../core/i18n/enum-labels';
-import type { ItemResponse } from '../../../../core/model/inventory/inventory.dto';
 import type {
   HeadquarterPosCatalogItemResponse,
   PosSaleCategoryResponse,
@@ -20,18 +18,16 @@ import type { PageMetadata } from '../../../../core/model/common/pagination';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
-import { ItemSelectComponent } from '../../../../shared/ui/item-select/item-select';
+import { SurtidoModalComponent } from './surtido-modal';
 
 @Component({
   selector: 'app-sede-pos-page',
   imports: [
     PageHeaderComponent,
     DataStateComponent,
-    ReactiveFormsModule,
     FormsModule,
-    RouterLink,
     HeadquarterSelectComponent,
-    ItemSelectComponent,
+    SurtidoModalComponent,
   ],
   templateUrl: './sede-pos-page.html',
 })
@@ -40,7 +36,6 @@ export class SedePosPageComponent implements OnInit {
   private readonly session = inject(SessionContextService);
   private readonly hqService = inject(HeadquarterService);
   private readonly posCatalog = inject(PosCatalogService);
-  private readonly fb = inject(FormBuilder);
   private readonly labelPrint = inject(PosLabelPrintService);
 
   readonly headquarterId = signal(0);
@@ -52,8 +47,14 @@ export class SedePosPageComponent implements OnInit {
   readonly catalogMetadata = signal<PageMetadata | null>(null);
   readonly catalogPage = signal(0);
   readonly saleCategories = signal<PosSaleCategoryResponse[]>([]);
-  readonly savingCatalogId = signal<number | null>(null);
-  readonly creatingCategory = signal(false);
+  readonly categoryNameDraft = signal('');
+  readonly editingCategoryId = signal<number | null>(null);
+  readonly editingCategoryName = signal('');
+  readonly categoryError = signal<string | null>(null);
+  readonly categorySaving = signal(false);
+  readonly surtidoAbierto = signal(false);
+  readonly surtidoEdit = signal<HeadquarterPosCatalogItemResponse | null>(null);
+  readonly notice = signal('');
   readonly catalogSearch = signal('');
   readonly catalogCategory = signal('');
   readonly catalogAvailability = signal('');
@@ -66,20 +67,17 @@ export class SedePosPageComponent implements OnInit {
   readonly canEditCatalog = computed(() => this.session.isAdmin() || this.session.isManager());
   private catalogSearchTimer: ReturnType<typeof setTimeout> | undefined;
 
-  newCategoryName = '';
-  readonly editingItemId = signal<number | null>(null);
-  readonly pendingItemId = signal<number | null>(null);
-  readonly pendingItemLabel = signal('');
+  readonly activeCategories = computed(() =>
+    this.saleCategories()
+      .filter((category) => category.active)
+      .sort((a, b) => a.displayOrder - b.displayOrder),
+  );
 
-  readonly catalogForm = this.fb.nonNullable.group({
-    saleCategory: ['', Validators.required],
-    salePrice: [0, [Validators.required, Validators.min(0)]],
-    available: [true],
-    stockPolicy: ['CONTROLLED' as StockPolicy, Validators.required],
-    negativeStockLimit: [null as number | null],
-  });
+  /** Matches Tailwind sm:grid-cols-2 xl:grid-cols-3 for category grid. */
+  readonly categoryGridColumns = signal(1);
 
   ngOnInit(): void {
+    this.syncCategoryGridColumns();
     const routeId = this.route.snapshot.paramMap.get('id');
     const id = routeId ? Number(routeId) : Number(this.session.activeHeadquarterId() ?? 0);
     this.globalMode.set(!routeId);
@@ -88,10 +86,28 @@ export class SedePosPageComponent implements OnInit {
     else this.loading.set(false);
   }
 
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.syncCategoryGridColumns();
+  }
+
+  private syncCategoryGridColumns(): void {
+    if (typeof window === 'undefined') return;
+    const w = window.innerWidth;
+    if (w >= 1280) this.categoryGridColumns.set(3);
+    else if (w >= 640) this.categoryGridColumns.set(2);
+    else this.categoryGridColumns.set(1);
+  }
+
+  private categoryIndex(category: PosSaleCategoryResponse): number {
+    return this.activeCategories().findIndex((item) => item.id === category.id);
+  }
+
   onHeadquarterChange(value: number | number[] | null): void {
     if (!this.globalMode() || typeof value !== 'number' || value === this.headquarterId()) return;
     this.catalogPage.set(0);
-    this.cancelCatalogEdit();
+    this.cerrarSurtido();
+    this.cancelCategoryEdit();
     this.headquarterId.set(value);
     this.cargar(value);
   }
@@ -152,18 +168,27 @@ export class SedePosPageComponent implements OnInit {
     this.catalogSearchTimer = setTimeout(() => this.onCatalogFilterChange(), 300);
   }
 
-  cancelCatalogEdit(): void {
-    this.editingItemId.set(null);
-    this.pendingItemId.set(null);
-    this.pendingItemLabel.set('');
-    this.catalogForm.reset({
-      saleCategory: '',
-      salePrice: 0,
-      available: true,
-      stockPolicy: 'CONTROLLED',
-      negativeStockLimit: null,
-    });
-    markFormPristine(this.catalogForm);
+  abrirAgregar(): void {
+    this.notice.set('');
+    this.surtidoEdit.set(null);
+    this.surtidoAbierto.set(true);
+  }
+
+  startEditCatalog(row: HeadquarterPosCatalogItemResponse): void {
+    this.notice.set('');
+    this.surtidoEdit.set(row);
+    this.surtidoAbierto.set(true);
+  }
+
+  cerrarSurtido(): void {
+    this.surtidoAbierto.set(false);
+    this.surtidoEdit.set(null);
+  }
+
+  onSurtidoGuardado(message: string): void {
+    this.cerrarSurtido();
+    this.notice.set(message);
+    this.cargar(this.headquarterId());
   }
 
   removeCatalogItem(row: HeadquarterPosCatalogItemResponse): void {
@@ -186,96 +211,153 @@ export class SedePosPageComponent implements OnInit {
     });
   }
 
-  startEditCatalog(row: HeadquarterPosCatalogItemResponse): void {
-    this.editingItemId.set(row.itemId);
-    this.pendingItemId.set(null);
-    this.pendingItemLabel.set('');
-    this.catalogForm.reset({
-      saleCategory: row.saleCategory,
-      salePrice: row.salePrice,
-      available: row.available,
-      stockPolicy: row.stockPolicy,
-      negativeStockLimit: row.negativeStockLimit,
-    });
-    markFormPristine(this.catalogForm);
-  }
-
-  saveCatalogItem(itemId: number): void {
-    if (this.catalogForm.invalid) {
-      this.catalogForm.markAllAsTouched();
+  createCategory(): void {
+    const name = this.categoryNameDraft().trim();
+    if (!name || name.length > 64) {
+      this.categoryError.set('La categoría debe tener entre 1 y 64 caracteres.');
       return;
     }
-    const v = this.catalogForm.getRawValue();
-    this.savingCatalogId.set(itemId);
+    if (this.activeCategories().some((category) => this.sameCategory(category.name, name))) {
+      this.categoryError.set('Ya existe una categoría con ese nombre.');
+      return;
+    }
+    this.categoryError.set(null);
+    this.categorySaving.set(true);
     this.posCatalog
-      .upsertCatalogItem(this.headquarterId(), itemId, {
-        saleCategory: v.saleCategory,
-        salePrice: v.salePrice,
-        available: v.available,
-        stockPolicy: v.stockPolicy,
-        negativeStockLimit: v.negativeStockLimit,
-      })
-      .pipe(finalize(() => this.savingCatalogId.set(null)))
+      .createCategory(this.headquarterId(), name, this.activeCategories().length)
+      .pipe(finalize(() => this.categorySaving.set(false)))
       .subscribe({
         next: () => {
-          this.cancelCatalogEdit();
-          this.cargar(this.headquarterId());
+          this.categoryNameDraft.set('');
+          this.reloadCategories();
         },
-        error: (err: unknown) => this.error.set(parseApiError(err)),
+        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
       });
   }
 
-  onPendingItemChange(id: number | null): void {
-    this.pendingItemId.set(id);
-    if (id == null) this.pendingItemLabel.set('');
+  beginCategoryEdit(category: PosSaleCategoryResponse): void {
+    this.editingCategoryId.set(category.id);
+    this.editingCategoryName.set(category.name);
+    this.categoryError.set(null);
   }
 
-  onPendingItemPicked(item: ItemResponse | null): void {
-    if (!item) {
-      this.pendingItemLabel.set('');
+  cancelCategoryEdit(): void {
+    this.editingCategoryId.set(null);
+    this.editingCategoryName.set('');
+    this.categoryError.set(null);
+  }
+
+  saveCategoryEdit(category: PosSaleCategoryResponse): void {
+    if (this.categorySaving()) return;
+    const name = this.editingCategoryName().trim();
+    if (!name || name.length > 64) {
+      this.categoryError.set('La categoría debe tener entre 1 y 64 caracteres.');
       return;
     }
-    this.pendingItemLabel.set(`${item.sku} · ${item.name}`);
-  }
-
-  configurePendingItem(): void {
-    const itemId = this.pendingItemId();
-    if (itemId == null) return;
-    this.editingItemId.set(itemId);
-    this.catalogForm.reset({
-      saleCategory: this.saleCategories()[0]?.name ?? '',
-      salePrice: 0,
-      available: true,
-      stockPolicy: 'CONTROLLED',
-      negativeStockLimit: null,
-    });
-    markFormPristine(this.catalogForm);
-  }
-
-  createCategory(): void {
-    const name = this.newCategoryName.trim();
-    if (!name) return;
-    this.creatingCategory.set(true);
+    if (this.activeCategories().some((item) => item.id !== category.id && this.sameCategory(item.name, name))) {
+      this.categoryError.set('Ya existe una categoría con ese nombre.');
+      return;
+    }
+    this.categorySaving.set(true);
     this.posCatalog
-      .createCategory(this.headquarterId(), name, this.saleCategories().length)
-      .pipe(finalize(() => this.creatingCategory.set(false)))
+      .updateCategory(this.headquarterId(), category.id, name, category.displayOrder)
+      .pipe(finalize(() => this.categorySaving.set(false)))
       .subscribe({
-        next: (category) => {
-          this.saleCategories.update((items) => [...items, category]);
-          this.newCategoryName = '';
+        next: () => {
+          this.syncOpenAmountCategory(category.name, name);
+          this.cancelCategoryEdit();
+          this.reloadCategories();
         },
-        error: (err: unknown) => this.error.set(parseApiError(err)),
+        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
       });
+  }
+
+  archiveCategory(category: PosSaleCategoryResponse): void {
+    if (this.categorySaving()) return;
+    if (typeof globalThis.confirm === 'function' && !globalThis.confirm(`¿Archivar la categoría ${category.name}?`)) return;
+    this.categorySaving.set(true);
+    this.posCatalog
+      .archiveCategory(this.headquarterId(), category.id)
+      .pipe(finalize(() => this.categorySaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.syncOpenAmountCategory(category.name, null);
+          this.reloadCategories();
+        },
+        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
+      });
+  }
+
+  /** Vertical move in the on-screen grid (not linear list index). */
+  moveCategoryVertical(category: PosSaleCategoryResponse, direction: -1 | 1): void {
+    this.swapCategoriesAt(category, this.categoryIndex(category) + direction * this.categoryGridColumns());
+  }
+
+  /** Horizontal move in the grid; changes order left-to-right on the same row. */
+  moveCategoryHorizontal(category: PosSaleCategoryResponse, direction: -1 | 1): void {
+    const index = this.categoryIndex(category);
+    const cols = this.categoryGridColumns();
+    const row = Math.floor(index / cols);
+    const swapIndex = index + direction;
+    if (Math.floor(swapIndex / cols) !== row) return;
+    this.swapCategoriesAt(category, swapIndex);
+  }
+
+  private swapCategoriesAt(category: PosSaleCategoryResponse, swapIndex: number): void {
+    if (this.categorySaving()) return;
+    const active = [...this.activeCategories()];
+    const index = active.findIndex((item) => item.id === category.id);
+    if (index < 0 || swapIndex < 0 || swapIndex >= active.length) return;
+
+    [active[index], active[swapIndex]] = [active[swapIndex], active[index]];
+
+    const hq = this.headquarterId();
+    this.categorySaving.set(true);
+    forkJoin(
+      active.map((cat, displayOrder) =>
+        this.posCatalog.updateCategory(hq, cat.id, cat.name, displayOrder),
+      ),
+    )
+      .pipe(finalize(() => this.categorySaving.set(false)))
+      .subscribe({
+        next: () => this.reloadCategories(),
+        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
+      });
+  }
+
+  canMoveCategoryUp(category: PosSaleCategoryResponse): boolean {
+    return this.categoryIndex(category) >= this.categoryGridColumns();
+  }
+
+  canMoveCategoryDown(category: PosSaleCategoryResponse): boolean {
+    const index = this.categoryIndex(category);
+    return index + this.categoryGridColumns() < this.activeCategories().length;
+  }
+
+  canMoveCategoryLeft(category: PosSaleCategoryResponse): boolean {
+    const index = this.categoryIndex(category);
+    const cols = this.categoryGridColumns();
+    return index % cols !== 0;
+  }
+
+  canMoveCategoryRight(category: PosSaleCategoryResponse): boolean {
+    const index = this.categoryIndex(category);
+    const cols = this.categoryGridColumns();
+    const row = Math.floor(index / cols);
+    const next = index + 1;
+    return next < this.activeCategories().length && Math.floor(next / cols) === row;
+  }
+
+  setCategoryNameDraft(event: Event): void {
+    this.categoryNameDraft.set((event.target as HTMLInputElement).value);
+  }
+
+  setEditingCategoryName(event: Event): void {
+    this.editingCategoryName.set((event.target as HTMLInputElement).value);
   }
 
   itemName(itemId: number): string {
-    const fromCatalog = this.catalog().find((row) => row.itemId === itemId)?.itemName;
-    if (fromCatalog) return fromCatalog;
-    if (this.editingItemId() === itemId && this.pendingItemLabel()) {
-      const parts = this.pendingItemLabel().split(' · ');
-      return parts.length > 1 ? parts.slice(1).join(' · ') : this.pendingItemLabel();
-    }
-    return `Ítem #${itemId}`;
+    return this.catalog().find((row) => row.itemId === itemId)?.itemName || `Ítem #${itemId}`;
   }
 
   itemSku(itemId: number): string {
@@ -350,6 +432,42 @@ export class SedePosPageComponent implements OnInit {
     void this.labelPrint.print([
       { sku, name: row.itemName || this.itemName(row.itemId), price: row.salePrice },
     ]);
+  }
+
+  private reloadCategories(): void {
+    this.posCatalog.listCategories(this.headquarterId()).subscribe({
+      next: (categories) => this.saleCategories.set(categories),
+      error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
+    });
+  }
+
+  private syncOpenAmountCategory(previous: string, next: string | null): void {
+    const id = this.headquarterId();
+    this.posCatalog.getSettings(id).subscribe({
+      next: (settings) => {
+        const current = settings.openAmountCategories ?? [];
+        const updated = current.flatMap((name) => {
+          if (!this.sameCategory(name, previous)) return [name];
+          return next ? [next] : [];
+        });
+        if (updated.length === current.length && updated.every((name, index) => name === current[index])) return;
+        this.posCatalog
+          .updateSettings(id, {
+            currency: settings.currency,
+            catalogStaleWarnHours: settings.catalogStaleWarnHours,
+            catalogStaleBlockHours: settings.catalogStaleBlockHours,
+            openAmountCategories: updated,
+            allowOpenProducts: settings.allowOpenProducts,
+            defaultNegativeStockLimit: settings.defaultNegativeStockLimit,
+          })
+          .subscribe({ error: () => {} });
+      },
+      error: () => {},
+    });
+  }
+
+  private sameCategory(left: string, right: string): boolean {
+    return left.localeCompare(right, undefined, { sensitivity: 'base' }) === 0;
   }
 
   canAccess(): boolean {

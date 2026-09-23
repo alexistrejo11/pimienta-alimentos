@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
@@ -23,7 +24,7 @@ export function openAmountSettingsValidator(control: AbstractControl): Validatio
 
 @Component({
   selector: 'app-pos-config-page',
-  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, HeadquarterSelectComponent],
+  imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, HeadquarterSelectComponent, RouterLink],
   templateUrl: './pos-config-page.html',
 })
 export class PosConfigPageComponent implements OnInit {
@@ -37,11 +38,6 @@ export class PosConfigPageComponent implements OnInit {
   readonly error = signal<ParsedApiError | null>(null);
   readonly settings = signal<PosSettingsResponse | null>(null);
   readonly saleCategories = signal<PosSaleCategoryResponse[]>([]);
-  readonly categoryNameDraft = signal('');
-  readonly editingCategoryId = signal<number | null>(null);
-  readonly editingCategoryName = signal('');
-  readonly categoryError = signal<string | null>(null);
-  readonly categorySaving = signal(false);
 
   readonly settingsForm = this.fb.nonNullable.group({
     currency: ['MXN', Validators.required],
@@ -66,8 +62,6 @@ export class PosConfigPageComponent implements OnInit {
   onHeadquarterChange(value: number | number[] | null): void {
     if (typeof value !== 'number' || value === this.headquarterId()) return;
     this.headquarterId.set(value);
-    this.cancelCategoryEdit();
-    this.categoryError.set(null);
     this.settings.set(null);
     this.cargar(value);
   }
@@ -149,117 +143,8 @@ export class PosConfigPageComponent implements OnInit {
     });
   }
 
-  createCategory(): void {
-    const name = this.categoryNameDraft().trim();
-    if (!name || name.length > 64) {
-      this.categoryError.set('La categoría debe tener entre 1 y 64 caracteres.');
-      return;
-    }
-    if (this.saleCategories().some((category) => category.active && this.sameCategory(category.name, name))) {
-      this.categoryError.set('Ya existe una categoría con ese nombre.');
-      return;
-    }
-    this.categoryError.set(null);
-    this.categorySaving.set(true);
-    const order = this.activeCategories().length;
-    this.posCatalog
-      .createCategory(this.headquarterId(), name, order)
-      .pipe(finalize(() => this.categorySaving.set(false)))
-      .subscribe({
-        next: () => {
-          this.categoryNameDraft.set('');
-          this.loadCategories(this.headquarterId());
-        },
-        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
-      });
-  }
-
-  beginCategoryEdit(category: PosSaleCategoryResponse): void {
-    this.editingCategoryId.set(category.id);
-    this.editingCategoryName.set(category.name);
-    this.categoryError.set(null);
-  }
-
-  cancelCategoryEdit(): void {
-    this.editingCategoryId.set(null);
-    this.editingCategoryName.set('');
-    this.categoryError.set(null);
-  }
-
-  saveCategoryEdit(category: PosSaleCategoryResponse): void {
-    if (this.categorySaving()) return;
-    const name = this.editingCategoryName().trim();
-    if (!name || name.length > 64) {
-      this.categoryError.set('La categoría debe tener entre 1 y 64 caracteres.');
-      return;
-    }
-    if (this.saleCategories().some((item) => item.active && item.id !== category.id && this.sameCategory(item.name, name))) {
-      this.categoryError.set('Ya existe una categoría con ese nombre.');
-      return;
-    }
-    this.categorySaving.set(true);
-    this.posCatalog
-      .updateCategory(this.headquarterId(), category.id, name, category.displayOrder)
-      .pipe(finalize(() => this.categorySaving.set(false)))
-      .subscribe({
-        next: () => {
-          const selected = (this.settingsForm.controls.openAmountCategories.value ?? []).map((selectedName) =>
-            this.sameCategory(selectedName, category.name) ? name : selectedName,
-          );
-          this.settingsForm.controls.openAmountCategories.setValue(selected);
-          this.cancelCategoryEdit();
-          this.loadCategories(this.headquarterId());
-        },
-        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
-      });
-  }
-
-  archiveCategory(category: PosSaleCategoryResponse): void {
-    if (this.categorySaving()) return;
-    if (typeof globalThis.confirm === 'function' && !globalThis.confirm(`¿Archivar la categoría ${category.name}?`)) return;
-    this.categorySaving.set(true);
-    this.posCatalog
-      .archiveCategory(this.headquarterId(), category.id)
-      .pipe(finalize(() => this.categorySaving.set(false)))
-      .subscribe({
-        next: () => {
-          const selected = (this.settingsForm.controls.openAmountCategories.value ?? []).filter(
-            (name) => !this.sameCategory(name, category.name),
-          );
-          this.settingsForm.controls.openAmountCategories.setValue(selected);
-          this.loadCategories(this.headquarterId());
-        },
-        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
-      });
-  }
-
-  moveCategory(category: PosSaleCategoryResponse, direction: -1 | 1): void {
-    if (this.categorySaving()) return;
-    const active = this.activeCategories();
-    const index = active.findIndex((item) => item.id === category.id);
-    const target = active[index + direction];
-    if (!target) return;
-    this.categorySaving.set(true);
-    this.posCatalog
-      .updateCategory(this.headquarterId(), category.id, category.name, target.displayOrder)
-      .pipe(finalize(() => this.categorySaving.set(false)))
-      .subscribe({
-        next: () => this.loadCategories(this.headquarterId()),
-        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
-      });
-  }
-
   activeCategories(): PosSaleCategoryResponse[] {
     return this.saleCategories().filter((category) => category.active).sort((a, b) => a.displayOrder - b.displayOrder);
-  }
-
-  isFirstCategory(category: PosSaleCategoryResponse): boolean {
-    return this.activeCategories().at(0)?.id === category.id;
-  }
-
-  isLastCategory(category: PosSaleCategoryResponse): boolean {
-    const active = this.activeCategories();
-    return active.at(-1)?.id === category.id;
   }
 
   toggleCategory(name: string, event: Event): void {
@@ -269,14 +154,6 @@ export class PosConfigPageComponent implements OnInit {
       ? [...current.filter((category) => !this.sameCategory(category, name)), name]
       : current.filter((category) => !this.sameCategory(category, name));
     this.settingsForm.controls.openAmountCategories.setValue(next);
-  }
-
-  setCategoryNameDraft(event: Event): void {
-    this.categoryNameDraft.set((event.target as HTMLInputElement).value);
-  }
-
-  setEditingCategoryName(event: Event): void {
-    this.editingCategoryName.set((event.target as HTMLInputElement).value);
   }
 
   isCategorySelected(name: string): boolean {

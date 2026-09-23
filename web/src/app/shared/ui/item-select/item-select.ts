@@ -35,6 +35,8 @@ export class ItemSelectComponent implements OnInit {
   readonly disabled = input(false);
   readonly status = input<ItemStatus | undefined>('ACTIVE');
   readonly catalogRole = input<CatalogRole | undefined>(undefined);
+  /** Inline list expands in document flow (better inside modals with overflow). */
+  readonly listLayout = input<'overlay' | 'inline'>('overlay');
 
   readonly value = input<number | null>(null);
   readonly valueChange = output<number | null>();

@@ -111,7 +111,6 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
           { label: 'Dispositivos', icon: 'tablet_android', route: `${OPS_PATH}/pos/dispositivos`, roles: ADMIN_MANAGER },
           { label: 'Enrolamiento', icon: 'qr_code_2', route: `${OPS_PATH}/pos/enrolamiento`, roles: ADMIN_MANAGER },
           { label: 'Operadores', icon: 'group', route: `${OPS_PATH}/pos/operadores`, roles: ADMIN_MANAGER },
-          { label: 'Incidencias', icon: 'sync_problem', route: `${OPS_PATH}/pos/incidencias`, roles: ADMIN_ONLY },
         ],
       },
     ],
@@ -122,13 +121,12 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
     roles: INVENTORY_READ,
     items: [
       { label: 'Existencias', icon: 'warehouse', route: `${OPS_PATH}/inventario`, roles: INVENTORY_READ },
-      { label: 'Libro de movimientos', icon: 'receipt_long', route: `${OPS_PATH}/inventario/ledger`, roles: INVENTORY_READ },
-      { label: 'Entradas (IN)', icon: 'add_shopping_cart', route: `${OPS_PATH}/inventario/entradas`, roles: ADMIN_MANAGER },
-      { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: ADMIN_MANAGER },
-      { label: 'Mermas (OUT)', icon: 'delete_sweep', route: `${OPS_PATH}/inventario/mermas`, roles: ADMIN_MANAGER },
-      { label: 'Ajustes', icon: 'tune', route: `${OPS_PATH}/inventario/ajustes`, roles: ADMIN_ONLY },
-      { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: ADMIN_MANAGER },
-      { label: 'Artículos maestros', icon: 'inventory_2', route: `${OPS_PATH}/catalogo`, roles: ADMIN_ONLY },
+      { label: 'Movimientos', icon: 'receipt_long', route: `${OPS_PATH}/inventario/ledger`, roles: INVENTORY_READ },
+      // Pendiente reactivar en sidebar: transferencias entre sedes y conteos físicos en sede
+      // (rutas siguen en app.routes.ts). Una sede activa + inventario en sede aún no maduro.
+      // { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: ADMIN_MANAGER },
+      // { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: ADMIN_MANAGER },
+      { label: 'Artículos maestros', icon: 'inventory_2', route: `${OPS_PATH}/catalogo`, roles: ADMIN_MANAGER },
     ],
   },
 ];

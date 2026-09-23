@@ -133,6 +133,16 @@ public class SecurityConfig {
                     BASE + "/headquarters/*/pos-catalog",
                     BASE + "/headquarters/*/pos-catalog/**")
                 .hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/statistics")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/export")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/name/**")
+                .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/*")
+                .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
                 // POS operators may inspect stock only; inventory writes stay with staff roles.
                 .requestMatchers(HttpMethod.GET, BASE + "/inventory/**")
                 .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")

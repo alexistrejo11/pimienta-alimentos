@@ -33,6 +33,39 @@ class AccountHeadquarterAccessIntegrationTest {
   @Autowired private UserJpaRepository userJpaRepository;
 
   @Test
+  void managerCanGetAssignedHeadquarterById() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq1 = createHeadquarter(admin.token(), "ACL-GET1-" + UUID.randomUUID());
+    long hq2 = createHeadquarter(admin.token(), "ACL-GET2-" + UUID.randomUUID());
+
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    assignHeadquarters(admin.token(), manager.userId(), hq1);
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hq1, manager.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value((int) hq1));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hq2, manager.token()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
+  void managerForbiddenOnHeadquarterList() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq1 = createHeadquarter(admin.token(), "ACL-LIST-" + UUID.randomUUID());
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    assignHeadquarters(admin.token(), manager.userId(), hq1);
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters?page=0&size=20", manager.token()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
   void managerForbiddenOnOtherHeadquarterPosCatalog() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
     long hq1 = createHeadquarter(admin.token(), "ACL-HQ1-" + UUID.randomUUID());

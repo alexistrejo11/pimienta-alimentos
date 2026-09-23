@@ -9,21 +9,106 @@
     <div class="ui-panel p-4"><p class="text-xs uppercase text-on-surface-variant">Pendientes</p><p class="text-3xl font-bold">{{ pendingCount() }}</p></div>
     <div class="ui-panel p-4"><p class="text-xs uppercase text-on-surface-variant">Bloqueados</p><p class="text-3xl font-bold">{{ statistics().bannedUsers }}</p></div>
   </div>
-  @if (error(); as err) { <div role="alert" class="rounded-lg bg-red-50 p-4 text-red-900">{{ err.message }}</div> }
-  @if (loading()) { <div class="ui-panel p-8 text-center text-on-surface-variant">Cargando usuarios...</div> }
-  @else {
+  @if (error(); as err) {
+    <div role="alert" class="rounded-lg bg-red-50 p-4 text-red-900">{{ err.message }}</div>
+  }
+  @if (roleWarning(); as warn) {
+    <div role="status" class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{{ warn }}</div>
+  }
+  @if (loading()) {
+    <div class="ui-panel p-8 text-center text-on-surface-variant">Cargando usuarios...</div>
+  } @else {
     <div class="ui-panel overflow-x-auto">
-      <table class="w-full min-w-[900px] text-sm">
-        <thead class="border-b border-outline-variant/20 text-left text-on-surface-variant"><tr><th class="p-4">Usuario</th><th class="p-4">Estado</th><th class="p-4">Roles</th><th class="p-4">Acciones</th></tr></thead>
+      <table class="w-full min-w-[1000px] text-sm">
+        <thead class="border-b border-outline-variant/20 text-left text-on-surface-variant">
+          <tr>
+            <th class="p-4">Usuario</th>
+            <th class="p-4">Estado</th>
+            <th class="p-4">Roles</th>
+            <th class="p-4">Sede asignada</th>
+            <th class="p-4">Acciones</th>
+          </tr>
+        </thead>
         <tbody class="divide-y divide-outline-variant/15">
           @for (user of users(); track user.id) {
             <tr>
-              <td class="p-4"><strong>{{ user.firstName }} {{ user.lastName }}</strong><br /><span class="text-on-surface-variant">{{ user.email }}</span></td>
-              <td class="p-4">{{ statusLabel(user.accountStatus) }}</td>
-              <td class="p-4"><div class="flex flex-wrap gap-2">@for (role of user.roles; track role) { <span class="ui-badge-info">{{ roleLabel(role) }}</span> }</div>
-                @if (user.accountStatus === 'ACTIVE') { <select multiple class="mt-2 rounded border p-2" [ngModel]="rolesFor(user)" (ngModelChange)="setRoles(user, $event)">@for (role of roles; track role) { <option [ngValue]="role">{{ roleLabel(role) }}</option> }</select> <button type="button" class="ml-2 text-sm font-bold text-primary" [disabled]="savingId() === user.id" (click)="saveRoles(user)">Guardar</button> }
+              <td class="p-4">
+                <strong>{{ user.firstName }} {{ user.lastName }}</strong><br />
+                <span class="text-on-surface-variant">{{ user.email }}</span>
               </td>
-              <td class="p-4"><div class="flex flex-wrap gap-2">@if (user.accountStatus === 'PENDING_APPROVAL') { <button class="rounded bg-primary px-3 py-2 font-bold text-on-primary" (click)="approve(user)">Aprobar</button> } @if (user.accountStatus === 'ACTIVE') { <button class="rounded border px-3 py-2" (click)="ban(user)">Bloquear</button> } @if (user.accountStatus === 'BANNED') { <button class="rounded border px-3 py-2" (click)="unban(user)">Desbloquear</button> }</div></td>
+              <td class="p-4">{{ statusLabel(user.accountStatus) }}</td>
+              <td class="p-4">
+                <div class="flex flex-wrap gap-2">
+                  @for (role of user.roles; track role) {
+                    <span class="ui-badge-info">{{ roleLabel(role) }}</span>
+                  }
+                </div>
+                @if (user.accountStatus === 'ACTIVE') {
+                  <select
+                    multiple
+                    class="mt-2 rounded border p-2"
+                    [ngModel]="rolesFor(user)"
+                    (ngModelChange)="setRoles(user, $event)"
+                  >
+                    @for (role of roles; track role) {
+                      <option [ngValue]="role">{{ roleLabel(role) }}</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="ml-2 text-sm font-bold text-primary"
+                    [disabled]="savingId() === user.id"
+                    (click)="saveRoles(user)"
+                  >
+                    Guardar roles
+                  </button>
+                }
+              </td>
+              <td class="p-4">
+                @if (isManager(user)) {
+                  @if (user.accountStatus === 'ACTIVE') {
+                    <select
+                      class="rounded border p-2"
+                      [ngModel]="headquarterFor(user)"
+                      (ngModelChange)="setHeadquarter(user, $event)"
+                    >
+                      <option [ngValue]="null">Sin sede</option>
+                      @for (sede of sedes(); track sede.id) {
+                        <option [ngValue]="sede.id">{{ sede.name }}</option>
+                      }
+                    </select>
+                    <button
+                      type="button"
+                      class="ml-2 text-sm font-bold text-primary"
+                      [disabled]="savingId() === user.id"
+                      (click)="saveHeadquarter(user)"
+                    >
+                      Guardar sede
+                    </button>
+                  } @else {
+                    <span class="text-on-surface-variant">{{ assignedHeadquarterLabel(user) }}</span>
+                  }
+                } @else if (isManagerDraft(user) && user.accountStatus === 'ACTIVE') {
+                  <span class="text-xs text-on-surface-variant">Guarda rol Gerente para asignar sede</span>
+                } @else {
+                  <span class="text-on-surface-variant">—</span>
+                }
+              </td>
+              <td class="p-4">
+                <div class="flex flex-wrap gap-2">
+                  @if (user.accountStatus === 'PENDING_APPROVAL') {
+                    <button class="rounded bg-primary px-3 py-2 font-bold text-on-primary" (click)="approve(user)">
+                      Aprobar
+                    </button>
+                  }
+                  @if (user.accountStatus === 'ACTIVE') {
+                    <button class="rounded border px-3 py-2" (click)="ban(user)">Bloquear</button>
+                  }
+                  @if (user.accountStatus === 'BANNED') {
+                    <button class="rounded border px-3 py-2" (click)="unban(user)">Desbloquear</button>
+                  }
+                </div>
+              </td>
             </tr>
           }
         </tbody>

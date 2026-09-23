@@ -103,8 +103,8 @@ class PosSyncEventsIntegrationTest {
         .perform(
             AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"))
-        .andExpect(jsonPath("$.results[0].incidentId").isNotEmpty());
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
 
     Inventory inv = stockAtPos(hqId, itemId);
     org.junit.jupiter.api.Assertions.assertEquals(-3, inv.getAvailableQuantity());
@@ -373,7 +373,7 @@ class PosSyncEventsIntegrationTest {
   }
 
   @Test
-  void salesReport_listsRequiresReviewSyncStatus() throws Exception {
+  void salesReport_listsAcceptedSyncStatus() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-SALE-REV-" + UUID.randomUUID());
     putPosSettings(staffToken, hqId);
@@ -390,7 +390,8 @@ class PosSyncEventsIntegrationTest {
         .perform(
             AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"));
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
 
     mockMvc
         .perform(
@@ -401,7 +402,7 @@ class PosSyncEventsIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items", hasSize(1)))
         .andExpect(jsonPath("$.items[0].saleId").value(saleId.toString()))
-        .andExpect(jsonPath("$.items[0].syncStatus").value("REQUIRES_REVIEW"));
+        .andExpect(jsonPath("$.items[0].syncStatus").value("ACCEPTED"));
   }
 
   @Test
@@ -415,8 +416,8 @@ class PosSyncEventsIntegrationTest {
     String body = openSaleEventJson(device, hqId, UUID.randomUUID(), UUID.randomUUID(), itemId);
     mockMvc.perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"))
-        .andExpect(jsonPath("$.results[0].message").value(org.hamcrest.Matchers.containsString("OPEN_PRODUCT")));
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
   }
 
   @Test
