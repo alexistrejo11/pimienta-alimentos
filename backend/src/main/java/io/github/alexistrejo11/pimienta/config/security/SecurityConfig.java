@@ -157,6 +157,9 @@ public class SecurityConfig {
                     HttpMethod.POST,
                     BASE + "/inventory/count-sessions/*/approve")
                 .hasRole("ADMIN")
+                // Item master is global catalog data, not headquarter-scoped.
+                .requestMatchers(HttpMethod.DELETE, BASE + "/inventory/items", BASE + "/inventory/items/**")
+                .hasRole("ADMIN")
                 // Managers own CRM, talent, tasks, and HQ-scoped inventory workflows.
                 .requestMatchers(
                     BASE + "/clients/**",

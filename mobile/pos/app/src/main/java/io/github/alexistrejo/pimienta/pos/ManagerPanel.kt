@@ -50,7 +50,11 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
+import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
+import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
+import io.github.alexistrejo.pimienta.pos.data.sync.planProductEdit
+import io.github.alexistrejo.pimienta.pos.data.sync.scanCode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
@@ -79,7 +83,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 // Describes the local Manager workspace navigation.
-private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte de Caja"), HISTORY("Historial"), STATUS("Estado") }
+private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte de Caja"), HISTORY("Historial"), PRODUCTS("Productos"), STATUS("Estado") }
 // Tracks the blind-count workflow before a shift is sealed.
 private enum class CountStage { OPEN, COUNTING, VALIDATION, COMPLETED }
 
@@ -183,7 +187,139 @@ private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity, m
         ManagerSection.DASHBOARD -> DashboardPanel(summary, pendingEvents, modifier)
         ManagerSection.Z_CLOSE -> ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
         ManagerSection.HISTORY -> HistoryPanel(shift, manager, repository, refresh, modifier)
+        ManagerSection.PRODUCTS -> ProductsPanel(products, repository, modifier)
         ManagerSection.STATUS -> StatusPanel(pendingEvents, products, repository, modifier)
+    }
+}
+
+// Lists the local catalog so a manager can find a product and open its editor.
+@Composable
+private fun ProductsPanel(products: List<ProductEntity>, repository: PosRepository, modifier: Modifier) {
+    var category by rememberSaveable { mutableStateOf("Todos") }
+    var search by rememberSaveable { mutableStateOf("") }
+    var editing by remember { mutableStateOf<ProductEntity?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sandbox = repository.mode() != RuntimeMode.PRODUCTION
+    val categories = remember(products) { listOf("Todos") + products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct() }
+    val filtered = remember(products, category, search) {
+        products.filter { product ->
+            val matchesCategory = category == "Todos" || product.saleCategory.equals(category, ignoreCase = true)
+            val query = search.trim()
+            val matchesSearch = query.isEmpty() ||
+                product.name.contains(query, ignoreCase = true) ||
+                product.sku.contains(query, ignoreCase = true) ||
+                product.barcode?.contains(query, ignoreCase = true) == true
+            matchesCategory && matchesSearch
+        }
+    }
+    Surface(modifier, color = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Productos", style = MaterialTheme.typography.headlineSmall)
+            Text("Busca por nombre, SKU o código. Editar no quita el producto de la sede.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                placeholder = { Text("Buscar producto") },
+            )
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                categories.forEach { item ->
+                    PosButton(item, { category = item }, selected = category == item)
+                }
+            }
+            if (filtered.isEmpty()) {
+                Text("No hay productos con ese filtro.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(1.dp), modifier = Modifier.weight(1f)) {
+                    items(filtered, key = { it.id }) { product ->
+                        ProductEditRow(product) {
+                            error = null
+                            editing = product
+                        }
+                    }
+                }
+            }
+        }
+    }
+    editing?.let { product ->
+        EditPosProductDialog(
+            productName = product.name,
+            sku = product.sku,
+            category = product.saleCategory,
+            initialBarcode = scanCode(product.barcode, product.sku),
+            initialPriceCentavos = Money.fromCatalog(product.price),
+            initialControlled = product.stockPolicy == "CONTROLLED",
+            sandbox = sandbox,
+            busy = busy,
+            error = error,
+            onDismiss = { if (!busy) editing = null },
+            onSubmit = { name, cents, controlled, barcode ->
+                val plan = planProductEdit(
+                    product.name,
+                    Money.fromCatalog(product.price),
+                    product.stockPolicy == "CONTROLLED",
+                    product.barcode,
+                    product.sku,
+                    name,
+                    cents,
+                    controlled,
+                    barcode,
+                )
+                if (!plan.rename && !plan.offer) {
+                    editing = null
+                    return@EditPosProductDialog
+                }
+                busy = true
+                error = null
+                scope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        if (sandbox) {
+                            repository.updateTrainingProduct(product, name, cents, controlled, barcode)
+                        } else {
+                            val app = context.applicationContext as PosApplication
+                            ProvisioningRepository(context, app.databaseProvider).updateProduct(product, name, cents, controlled, barcode)
+                        }
+                    }
+                    busy = false
+                    result.fold(
+                        onSuccess = { editing = null },
+                        onFailure = { error = it.message ?: "No se pudo guardar el producto." },
+                    )
+                }
+            },
+        )
+    }
+}
+
+// One catalog row: name, price, stock flag, and the edit action.
+@Composable
+private fun ProductEditRow(product: ProductEntity, onEdit: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(product.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+            Text(
+                buildString {
+                    append(product.saleCategory.ifBlank { "Sin categoría" })
+                    append(" · ")
+                    append(if (product.stockPolicy == "CONTROLLED") "Con inventario" else "Sin inventario")
+                    product.sku.takeIf { it.isNotBlank() }?.let { append(" · "); append(it) }
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.SemiBold)
+        PosButton("Editar", onEdit)
     }
 }
 

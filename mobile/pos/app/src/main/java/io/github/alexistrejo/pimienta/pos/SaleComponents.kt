@@ -300,6 +300,89 @@ internal fun CreatePosProductDialog(
     }
 }
 
+// Edits name, price, and stock control. Category stays as stored on the site.
+@Composable
+internal fun EditPosProductDialog(
+    productName: String,
+    sku: String,
+    category: String,
+    initialBarcode: String,
+    initialPriceCentavos: Long,
+    initialControlled: Boolean,
+    sandbox: Boolean,
+    busy: Boolean,
+    error: String?,
+    onDismiss: () -> Unit,
+    onSubmit: (name: String, priceCentavos: Long, controlled: Boolean, barcode: String) -> Unit,
+) {
+    var name by remember { mutableStateOf(productName) }
+    var barcode by remember { mutableStateOf(initialBarcode) }
+    var amount by remember { mutableStateOf(BigDecimal.valueOf(initialPriceCentavos, 2).toPlainString()) }
+    var controlled by remember { mutableStateOf(initialControlled) }
+    var localError by remember { mutableStateOf<String?>(null) }
+
+    fun submit() {
+        if (busy) return
+        val cents = Money.fromInput(amount)
+        when {
+            name.isBlank() -> localError = "Captura el nombre."
+            cents == null || cents <= 0 -> localError = "Captura un precio válido."
+            else -> {
+                localError = null
+                onSubmit(name.trim(), cents, controlled, barcode.trim())
+            }
+        }
+    }
+
+    Dialog(onDismissRequest = { if (!busy) onDismiss() }) {
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+            Column(
+                Modifier
+                    .widthIn(max = 560.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("Editar producto", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    if (sandbox) {
+                        "Capacitación: el cambio queda en esta tablet y desaparece al salir o al reiniciar."
+                    } else {
+                        "Solo se envía lo que cambies: el nombre por un lado, el precio y el inventario por otro."
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nombre") }, singleLine = true, enabled = !busy, colors = catalogFieldColors())
+                Text("SKU", style = MaterialTheme.typography.labelLarge)
+                Text(sku.ifBlank { "Sin SKU" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(
+                    value = barcode,
+                    onValueChange = { barcode = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Código de barras") },
+                    supportingText = { Text("Si lo dejas vacío o igual al SKU, el escáner usa el SKU.") },
+                    singleLine = true,
+                    enabled = !busy,
+                    colors = catalogFieldColors(),
+                )
+                Text("Categoría", style = MaterialTheme.typography.labelLarge)
+                Text(category.ifBlank { "Sin categoría" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Switch(checked = controlled, onCheckedChange = { controlled = it }, enabled = !busy)
+                    Text("Controla inventario")
+                }
+                Text("Precio", style = MaterialTheme.typography.labelLarge)
+                Numpad(amount, { if (!busy) amount = it }, decimal = true, onSubmit = ::submit)
+                (error ?: localError)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f), enabled = !busy)
+                    PosButton(if (busy) "Guardando…" else "Guardar", ::submit, primary = true, modifier = Modifier.weight(1f), enabled = !busy)
+                }
+            }
+        }
+    }
+}
+
 // Captures category and amount; the cashier adds the line without a manager PIN.
 @Composable
 internal fun OpenAmountDialog(

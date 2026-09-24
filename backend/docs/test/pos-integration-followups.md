@@ -70,3 +70,7 @@ No extra follow-ups from this pass.
 - Bootstrap/changes `policies.stockless` is the tablet source of truth for skipping local `inventory_movement` rows.
 
 No extra follow-ups from this pass.
+
+## 2026-09-23 — Device product rename and offer
+
+No extra follow-ups from this pass. Name and offer are separate device PUTs so a tablet can skip the side that did not change. Staff item and catalog PUTs stay closed to the device JWT.

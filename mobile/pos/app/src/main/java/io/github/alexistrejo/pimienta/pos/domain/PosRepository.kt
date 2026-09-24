@@ -6,6 +6,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.data.sync.OutboxPayloadBuilder
 import io.github.alexistrejo.pimienta.pos.data.sync.PinVerifier
+import io.github.alexistrejo.pimienta.pos.data.sync.catalogBarcode
 import io.github.alexistrejo.pimienta.pos.data.sync.trainingProductEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -242,6 +243,34 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             }
         }
         return Result.success(product)
+    }
+
+    // Updates name, barcode, price, and stock policy only inside the training scratch database.
+    fun updateTrainingProduct(
+        product: ProductEntity,
+        name: String,
+        salePriceCentavos: Long,
+        controlledStock: Boolean,
+        barcode: String?,
+    ): Result<ProductEntity> {
+        if (mode != RuntimeMode.SANDBOX) {
+            return Result.failure(IllegalStateException("Solo capacitación edita productos en local."))
+        }
+        val nextBarcode = catalogBarcode(barcode, product.sku)
+        if (nextBarcode != null) {
+            val taken = database.productDao().findByCode(nextBarcode)
+            if (taken != null && taken.id != product.id) {
+                return Result.failure(IllegalStateException("Ya existe un producto con ese código de barras."))
+            }
+        }
+        val updated = product.copy(
+            name = name.trim(),
+            barcode = nextBarcode,
+            price = BigDecimal.valueOf(salePriceCentavos, 2).toPlainString(),
+            stockPolicy = if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
+        )
+        database.productDao().insertAll(listOf(updated))
+        return Result.success(updated)
     }
 
     // Opens the single allowed shift and records a durable SHIFT_OPENED sync event.

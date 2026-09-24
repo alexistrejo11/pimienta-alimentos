@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.pos.integration;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -100,6 +101,137 @@ class PosDeviceCatalogIntegrationTest {
         .perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/products", access, body))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.errorCode").value("ITEM_BARCODE_ALREADY_EXISTS"));
+  }
+
+  @Test
+  void updateProduct_renamesWithoutPrice_andOfferWithoutName() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-DEV-EDIT-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    createSaleCategory(staffToken, hqId, "Bebidas");
+    String access = enrollDevice(staffToken, hqId, "Caja editar");
+    String barcode = "750" + ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L);
+
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJsonBearer(
+                    "/api/v1/pos/sync/products",
+                    access,
+                    """
+                    {
+                      "name": "Agua natural",
+                      "salePriceCentavos": 1500,
+                      "saleCategory": "Bebidas",
+                      "barcode": "%s"
+                    }
+                    """
+                        .formatted(barcode)))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String body = created.getResponse().getContentAsString();
+    String itemId = String.valueOf((Object) JsonPath.read(body, "$.id"));
+    String sku = JsonPath.read(body, "$.sku");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/pos/sync/products/" + itemId,
+                access,
+                "{\"name\": \"Agua de horchata\", \"barcode\": \"%s\"}".formatted(barcode)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Agua de horchata"))
+        .andExpect(jsonPath("$.priceCentavos").value(1500))
+        .andExpect(jsonPath("$.stockPolicy").value("NOT_CONTROLLED"))
+        .andExpect(jsonPath("$.sku").value(sku))
+        .andExpect(jsonPath("$.barcode").value(barcode));
+
+    String replacement = "750" + ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L);
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/pos/sync/products/" + itemId,
+                access,
+                "{\"name\": \"Agua de horchata\", \"barcode\": \"%s\"}".formatted(replacement)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.sku").value(sku))
+        .andExpect(jsonPath("$.barcode").value(replacement));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/pos/sync/products/" + itemId,
+                access,
+                "{\"name\": \"Agua de horchata\", \"barcode\": \"%s\"}".formatted(sku)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.sku").value(sku))
+        .andExpect(jsonPath("$.barcode").doesNotExist());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/pos/sync/products/" + itemId + "/offer",
+                access,
+                "{\"salePriceCentavos\": 1800, \"stockPolicy\": \"CONTROLLED\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Agua de horchata"))
+        .andExpect(jsonPath("$.priceCentavos").value(1800))
+        .andExpect(jsonPath("$.stockPolicy").value("CONTROLLED"))
+        .andExpect(jsonPath("$.saleCategory").value("Bebidas"));
+  }
+
+  @Test
+  void updateProduct_staffJwt_returns403() throws Exception {
+    String staffToken = obtainAccessToken();
+    mockMvc
+        .perform(
+            put("/api/v1/pos/sync/products/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + staffToken)
+                .content("{\"name\": \"X\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            put("/api/v1/pos/sync/products/1/offer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + staffToken)
+                .content("{\"salePriceCentavos\": 100, \"stockPolicy\": \"CONTROLLED\"}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void updateProduct_otherHeadquarter_returns404() throws Exception {
+    String staffToken = obtainAccessToken();
+    long ownerHq = createHeadquarter(staffToken, "POS-DEV-OWN-" + UUID.randomUUID());
+    long otherHq = createHeadquarter(staffToken, "POS-DEV-OTH-" + UUID.randomUUID());
+    putPosSettings(staffToken, ownerHq);
+    putPosSettings(staffToken, otherHq);
+    createSaleCategory(staffToken, ownerHq, "Bebidas");
+    String owner = enrollDevice(staffToken, ownerHq, "Caja dueña");
+    String other = enrollDevice(staffToken, otherHq, "Caja ajena");
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJsonBearer(
+                    "/api/v1/pos/sync/products",
+                    owner,
+                    """
+                    {
+                      "name": "Agua",
+                      "salePriceCentavos": 1000,
+                      "saleCategory": "Bebidas"
+                    }
+                    """))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String itemId = String.valueOf((Object) JsonPath.read(created.getResponse().getContentAsString(), "$.id"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/pos/sync/products/" + itemId, other, "{\"name\": \"Ajeno\"}"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.errorCode").value("HEADQUARTER_ITEM_NOT_FOUND"));
   }
 
   @Test

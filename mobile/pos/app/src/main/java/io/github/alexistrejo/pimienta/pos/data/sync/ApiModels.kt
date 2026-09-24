@@ -47,6 +47,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class TelemetryHealthDto(val syncState: String, val pendingEvents: Int, val oldestPendingAgeSeconds: Long, val appVersion: String)
 @Serializable data class TelemetryBatchRequest(val events: List<TelemetryLogDto>, val health: TelemetryHealthDto? = null)
 @Serializable data class TelemetryAcceptedResponse(val accepted: Int)
+@Serializable data class RenamePosProductRequest(val name: String, val barcode: String? = null)
+@Serializable data class UpdatePosProductOfferRequest(val salePriceCentavos: Long, val stockPolicy: String)
 @Serializable data class CreatePosProductRequest(
     val name: String,
     val salePriceCentavos: Long,

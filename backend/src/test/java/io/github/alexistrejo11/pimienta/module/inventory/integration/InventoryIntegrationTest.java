@@ -585,6 +585,25 @@ class InventoryIntegrationTest {
   }
 
   @Test
+  void managerForbiddenOnItemDelete_adminCanDelete() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    long itemId = createItem(admin.token(), "SKU-DEL-" + UUID.randomUUID(), "Global item");
+
+    mockMvc
+        .perform(AccountTestRequests.deleteBearer("/api/v1/inventory/items/" + itemId, manager.token()))
+        .andExpect(status().isForbidden());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/" + itemId, admin.token()))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.deleteBearer("/api/v1/inventory/items/" + itemId, admin.token()))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
   void managerForbiddenOnRawAdjustment_adminCanAdjust() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
     TokenPair manager = obtainToken(Set.of(Role.MANAGER));

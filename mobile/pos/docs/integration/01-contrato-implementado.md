@@ -28,6 +28,8 @@ abiertos; ver [../implementation/00-estado-actual.md](../implementation/00-estad
 | `GET /api/v1/pos/sync/changes?cursor=` | Descargar `upsert`/`deactivate`; cursor ajeno o inválido devuelve 409 y exige bootstrap. |
 | `POST /api/v1/pos/sync/events` | Enviar lote ordenado por secuencia y recibir resultado individual. |
 | `POST /api/v1/pos/sync/products` | Alta síncrona de un producto vendible en la sede del dispositivo. JWT de tablet; sede del claim. |
+| `PUT /api/v1/pos/sync/products/{itemId}` | Renombra el artículo maestro. No cambia precio ni política de stock. |
+| `PUT /api/v1/pos/sync/products/{itemId}/offer` | Cambia precio de venta y `stockPolicy` en la sede. No cambia el nombre. |
 
 El access JWT representa al dispositivo (`typ=device`, `scope=pos:sync`), no
 al cajero. El PIN del operador no viaja. `createdByOperatorId` en el alta de
@@ -45,6 +47,24 @@ servidor. Respuesta: la misma proyección de producto que bootstrap. 409
 
 Un barcode desconocido en caja sigue pudiendo cobrarse como `PENDING_CATALOG`
 sin crear maestro. Monto abierto no cambia.
+
+### Edición desde el panel de gerente
+
+El cliente llama solo el lado que cambió. Si cambian nombre y oferta, hace las
+dos peticiones en ese orden.
+
+`PUT /products/{itemId}` body: `{ "name", "barcode" }`. El producto tiene que estar en el
+catálogo de la sede del dispositivo; si no, **404** `HEADQUARTER_ITEM_NOT_FOUND`.
+El SKU no se reescribe. `barcode` vacío, nulo o igual al SKU se guarda como `null`:
+el escáner usa el SKU. Un código distinto reemplaza solo el barcode. Costo y rol no se pisan.
+**409** `ITEM_BARCODE_ALREADY_EXISTS` si ese código ya está en otro artículo.
+
+`PUT /products/{itemId}/offer` body: `{ "salePriceCentavos", "stockPolicy" }`
+con `CONTROLLED` o `NOT_CONTROLLED` y precio mínimo 1 centavo. Categoría,
+disponibilidad y límite negativo se conservan.
+
+Ambas responden la misma proyección de producto que el alta. Un JWT de staff
+sin `scope=pos:sync` recibe **403**. No hay borrado por estas rutas.
 
 ## Bootstrap y deltas
 
