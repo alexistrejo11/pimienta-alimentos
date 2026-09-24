@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { guestAuthGuard } from './core/auth/guest-auth.guard';
 import { workspaceAuthGuard } from './core/auth/workspace-auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { dirtyFormGuard } from './core/auth/dirty-form.guard';
@@ -397,15 +398,18 @@ export const routes: Routes = [
   {
     path: 'auth/login',
     loadComponent: () => import('./pages/auth/login/login').then((m) => m.Login),
+    canActivate: [guestAuthGuard],
   },
   {
     path: 'auth/register',
     loadComponent: () => import('./pages/auth/register/register').then((m) => m.Register),
+    canActivate: [guestAuthGuard],
   },
   {
     path: 'auth/pendiente-aprobacion',
     loadComponent: () =>
       import('./pages/auth/pending-approval/pending-approval').then((m) => m.PendingApprovalPage),
+    canActivate: [guestAuthGuard],
   },
   {
     path: 'app',
