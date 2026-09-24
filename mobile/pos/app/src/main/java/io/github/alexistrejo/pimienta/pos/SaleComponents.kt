@@ -536,7 +536,8 @@ internal fun CashWithdrawalAuthorization(
                 Text("Motivo: Resguardo de efectivo", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Importe en pesos", style = MaterialTheme.typography.labelLarge)
                 Numpad(amount, { amount = it }, decimal = true, onSubmit = ::record)
-                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
+                val isTraining = repository.mode() == RuntimeMode.SANDBOX
+                managers.forEach { user -> PosButton(user.displayTitle(isTraining), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Gerente o Administrador", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -863,7 +864,8 @@ internal fun DiscountAuthorization(
                 Text("Venta bruta: ${Money.format(gross)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(amount, { amount = it }, label = { Text("Importe fijo en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                managers.forEach { user -> PosButton(user.displayTitle(), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
+                val isTraining = repository.mode() == RuntimeMode.SANDBOX
+                managers.forEach { user -> PosButton(user.displayTitle(isTraining), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Gerente o Administrador", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

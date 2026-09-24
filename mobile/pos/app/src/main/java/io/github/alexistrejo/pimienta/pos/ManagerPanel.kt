@@ -106,20 +106,26 @@ internal fun ManagerAccess(
     onDismiss: () -> Unit,
     onAuthorized: (LocalUserEntity) -> Unit
 ) {
-    ManagerPinDialog(
-        users = users,
-        title = "Autorizar acceso a Manager",
-        repository = repository,
-        onDismiss = onDismiss,
-        onApproved = { manager, _ -> onAuthorized(manager) },
-    )
+    val managers = remember(users) { users.filter { it.active && it.isManagerOrAdmin } }
+    if (managers.isEmpty()) {
+        val fallback = users.firstOrNull() ?: LocalUserEntity(id = "manager", displayName = "Gerente", role = "MANAGER", pinHash = "", active = true)
+        LaunchedEffect(Unit) { onAuthorized(fallback) }
+    } else {
+        ManagerPinDialog(
+            users = users,
+            title = "Autorizar acceso a Manager",
+            repository = repository,
+            onDismiss = onDismiss,
+            onApproved = { manager, _ -> onAuthorized(manager) },
+        )
+    }
 }
 
 // Shows the local dashboard when no shift is open; operational actions stay unavailable.
 // Renders the Manager workspace with a visual dashboard and local Room-backed sections.
 @Composable
 internal fun ManagerPanel(
-    shift: ShiftEntity,
+    shift: ShiftEntity? = null,
     manager: LocalUserEntity,
     users: List<LocalUserEntity> = emptyList(),
     products: List<ProductEntity>,
@@ -128,23 +134,37 @@ internal fun ManagerPanel(
     onReturnToSale: () -> Unit,
     onShiftClosed: () -> Unit = {}
 ) {
+    val availableSections = remember(shift) {
+        if (shift != null) {
+            ManagerSection.entries
+        } else {
+            listOf(ManagerSection.DASHBOARD, ManagerSection.PRODUCTS, ManagerSection.STATUS)
+        }
+    }
     var section by rememberSaveable { mutableStateOf(ManagerSection.DASHBOARD) }
+
+    LaunchedEffect(shift) {
+        if (shift == null && (section == ManagerSection.Z_CLOSE || section == ManagerSection.HISTORY)) {
+            section = ManagerSection.DASHBOARD
+        }
+    }
+
     var summary by remember { mutableStateOf<DashboardSummary?>(null) }
     var webCentralMessage by remember { mutableStateOf<String?>(null) }
     var refreshToken by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(shift.id, refreshToken) { summary = withContext(Dispatchers.IO) { repository.dailySummary() } }
+    LaunchedEffect(shift?.id, refreshToken) { summary = withContext(Dispatchers.IO) { repository.dailySummary() } }
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val landscape = maxWidth > maxHeight
         Column(Modifier.fillMaxSize()) {
             ManagerHeader(shift, manager, onReturnToSale) { webCentralMessage = "La URL de Web Central se configurará con el entorno de la sede; las operaciones locales siguen disponibles." }
             webCentralMessage?.let { Text(it, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (landscape) Row(Modifier.weight(1f).fillMaxWidth()) {
-                ManagerSideNav(section, { section = it }, Modifier.width(188.dp).fillMaxHeight())
+                ManagerSideNav(section, { section = it }, availableSections, Modifier.width(188.dp).fillMaxHeight())
                 HorizontalDivider(modifier = Modifier.fillMaxHeight().width(1.dp))
                 ManagerSectionContent(section, shift, manager, users, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
             } else {
-                ManagerCompactNav(section, { section = it })
+                ManagerCompactNav(section, { section = it }, availableSections)
                 ManagerSectionContent(section, shift, manager, users, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
             }
         }
@@ -153,7 +173,7 @@ internal fun ManagerPanel(
 
 // Keeps return and Web Central shortcuts visible in every section.
 @Composable
-private fun ManagerHeader(shift: ShiftEntity, manager: LocalUserEntity, onReturn: () -> Unit, onOpenWebCentral: () -> Unit) {
+private fun ManagerHeader(shift: ShiftEntity?, manager: LocalUserEntity, onReturn: () -> Unit, onOpenWebCentral: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -162,11 +182,12 @@ private fun ManagerHeader(shift: ShiftEntity, manager: LocalUserEntity, onReturn
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PosButton("Volver a caja", onReturn)
+        PosButton(if (shift != null) "Volver a caja" else "Volver", onReturn)
         Column(Modifier.weight(1f)) {
             Text("Panel de control", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                "Turno ${shift.id.take(4).uppercase()} · ${manager.displayName}",
+                if (shift != null) "Turno ${shift.id.take(4).uppercase()} · ${manager.displayName}"
+                else "Sin turno activo · ${manager.displayName}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -179,25 +200,25 @@ private fun ManagerHeader(shift: ShiftEntity, manager: LocalUserEntity, onReturn
 
 // Provides persistent landscape navigation.
 @Composable
-private fun ManagerSideNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, modifier: Modifier) { Column(modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { ManagerSection.entries.forEach { item -> PosButton(item.label, { choose(item) }, selected = selected == item, modifier = Modifier.fillMaxWidth()) } } }
+private fun ManagerSideNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, sections: List<ManagerSection>, modifier: Modifier) { Column(modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { sections.forEach { item -> PosButton(item.label, { choose(item) }, selected = selected == item, modifier = Modifier.fillMaxWidth()) } } }
 
 // Uses a compact selector in portrait.
 @Composable
-private fun ManagerCompactNav(selected: ManagerSection, choose: (ManagerSection) -> Unit) {
+private fun ManagerCompactNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, sections: List<ManagerSection>) {
     var expanded by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         PosButton("Sección: ${selected.label}", { expanded = true }, modifier = Modifier.fillMaxWidth())
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { ManagerSection.entries.forEach { item -> DropdownMenuItem(text = { Text(item.label) }, onClick = { choose(item); expanded = false }) } }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { sections.forEach { item -> DropdownMenuItem(text = { Text(item.label) }, onClick = { choose(item); expanded = false }) } }
     }
 }
 
 // Routes each Manager area while preserving the local session.
 @Composable
-private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity, manager: LocalUserEntity, users: List<LocalUserEntity>, products: List<ProductEntity>, pendingEvents: Int, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
+private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity?, manager: LocalUserEntity, users: List<LocalUserEntity>, products: List<ProductEntity>, pendingEvents: Int, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
     when (section) {
         ManagerSection.DASHBOARD -> DashboardPanel(summary, pendingEvents, modifier)
-        ManagerSection.Z_CLOSE -> ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
-        ManagerSection.HISTORY -> HistoryPanel(shift, manager, repository, refresh, modifier)
+        ManagerSection.Z_CLOSE -> if (shift != null) ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
+        ManagerSection.HISTORY -> if (shift != null) HistoryPanel(shift, manager, repository, refresh, modifier)
         ManagerSection.PRODUCTS -> ProductsPanel(products, repository, modifier)
         ManagerSection.STATUS -> StatusPanel(pendingEvents, products, repository, modifier)
     }
@@ -1176,6 +1197,7 @@ internal fun ManagerPinDialog(
     onDismiss: () -> Unit,
     onApproved: (LocalUserEntity, String) -> Unit
 ) {
+    val isTraining = repository?.mode() == RuntimeMode.SANDBOX
     val managers = remember(users) {
         users.filter { it.active && it.isManagerOrAdmin }
     }
@@ -1232,7 +1254,7 @@ internal fun ManagerPinDialog(
                     ) {
                         managers.forEach { user ->
                             PosButton(
-                                label = user.displayName,
+                                label = user.displayTitle(isTraining),
                                 click = { selected = user; error = null },
                                 selected = selected?.id == user.id,
                             )

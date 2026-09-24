@@ -41,6 +41,7 @@ internal fun RuntimeModeBanner(
     onTheme: ((Boolean) -> Unit)? = null,
     onResetDemo: (() -> Unit)? = null,
     onForceSync: (() -> Unit)? = null,
+    onOpenManager: (() -> Unit)? = null,
     availableUpdateVersionName: String? = null,
 ) {
     var open by remember { mutableStateOf(false) }
@@ -85,6 +86,14 @@ internal fun RuntimeModeBanner(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (onOpenManager != null) {
+                Button(
+                    onClick = onOpenManager,
+                    modifier = Modifier.heightIn(min = 36.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
+                ) { Text("Panel Manager") }
+            }
             if (onForceSync != null && !isTraining) {
                 Button(
                     onClick = onForceSync,
@@ -196,7 +205,7 @@ internal fun RuntimeModeBanner(
                             ) {
                                 authorizers.forEach { user ->
                                     PosButton(
-                                        label = user.displayName,
+                                        label = user.displayTitle(isTraining),
                                         click = { selectedAuthorizer = user; error = null },
                                         selected = selectedAuthorizer?.id == user.id,
                                     )

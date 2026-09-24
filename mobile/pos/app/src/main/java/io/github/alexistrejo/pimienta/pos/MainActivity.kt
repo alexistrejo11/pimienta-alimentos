@@ -200,6 +200,9 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     var loadGeneration by remember { mutableStateOf(0) }
     var productionCatalogSyncAttempted by remember { mutableStateOf(false) }
     var availableUpdateVersionName by remember { mutableStateOf<String?>(null) }
+    var standaloneManager by remember { mutableStateOf<LocalUserEntity?>(null) }
+    var managerAccessOpen by remember { mutableStateOf(false) }
+    var pendingEventsCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val updater = remember(context) { PosAppUpdater(context) }
 
     fun reload() {
@@ -322,6 +325,19 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         launch { repository.observeUsers().collect { users = it } }
         launch { repository.observePolicy().collect { policy = it } }
         launch { repository.observeSyncState().collect { syncState = it } }
+        launch { repository.observePendingEvents().collect { pendingEventsCount = it } }
+    }
+
+    if (managerAccessOpen) {
+        ManagerAccess(
+            users = users,
+            repository = repository,
+            onDismiss = { managerAccessOpen = false },
+            onAuthorized = { authed ->
+                managerAccessOpen = false
+                standaloneManager = authed
+            },
+        )
     }
 
     // When production is enrolled but catalog/operators are empty, pull bootstrap once.
@@ -367,10 +383,26 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                         reload()
                     }
                 },
+                onOpenManager = { managerAccessOpen = true },
             )
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (!initialized) {
+            val activeStandaloneManager = standaloneManager
+            if (activeStandaloneManager != null) {
+                ManagerPanel(
+                    shift = shift,
+                    manager = activeStandaloneManager,
+                    users = users,
+                    products = products,
+                    pendingEvents = pendingEventsCount,
+                    repository = repository,
+                    onReturnToSale = { standaloneManager = null },
+                    onShiftClosed = {
+                        shift = null
+                        standaloneManager = null
+                    },
+                )
+            } else if (!initialized) {
                 Loading(loadingMessage(mode, null), ::reload)
             } else {
                 when {
@@ -442,7 +474,15 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                             },
                         )
                     }
-                    shift == null -> Access(users, repository, notice, mode, { shift = it }, { notice = it })
+                    shift == null -> Access(
+                        users = users,
+                        repository = repository,
+                        notice = notice,
+                        mode = mode,
+                        opened = { shift = it },
+                        message = { notice = it },
+                        onOpenManager = { managerAccessOpen = true },
+                    )
                     else -> {
                         val activeShift = shift
                         if (activeShift != null) {
@@ -460,7 +500,15 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                                 scanner = scanner,
                             )
                         } else {
-                            Access(users, repository, notice, mode, { shift = it }, { notice = it })
+                            Access(
+                                users = users,
+                                repository = repository,
+                                notice = notice,
+                                mode = mode,
+                                opened = { shift = it },
+                                message = { notice = it },
+                                onOpenManager = { managerAccessOpen = true },
+                            )
                         }
                     }
                 }
@@ -590,6 +638,7 @@ internal fun Access(
     mode: RuntimeMode,
     opened: (ShiftEntity) -> Unit,
     message: (String) -> Unit,
+    onOpenManager: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -619,7 +668,16 @@ internal fun Access(
                 // Header with step progress bar
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (stage == AccessStage.AUTHENTICATE_AUTHORIZER) {
-                        Text("Abrir turno", style = MaterialTheme.typography.headlineSmall)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("Abrir turno", style = MaterialTheme.typography.headlineSmall)
+                            if (onOpenManager != null) {
+                                PosButton("Panel Manager", onOpenManager)
+                            }
+                        }
                     } else {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
