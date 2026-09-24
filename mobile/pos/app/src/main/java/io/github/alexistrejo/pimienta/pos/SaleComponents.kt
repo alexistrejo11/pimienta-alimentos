@@ -46,7 +46,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Polls USB printer health for the sale status bar and USB attach events.
+// Polls USB or Bluetooth printer health for the sale status bar.
 @Composable
 internal fun rememberLivePrinterStatus(context: Context, mode: RuntimeMode): Pair<String, Boolean> {
     var refresh by remember { mutableIntStateOf(0) }
@@ -60,7 +60,8 @@ internal fun rememberLivePrinterStatus(context: Context, mode: RuntimeMode): Pai
         }
     }
     val presentation = remember(refresh, mode) {
-        printerStatusPresentation(mode, PrinterFactory.printerStatus(context, mode))
+        val availability = PrinterFactory.availability(context, mode)
+        printerStatusPresentation(mode, availability.status, availability.link)
     }
     return presentation.label to presentation.alert
 }

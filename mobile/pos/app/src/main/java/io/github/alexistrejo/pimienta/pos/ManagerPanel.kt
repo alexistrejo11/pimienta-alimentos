@@ -1,6 +1,12 @@
 package io.github.alexistrejo.pimienta.pos
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -61,8 +67,13 @@ import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.data.update.ApkInstallOutcome
 import io.github.alexistrejo.pimienta.pos.data.update.PosAppUpdater
 import io.github.alexistrejo.pimienta.pos.data.update.ReleaseCheckOutcome
+import io.github.alexistrejo.pimienta.pos.hardware.BondedPrinter
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterLink
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterPreferences
+import io.github.alexistrejo.pimienta.pos.hardware.bondedPrinters
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
+import io.github.alexistrejo.pimienta.pos.hardware.PeripheralStatus
 import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PrintableLine
@@ -881,17 +892,36 @@ private fun StatusPanel(
     val context = LocalContext.current
     val mode = repository.mode()
     val updater = remember(context) { PosAppUpdater(context) }
-    var printerStatus by remember(mode) { mutableStateOf(PrinterFactory.printerStatus(context, mode)) }
-
-    LaunchedEffect(mode) {
-        PosPrinterRegistry.statusTick.collect {
-            printerStatus = PrinterFactory.printerStatus(context, mode)
-        }
+    var printerAvailability by remember(mode) { mutableStateOf(PrinterFactory.availability(context, mode)) }
+    var savedMac by remember { mutableStateOf(PrinterPreferences(context).mac()) }
+    var bonded by remember { mutableStateOf(emptyList<BondedPrinter>()) }
+    var bluetoothGranted by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < 31 ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) ==
+                PackageManager.PERMISSION_GRANTED,
+        )
     }
-    LaunchedEffect(mode) {
+    val bluetoothPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        bluetoothGranted = granted
+        if (granted) bonded = bondedPrinters(context)
+        printerAvailability = PrinterFactory.availability(context, mode)
+    }
+
+    fun refreshPrinter() {
+        printerAvailability = PrinterFactory.availability(context, mode)
+        savedMac = PrinterPreferences(context).mac()
+        if (bluetoothGranted) bonded = bondedPrinters(context)
+    }
+
+    LaunchedEffect(mode, bluetoothGranted) {
+        refreshPrinter()
+        PosPrinterRegistry.statusTick.collect { refreshPrinter() }
+    }
+    LaunchedEffect(mode, bluetoothGranted) {
         while (true) {
             delay(2_000)
-            printerStatus = PrinterFactory.printerStatus(context, mode)
+            refreshPrinter()
         }
     }
 
@@ -1032,9 +1062,43 @@ private fun StatusPanel(
                     val failed = printJobs.value.count { it.status == "FAILED" }
                     Text("${printJobs.value.size} trabajos pendientes · $failed fallidos", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        printerStatusPresentation(mode, printerStatus).label,
+                        printerStatusPresentation(mode, printerAvailability.status, printerAvailability.link).label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Text(
+                        "Si la tablet está cargando, elige la térmica ya emparejada en Ajustes.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (!bluetoothGranted) {
+                        PosButton("Permitir Bluetooth", { bluetoothPermission.launch(Manifest.permission.BLUETOOTH_CONNECT) })
+                    } else if (bonded.isEmpty()) {
+                        Text(
+                            "No hay equipos Bluetooth emparejados.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        bonded.forEach { printer ->
+                            val selected = printer.mac.equals(savedMac, ignoreCase = true)
+                            PosButton(
+                                if (selected) "${printer.name} · en uso" else printer.name,
+                                {
+                                    PrinterPreferences(context).saveMac(printer.mac)
+                                    refreshPrinter()
+                                    PosPrinterRegistry.notifyChanged()
+                                    peripheralMessage = "Impresora Bluetooth: ${printer.name}."
+                                },
+                                primary = selected,
+                            )
+                        }
+                    }
+                    if (savedMac != null) {
+                        PosButton("Olvidar impresora Bluetooth", {
+                            PrinterPreferences(context).clearMac()
+                            refreshPrinter()
+                            PosPrinterRegistry.notifyChanged()
+                            peripheralMessage = "Impresora Bluetooth olvidada."
+                        })
+                    }
                     PosButton("Procesar cola de impresión", {
                         PrintWorker.enqueue(context)
                         refreshPrintJobs()
@@ -1054,9 +1118,17 @@ private fun StatusPanel(
                                 )
                                 printer.print(encoder.encode(document, openDrawer = true))
                             }
-                            peripheralMessage = when (result) {
-                                PrintResult.Printed -> "Prueba enviada a la impresora."
-                                is PrintResult.Failed -> "Impresión fallida: ${result.reason.name}"
+                            val link = PrinterFactory.availability(context, mode)
+                            peripheralMessage = when {
+                                result is PrintResult.Printed && link.link == PrinterLink.USB &&
+                                    link.status == PeripheralStatus.READY ->
+                                    "Prueba enviada por USB."
+                                result is PrintResult.Printed && link.link == PrinterLink.BLUETOOTH &&
+                                    link.status == PeripheralStatus.READY ->
+                                    "Prueba enviada por Bluetooth."
+                                result is PrintResult.Printed -> "Prueba simulada. No hay impresora USB ni Bluetooth."
+                                result is PrintResult.Failed -> "Impresión fallida: ${result.reason.name}"
+                                else -> "Impresión fallida."
                             }
                         }
                     })
@@ -1068,9 +1140,13 @@ private fun StatusPanel(
                     Text("Lector", style = MaterialTheme.typography.titleMedium)
                     Text(
                         when {
-                            PosScannerRegistry.fake != null -> "Fake scanner + HID USB activos"
-                            else -> "Scanner HID pendiente"
+                            PosScannerRegistry.fake != null -> "Fake scanner + lector en modo teclado activos"
+                            else -> "Lector en modo teclado pendiente"
                         },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Con la tablet cargando, el lector Bluetooth en modo teclado se usa igual que el USB.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     PosButton("Probar lectura conocida", {

@@ -27,14 +27,14 @@ conforme se confirman.
 - **USB-COM / Serial (avanzado):** se activa escaneando el código de
   configuración del manual; el SO expone un puerto serie virtual. Útil si el
   POS necesita control exclusivo de lecturas.
-- **Bluetooth:** soportado por el hardware; contingencia si falla USB, no ruta principal.
+- **Bluetooth:** emparejado como teclado. Con la tablet cargando se usa el mismo flujo HID que el USB.
 
 #### Decisión de implementación (provisional)
 
 Primera integración en Fase 3B: **USB-HID** sobre el hub, alineada con
 `ScannerSource.USB_HID` y sin adapter propietario. USB-COM queda como
 alternativa si HID compite mal con el teclado soft o con campos Compose.
-Bluetooth queda como contingencia de cable, no del camino feliz inicial.
+Bluetooth en modo teclado es el camino de carga: el puerto USB-C no puede ser host y cargar a la vez. No hay socket serial aparte.
 
 #### Pendiente de validación física (este lector)
 
@@ -54,7 +54,7 @@ Bluetooth queda como contingencia de cable, no del camino feliz inicial.
 | Protocolo | ESC/POS compatible |
 | Conexión de producción | USB (vía hub USB-A) |
 | Red LAN/Ethernet | No |
-| Bluetooth | Opcional según variante de fábrica; **no** es ruta principal del POS |
+| Bluetooth | Camino de carga: RFCOMM a la MAC que el gerente eligió, mismo ESC/POS que USB |
 | Rollo físico | 58 mm |
 | Ancho de impresión útil | 48 mm |
 | Code pages declaradas | PC850 (multilingual), PC437/PC347 Europa, PC860, West Europe y extensiones |
@@ -67,7 +67,7 @@ Bluetooth queda como contingencia de cable, no del camino feliz inicial.
 - Code page inicial: **CP850 / PC850**, alineada con el encoder actual y el español (`ñ`, acentos).
 - Scanner: `HidKeyboardBarcodeScanner` (USB-HID) + `FakeBarcodeScanner` vía `MultiplexBarcodeScanner`.
 - Corte y cajón: habilitados en perfil; pulso ESC/POS en ventas en efectivo y prueba desde Estado.
-- Bluetooth queda fuera del camino feliz.
+- Transporte: `UsbPrintTransport` si hay impresora USB; si no, `BluetoothPrintTransport` con la MAC guardada. El modo carga es un camino válido, no una contingencia.
 - Adapter propietario solo si la unidad real falla con ESC/POS genérico (poco probable en esta familia OEM).
 
 #### Pendiente de validación física (esta impresora)
@@ -99,7 +99,7 @@ Bluetooth queda como contingencia de cable, no del camino feliz inicial.
 - Host USB (lector/impresora vía hub genérico) ya tiene evidencia empírica positiva; no bloquea empezar Fase 3B de software.
 - **Operación a batería aceptada** como modo válido de mostrador si no hay hub PD o si PD falla en esta unidad. No es lo ideal para turnos largos, pero **no bloquea desarrollo ni el camino feliz USB**.
 - Si un hub PD no logra carga+datos en esta unidad, plan B operativo: recargas entre turnos / a batería; plan C de hardware: otra tablet — decidir tras la mesa, no en código.
-- **Bluetooth** no es ruta principal. Queda como contingencia si se pierde/rompe un cable USB o el hub: el Shawty S0024 y algunas variantes de la POS-5890A lo soportan. Se implementaría solo si hace falta en piloto; no retrasa la integración USB.
+- **Carga en turno:** el USB-C no puede cargar y ser host a la vez. Impresora Bluetooth ya emparejada y lector Bluetooth en modo teclado son el camino de carga, no un plan de contingencia.
 
 #### Pendiente de validación física (esta tablet)
 
@@ -115,7 +115,7 @@ Bluetooth queda como contingencia de cable, no del camino feliz inicial.
 - Cargador y cable USB-C compatibles con ese hub.
 - Cajón de dinero (modelo; la impresora ya declara el puerto de control).
 - Teclado USB (si se usa aparte del lector).
-- Bluetooth de contingencia (solo si USB falla en piloto; no es entregable inicial).
+- Impresora Bluetooth emparejada (MAC elegida en Estado) para imprimir mientras la tablet carga.
 
 ## Arquitectura elegida
 
@@ -179,7 +179,7 @@ permisos y exigirá una impresión de prueba antes de guardarla.
 - Lector de producción: Shawty S0024 en USB-HID como primera ruta.
 - Impresora de producción: POS-5890A / ZJ-5890A, ESC/POS, USB, rollo 58 mm
   (impresión útil 48 mm), code page inicial PC850, cajón por RJ11/RJ12.
-- Bluetooth: contingencia de cable/hub, no camino feliz ni bloqueante.
+- Bluetooth es el camino de carga (impresora RFCOMM elegida en Estado, lector en modo teclado). No sustituye al USB cuando la impresora USB está conectada.
 - El POS debe mostrar estado de periféricos y conservar trabajos de impresión
   si la impresora no está disponible.
 - Los fakes de scanner, impresora y cajón permanecen como implementaciones de
