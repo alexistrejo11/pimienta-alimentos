@@ -13,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +76,8 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                 command.defaultNegativeStockLimit() != null
                                     ? command.defaultNegativeStockLimit()
                                     : existing.getDefaultNegativeStockLimit())
+                            .withStockless(
+                                resolveBoolean(command.stockless(), existing.isStockless()))
                             .revise(existing)))
             .orElseGet(
                 () ->
@@ -95,6 +96,7 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                     List.of(),
                                     resolveBoolean(command.allowOpenProducts(), false)))
                             .withDefaultNegativeStockLimit(command.defaultNegativeStockLimit())
+                            .withStockless(resolveBoolean(command.stockless(), false))
                             .register()));
 
     posLocationUseCases.ensurePosLocation(headquarterId);
@@ -104,6 +106,7 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
     policyProjection.put("catalogStaleWarnHours", saved.getCatalogStaleWarnHours());
     policyProjection.put("catalogStaleBlockHours", saved.getCatalogStaleBlockHours());
     policyProjection.put("defaultNegativeStockLimit", saved.getDefaultNegativeStockLimit());
+    policyProjection.put("stockless", saved.isStockless());
     posChangeLogService.appendPolicy(headquarterId, policyProjection);
     return saved;
   }

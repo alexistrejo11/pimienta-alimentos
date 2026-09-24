@@ -24,6 +24,7 @@ class DeviceApiMockWebServerTest {
   Assert.assertNull(result.policies.defaultNegativeStockLimit)
   Assert.assertEquals(24, result.policies.staleCatalogWarnHours)
   Assert.assertEquals(72, result.policies.staleCatalogBlockHours)
+  Assert.assertFalse(result.policies.stockless)
  }
 
  @Test fun changesUsesSequenceCursorInQuery()=runBlocking{

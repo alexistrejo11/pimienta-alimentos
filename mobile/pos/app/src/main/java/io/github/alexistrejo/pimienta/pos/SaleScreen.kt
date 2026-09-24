@@ -349,7 +349,7 @@ internal fun Sale(
             StatusBar(
                 cashier = cashier,
                 pending = pending,
-                syncLabel = inventorySyncLabel(syncState, pending),
+                syncLabel = if (policy?.stockless == true) salesOnlySyncLabel(pending) else inventorySyncLabel(syncState, pending),
                 dark = dark,
                 onTheme = onTheme,
                 landscape = landscape,
@@ -625,4 +625,10 @@ internal fun inventorySyncLabel(state: SyncStateEntity?, pending: Int, now: Long
     } else {
         "Inventario sincronizado hace ${minutes} min"
     }
+}
+
+// Avoids inventory copy when the sede is configured as sales-only.
+internal fun salesOnlySyncLabel(pending: Int): String {
+    val pendingText = if (pending == 1) "1 cambio local pendiente" else "$pending cambios locales pendientes"
+    return "Solo venta · $pendingText"
 }

@@ -25,7 +25,7 @@
       <section class="ui-panel p-6">
         <h2 class="font-headline text-lg font-bold text-on-surface">Políticas de caja y monto abierto</h2>
         <p class="mt-1 text-sm text-on-surface-variant">
-           Moneda, caducidad del catálogo, autorización de monto abierto y límites de stock negativo.
+           Moneda, caducidad del catálogo, autorización de monto abierto, modo solo venta y límites de stock negativo.
         </p>
         <form
           class="mt-4 grid gap-4 sm:grid-cols-2"
@@ -97,6 +97,16 @@
               <span class="font-medium">Permitir montos abiertos</span><br />
               <span class="text-xs text-on-surface-variant"
                 >El cajero puede cobrar un importe libre en las categorías marcadas.</span
+              >
+            </span>
+          </label>
+          <label class="flex items-center gap-3 text-sm sm:col-span-2">
+            <input type="checkbox" class="size-4 accent-primary" formControlName="stockless" />
+            <span>
+              <span class="font-medium">Solo venta (sin stock)</span><br />
+              <span class="text-xs text-on-surface-variant"
+                >Las ventas y cancelaciones de esta sede no descuentan inventario. Se puede
+                desactivar después; el catálogo no se recataloga.</span
               >
             </span>
           </label>

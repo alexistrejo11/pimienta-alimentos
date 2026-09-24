@@ -143,6 +143,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         }.getOrDefault(emptyList())
     } ?: emptyList()
     fun allowOpenProducts(): Boolean = database.syncProjectionDao().policy()?.allowOpenProducts == true
+    // HQ flag: sales must not write local inventory movements.
+    fun stockless(): Boolean = database.syncProjectionDao().policy()?.stockless == true
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }
     fun withdrawals(shiftId: String) = database.operationsDao().withdrawals(shiftId)
     fun withdrawalTotal(shiftId: String) = database.operationsDao().withdrawalsForShift(shiftId)
@@ -382,10 +384,12 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             operations.markSaleCancelled(sale.id)
             val cancellation = SaleCancellationEntity(UUID.randomUUID().toString(), sale.id, sale.shiftId, reason.trim(), manager.id, manager.role, cancelledAt)
             operations.insertCancellation(cancellation)
-            operations.insertMovements(
-                lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
-                    .map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId!!, line.quantity, cancelledAt, "SALE_CANCELLATION", eventId) }
-            )
+            if (!stockless()) {
+                operations.insertMovements(
+                    lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
+                        .map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId!!, line.quantity, cancelledAt, "SALE_CANCELLATION", eventId) }
+                )
+            }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CANCELLED", sale.id,
                 OutboxPayloadBuilder.saleCancelled(sale, cancellation), cancelledAt, eventId
@@ -409,7 +413,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     if (!product.available) {
                         return Result.failure(IllegalArgumentException("${product.name} no está disponible."))
                     }
-                    if (product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
+                    if (!stockless() && product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
                         val stock = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
                         if (stock < BigDecimal.valueOf(line.quantity.toLong())) {
                             return Result.failure(IllegalArgumentException("No hay existencias suficientes de ${product.name}."))
@@ -484,11 +488,13 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val payment = PaymentEntity(UUID.randomUUID().toString(), saleId, method.name, total)
             operations.insertPayment(payment)
             val controlledLines = lines.filter { it.lineType == SaleLineType.CATALOG && it.stockPolicy == "CONTROLLED" && it.productId != null }
-            operations.insertMovements(
-                controlledLines.map { line ->
-                    InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId!!, -line.quantity, confirmedAt, syncEventId = eventId)
-                }
-            )
+            if (!stockless()) {
+                operations.insertMovements(
+                    controlledLines.map { line ->
+                        InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId!!, -line.quantity, confirmedAt, syncEventId = eventId)
+                    }
+                )
+            }
             val products = lines.mapNotNull { line -> line.productId?.let { database.productDao().findById(it) } }.associateBy { it.id }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CONFIRMED", saleId,

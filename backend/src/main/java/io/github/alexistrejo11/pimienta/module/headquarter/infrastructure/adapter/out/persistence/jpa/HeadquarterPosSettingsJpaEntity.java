@@ -48,6 +48,9 @@ public class HeadquarterPosSettingsJpaEntity {
   @Column(name = "default_negative_stock_limit")
   private Integer defaultNegativeStockLimit;
 
+  @Column(name = "stockless", nullable = false)
+  private boolean stockless;
+
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
@@ -124,6 +127,14 @@ public class HeadquarterPosSettingsJpaEntity {
 
   public void setDefaultNegativeStockLimit(Integer defaultNegativeStockLimit) {
     this.defaultNegativeStockLimit = defaultNegativeStockLimit;
+  }
+
+  public boolean isStockless() {
+    return stockless;
+  }
+
+  public void setStockless(boolean stockless) {
+    this.stockless = stockless;
   }
 
   public LocalDateTime getCreatedAt() {

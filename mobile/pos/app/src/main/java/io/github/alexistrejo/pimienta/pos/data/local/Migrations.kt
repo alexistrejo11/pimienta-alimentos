@@ -211,4 +211,11 @@ object Migrations {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_shift_deviceId_status` ON `shift` (`deviceId`, `status`)")
         }
     }
+
+    // Stores the HQ sales-only flag so the tablet can skip local stock movements.
+    val V16_TO_V17 = object : Migration(16, 17) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `pos_policy` ADD COLUMN `stockless` INTEGER NOT NULL DEFAULT 0")
+        }
+    }
 }

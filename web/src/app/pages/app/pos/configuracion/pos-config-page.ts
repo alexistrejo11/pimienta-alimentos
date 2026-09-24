@@ -46,6 +46,7 @@ export class PosConfigPageComponent implements OnInit {
     openAmountCategories: this.fb.control<string[]>([]),
     allowOpenProducts: [false],
     defaultNegativeStockLimit: [null as number | null],
+    stockless: [false],
   });
 
   constructor() {
@@ -82,6 +83,7 @@ export class PosConfigPageComponent implements OnInit {
             openAmountCategories: this.normalizeSelectedCategories(s.openAmountCategories ?? []),
             allowOpenProducts: s.allowOpenProducts,
             defaultNegativeStockLimit: s.defaultNegativeStockLimit,
+            stockless: s.stockless,
           });
         },
         error: (err: unknown) => {
@@ -95,6 +97,7 @@ export class PosConfigPageComponent implements OnInit {
               openAmountCategories: [],
               allowOpenProducts: false,
               defaultNegativeStockLimit: null,
+              stockless: false,
             });
             return;
           }
@@ -118,6 +121,7 @@ export class PosConfigPageComponent implements OnInit {
         openAmountCategories: this.normalizeSelectedCategories(v.openAmountCategories ?? []),
         allowOpenProducts: v.allowOpenProducts,
         defaultNegativeStockLimit: v.defaultNegativeStockLimit,
+        stockless: v.stockless,
       })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
@@ -130,6 +134,7 @@ export class PosConfigPageComponent implements OnInit {
             openAmountCategories: this.normalizeSelectedCategories(s.openAmountCategories ?? []),
             allowOpenProducts: s.allowOpenProducts,
             defaultNegativeStockLimit: s.defaultNegativeStockLimit,
+            stockless: s.stockless,
           });
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),

@@ -1,7 +1,9 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.application;
 
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand;
@@ -51,6 +53,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
   private final PosSyncEventRepository syncEventRepository;
   private final PosSaleRepository saleRepository;
   private final HeadquarterItemRepository headquarterItemRepository;
+  private final PosOperationalConfigRepository posOperationalConfigRepository;
   private final PosSaleInventoryUseCases posSaleInventoryUseCases;
   private final PosEventStockProjector eventStockProjector;
   private final TransactionTemplate transactionTemplate;
@@ -61,6 +64,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       PosSyncEventRepository syncEventRepository,
       PosSaleRepository saleRepository,
       HeadquarterItemRepository headquarterItemRepository,
+      PosOperationalConfigRepository posOperationalConfigRepository,
       PosSaleInventoryUseCases posSaleInventoryUseCases,
       PosEventStockProjector eventStockProjector,
       PlatformTransactionManager transactionManager,
@@ -69,6 +73,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
     this.syncEventRepository = syncEventRepository;
     this.saleRepository = saleRepository;
     this.headquarterItemRepository = headquarterItemRepository;
+    this.posOperationalConfigRepository = posOperationalConfigRepository;
     this.posSaleInventoryUseCases = posSaleInventoryUseCases;
     this.eventStockProjector = eventStockProjector;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -394,7 +399,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
 
   private void applyControlledStock(
       long headquarterId, UUID eventId, SaleConfirmedPayload payload) {
-    if (payload.lines() == null) {
+    if (isStockless(headquarterId) || payload.lines() == null) {
       return;
     }
     for (SaleLinePayload line : payload.lines()) {
@@ -419,6 +424,13 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
               null,
               null));
     }
+  }
+
+  private boolean isStockless(long headquarterId) {
+    return posOperationalConfigRepository
+        .findByHeadquarterId(headquarterId)
+        .map(PosOperationalConfig::isStockless)
+        .orElse(false);
   }
 
   private void bumpDeviceSequence(PosDevice device, long sequence) {

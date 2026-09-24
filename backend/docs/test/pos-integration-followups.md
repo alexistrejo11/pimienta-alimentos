@@ -63,4 +63,10 @@ No extra follow-ups from this pass.
 - The admin accept API remains in the backend. The web no longer lists or accepts incidents.
 - Linking a later catalog barcode back onto `PENDING_CATALOG` lines is not implemented in this pass.
 
+## 2026-09-23 — Stockless / sales-only HQ mode
+
+- `headquarter_pos_settings.stockless` defaults to `false`. When true, POS sale/cancel ingest skips `PosSaleInventoryUseCases`; web ledger movements are unchanged.
+- Turning the flag off does not backfill missed POS deductions.
+- Bootstrap/changes `policies.stockless` is the tablet source of truth for skipping local `inventory_movement` rows.
+
 No extra follow-ups from this pass.

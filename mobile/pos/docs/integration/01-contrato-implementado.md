@@ -61,8 +61,18 @@ catálogo no modifica snapshots de ventas ni un carrito activo.
 ### Política de producto abierto
 
 El bootstrap y las operaciones `policies` de los deltas incluyen
-`allowOpenProducts`, además de `openAmountCategories`. La aplicación debe
-actualizar ambos valores atómicamente con el cursor.
+`allowOpenProducts`, `openAmountCategories` y `stockless`. La aplicación debe
+actualizar esos valores atómicamente con el cursor.
+
+### Modo solo venta (`stockless`)
+
+`PUT /api/v1/headquarters/{id}/pos-settings` acepta `stockless` (boolean, default
+`false`). Con `true`, el servidor **no** aplica movimientos de inventario POS
+para `SALE_CONFIRMED` ni `SALE_CANCELLED`. La venta se persiste igual. El
+catálogo puede seguir con `stockPolicy=CONTROLLED`. Al apagar el modo, las
+siguientes ventas CONTROLLED descuentan desde el saldo POS actual; no hay
+backfill. El tablet no escribe `inventory_movement` local ni bloquea por
+existencias cuando `policies.stockless` es verdadero.
 
 Una línea manual de monto abierto se envía dentro de `SALE_CONFIRMED` con esta
 forma:
@@ -119,9 +129,9 @@ El servidor guarda cualquier evento recibido en el ledger. La proyección de
 existencias centrales aplica solo a:
 
 - **`SALE_CONFIRMED`:** persistencia de venta/líneas/pagos y movimiento POS de
-  inventario para líneas `CONTROLLED`.
+  inventario para líneas `CONTROLLED` **salvo** sede `stockless`.
 - **`SALE_CANCELLED`:** reversión del movimiento POS asociado a la venta
-  cancelada.
+  cancelada **salvo** sede `stockless`.
 
 **`WASTE_RECORDED` y `RESTOCK_RECORDED`** se aceptan como entradas de auditoría
 en el ledger (reportes operativos), pero **no modifican** el inventario HQ.

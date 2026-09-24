@@ -59,6 +59,7 @@ class TrainingBootstrapImporter(private val context: Context) {
             staleCatalogWarnHours = 24,
             staleCatalogBlockHours = 72,
             openAmountCategoriesJson = JSONArray(openAmountCategoriesList).toString(),
+            stockless = false,
         )
 
         database.runInTransaction {

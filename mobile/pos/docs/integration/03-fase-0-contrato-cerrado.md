@@ -47,7 +47,8 @@ un schema no soportado hace fallar el lote y el cursor no avanza.
 
 La cantidad que consume el POS es la fila de `inventory_stock` asociada a la
 ubicación canónica `POS` de la sede. El servidor aplica movimientos, no saldos
-enviados por la tablet.
+enviados por la tablet. Si `headquarter_pos_settings.stockless` es verdadero,
+esas ventas y cancelaciones POS **no** generan movimiento.
 
 Una entrada `IN`, merma `OUT`, transferencia, ajuste, conteo o venta solo debe
 producir un cambio de stock para tablets cuando modifica esa ubicación POS. El

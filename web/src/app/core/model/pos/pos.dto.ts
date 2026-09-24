@@ -53,6 +53,7 @@ export interface PosSettingsResponse {
   openAmountCategories: string[];
   allowOpenProducts: boolean;
   defaultNegativeStockLimit: number | null;
+  stockless: boolean;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -65,6 +66,7 @@ export interface PosSettingsRequest {
   openAmountCategories?: string[];
   allowOpenProducts?: boolean;
   defaultNegativeStockLimit?: number | null;
+  stockless?: boolean;
 }
 
 /** GET/PUT /api/v1/headquarters/{id}/pos-catalog/{itemId} */

@@ -25,4 +25,10 @@ class InventorySyncLabelTest {
             inventorySyncLabel(state, 2, 121_000),
         )
     }
+
+    @Test
+    fun stocklessStateDoesNotClaimInventory() {
+        assertEquals("Solo venta · 0 cambios locales pendientes", salesOnlySyncLabel(0))
+        assertEquals("Solo venta · 1 cambio local pendiente", salesOnlySyncLabel(1))
+    }
 }

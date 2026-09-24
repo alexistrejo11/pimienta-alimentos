@@ -22,4 +22,6 @@ data class PosPolicyEntity(
     val staleCatalogWarnHours: Int,
     val staleCatalogBlockHours: Int,
     val openAmountCategoriesJson: String,
+    // When true, sales do not write local inventory movements.
+    val stockless: Boolean = false,
 )

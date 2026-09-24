@@ -21,7 +21,8 @@ public final class HeadquarterPosWebMapper {
         request.catalogStaleBlockHours(),
         request.openAmountCategories(),
         request.allowOpenProducts(),
-        request.defaultNegativeStockLimit());
+        request.defaultNegativeStockLimit(),
+        request.stockless());
   }
 
   public static PosSettingsResponse toResponse(PosOperationalConfig config) {
@@ -34,6 +35,7 @@ public final class HeadquarterPosWebMapper {
         config.getOpenAmountCategories(),
         config.isAllowOpenProducts(),
         config.getDefaultNegativeStockLimit(),
+        config.isStockless(),
         config.getCreatedAt(),
         config.getUpdatedAt(),
         config.getVersion());

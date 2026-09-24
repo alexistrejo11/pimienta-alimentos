@@ -342,6 +342,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
         staleCatalogWarnHours = staleCatalogWarnHours,
         staleCatalogBlockHours = staleCatalogBlockHours,
         openAmountCategoriesJson = json.encodeToString(openAmountCategories.filter(String::isNotBlank).distinct()),
+        stockless = stockless,
     )
 
     private fun retrofit(url: String, access: String?): DeviceApi {

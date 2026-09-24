@@ -23,7 +23,8 @@ import java.lang.annotation.Target;
         "Ordered batch ingest by deviceSequence. Per-event results may mix ACCEPTED, DUPLICATE, "
             + "REQUIRES_REVIEW, and REJECTED. A reused deviceSequence with a different eventId is "
             + "REJECTED (not HTTP 500). Idempotent retries keep the same eventId. "
-            + "SALE_CONFIRMED persists sale snapshot and applies POS inventory for CONTROLLED lines. "
+            + "SALE_CONFIRMED persists sale snapshot and applies POS inventory for CONTROLLED lines "
+            + "unless the headquarter is stockless. "
             + "Requires device JWT (typ=device, scope=pos:sync).")
 @ApiResponse(
     responseCode = "200",

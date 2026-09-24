@@ -71,7 +71,13 @@ public class PosSyncCatalogProjector {
     Integer defaultNegative = config != null ? config.getDefaultNegativeStockLimit() : null;
     int warnHours = config != null ? config.getCatalogStaleWarnHours() : 24;
     int blockHours = config != null ? config.getCatalogStaleBlockHours() : 72;
-    return new Policies(true, config != null && config.isAllowOpenProducts(), defaultNegative, warnHours, blockHours);
+    return new Policies(
+        true,
+        config != null && config.isAllowOpenProducts(),
+        defaultNegative,
+        warnHours,
+        blockHours,
+        config != null && config.isStockless());
   }
 
   public int stockQuantity(long headquarterId, long itemId) {
