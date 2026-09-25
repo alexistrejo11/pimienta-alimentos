@@ -13,8 +13,8 @@ android {
         applicationId = "io.github.alexistrejo.pimienta.pos"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "2.2.9"
+        versionCode = 6
+        versionName = "2.2.10"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

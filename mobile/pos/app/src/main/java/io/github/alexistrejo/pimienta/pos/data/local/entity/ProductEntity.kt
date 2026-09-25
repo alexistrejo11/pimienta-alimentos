@@ -23,4 +23,10 @@ data class ProductEntity(
     val negativeStockLimit: Int?,
     val legacyUpdatedAt: Long?,
     val centralStock: String = stock,
-)
+) {
+    // Checks if the product has a distinct supplier barcode (not blank and not equal to the SKU).
+    fun hasDistinctBarcode(): Boolean {
+        val trimmed = barcode?.trim() ?: return false
+        return trimmed.isNotEmpty() && !trimmed.equals(sku.trim(), ignoreCase = true)
+    }
+}

@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos
 
 import android.content.Context
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -11,6 +12,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
@@ -22,9 +25,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.core.content.ContextCompat
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import androidx.compose.ui.graphics.Color
@@ -75,7 +82,6 @@ internal fun StatusBar(
     dark: Boolean,
     onTheme: (Boolean) -> Unit,
     landscape: Boolean,
-    lockCashRegister: () -> Unit,
     openManager: () -> Unit,
     openWithdrawal: () -> Unit,
     withdrawalEnabled: Boolean,
@@ -148,7 +154,6 @@ internal fun StatusBar(
                     PosButton("Agregar producto", onCreateProduct, enabled = createProductEnabled, contentPadding = headerBtnPadding)
                     PosButton(if (syncBusy) "Sincronizando…" else "Sincronizar", onSyncNow, enabled = !syncBusy, contentPadding = headerBtnPadding)
                     PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
-                    PosButton("Bloquear caja", lockCashRegister, contentPadding = headerBtnPadding)
                     PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
                     PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
                 }
@@ -219,6 +224,34 @@ internal fun PendingCatalogDialog(
     }
 }
 
+// Forces Android to show the on-screen soft keyboard on focus/tap even when an external USB/Bluetooth HID scanner is connected.
+@Composable
+internal fun rememberForceSoftKeyboardInteractionSource(): Pair<MutableInteractionSource, () -> Unit> {
+    val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val forceShow = remember(context, keyboardController) {
+        {
+            keyboardController?.show()
+            runCatching {
+                val imm = ContextCompat.getSystemService(context, InputMethodManager::class.java)
+                imm?.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY)
+            }
+            Unit
+        }
+    }
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            forceShow()
+        }
+    }
+
+    return interactionSource to forceShow
+}
+
 // Creates a POS-sellable product (server in production, local scratch in training).
 @Composable
 internal fun CreatePosProductDialog(
@@ -231,12 +264,14 @@ internal fun CreatePosProductDialog(
     onDismiss: () -> Unit,
     onSubmit: (name: String, category: String, priceCentavos: Long, barcode: String?, controlled: Boolean) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(categories.firstOrNull().orEmpty()) }
-    var amount by remember { mutableStateOf(initialPriceCentavos?.let { BigDecimal.valueOf(it, 2).toPlainString() } ?: "") }
-    var barcode by remember { mutableStateOf(lockedBarcode.orEmpty()) }
-    var controlled by remember { mutableStateOf(false) }
-    var localError by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var category by rememberSaveable { mutableStateOf(categories.firstOrNull().orEmpty()) }
+    var amount by rememberSaveable { mutableStateOf(initialPriceCentavos?.let { BigDecimal.valueOf(it, 2).toPlainString() } ?: "") }
+    var barcode by rememberSaveable { mutableStateOf(lockedBarcode.orEmpty()) }
+    var controlled by rememberSaveable { mutableStateOf(false) }
+    var localError by rememberSaveable { mutableStateOf<String?>(null) }
+    val (nameInteraction, forceNameKeyboard) = rememberForceSoftKeyboardInteractionSource()
+    val (barcodeInteraction, forceBarcodeKeyboard) = rememberForceSoftKeyboardInteractionSource()
 
     fun submit() {
         val cents = Money.fromInput(amount)
@@ -269,7 +304,17 @@ internal fun CreatePosProductDialog(
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nombre") }, singleLine = true, colors = catalogFieldColors())
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceNameKeyboard() },
+                    interactionSource = nameInteraction,
+                    label = { Text("Nombre") },
+                    singleLine = true,
+                    colors = catalogFieldColors(),
+                )
                 Text("Categoría", style = MaterialTheme.typography.labelLarge)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     categories.forEach { cat ->
@@ -279,7 +324,10 @@ internal fun CreatePosProductDialog(
                 OutlinedTextField(
                     value = barcode,
                     onValueChange = { if (lockedBarcode == null) barcode = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceBarcodeKeyboard() },
+                    interactionSource = barcodeInteraction,
                     label = { Text("Código de barras (opcional)") },
                     singleLine = true,
                     readOnly = lockedBarcode != null,
@@ -316,11 +364,13 @@ internal fun EditPosProductDialog(
     onDismiss: () -> Unit,
     onSubmit: (name: String, priceCentavos: Long, controlled: Boolean, barcode: String) -> Unit,
 ) {
-    var name by remember { mutableStateOf(productName) }
-    var barcode by remember { mutableStateOf(initialBarcode) }
-    var amount by remember { mutableStateOf(BigDecimal.valueOf(initialPriceCentavos, 2).toPlainString()) }
-    var controlled by remember { mutableStateOf(initialControlled) }
-    var localError by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable { mutableStateOf(productName) }
+    var barcode by rememberSaveable { mutableStateOf(initialBarcode) }
+    var amount by rememberSaveable { mutableStateOf(BigDecimal.valueOf(initialPriceCentavos, 2).toPlainString()) }
+    var controlled by rememberSaveable { mutableStateOf(initialControlled) }
+    var localError by rememberSaveable { mutableStateOf<String?>(null) }
+    val (nameInteraction, forceNameKeyboard) = rememberForceSoftKeyboardInteractionSource()
+    val (barcodeInteraction, forceBarcodeKeyboard) = rememberForceSoftKeyboardInteractionSource()
 
     fun submit() {
         if (busy) return
@@ -353,13 +403,27 @@ internal fun EditPosProductDialog(
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nombre") }, singleLine = true, enabled = !busy, colors = catalogFieldColors())
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceNameKeyboard() },
+                    interactionSource = nameInteraction,
+                    label = { Text("Nombre") },
+                    singleLine = true,
+                    enabled = !busy,
+                    colors = catalogFieldColors(),
+                )
                 Text("SKU", style = MaterialTheme.typography.labelLarge)
                 Text(sku.ifBlank { "Sin SKU" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
                     value = barcode,
                     onValueChange = { barcode = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceBarcodeKeyboard() },
+                    interactionSource = barcodeInteraction,
                     label = { Text("Código de barras") },
                     supportingText = { Text("Si lo dejas vacío o igual al SKU, el escáner usa el SKU.") },
                     singleLine = true,
@@ -550,82 +614,7 @@ internal fun CashWithdrawalAuthorization(
     }
 }
 
-// Hides sale data until the cashier responsible for the active shift verifies their PIN.
-@Composable
-internal fun LockedCashRegister(
-    repository: PosRepository,
-    cashierId: String,
-    cashierName: String,
-    onUnlocked: () -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    var pin by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
 
-    // Reuses the visible action and keypad enter key for the same PIN validation.
-    fun unlock() {
-        if (busy || pin.isBlank()) return
-        scope.launch {
-            busy = true
-            val valid = withContext(Dispatchers.IO) { repository.authenticate(cashierId, pin) }
-            busy = false
-            if (valid) onUnlocked() else error = "El PIN no corresponde al cajero responsable."
-        }
-    }
-
-    // Compact header + full keypad; the whole page scrolls when content is taller than the screen.
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box(Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .widthIn(max = 480.dp)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.logo),
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp).padding(top = 4.dp),
-                )
-                Text("Pimienta POS", style = MaterialTheme.typography.titleLarge)
-                Text("Caja bloqueada", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Turno activo · Cajero responsable: $cashierName",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "Agrega PIN para desbloquear",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Numpad(pin, { pin = it }, masked = true)
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center) }
-                PosButton(
-                    label = if (busy) "Desbloqueando…" else "Desbloquear caja",
-                    click = ::unlock,
-                    enabled = !busy && pin.isNotBlank(),
-                    primary = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(
-                    "El turno y el carrito continúan resguardados en la tablet.",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-        }
-    }
-}
 
 // Displays one small operational status without presenting it as a dashboard card.
 @Composable
@@ -672,6 +661,8 @@ internal fun CatalogPanel(
     openAmountCategories: List<String> = emptyList(),
     onOpenAmountCategory: (String) -> Unit = {},
     onOpenSections: () -> Unit = {},
+    hideBarcoded: Boolean = false,
+    onToggleHideBarcoded: (() -> Unit)? = null,
 ) {
     val categoryListState = rememberLazyListState()
     val selectedIndex = remember(categories, selectedCategory) {
@@ -686,15 +677,26 @@ internal fun CatalogPanel(
 
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(10.dp)) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = onSearch,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Escanea un producto", style = MaterialTheme.typography.bodyMedium) },
-                singleLine = true,
-                readOnly = true,
-                colors = catalogFieldColors(),
-            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = search,
+                    onValueChange = onSearch,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Escanea un producto", style = MaterialTheme.typography.bodyMedium) },
+                    singleLine = true,
+                    readOnly = true,
+                    colors = catalogFieldColors(),
+                )
+                if (onToggleHideBarcoded != null) {
+                    Spacer(Modifier.width(6.dp))
+                    PosButton(
+                        label = if (hideBarcoded) "Solo táctiles" else "Todos",
+                        click = onToggleHideBarcoded,
+                        selected = hideBarcoded,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 12.dp),
+                    )
+                }
+            }
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 PosButton(
@@ -895,25 +897,26 @@ internal fun CartPanel(
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().padding(12.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Venta activa", style = MaterialTheme.typography.titleMedium)
+                Column {
+                    Text("Venta activa", style = MaterialTheme.typography.titleMedium)
+                    Text("Folio al confirmar · ${cart.sumOf { it.quantity }} artículos", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 if (onShowCatalog != null) {
                     PosButton(
-                        "▶ Ver catálogo",
-                        onShowCatalog,
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        label = "◀ Ver catálogo",
+                        click = onShowCatalog,
+                        primary = true,
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                     )
                 }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Folio al confirmar", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("${cart.sumOf { it.quantity }} artículos", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+            Spacer(Modifier.height(12.dp))
 
             if (cart.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {

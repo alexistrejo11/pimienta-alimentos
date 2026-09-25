@@ -375,8 +375,8 @@
     {
       "id": "product-0021",
       "legacyId": "m9o9of5g4ebsw",
-      "sku": "CAF-021",
-      "barcode": "CAF-021",
+      "sku": "CAF-0021",
+      "barcode": "CAF-0021",
       "legacyBarcode": "CAF-021",
       "name": "Huarache Sencillo",
       "saleCategory": "Mexicano",
@@ -596,8 +596,8 @@
     {
       "id": "product-0034",
       "legacyId": "m9oa9keusjsmw",
-      "sku": "CAF-0033-2",
-      "barcode": "CAF-0033-2",
+      "sku": "CAF-0034",
+      "barcode": "CAF-0034",
       "legacyBarcode": "CAF-0033",
       "name": "Sushi",
       "saleCategory": "Japonesa",
@@ -613,8 +613,8 @@
     {
       "id": "product-0035",
       "legacyId": "m9oab8orxdef6",
-      "sku": "CAF-0034",
-      "barcode": "CAF-0034",
+      "sku": "CAF-0035",
+      "barcode": "CAF-0035",
       "legacyBarcode": "CAF-0034",
       "name": "Ramen",
       "saleCategory": "Japonesa",
@@ -630,8 +630,8 @@
     {
       "id": "product-0036",
       "legacyId": "m9oacws2enjal",
-      "sku": "CAF-0035",
-      "barcode": "CAF-0035",
+      "sku": "CAF-0036",
+      "barcode": "CAF-0036",
       "legacyBarcode": "CAF-0035",
       "name": "Gelatina",
       "saleCategory": "Postres",
@@ -647,8 +647,8 @@
     {
       "id": "product-0037",
       "legacyId": "m9oadvg3w2lmv",
-      "sku": "CAF-0036",
-      "barcode": "CAF-0036",
+      "sku": "CAF-0037",
+      "barcode": "CAF-0037",
       "legacyBarcode": "CAF-0036",
       "name": "Pay de Limón",
       "saleCategory": "Postres",
@@ -664,8 +664,8 @@
     {
       "id": "product-0038",
       "legacyId": "m9oaf0k01asdx",
-      "sku": "CAF-0037",
-      "barcode": "CAF-0037",
+      "sku": "CAF-0038",
+      "barcode": "CAF-0038",
       "legacyBarcode": "CAF-0037",
       "name": "Arroz con Leche",
       "saleCategory": "Postres",
@@ -834,8 +834,8 @@
     {
       "id": "product-0048",
       "legacyId": "m9oav1xfl64dg",
-      "sku": "CAF-0046-2",
-      "barcode": "CAF-0046-2",
+      "sku": "CAF-0048",
+      "barcode": "CAF-0048",
       "legacyBarcode": "CAF-0046",
       "name": "Paquete Desayuno",
       "saleCategory": "Paquete",
@@ -851,8 +851,8 @@
     {
       "id": "product-0049",
       "legacyId": "m9oavusg471gd",
-      "sku": "CAF-0047-2",
-      "barcode": "CAF-0047-2",
+      "sku": "CAF-0049",
+      "barcode": "CAF-0049",
       "legacyBarcode": "CAF-0047",
       "name": "Paquete Comida",
       "saleCategory": "Paquete",
@@ -868,7 +868,7 @@
     {
       "id": "product-0050",
       "legacyId": "m9ob0ju7rn0gu",
-      "sku": "75003135",
+      "sku": "CAF-0050",
       "barcode": "75003135",
       "legacyBarcode": "75003135",
       "name": "Boing de Guayaba 500ml",
@@ -885,7 +885,7 @@
     {
       "id": "product-0051",
       "legacyId": "m9ob4tvil8h1u",
-      "sku": "613008772901",
+      "sku": "CAF-0051",
       "barcode": "613008772901",
       "legacyBarcode": "613008772901",
       "name": "Arizona 570ml",
@@ -902,7 +902,7 @@
     {
       "id": "product-0052",
       "legacyId": "m9ob6l2dto7mt",
-      "sku": "758104100422",
+      "sku": "CAF-0052",
       "barcode": "758104100422",
       "legacyBarcode": "758104100422",
       "name": "Bonafont 1lt",
@@ -919,7 +919,7 @@
     {
       "id": "product-0053",
       "legacyId": "m9ob8cym26z8f",
-      "sku": "758104001712",
+      "sku": "CAF-0053",
       "barcode": "758104001712",
       "legacyBarcode": "758104001712",
       "name": "Bonafont 600ml",
@@ -936,7 +936,7 @@
     {
       "id": "product-0054",
       "legacyId": "m9oba9v44onoo",
-      "sku": "7501073839854",
+      "sku": "CAF-0054",
       "barcode": "7501073839854",
       "legacyBarcode": "7501073839854",
       "name": "Peñafiel 600ml",
@@ -953,7 +953,7 @@
     {
       "id": "product-0055",
       "legacyId": "m9obdl5g0tkq9",
-      "sku": "7500326103483",
+      "sku": "CAF-0055",
       "barcode": "7500326103483",
       "legacyBarcode": "7500326103483",
       "name": "Chaparrita 250ml",
@@ -970,7 +970,7 @@
     {
       "id": "product-0056",
       "legacyId": "m9obeu2znzk1u",
-      "sku": "7501055320639",
+      "sku": "CAF-0056",
       "barcode": "7501055320639",
       "legacyBarcode": "7501055320639",
       "name": "Coca Zero 600ml",
@@ -987,7 +987,7 @@
     {
       "id": "product-0057",
       "legacyId": "m9obhed0hmyll",
-      "sku": "75007614",
+      "sku": "CAF-0057",
       "barcode": "75007614",
       "legacyBarcode": "75007614",
       "name": "Coca 600ml",
@@ -1004,7 +1004,7 @@
     {
       "id": "product-0058",
       "legacyId": "m9objjfk0xtcj",
-      "sku": "096619757572",
+      "sku": "CAF-0058",
       "barcode": "096619757572",
       "legacyBarcode": "096619757572",
       "name": "Te Verde Kirklannd",
@@ -1021,7 +1021,7 @@
     {
       "id": "product-0059",
       "legacyId": "m9oblcig7sh92",
-      "sku": "7500326103360",
+      "sku": "CAF-0059",
       "barcode": "7500326103360",
       "legacyBarcode": "7500326103360",
       "name": "Sangría Señorial",
@@ -1038,7 +1038,7 @@
     {
       "id": "product-0060",
       "legacyId": "m9obn3nlozdxc",
-      "sku": "7501125118562",
+      "sku": "CAF-0060",
       "barcode": "7501125118562",
       "legacyBarcode": "7501125118562",
       "name": "Electrolit",
@@ -1055,7 +1055,7 @@
     {
       "id": "product-0061",
       "legacyId": "m9obtsdyyg78c",
-      "sku": "7501030419389",
+      "sku": "CAF-0061",
       "barcode": "7501030419389",
       "legacyBarcode": "7501030419389",
       "name": "Mantecadas de Nuez Bimbo",
@@ -1072,7 +1072,7 @@
     {
       "id": "product-0062",
       "legacyId": "m9obw9kbvsqe5",
-      "sku": "7501000112401",
+      "sku": "CAF-0062",
       "barcode": "7501000112401",
       "legacyBarcode": "7501000112401",
       "name": "Mantecadas de Vainilla Bimbo",
@@ -1089,7 +1089,7 @@
     {
       "id": "product-0063",
       "legacyId": "m9obx23mkqud1",
-      "sku": "7501030418399",
+      "sku": "CAF-0063",
       "barcode": "7501030418399",
       "legacyBarcode": "7501030418399",
       "name": "Donitas Espolvoreadas Bimbo",
@@ -1106,7 +1106,7 @@
     {
       "id": "product-0064",
       "legacyId": "m9oby5x95muk9",
-      "sku": "7501000112388",
+      "sku": "CAF-0064",
       "barcode": "7501000112388",
       "legacyBarcode": "7501000112388",
       "name": "Panquesitos con Chispas Bimbo",
@@ -1123,7 +1123,7 @@
     {
       "id": "product-0065",
       "legacyId": "m9obz9ahf170f",
-      "sku": "7501030477488",
+      "sku": "CAF-0065",
       "barcode": "7501030477488",
       "legacyBarcode": "7501030477488",
       "name": "Madalenas Bimbo",
@@ -1140,7 +1140,7 @@
     {
       "id": "product-0066",
       "legacyId": "m9oc0yx9jx9o2",
-      "sku": "7501030464242",
+      "sku": "CAF-0066",
       "barcode": "7501030464242",
       "legacyBarcode": "7501030464242",
       "name": "Tiras Doraditas",
@@ -1157,7 +1157,7 @@
     {
       "id": "product-0067",
       "legacyId": "m9oc2luaz7oui",
-      "sku": "7501000116447",
+      "sku": "CAF-0067",
       "barcode": "7501000116447",
       "legacyBarcode": "7501000116447",
       "name": "Barra BranFrut Fresa",
@@ -1174,7 +1174,7 @@
     {
       "id": "product-0068",
       "legacyId": "m9oc3rtla50w7",
-      "sku": "7501000112784",
+      "sku": "CAF-0068",
       "barcode": "7501000112784",
       "legacyBarcode": "7501000112784",
       "name": "Nito Bimbo",
@@ -1191,7 +1191,7 @@
     {
       "id": "product-0069",
       "legacyId": "m9ocim6p5esj0",
-      "sku": "7500810015261",
+      "sku": "CAF-0069",
       "barcode": "7500810015261",
       "legacyBarcode": "7500810015261",
       "name": "Tartinas con Fresa Tía Rosa",
@@ -1208,7 +1208,7 @@
     {
       "id": "product-0070",
       "legacyId": "m9ockdt7u0mk5",
-      "sku": "7500810016190",
+      "sku": "CAF-0070",
       "barcode": "7500810016190",
       "legacyBarcode": "7500810016190",
       "name": "Tartinas con Piña Tía Rosa",
@@ -1225,7 +1225,7 @@
     {
       "id": "product-0071",
       "legacyId": "m9oclf1o4mb38",
-      "sku": "7501030474227",
+      "sku": "CAF-0071",
       "barcode": "7501030474227",
       "legacyBarcode": "7501030474227",
       "name": "Donas de Azúcar Bimbo",
@@ -1242,7 +1242,7 @@
     {
       "id": "product-0072",
       "legacyId": "m9ocmk0j5th25",
-      "sku": "7501000116430",
+      "sku": "CAF-0072",
       "barcode": "7501000116430",
       "legacyBarcode": "7501000116430",
       "name": "Barra BranFrut de Piña",
@@ -1259,7 +1259,7 @@
     {
       "id": "product-0073",
       "legacyId": "m9ocndjml86za",
-      "sku": "7501000138944",
+      "sku": "CAF-0073",
       "barcode": "7501000138944",
       "legacyBarcode": "7501000138944",
       "name": "Sponch Marinela",
@@ -1276,7 +1276,7 @@
     {
       "id": "product-0074",
       "legacyId": "m9ocupk67zzp0",
-      "sku": "7500810011126",
+      "sku": "CAF-0074",
       "barcode": "7500810011126",
       "legacyBarcode": "7500810011126",
       "name": "Príncipe de Chocolate",
@@ -1293,7 +1293,7 @@
     {
       "id": "product-0075",
       "legacyId": "m9od09gfhgkuc",
-      "sku": "7501030463740",
+      "sku": "CAF-0075",
       "barcode": "7501030463740",
       "legacyBarcode": "7501030463740",
       "name": "Deliciosas de Vainilla Lara",
@@ -1310,7 +1310,7 @@
     {
       "id": "product-0076",
       "legacyId": "m9od1go33f7of",
-      "sku": "7500810022801",
+      "sku": "CAF-0076",
       "barcode": "7500810022801",
       "legacyBarcode": "7500810022801",
       "name": "Canelitas Marinela",
@@ -1327,7 +1327,7 @@
     {
       "id": "product-0077",
       "legacyId": "m9odyrbqk6fxd",
-      "sku": "7500810014721",
+      "sku": "CAF-0077",
       "barcode": "7500810014721",
       "legacyBarcode": "7500810014721",
       "name": "Baritas De Fresa Marinela",
@@ -1344,7 +1344,7 @@
     {
       "id": "product-0078",
       "legacyId": "m9oe14q9uzjy9",
-      "sku": "7500810014738",
+      "sku": "CAF-0078",
       "barcode": "7500810014738",
       "legacyBarcode": "7500810014738",
       "name": "Baritas De Pina Marinela",
@@ -1361,7 +1361,7 @@
     {
       "id": "product-0079",
       "legacyId": "m9oe5305u7eqn",
-      "sku": "7501000153800",
+      "sku": "CAF-0079",
       "barcode": "7501000153800",
       "legacyBarcode": "7501000153800",
       "name": "Pingüinos Marinela",
@@ -1378,7 +1378,7 @@
     {
       "id": "product-0080",
       "legacyId": "m9oe5lyt4efv1",
-      "sku": "75002275",
+      "sku": "CAF-0080",
       "barcode": "75002275",
       "legacyBarcode": "75002275",
       "name": "Chocoroles Mariela",
@@ -1395,7 +1395,7 @@
     {
       "id": "product-0081",
       "legacyId": "m9oe6hpsj5243",
-      "sku": "7501000153107",
+      "sku": "CAF-0081",
       "barcode": "7501000153107",
       "legacyBarcode": "7501000153107",
       "name": "Gansito Marinela",
@@ -1412,7 +1412,7 @@
     {
       "id": "product-0082",
       "legacyId": "m9oeb2qsxveq8",
-      "sku": "7500810029077",
+      "sku": "CAF-0082",
       "barcode": "7500810029077",
       "legacyBarcode": "7500810029077",
       "name": "Bigotes Tia Rosa",
@@ -1429,7 +1429,7 @@
     {
       "id": "product-0083",
       "legacyId": "m9oeep4n0j2kl",
-      "sku": "7500810044056",
+      "sku": "CAF-0083",
       "barcode": "7500810044056",
       "legacyBarcode": "7500810044056",
       "name": "Principe Rees Marinela",
@@ -1446,7 +1446,7 @@
     {
       "id": "product-0084",
       "legacyId": "m9oefssf10yqd",
-      "sku": "7501030472698",
+      "sku": "CAF-0084",
       "barcode": "7501030472698",
       "legacyBarcode": "7501030472698",
       "name": "Bimbunuelos Bimbo",
@@ -1463,7 +1463,7 @@
     {
       "id": "product-0085",
       "legacyId": "m9oeh9sujrk03",
-      "sku": "7500810011140",
+      "sku": "CAF-0085",
       "barcode": "7500810011140",
       "legacyBarcode": "7500810011140",
       "name": "Principe Chocolate Blanco",
@@ -1480,7 +1480,7 @@
     {
       "id": "product-0086",
       "legacyId": "m9oeimfsomfpf",
-      "sku": "7501030463726",
+      "sku": "CAF-0086",
       "barcode": "7501030463726",
       "legacyBarcode": "7501030463726",
       "name": "Deliciosas con sabor de chispas de chocolate Lara",
@@ -1497,7 +1497,7 @@
     {
       "id": "product-0087",
       "legacyId": "m9oeku171extk",
-      "sku": "7500810011157",
+      "sku": "CAF-0087",
       "barcode": "7500810011157",
       "legacyBarcode": "7500810011157",
       "name": "Principe de Limon Marinela",
@@ -1514,7 +1514,7 @@
     {
       "id": "product-0088",
       "legacyId": "m9oelrvottms2",
-      "sku": "7501000140855",
+      "sku": "CAF-0088",
       "barcode": "7501000140855",
       "legacyBarcode": "7501000140855",
       "name": "Triki Trakes Marinela",
@@ -1531,7 +1531,7 @@
     {
       "id": "product-0089",
       "legacyId": "m9oen1itw5q2g",
-      "sku": "7500810031278",
+      "sku": "CAF-0089",
       "barcode": "7500810031278",
       "legacyBarcode": "7500810031278",
       "name": "Pastisetas Suandy",
@@ -1548,8 +1548,8 @@
     {
       "id": "product-0090",
       "legacyId": "m9oerata54t98",
-      "sku": "CAF-0021",
-      "barcode": "CAF-0021",
+      "sku": "CAF-0090",
+      "barcode": "CAF-0090",
       "legacyBarcode": "CAF-0021",
       "name": "Pechuga o BIstec Asado",
       "saleCategory": "Mexicano",
@@ -1565,7 +1565,7 @@
     {
       "id": "product-0091",
       "legacyId": "m9oezjx77h5o5",
-      "sku": "7501000112845",
+      "sku": "CAF-0091",
       "barcode": "7501000112845",
       "legacyBarcode": "7501000112845",
       "name": "Rebanadas Bimbo",
@@ -1582,7 +1582,7 @@
     {
       "id": "product-0092",
       "legacyId": "m9of4n83m9bbr",
-      "sku": "7502226815145",
+      "sku": "CAF-0092",
       "barcode": "7502226815145",
       "legacyBarcode": "7502226815145",
       "name": "Lucas Panzon",
@@ -1599,7 +1599,7 @@
     {
       "id": "product-0093",
       "legacyId": "m9of56t2j28t2",
-      "sku": "7622210267863",
+      "sku": "CAF-0093",
       "barcode": "7622210267863",
       "legacyBarcode": "7622210267863",
       "name": "Halls Caramelo",
@@ -1616,7 +1616,7 @@
     {
       "id": "product-0094",
       "legacyId": "m9of7sh6nkrl5",
-      "sku": "7622210267832",
+      "sku": "CAF-0094",
       "barcode": "7622210267832",
       "legacyBarcode": "7622210267832",
       "name": "Halls Yerbabuena",
@@ -1633,7 +1633,7 @@
     {
       "id": "product-0095",
       "legacyId": "m9of8pjoux2gt",
-      "sku": "7622210267856",
+      "sku": "CAF-0095",
       "barcode": "7622210267856",
       "legacyBarcode": "7622210267856",
       "name": "Halls Mora Azul",
@@ -1650,7 +1650,7 @@
     {
       "id": "product-0096",
       "legacyId": "m9of9n7ppa9jn",
-      "sku": "7501063500177",
+      "sku": "CAF-0096",
       "barcode": "7501063500177",
       "legacyBarcode": "7501063500177",
       "name": "Tutsi Pop",
@@ -1667,7 +1667,7 @@
     {
       "id": "product-0097",
       "legacyId": "m9ofagvmp44l2",
-      "sku": "7502226815053",
+      "sku": "CAF-0097",
       "barcode": "7502226815053",
       "legacyBarcode": "7502226815053",
       "name": "Lucas Muecas Cereza",
@@ -1684,7 +1684,7 @@
     {
       "id": "product-0098",
       "legacyId": "m9ofb9kkh0vps",
-      "sku": "7502226815084",
+      "sku": "CAF-0098",
       "barcode": "7502226815084",
       "legacyBarcode": "7502226815084",
       "name": "Lucas Muecas Sandia",
@@ -1701,7 +1701,7 @@
     {
       "id": "product-0099",
       "legacyId": "m9ofbzadg5btz",
-      "sku": "7502226815022",
+      "sku": "CAF-0099",
       "barcode": "7502226815022",
       "legacyBarcode": "7502226815022",
       "name": "Lucas Muecas Chamoy",
@@ -1718,8 +1718,8 @@
     {
       "id": "product-0100",
       "legacyId": "m9ohamgymy8t0",
-      "sku": "CAF-0048",
-      "barcode": "CAF-0048",
+      "sku": "CAF-0100",
+      "barcode": "CAF-0100",
       "legacyBarcode": "CAF-0048",
       "name": "Paleta de Dulce Generica",
       "saleCategory": "Dulces",
@@ -1735,7 +1735,7 @@
     {
       "id": "product-0101",
       "legacyId": "m9ohczvyzat4t",
-      "sku": "7501056900168",
+      "sku": "CAF-0101",
       "barcode": "7501056900168",
       "legacyBarcode": "7501056900168",
       "name": "Paleta Bubbalo Xtreme",
@@ -1752,7 +1752,7 @@
     {
       "id": "product-0102",
       "legacyId": "m9ohjtzf0s7wn",
-      "sku": "7501308300074",
+      "sku": "CAF-0102",
       "barcode": "7501308300074",
       "legacyBarcode": "7501308300074",
       "name": "Cacahuate Japones Nishikawa 60g",
@@ -1769,7 +1769,7 @@
     {
       "id": "product-0103",
       "legacyId": "m9ohk5j052y11",
-      "sku": "7501032398576",
+      "sku": "CAF-0103",
       "barcode": "7501032398576",
       "legacyBarcode": "7501032398576",
       "name": "Danone Fresas 220g",
@@ -1786,7 +1786,7 @@
     {
       "id": "product-0104",
       "legacyId": "m9ohk7p8s5e6g",
-      "sku": "096619536740",
+      "sku": "CAF-0104",
       "barcode": "096619536740",
       "legacyBarcode": "096619536740",
       "name": "Agua Purificada Kirkland 500ml",
@@ -1803,8 +1803,8 @@
     {
       "id": "product-0105",
       "legacyId": "mtkig30y6hc0d",
-      "sku": "CAF-0049",
-      "barcode": "CAF-0049",
+      "sku": "CAF-0105",
+      "barcode": "CAF-0105",
       "legacyBarcode": "CAF-0049",
       "name": "Brownie ChocoBro",
       "saleCategory": "Postres",
@@ -1820,8 +1820,8 @@
     {
       "id": "product-0106",
       "legacyId": "mtkigvzx7etwd",
-      "sku": "CAF-0050",
-      "barcode": "CAF-0050",
+      "sku": "CAF-0106",
+      "barcode": "CAF-0106",
       "legacyBarcode": "CAF-0050",
       "name": "Flan",
       "saleCategory": "Postres",
@@ -1837,7 +1837,7 @@
     {
       "id": "product-0107",
       "legacyId": "mtkik7v7hsi65",
-      "sku": "650240032301",
+      "sku": "CAF-0107",
       "barcode": "650240032301",
       "legacyBarcode": "650240032301",
       "name": "Suerox Naranja Mandarina",
@@ -1854,7 +1854,7 @@
     {
       "id": "product-0108",
       "legacyId": "mtkil1eba92vt",
-      "sku": "650240032264",
+      "sku": "CAF-0108",
       "barcode": "650240032264",
       "legacyBarcode": "650240032264",
       "name": "Suerox Fresa Kiwi",
@@ -1871,7 +1871,7 @@
     {
       "id": "product-0109",
       "legacyId": "mtkilpwx6h88o",
-      "sku": "650240035395",
+      "sku": "CAF-0109",
       "barcode": "650240035395",
       "legacyBarcode": "650240035395",
       "name": "Suerox",
@@ -1888,7 +1888,7 @@
     {
       "id": "product-0110",
       "legacyId": "mtkin86gjs1ch",
-      "sku": "650240032271",
+      "sku": "CAF-0110",
       "barcode": "650240032271",
       "legacyBarcode": "650240032271",
       "name": "Suerox Uva",
@@ -1905,7 +1905,7 @@
     {
       "id": "product-0111",
       "legacyId": "mtkiql9jq19ge",
-      "sku": "75003104",
+      "sku": "CAF-0111",
       "barcode": "75003104",
       "legacyBarcode": "75003104",
       "name": "Boing de Mango 500ml",
@@ -1922,7 +1922,7 @@
     {
       "id": "product-0112",
       "legacyId": "mtkirm2pj6y4z",
-      "sku": "75003166",
+      "sku": "CAF-0112",
       "barcode": "75003166",
       "legacyBarcode": "75003166",
       "name": "Boing de Fresa",
@@ -1939,7 +1939,7 @@
     {
       "id": "product-0113",
       "legacyId": "mtkitub60zbv6",
-      "sku": "75003159",
+      "sku": "CAF-0113",
       "barcode": "75003159",
       "legacyBarcode": "75003159",
       "name": "Boing de Manzana",
@@ -1956,7 +1956,7 @@
     {
       "id": "product-0114",
       "legacyId": "mtkiw81iguygs",
-      "sku": "613008772963",
+      "sku": "CAF-0114",
       "barcode": "613008772963",
       "legacyBarcode": "613008772963",
       "name": "Arizona de Mango 570ml",
@@ -1973,7 +1973,7 @@
     {
       "id": "product-0115",
       "legacyId": "mtkixufy6r1yx",
-      "sku": "613008772871",
+      "sku": "CAF-0115",
       "barcode": "613008772871",
       "legacyBarcode": "613008772871",
       "name": "Arizona de Ponche de Frutas",
@@ -1990,7 +1990,7 @@
     {
       "id": "product-0116",
       "legacyId": "mtkizejt3njgw",
-      "sku": "613008772840",
+      "sku": "CAF-0116",
       "barcode": "613008772840",
       "legacyBarcode": "613008772840",
       "name": "Arizona de Sandia 570ml",
@@ -2007,7 +2007,7 @@
     {
       "id": "product-0117",
       "legacyId": "mtkj46qbol026",
-      "sku": "4696932000001",
+      "sku": "CAF-0117",
       "barcode": "4696932000001",
       "legacyBarcode": "4696932000001",
       "name": "Muffin de Chocolate Kirkland",
@@ -2024,7 +2024,7 @@
     {
       "id": "product-0118",
       "legacyId": "mtkj5se51b8rd",
-      "sku": "4665610000008",
+      "sku": "CAF-0118",
       "barcode": "4665610000008",
       "legacyBarcode": "4665610000008",
       "name": "Galleta de Macadamia Kirkland",
@@ -2041,7 +2041,7 @@
     {
       "id": "product-0119",
       "legacyId": "mtkj70ahjuomj",
-      "sku": "4542655000005",
+      "sku": "CAF-0119",
       "barcode": "4542655000005",
       "legacyBarcode": "4542655000005",
       "name": "Galleta de Chocolate Kirkland",
@@ -2058,7 +2058,7 @@
     {
       "id": "product-0120",
       "legacyId": "mtkj8fjlvoh46",
-      "sku": "4696933000000",
+      "sku": "CAF-0120",
       "barcode": "4696933000000",
       "legacyBarcode": "4696933000000",
       "name": "Muffin de Vainilla Kirkland",
@@ -2075,7 +2075,7 @@
     {
       "id": "product-0121",
       "legacyId": "mtkjbmqy8dh30",
-      "sku": "75039394",
+      "sku": "CAF-0121",
       "barcode": "75039394",
       "legacyBarcode": "75039394",
       "name": "Chicle Menta  Orbit",
@@ -2092,7 +2092,7 @@
     {
       "id": "product-0122",
       "legacyId": "mtkjclmasmuyv",
-      "sku": "75073244",
+      "sku": "CAF-0122",
       "barcode": "75073244",
       "legacyBarcode": "75073244",
       "name": "Chicle de Fresa Bubbalo",
@@ -2109,8 +2109,8 @@
     {
       "id": "product-0123",
       "legacyId": "mtklanz6jo8c8",
-      "sku": "CAF-0051",
-      "barcode": "CAF-0051",
+      "sku": "CAF-0123",
+      "barcode": "CAF-0123",
       "legacyBarcode": "CAF-0051",
       "name": "Pollo a la Naranja",
       "saleCategory": "Japonesa",
@@ -2126,8 +2126,8 @@
     {
       "id": "product-0124",
       "legacyId": "mtklet383du53",
-      "sku": "CAF-0052",
-      "barcode": "CAF-0052",
+      "sku": "CAF-0124",
+      "barcode": "CAF-0124",
       "legacyBarcode": "CAF-0052",
       "name": "Agua de Fruta 50ml",
       "saleCategory": "Bebidas",
@@ -2143,7 +2143,7 @@
     {
       "id": "product-0125",
       "legacyId": "mtklvkvwkauwu",
-      "sku": "75040437",
+      "sku": "CAF-0125",
       "barcode": "75040437",
       "legacyBarcode": "75040437",
       "name": "Chicle Orbit Polar Mint",
@@ -2160,7 +2160,7 @@
     {
       "id": "product-0126",
       "legacyId": "mtkm6p2n8dx8s",
-      "sku": "7622210267825",
+      "sku": "CAF-0126",
       "barcode": "7622210267825",
       "legacyBarcode": "7622210267825",
       "name": "Halls Cere",
@@ -2177,7 +2177,7 @@
     {
       "id": "product-0127",
       "legacyId": "mtkmdexa0v76g",
-      "sku": "759686272682",
+      "sku": "CAF-0127",
       "barcode": "759686272682",
       "legacyBarcode": "759686272682",
       "name": "Palenta Pintazul Vero",
@@ -2194,7 +2194,7 @@
     {
       "id": "product-0128",
       "legacyId": "mtkmed5efw37u",
-      "sku": "7503030374552",
+      "sku": "CAF-0128",
       "barcode": "7503030374552",
       "legacyBarcode": "7503030374552",
       "name": "Paleta Tarrito Vero",
@@ -2211,7 +2211,7 @@
     {
       "id": "product-0129",
       "legacyId": "mtkmflmh8ct76",
-      "sku": "7503030374583",
+      "sku": "CAF-0129",
       "barcode": "7503030374583",
       "legacyBarcode": "7503030374583",
       "name": "Paleta Manita Vero",

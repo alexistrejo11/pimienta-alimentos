@@ -45,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +59,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
 import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
+import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.data.sync.planProductEdit
 import io.github.alexistrejo.pimienta.pos.data.sync.scanCode
@@ -150,7 +152,7 @@ internal fun ManagerPanel(
     }
 
     var summary by remember { mutableStateOf<DashboardSummary?>(null) }
-    var webCentralMessage by remember { mutableStateOf<String?>(null) }
+    var webCentralMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshToken by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(shift?.id, refreshToken) { summary = withContext(Dispatchers.IO) { repository.dailySummary() } }
@@ -229,12 +231,17 @@ private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity?, 
 private fun ProductsPanel(products: List<ProductEntity>, repository: PosRepository, modifier: Modifier) {
     var category by rememberSaveable { mutableStateOf("Todos") }
     var search by rememberSaveable { mutableStateOf("") }
-    var editing by remember { mutableStateOf<ProductEntity?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var editingProductId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = remember(editingProductId, products) { products.firstOrNull { it.id == editingProductId } }
+    var creatingProduct by rememberSaveable { mutableStateOf(false) }
+    var busy by rememberSaveable { mutableStateOf(false) }
+    var createBusy by rememberSaveable { mutableStateOf(false) }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var createError by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sandbox = repository.mode() != RuntimeMode.PRODUCTION
+    val (searchInteraction, forceSearchKeyboard) = rememberForceSoftKeyboardInteractionSource()
     val categories = remember(products) { listOf("Todos") + products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct() }
     val filtered = remember(products, category, search) {
         products.filter { product ->
@@ -249,12 +256,29 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
     }
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Productos", style = MaterialTheme.typography.headlineSmall)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Productos", style = MaterialTheme.typography.headlineSmall)
+                PosButton(
+                    label = "Agregar producto",
+                    click = {
+                        createError = null
+                        creatingProduct = true
+                    },
+                    primary = true,
+                )
+            }
             Text("Busca por nombre, SKU o código. Editar no quita el producto de la sede.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) forceSearchKeyboard() },
+                interactionSource = searchInteraction,
                 singleLine = true,
                 placeholder = { Text("Buscar producto") },
             )
@@ -270,12 +294,64 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                     items(filtered, key = { it.id }) { product ->
                         ProductEditRow(product) {
                             error = null
-                            editing = product
+                            editingProductId = product.id
                         }
                     }
                 }
             }
         }
+    }
+    if (creatingProduct) {
+        val createCategories = remember(products) {
+            val distinct = products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct()
+            if (distinct.isEmpty()) listOf("General") else distinct
+        }
+        CreatePosProductDialog(
+            categories = createCategories,
+            sandbox = sandbox,
+            busy = createBusy,
+            error = createError,
+            onDismiss = {
+                if (!createBusy) {
+                    creatingProduct = false
+                    createError = null
+                }
+            },
+            onSubmit = { name, cat, cents, barcode, controlled ->
+                createBusy = true
+                createError = null
+                scope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        if (sandbox) {
+                            repository.createTrainingProduct(name, cents, cat, barcode, controlled)
+                        } else {
+                            val app = context.applicationContext as PosApplication
+                            ProvisioningRepository(context, app.databaseProvider).createProduct(
+                                name = name,
+                                salePriceCentavos = cents,
+                                saleCategory = cat,
+                                barcode = barcode,
+                                createdByOperatorId = null,
+                                controlledStock = controlled,
+                            )
+                        }
+                    }
+                    createBusy = false
+                    result.fold(
+                        onSuccess = {
+                            creatingProduct = false
+                        },
+                        onFailure = {
+                            createError = if (sandbox) {
+                                it.message ?: "No se pudo guardar el producto."
+                            } else {
+                                PosApiUserMessages.from(it)
+                            }
+                        },
+                    )
+                }
+            },
+        )
     }
     editing?.let { product ->
         EditPosProductDialog(
@@ -288,7 +364,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
             sandbox = sandbox,
             busy = busy,
             error = error,
-            onDismiss = { if (!busy) editing = null },
+            onDismiss = { if (!busy) editingProductId = null },
             onSubmit = { name, cents, controlled, barcode ->
                 val plan = planProductEdit(
                     product.name,
@@ -302,7 +378,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                     barcode,
                 )
                 if (!plan.rename && !plan.offer) {
-                    editing = null
+                    editingProductId = null
                     return@EditPosProductDialog
                 }
                 busy = true
@@ -318,7 +394,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                     }
                     busy = false
                     result.fold(
-                        onSuccess = { editing = null },
+                        onSuccess = { editingProductId = null },
                         onFailure = { error = it.message ?: "No se pudo guardar el producto." },
                     )
                 }
@@ -424,8 +500,8 @@ private fun ZClosePanel(
     onShiftClosed: () -> Unit,
     modifier: Modifier
 ) {
-    var zCloseOpen by remember(shift.id) { mutableStateOf(false) }
-    var withdrawalsOpen by remember(shift.id) { mutableStateOf(false) }
+    var zCloseOpen by rememberSaveable(shift.id) { mutableStateOf(false) }
+    var withdrawalsOpen by rememberSaveable(shift.id) { mutableStateOf(false) }
     var close by remember(shift.id) { mutableStateOf<ShiftCloseBreakdown?>(null) }
 
     LaunchedEffect(shift.id, summary) {
@@ -563,18 +639,25 @@ private fun ZCloseDialog(
     onApprovedAndClosed: () -> Unit,
 ) {
     val context = LocalContext.current
-    var stage by remember(shift.id) { mutableStateOf(CountStage.COUNTING) }
-    var count by remember(shift.id) { mutableStateOf("") }
-    var attempt by remember(shift.id) { mutableStateOf<CashCountAttemptEntity?>(null) }
-    var rejectionReason by remember(shift.id) { mutableStateOf("") }
-    var message by remember(shift.id) { mutableStateOf<String?>(null) }
-    var pinRequested by remember(shift.id) { mutableStateOf(false) }
-    var printSummaryTicket by remember { mutableStateOf(true) }
+    var stage by rememberSaveable(shift.id) { mutableStateOf(CountStage.COUNTING) }
+    var count by rememberSaveable(shift.id) { mutableStateOf("") }
+    var attemptId by rememberSaveable(shift.id) { mutableStateOf<String?>(null) }
+    var attempt by remember { mutableStateOf<CashCountAttemptEntity?>(null) }
+    var rejectionReason by rememberSaveable(shift.id) { mutableStateOf("") }
+    var message by rememberSaveable(shift.id) { mutableStateOf<String?>(null) }
+    var pinRequested by rememberSaveable(shift.id) { mutableStateOf(false) }
+    var printSummaryTicket by rememberSaveable { mutableStateOf(true) }
     var liveClose by remember(shift.id) { mutableStateOf(close) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(shift.id, stage) {
+    LaunchedEffect(shift.id, stage, attemptId) {
         liveClose = withContext(Dispatchers.IO) { repository.shiftCloseBreakdown(shift) }
+        if (attempt == null && (attemptId != null || stage != CountStage.COUNTING)) {
+            attempt = withContext(Dispatchers.IO) {
+                val attempts = repository.cashCounts(shift.id)
+                if (attemptId != null) attempts.firstOrNull { it.id == attemptId } else attempts.firstOrNull()
+            }
+        }
     }
 
     fun submit() {
@@ -582,10 +665,12 @@ private fun ZCloseDialog(
         if (amount == null || amount < 0) {
             message = "Captura un conteo válido."
         } else scope.launch {
-            attempt = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
-            if (attempt == null) {
+            val result = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
+            if (result == null) {
                 message = "No se pudo guardar el conteo local."
             } else {
+                attempt = result
+                attemptId = result.id
                 SyncWorker.enqueue(context)
                 stage = CountStage.VALIDATION
             }
@@ -651,6 +736,7 @@ private fun ZCloseDialog(
                                     else scope.launch {
                                         withContext(Dispatchers.IO) { attempt?.let { repository.rejectCashCount(it.id, rejectionReason) } }
                                         attempt = null
+                                        attemptId = null
                                         count = ""
                                         rejectionReason = ""
                                         message = "Conteo devuelto a corrección. Ingresa el nuevo conteo físico."
@@ -763,8 +849,9 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
     var sales by remember(shift.id) { mutableStateOf<List<SaleEntity>>(emptyList()) }
     var query by rememberSaveable { mutableStateOf("") }
     var pageSize by rememberSaveable(query) { mutableIntStateOf(10) }
-    var message by remember { mutableStateOf<String?>(null) }
-    var cancelSale by remember { mutableStateOf<SaleEntity?>(null) }
+    var message by rememberSaveable { mutableStateOf<String?>(null) }
+    var cancelSaleId by rememberSaveable { mutableStateOf<String?>(null) }
+    val cancelSale = remember(cancelSaleId, sales) { sales.firstOrNull { it.id == cancelSaleId } }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(shift.id) { sales = withContext(Dispatchers.IO) { repository.salesForShift(shift.id) } }
@@ -798,7 +885,7 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
                     modifier = Modifier.weight(1f),
                 ) {
                     items(visibleSales, key = { it.id }) { sale ->
-                        SaleHistoryRow(sale, repository, { message = it; refresh() }, { cancelSale = sale })
+                        SaleHistoryRow(sale, repository, { message = it; refresh() }, { cancelSaleId = sale.id })
                     }
                     if (filtered.size > visibleSales.size) {
                         item {
@@ -820,8 +907,8 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
             sale = sale,
             manager = manager,
             repository = repository,
-            onDismiss = { cancelSale = null },
-            onDone = { notice -> message = notice; cancelSale = null; scope.launch { sales = withContext(Dispatchers.IO) { repository.salesForShift(shift.id) }; refresh() } },
+            onDismiss = { cancelSaleId = null },
+            onDone = { notice -> message = notice; cancelSaleId = null; scope.launch { sales = withContext(Dispatchers.IO) { repository.salesForShift(shift.id) }; refresh() } },
         )
     }
 }
@@ -849,9 +936,9 @@ private fun SaleHistoryRow(sale: SaleEntity, repository: PosRepository, notice: 
 // Captures the required reason and local Manager signature for a cash cancellation.
 @Composable
 private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repository: PosRepository, onDismiss: () -> Unit, onDone: (String) -> Unit) {
-    var reason by remember { mutableStateOf("") }
-    var pin by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf<String?>(null) }
+    var reason by rememberSaveable { mutableStateOf("") }
+    var pin by rememberSaveable { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
@@ -903,12 +990,12 @@ private fun StatusPanel(
     modifier: Modifier,
 ) {
     val printJobs = remember { mutableStateOf(emptyList<PrintJobEntity>()) }
-    var syncMessage by remember { mutableStateOf<String?>(null) }
-    var peripheralMessage by remember { mutableStateOf<String?>(null) }
+    var syncMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var peripheralMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var device by remember { mutableStateOf<DeviceEntity?>(null) }
-    var updateMessage by remember { mutableStateOf<String?>(null) }
-    var updateBusy by remember { mutableStateOf(false) }
-    var availableUpdateName by remember { mutableStateOf<String?>(null) }
+    var updateMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var updateBusy by rememberSaveable { mutableStateOf(false) }
+    var availableUpdateName by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val mode = repository.mode()
@@ -1201,10 +1288,11 @@ internal fun ManagerPinDialog(
     val managers = remember(users) {
         users.filter { it.active && it.isManagerOrAdmin }
     }
-    var selected by remember { mutableStateOf(initialManager ?: managers.firstOrNull()) }
-    var pin by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
+    var selectedId by rememberSaveable { mutableStateOf((initialManager ?: managers.firstOrNull())?.id) }
+    val selected = remember(selectedId, managers) { managers.firstOrNull { it.id == selectedId } ?: initialManager ?: managers.firstOrNull() }
+    var pin by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var busy by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun submit() {
@@ -1255,7 +1343,7 @@ internal fun ManagerPinDialog(
                         managers.forEach { user ->
                             PosButton(
                                 label = user.displayTitle(isTraining),
-                                click = { selected = user; error = null },
+                                click = { selectedId = user.id; error = null },
                                 selected = selected?.id == user.id,
                             )
                         }

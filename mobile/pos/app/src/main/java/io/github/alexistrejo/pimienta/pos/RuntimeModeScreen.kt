@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,11 +45,12 @@ internal fun RuntimeModeBanner(
     onOpenManager: (() -> Unit)? = null,
     availableUpdateVersionName: String? = null,
 ) {
-    var open by remember { mutableStateOf(false) }
-    var selectedAuthorizer by remember(authorizers) { mutableStateOf(authorizers.firstOrNull()) }
-    var pin by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
+    var open by rememberSaveable { mutableStateOf(false) }
+    var selectedAuthorizerId by rememberSaveable { mutableStateOf(authorizers.firstOrNull()?.id) }
+    val selectedAuthorizer = remember(selectedAuthorizerId, authorizers) { authorizers.firstOrNull { it.id == selectedAuthorizerId } ?: authorizers.firstOrNull() }
+    var pin by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var busy by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val isTraining = mode == RuntimeMode.SANDBOX
@@ -122,7 +124,7 @@ internal fun RuntimeModeBanner(
                 onClick = {
                     pin = ""
                     error = null
-                    selectedAuthorizer = authorizers.firstOrNull()
+                    selectedAuthorizerId = authorizers.firstOrNull()?.id
                     open = true
                 },
                 modifier = Modifier.heightIn(min = 36.dp),
@@ -206,7 +208,7 @@ internal fun RuntimeModeBanner(
                                 authorizers.forEach { user ->
                                     PosButton(
                                         label = user.displayTitle(isTraining),
-                                        click = { selectedAuthorizer = user; error = null },
+                                        click = { selectedAuthorizerId = user.id; error = null },
                                         selected = selectedAuthorizer?.id == user.id,
                                     )
                                 }

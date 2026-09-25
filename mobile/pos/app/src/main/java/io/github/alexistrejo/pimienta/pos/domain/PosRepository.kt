@@ -347,6 +347,9 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         }
     }
 
+    // Returns past cash count attempts for a shift ordered by newest first.
+    fun cashCounts(shiftId: String): List<CashCountAttemptEntity> = database.operationsDao().cashCounts(shiftId)
+
     // Rejects a count with an audit note so the cashier can submit a new attempt.
     fun rejectCashCount(attemptId: String, note: String): Boolean {
         if (note.isBlank()) return false

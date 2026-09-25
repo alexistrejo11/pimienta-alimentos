@@ -200,8 +200,9 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
     var loadGeneration by remember { mutableStateOf(0) }
     var productionCatalogSyncAttempted by remember { mutableStateOf(false) }
     var availableUpdateVersionName by remember { mutableStateOf<String?>(null) }
-    var standaloneManager by remember { mutableStateOf<LocalUserEntity?>(null) }
-    var managerAccessOpen by remember { mutableStateOf(false) }
+    var standaloneManagerId by rememberSaveable { mutableStateOf<String?>(null) }
+    val standaloneManager = remember(standaloneManagerId, users) { users.firstOrNull { it.id == standaloneManagerId } }
+    var managerAccessOpen by rememberSaveable { mutableStateOf(false) }
     var pendingEventsCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val updater = remember(context) { PosAppUpdater(context) }
 
@@ -311,9 +312,15 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 return@launch
             }
             initialized = false
-            withContext(Dispatchers.IO) { app.resetTrainingPlayground() }
-            shift = null
-            reload()
+            try {
+                withContext(Dispatchers.IO) { app.resetTrainingPlayground() }
+                notice = "✓ Datos de capacitación reiniciados correctamente"
+            } catch (_: Exception) {
+                notice = "No se pudieron reiniciar los datos de capacitación"
+            } finally {
+                shift = null
+                reload()
+            }
         }
     }
 
@@ -335,7 +342,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             onDismiss = { managerAccessOpen = false },
             onAuthorized = { authed ->
                 managerAccessOpen = false
-                standaloneManager = authed
+                standaloneManagerId = authed.id
             },
         )
     }
@@ -353,8 +360,8 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         reload()
     }
 
-    val showEnrollment = mode == RuntimeMode.PRODUCTION &&
-        (syncState?.baseUrl == null || syncState?.status == "REQUIRES_REENROLLMENT")
+    val isEnrolled = syncState?.status == "ENROLLED" && DeviceCredentials(context).access() != null
+    val showEnrollment = mode == RuntimeMode.PRODUCTION && !isEnrolled
 
     LaunchedEffect(scanner) {
         (scanner as? MultiplexBarcodeScanner)?.attach(this)
@@ -396,10 +403,10 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                     products = products,
                     pendingEvents = pendingEventsCount,
                     repository = repository,
-                    onReturnToSale = { standaloneManager = null },
+                    onReturnToSale = { standaloneManagerId = null },
                     onShiftClosed = {
                         shift = null
-                        standaloneManager = null
+                        standaloneManagerId = null
                     },
                 )
             } else if (!initialized) {
@@ -645,15 +652,18 @@ internal fun Access(
 
     // Filters active managers and admins eligible to authorize shift opening.
     val authorizers = remember(users) { users.filter { it.active && it.isManagerOrAdmin } }
-    var stage by remember { mutableStateOf(AccessStage.AUTHENTICATE_AUTHORIZER) }
-    var selectedAuthorizer by remember(authorizers) { mutableStateOf(authorizers.firstOrNull()) }
-    var authenticatedAuthorizer by remember { mutableStateOf<LocalUserEntity?>(null) }
-    var pin by remember { mutableStateOf("") }
+    var stage by rememberSaveable { mutableStateOf(AccessStage.AUTHENTICATE_AUTHORIZER) }
+    var selectedAuthorizerId by rememberSaveable { mutableStateOf((authorizers.firstOrNull())?.id) }
+    val selectedAuthorizer = remember(selectedAuthorizerId, authorizers) { authorizers.firstOrNull { it.id == selectedAuthorizerId } ?: authorizers.firstOrNull() }
+    var authenticatedAuthorizerId by rememberSaveable { mutableStateOf<String?>(null) }
+    val authenticatedAuthorizer = remember(authenticatedAuthorizerId, users) { users.firstOrNull { it.id == authenticatedAuthorizerId } }
+    var pin by rememberSaveable { mutableStateOf("") }
 
-    var selectedAssignee by remember { mutableStateOf<LocalUserEntity?>(null) }
-    var opening by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var localError by remember { mutableStateOf<String?>(null) }
+    var selectedAssigneeId by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedAssignee = remember(selectedAssigneeId, users) { users.firstOrNull { it.id == selectedAssigneeId } }
+    var opening by rememberSaveable { mutableStateOf("") }
+    var busy by rememberSaveable { mutableStateOf(false) }
+    var localError by rememberSaveable { mutableStateOf<String?>(null) }
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(contentAlignment = Alignment.Center) {
@@ -689,7 +699,7 @@ internal fun Access(
                                 label = "← Cambiar autorizador",
                                 click = {
                                     stage = AccessStage.AUTHENTICATE_AUTHORIZER
-                                    authenticatedAuthorizer = null
+                                    authenticatedAuthorizerId = null
                                     pin = ""
                                     localError = null
                                 },
@@ -744,7 +754,7 @@ internal fun Access(
                                 items(authorizers, key = { it.id }) { profile ->
                                     PosButton(
                                         profile.displayTitle(mode == RuntimeMode.SANDBOX),
-                                        { selectedAuthorizer = profile },
+                                        { selectedAuthorizerId = profile.id },
                                         selected = selectedAuthorizer?.id == profile.id,
                                     )
                                 }
@@ -779,9 +789,9 @@ internal fun Access(
                                     if (!valid) {
                                         localError = "El PIN no corresponde al perfil seleccionado."
                                     } else {
-                                        authenticatedAuthorizer = authorizer
+                                        authenticatedAuthorizerId = authorizer.id
                                         val allowed = allowedShiftAssignees(authorizer, users)
-                                        selectedAssignee = allowed.firstOrNull { it.id == authorizer.id } ?: allowed.firstOrNull()
+                                        selectedAssigneeId = (allowed.firstOrNull { it.id == authorizer.id } ?: allowed.firstOrNull())?.id
                                         stage = AccessStage.SELECT_ASSIGNEE_AND_CASH
                                         localError = null
                                     }
@@ -847,7 +857,7 @@ internal fun Access(
                             items(allowedAssignees, key = { it.id }) { profile ->
                                 PosButton(
                                     profile.displayTitle(mode == RuntimeMode.SANDBOX),
-                                    { selectedAssignee = profile },
+                                    { selectedAssigneeId = profile.id },
                                     selected = selectedAssignee?.id == profile.id,
                                 )
                             }
