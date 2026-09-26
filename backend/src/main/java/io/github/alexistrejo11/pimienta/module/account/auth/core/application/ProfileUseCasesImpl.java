@@ -98,8 +98,7 @@ public class ProfileUseCasesImpl implements ProfileUseCases {
         command.firstName(),
         command.lastName(),
         command.gender(),
-        command.phone(),
-        command.dateOfBirth());
+        command.phone());
 
     User saved = userRepository.save(user);
 

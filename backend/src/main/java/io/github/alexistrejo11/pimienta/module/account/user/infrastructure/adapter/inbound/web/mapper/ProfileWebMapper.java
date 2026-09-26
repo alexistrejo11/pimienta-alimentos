@@ -18,8 +18,7 @@ public final class ProfileWebMapper {
         request.firstName(),
         request.lastName(),
         request.gender(),
-        request.phone(),
-        request.dateOfBirth());
+        request.phone());
   }
 
   public static UserDashboardResponse toDashboardResponse(UserManagerDashboard dashboard) {

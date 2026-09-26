@@ -11,7 +11,6 @@ import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Ac
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
-import java.time.LocalDate;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,7 @@ class AuthIntegrationTest {
     String phone = uniquePhoneE164();
     String requestBody =
         AccountTestRequests.registerJson(
-            "Alexis", "Trejo", email, phone, rawPassword, "MALE", LocalDate.of(2000, 1, 10));
+            "Alexis", "Trejo", email, phone, rawPassword, "MALE");
 
     mockMvc
         .perform(
@@ -71,7 +70,7 @@ class AuthIntegrationTest {
     assertThat(saved.getFirstName()).isEqualTo("Alexis");
     assertThat(saved.getLastName()).isEqualTo("Trejo");
     assertThat(saved.getPhone()).isEqualTo(phone);
-    assertThat(saved.getDateOfBirth()).isEqualTo(LocalDate.of(2000, 1, 10));
+    assertThat(saved.getDateOfBirth()).isNull();
     assertThat(saved.getAccountStatus()).isEqualTo(AccountStatus.PENDING_APPROVAL);
     assertThat(saved.getRoles()).containsExactly(Role.USER);
     assertThat(saved.getPasswordHash()).isNotEqualTo(rawPassword);
@@ -83,7 +82,7 @@ class AuthIntegrationTest {
     String email = "it-badfn-" + UUID.randomUUID() + "@mail.com";
     String body =
         AccountTestRequests.registerJson(
-            " ", "Trejo", email, uniquePhoneE164(), "StrongPass123!", "MALE", LocalDate.of(2000, 1, 10));
+            " ", "Trejo", email, uniquePhoneE164(), "StrongPass123!", "MALE");
 
     mockMvc
         .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -102,8 +101,7 @@ class AuthIntegrationTest {
             "not-an-email",
             uniquePhoneE164(),
             "StrongPass123!",
-            "MALE",
-            LocalDate.of(2000, 1, 10));
+            "MALE");
 
     mockMvc
         .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -116,21 +114,7 @@ class AuthIntegrationTest {
     String email = "it-weak-" + UUID.randomUUID() + "@mail.com";
     String body =
         AccountTestRequests.registerJson(
-            "A", "B", email, uniquePhoneE164(), "short1", "MALE", LocalDate.of(2000, 1, 10));
-
-    mockMvc
-        .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
-  }
-
-  @Test
-  void register_validation_underMinimumAge_returns400() throws Exception {
-    String email = "it-young-" + UUID.randomUUID() + "@mail.com";
-    LocalDate dob = LocalDate.now().minusYears(10);
-    String body =
-        AccountTestRequests.registerJson(
-            "A", "B", email, uniquePhoneE164(), "StrongPass123!", "FEMALE", dob);
+            "A", "B", email, uniquePhoneE164(), "short1", "MALE");
 
     mockMvc
         .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -148,7 +132,7 @@ class AuthIntegrationTest {
         .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(b1))
         .andExpect(status().isCreated());
 
-    String b2 = AccountTestRequests.registerJson("Other", "User", email, p2, "StrongPass9!", "MALE", LocalDate.of(2000, 1, 10));
+    String b2 = AccountTestRequests.registerJson("Other", "User", email, p2, "StrongPass9!", "MALE");
     mockMvc
         .perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(b2))
         .andExpect(status().isConflict())

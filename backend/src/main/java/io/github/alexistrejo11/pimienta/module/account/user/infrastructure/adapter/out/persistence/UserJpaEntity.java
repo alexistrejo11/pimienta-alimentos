@@ -54,7 +54,7 @@ public class UserJpaEntity {
   @Column(nullable = false, length = 32)
   private String phone;
 
-  @Column(name = "date_of_birth", nullable = false)
+  @Column(name = "date_of_birth")
   private LocalDate dateOfBirth;
 
   @Enumerated(EnumType.STRING)

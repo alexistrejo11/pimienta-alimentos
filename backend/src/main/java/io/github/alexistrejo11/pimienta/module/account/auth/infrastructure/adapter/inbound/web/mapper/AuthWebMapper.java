@@ -23,8 +23,7 @@ public final class AuthWebMapper {
         request.firstName(),
         request.lastName(),
         request.gender(),
-        request.phone(),
-        request.dateOfBirth());
+        request.phone());
   }
 
   public static LoginCommand toLoginCommand(LoginRequest request) {

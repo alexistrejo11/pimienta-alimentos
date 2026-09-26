@@ -143,11 +143,9 @@ const ACCOUNT_STATUS_LABELS: Record<string, string> = {
 };
 
 const GENDER_LABELS: Record<string, string> = {
-  MALE: 'Masculino',
-  FEMALE: 'Femenino',
-  NON_BINARY: 'No binario',
+  MALE: 'Hombre',
+  FEMALE: 'Mujer',
   OTHER: 'Otro',
-  PREFER_NOT_TO_SAY: 'Prefiero no decir',
 };
 
 const ROLE_LABELS: Record<string, string> = {

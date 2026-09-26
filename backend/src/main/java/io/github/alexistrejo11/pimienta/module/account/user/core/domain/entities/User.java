@@ -94,7 +94,6 @@ public class User extends BaseDomain<Long> {
     Objects.requireNonNull(params.email(), "email");
     Objects.requireNonNull(params.passwordHash(), "passwordHash");
     Objects.requireNonNull(params.gender(), "gender");
-    Objects.requireNonNull(params.dateOfBirth(), "dateOfBirth");
     if (params.email().isBlank()) {
       throw new IllegalArgumentException("email must not be blank");
     }
@@ -115,7 +114,7 @@ public class User extends BaseDomain<Long> {
     u.lastName = params.lastName().trim();
     u.gender = params.gender();
     u.phone = params.phone().trim();
-    u.dateOfBirth = params.dateOfBirth();
+    u.dateOfBirth = null;
     u.accountStatus = AccountStatus.PENDING_APPROVAL;
     u.bannedReason = null;
     u.bannedAt = null;
@@ -161,12 +160,10 @@ public class User extends BaseDomain<Long> {
   }
 
   /**
-   * Profile self-service: name, gender, phone, date of birth. Does not change
-   * email or password.
+   * Profile self-service: name, gender, phone. Does not change email or password.
    */
-  public void updateProfile(String firstName, String lastName, Gender gender, String phone, LocalDate dateOfBirth) {
+  public void updateProfile(String firstName, String lastName, Gender gender, String phone) {
     Objects.requireNonNull(gender, "gender");
-    Objects.requireNonNull(dateOfBirth, "dateOfBirth");
     if (firstName == null || firstName.isBlank()) {
       throw new IllegalArgumentException("firstName must not be blank");
     }
@@ -180,7 +177,6 @@ public class User extends BaseDomain<Long> {
     this.lastName = lastName.trim();
     this.gender = gender;
     this.phone = phone.trim();
-    this.dateOfBirth = dateOfBirth;
     touch();
   }
 

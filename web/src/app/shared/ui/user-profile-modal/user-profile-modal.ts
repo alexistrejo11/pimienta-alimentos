@@ -35,7 +35,7 @@ export class UserProfileModalComponent {
   private readonly router = inject(Router);
 
   readonly genderOptions: { value: Gender; label: string }[] = (
-    ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER', 'PREFER_NOT_TO_SAY'] as Gender[]
+    ['MALE', 'FEMALE', 'OTHER'] as Gender[]
   ).map((value) => ({ value, label: genderLabel(value) }));
 
   readonly loading = signal(true);
@@ -57,7 +57,6 @@ export class UserProfileModalComponent {
         Validators.maxLength(32),
       ],
     ],
-    dateOfBirth: ['', [Validators.required]],
   });
 
   constructor() {
@@ -79,7 +78,6 @@ export class UserProfileModalComponent {
             lastName: user.lastName,
             gender: user.gender,
             phone: user.phone,
-            dateOfBirth: user.dateOfBirth,
           });
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
@@ -115,7 +113,6 @@ export class UserProfileModalComponent {
       lastName: v.lastName.trim(),
       gender: v.gender as Gender,
       phone: v.phone.trim(),
-      dateOfBirth: v.dateOfBirth,
     };
 
     this.saving.set(true);
