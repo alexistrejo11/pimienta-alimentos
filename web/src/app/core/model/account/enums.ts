@@ -11,9 +11,9 @@ export type AccountStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'BANNED';
 
 export enum AppRole {
   ADMIN = 'ADMIN',
+  DIRECTOR = 'DIRECTOR',
   MANAGER = 'MANAGER',
   SALES = 'SALES',
-  POS_OPERATOR = 'POS_OPERATOR',
   EMPLOYEE = 'EMPLOYEE',
   SUPPORT = 'SUPPORT',
   USER = 'USER',

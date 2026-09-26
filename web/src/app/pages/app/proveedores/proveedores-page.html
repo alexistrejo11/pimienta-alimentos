@@ -1,0 +1,116 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header
+      title="Proveedores"
+      subtitle="Contactos de surtido por sede"
+    />
+    <a
+      routerLink="/app/ops/proveedores/nuevo"
+      class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
+    >
+      <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">add</span>
+      Nuevo proveedor
+    </a>
+  </div>
+
+  @if (staffUnassigned()) {
+    <div class="ui-panel p-6 text-sm text-on-surface-variant">
+      No tienes sede asignada. Pide a un administrador que te asigne una sede en Usuarios.
+    </div>
+  } @else {
+    <div class="flex flex-wrap items-end gap-4">
+      <app-headquarter-select
+        class="max-w-xs"
+        label="Sede"
+        [allowAll]="session.isAdmin()"
+        [value]="selectedHeadquarterId"
+        (valueChange)="onHeadquarterChange($event)"
+      />
+      <label class="flex min-w-64 flex-col gap-1 text-sm">
+        <span class="font-semibold text-on-surface-variant">Buscar</span>
+        <input
+          class="rounded-lg bg-surface-container px-3 py-2.5"
+          placeholder="Negocio, contacto, teléfono o marca"
+          [value]="search"
+          (input)="onSearchInput($any($event.target).value)"
+        />
+      </label>
+    </div>
+
+    <app-data-state
+      [loading]="loading()"
+      [error]="error()"
+      [empty]="items().length === 0"
+      emptyMessage="No hay proveedores para este filtro."
+      (retry)="cargar()"
+    >
+      <div class="responsive-table rounded-xl border ui-panel">
+        <table class="w-full text-sm" aria-label="Proveedores">
+          <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+            <tr>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Marca</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Contacto</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Teléfono</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Sedes</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/15">
+            @for (row of items(); track row.id) {
+              <tr>
+                <td class="px-4 py-3 font-medium">{{ row.brand }}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium">{{ row.contactName }}</div>
+                  <div class="text-xs text-on-surface-variant">{{ row.name }}</div>
+                </td>
+                <td class="px-4 py-3 tabular-nums">{{ row.phone }}</td>
+                <td class="px-4 py-3 text-on-surface-variant">{{ headquarterLabels(row.headquarterIds) }}</td>
+                <td class="px-4 py-3 text-right whitespace-nowrap">
+                  <a
+                    [routerLink]="['/app/ops/proveedores', row.id, 'editar']"
+                    class="text-sm font-semibold text-primary hover:underline"
+                  >
+                    Editar
+                  </a>
+                  <button
+                    type="button"
+                    class="ml-3 text-sm font-semibold text-[var(--color-error)] hover:underline disabled:opacity-50"
+                    [disabled]="deletingId() === row.id"
+                    (click)="eliminar(row)"
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </app-data-state>
+
+    @if (metadata(); as page) {
+      <div class="flex items-center justify-between text-sm text-on-surface-variant">
+        <span>{{ page.totalElements }} registros</span>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 disabled:opacity-40"
+            [disabled]="!page.hasPrevious"
+            (click)="setPage(page.pageNumber - 1)"
+          >
+            Anterior
+          </button>
+          <span class="px-2 py-2">Página {{ page.pageNumber + 1 }} de {{ page.totalPages }}</span>
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 disabled:opacity-40"
+            [disabled]="!page.hasNext"
+            (click)="setPage(page.pageNumber + 1)"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

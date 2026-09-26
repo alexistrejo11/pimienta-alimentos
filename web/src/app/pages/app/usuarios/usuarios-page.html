@@ -65,31 +65,27 @@
                 }
               </td>
               <td class="p-4">
-                @if (isManager(user)) {
-                  @if (user.accountStatus === 'ACTIVE') {
-                    <select
-                      class="rounded border p-2"
-                      [ngModel]="headquarterFor(user)"
-                      (ngModelChange)="setHeadquarter(user, $event)"
-                    >
-                      <option [ngValue]="null">Sin sede</option>
-                      @for (sede of sedes(); track sede.id) {
-                        <option [ngValue]="sede.id">{{ sede.name }}</option>
-                      }
-                    </select>
-                    <button
-                      type="button"
-                      class="ml-2 text-sm font-bold text-primary"
-                      [disabled]="savingId() === user.id"
-                      (click)="saveHeadquarter(user)"
-                    >
-                      Guardar sede
-                    </button>
-                  } @else {
-                    <span class="text-on-surface-variant">{{ assignedHeadquarterLabel(user) }}</span>
-                  }
-                } @else if (isManagerDraft(user) && user.accountStatus === 'ACTIVE') {
-                  <span class="text-xs text-on-surface-variant">Guarda rol Gerente para asignar sede</span>
+                @if (showsSede(user) && user.accountStatus === 'ACTIVE') {
+                  <select
+                    class="rounded border p-2"
+                    [ngModel]="headquarterFor(user)"
+                    (ngModelChange)="setHeadquarter(user, $event)"
+                  >
+                    <option [ngValue]="null">Sin sede</option>
+                    @for (sede of sedes(); track sede.id) {
+                      <option [ngValue]="sede.id">{{ sede.name }}</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="ml-2 text-sm font-bold text-primary"
+                    [disabled]="savingId() === user.id"
+                    (click)="saveHeadquarter(user)"
+                  >
+                    Guardar sede
+                  </button>
+                } @else if (showsSede(user)) {
+                  <span class="text-on-surface-variant">{{ assignedHeadquarterLabel(user) }}</span>
                 } @else {
                   <span class="text-on-surface-variant">—</span>
                 }

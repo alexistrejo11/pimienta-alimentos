@@ -155,8 +155,8 @@ const ROLE_LABELS: Record<string, string> = {
   SUPPORT: 'Soporte',
   SALES: 'Ventas',
   MANAGER: 'Gerente',
+  DIRECTOR: 'Director',
   ADMIN: 'Administrador',
-  POS_OPERATOR: 'Operador POS',
   EMPLOYEE: 'Empleado',
 };
 

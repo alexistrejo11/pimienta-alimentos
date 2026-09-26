@@ -55,7 +55,12 @@ public class PosAdminShiftController {
       @Parameter(description = "OPEN or CLOSED") @RequestParam(required = false) String status,
       @RequestParam(required = false) Long cashierOperatorId,
       @ModelAttribute PageableRequest pageable) {
-    var filter = new PosShiftListFilter(from, to, status, cashierOperatorId);
+    String listStatus = status;
+    if (!access.canViewPosFinancials(principal)) {
+      access.requireOpenShift(principal, status == null ? "OPEN" : status);
+      listStatus = "OPEN";
+    }
+    var filter = new PosShiftListFilter(from, to, listStatus, cashierOperatorId);
     return PagedResponse.map(
         useCases.list(access.enforceHeadquarterScope(principal, headquarterId), filter, pageable.toPageable()),
         PosShiftListItemResponse::from);
@@ -68,7 +73,9 @@ public class PosAdminShiftController {
       @PathVariable UUID shiftId,
       @RequestParam long headquarterId) {
     long hq = access.enforceHeadquarterFilter(principal, headquarterId);
-    return PosShiftDetailResponse.from(useCases.get(shiftId, hq));
+    var detail = useCases.get(shiftId, hq);
+    access.requireOpenShift(principal, detail.listItem().shift().status());
+    return PosShiftDetailResponse.from(detail);
   }
 
   @GetMapping("/{shiftId}/reconciliation")
@@ -77,6 +84,7 @@ public class PosAdminShiftController {
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @PathVariable UUID shiftId,
       @RequestParam long headquarterId) {
+    access.requirePosFinancialAccess(principal);
     long hq = access.enforceHeadquarterFilter(principal, headquarterId);
     return PosShiftReconciliationResponse.from(useCases.getReconciliation(shiftId, hq));
   }

@@ -28,7 +28,7 @@ export class InventarioLedgerPageComponent implements OnInit {
   readonly error = signal<ParsedApiError | null>(null);
   readonly registrarAbierto = signal(false);
   readonly notice = signal('');
-  readonly canRegister = computed(() => this.session.isAdmin() || this.session.isManager());
+  readonly canRegister = computed(() => this.session.canOperateOps());
   readonly page = signal(0);
   search = ''; type = ''; direction = ''; category = ''; fromDate = ''; toDate = '';
   readonly categories: ItemCategory[] = ['RAW_MATERIAL', 'FINISHED_GOOD', 'CONSUMABLE', 'SPARE_PART', 'PACKAGING', 'TOOL', 'MACHINE', 'FURNITURE', 'OTHER'];

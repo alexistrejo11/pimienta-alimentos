@@ -16,6 +16,7 @@ import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
 import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -55,6 +56,7 @@ public class PosAdminDeviceController {
   }
 
   @PostMapping("/{id}/revoke")
+  @PreAuthorize("hasRole('ADMIN')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocPosDeviceRevoke
   public PosDeviceAdminResponse revoke(

@@ -64,7 +64,7 @@ export class SedePosPageComponent implements OnInit {
 
   readonly stockPolicies: StockPolicy[] = ['CONTROLLED', 'NOT_CONTROLLED'];
   readonly stockPolicyLabel = stockPolicyLabel;
-  readonly canEditCatalog = computed(() => this.session.isAdmin() || this.session.isManager());
+  readonly canEditCatalog = computed(() => this.session.canOperateOps());
   private catalogSearchTimer: ReturnType<typeof setTimeout> | undefined;
 
   readonly activeCategories = computed(() =>

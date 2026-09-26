@@ -24,6 +24,7 @@
     </div>
   </header>
 
+  @if (canViewPosFinancials()) {
   <section class="flex flex-col gap-4">
     <h2 class="font-headline text-lg font-bold text-on-surface">Punto de venta — hoy</h2>
     @if (posLoading() && !hasPosRows()) {
@@ -64,6 +65,7 @@
       </ul>
     }
   </section>
+  }
 
   <section class="flex flex-col gap-4">
     <h2 class="font-headline text-lg font-bold text-on-surface">Inventario</h2>
@@ -109,7 +111,7 @@
     }
   </section>
 
-  @if (session.activeHeadquarterId() != null) {
+  @if (canViewPosFinancials() && session.activeHeadquarterId() != null) {
     <section class="flex flex-col gap-4">
       <div class="flex items-end justify-between gap-3">
         <div>

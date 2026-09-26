@@ -1,0 +1,130 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <app-page-header
+    [title]="isEdit ? 'Editar proveedor' : 'Nuevo proveedor'"
+    subtitle="Contacto de surtido y sedes que atiende"
+    backLink="/app/ops/proveedores"
+    backLabel="Proveedores"
+  />
+
+  @if (loadingExisting()) {
+    <p class="text-sm text-on-surface-variant">Cargando proveedor…</p>
+  } @else {
+    <form class="space-y-6" [formGroup]="form" (ngSubmit)="submit()">
+      <app-api-form-error [error]="apiError()" />
+
+      <section class="ui-panel p-6">
+        <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Datos del proveedor</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="sm:col-span-2 space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="supplier-name"
+              >Negocio</label
+            >
+            <input
+              id="supplier-name"
+              formControlName="name"
+              type="text"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+            @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+            }
+            @if (apiFieldMessage('name'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+
+          <div class="space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="supplier-contact"
+              >Contacto</label
+            >
+            <input
+              id="supplier-contact"
+              formControlName="contactName"
+              type="text"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+            @if (form.controls.contactName.touched && form.controls.contactName.hasError('required')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+            }
+            @if (apiFieldMessage('contactName'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+
+          <div class="space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="supplier-phone"
+              >Teléfono</label
+            >
+            <input
+              id="supplier-phone"
+              formControlName="phone"
+              type="tel"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+            @if (form.controls.phone.touched && form.controls.phone.hasError('required')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+            }
+            @if (apiFieldMessage('phone'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+
+          <div class="sm:col-span-2 space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="supplier-brand"
+              >Marca padre</label
+            >
+            <input
+              id="supplier-brand"
+              formControlName="brand"
+              type="text"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+            @if (form.controls.brand.touched && form.controls.brand.hasError('required')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+            }
+            @if (apiFieldMessage('brand'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="ui-panel p-6">
+        <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Sedes</h2>
+        <app-headquarter-select
+          [mode]="'multi'"
+          label="Sedes que atiende"
+          [value]="headquarterIds()"
+          (valueChange)="onHeadquartersChange($event)"
+        />
+        @if (apiFieldMessage('headquarterIds'); as m) {
+          <p class="mt-2 text-xs text-[var(--color-error)]">{{ m }}</p>
+        }
+      </section>
+
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="submit"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-on-primary disabled:opacity-50"
+          [disabled]="loading()"
+        >
+          {{ isEdit ? 'Guardar cambios' : 'Crear proveedor' }}
+        </button>
+        <a
+          routerLink="/app/ops/proveedores"
+          class="inline-flex min-h-11 items-center justify-center rounded-lg border border-outline-variant/30 px-5 py-2.5 text-sm font-semibold text-on-surface"
+        >
+          Cancelar
+        </a>
+      </div>
+    </form>
+  }
+</div>

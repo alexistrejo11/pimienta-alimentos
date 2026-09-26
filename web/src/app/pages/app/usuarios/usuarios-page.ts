@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, type Observable } from 'rxjs';
 
 import { HeadquarterLookupService } from '../../../core/headquarters/headquarter-lookup.service';
 import { HeadquarterService } from '../../../core/headquarters/headquarter.service';
@@ -25,6 +25,7 @@ export class UsuariosPageComponent implements OnInit {
   readonly roles: AppRole[] = Object.values(AppRole).filter(
     (role) => role !== AppRole.USER && role !== AppRole.SUPPORT && role !== AppRole.SALES,
   );
+  private readonly sedeRoles: AppRole[] = [AppRole.DIRECTOR, AppRole.MANAGER, AppRole.EMPLOYEE];
   readonly users = signal<UserResponse[]>([]);
   readonly sedes = signal<HeadQuarterResponse[]>([]);
   readonly loading = signal(true);
@@ -83,11 +84,10 @@ export class UsuariosPageComponent implements OnInit {
     this.selectedRoles.set(user.id, roles);
   }
 
-  isManager(user: UserResponse): boolean {
-    return user.roles.includes(AppRole.MANAGER);
-  }
-  isManagerDraft(user: UserResponse): boolean {
-    return this.rolesFor(user).includes(AppRole.MANAGER);
+  showsSede(user: UserResponse): boolean {
+    const selected = this.rolesFor(user);
+    const saved = user.roles ?? [];
+    return [...selected, ...saved].some((role) => this.sedeRoles.includes(role));
   }
 
   headquarterFor(user: UserResponse): number | null {
@@ -118,14 +118,21 @@ export class UsuariosPageComponent implements OnInit {
   saveRoles(user: UserResponse): void {
     const roles = this.rolesFor(user);
     if (roles.length === 0) return;
-    if (roles.includes(AppRole.MANAGER) && this.headquarterFor(user) == null) {
+    const needsSede = roles.some((role) => this.sedeRoles.includes(role));
+    const hqId = this.headquarterFor(user);
+    if (needsSede && hqId == null) {
       this.roleWarning.set(
-        `${user.email}: asigna una sede al guardar rol Gerente, o el usuario no podrá operar POS/inventario.`,
+        `${user.email}: asigna una sede antes de guardar Director, Gerente o Empleado.`,
       );
+      return;
     }
+    this.roleWarning.set(null);
     this.savingId.set(user.id);
-    this.service
-      .replaceRoles(user.id, { roles })
+    const saves: Observable<unknown>[] = [this.service.replaceRoles(user.id, { roles })];
+    if (needsSede && hqId != null) {
+      saves.push(this.service.assignHeadquarters(user.id, { headquarterIds: [hqId] }));
+    }
+    forkJoin(saves)
       .pipe(finalize(() => this.savingId.set(null)))
       .subscribe({
         next: () => this.load(),
@@ -135,6 +142,11 @@ export class UsuariosPageComponent implements OnInit {
 
   saveHeadquarter(user: UserResponse): void {
     const hqId = this.headquarterFor(user);
+    if (this.showsSede(user) && (hqId == null || hqId <= 0)) {
+      this.roleWarning.set(`${user.email}: asigna una sede antes de guardar.`);
+      return;
+    }
+    this.roleWarning.set(null);
     const ids = hqId != null && hqId > 0 ? [hqId] : [];
     this.savingId.set(user.id);
     this.service

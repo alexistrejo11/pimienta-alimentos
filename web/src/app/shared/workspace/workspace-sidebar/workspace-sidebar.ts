@@ -31,9 +31,8 @@ export interface WorkspaceNavSection {
   readonly roles?: readonly AppRole[];
 }
 
-const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
-const POS_OPERATION = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
-const INVENTORY_READ = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
+const OPS = [AppRole.ADMIN, AppRole.DIRECTOR, AppRole.MANAGER, AppRole.EMPLOYEE];
+const POS_FINANCIAL = [AppRole.ADMIN, AppRole.DIRECTOR];
 const ADMIN_ONLY = [AppRole.ADMIN];
 
 export const ERP_NAVIGATION: readonly WorkspaceNavSection[] = [
@@ -84,33 +83,34 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
     id: 'overview',
     label: 'Resumen',
     items: [
-      { label: 'Resumen', icon: 'dashboard', route: `${OPS_PATH}/dashboard`, roles: POS_OPERATION },
+      { label: 'Resumen', icon: 'dashboard', route: `${OPS_PATH}/dashboard`, roles: OPS },
     ],
   },
   {
     id: 'sites',
     label: 'Sedes',
     items: [
-      { label: 'Sedes', icon: 'location_on', route: `${OPS_PATH}/sedes`, roles: ADMIN_MANAGER },
+      { label: 'Sedes', icon: 'location_on', route: `${OPS_PATH}/sedes`, roles: OPS },
+      { label: 'Proveedores', icon: 'local_shipping', route: `${OPS_PATH}/proveedores`, roles: OPS },
     ],
   },
   {
     id: 'pos',
     label: 'Punto de venta',
-    roles: POS_OPERATION,
+    roles: OPS,
     items: [
-      { label: 'Catálogo por sede', icon: 'storefront', route: `${OPS_PATH}/pos/catalogo`, roles: ADMIN_MANAGER },
-      { label: 'Ventas', icon: 'receipt_long', route: `${OPS_PATH}/pos/ventas`, roles: POS_OPERATION },
-      { label: 'Turnos', icon: 'point_of_sale', route: `${OPS_PATH}/pos/turnos`, roles: ADMIN_MANAGER },
+      { label: 'Catálogo por sede', icon: 'storefront', route: `${OPS_PATH}/pos/catalogo`, roles: OPS },
+      { label: 'Ventas', icon: 'receipt_long', route: `${OPS_PATH}/pos/ventas`, roles: POS_FINANCIAL },
+      { label: 'Turnos', icon: 'point_of_sale', route: `${OPS_PATH}/pos/turnos`, roles: OPS },
       {
         label: 'Configuración POS',
         icon: 'settings',
-        roles: ADMIN_MANAGER,
+        roles: OPS,
         children: [
-          { label: 'Políticas de caja', icon: 'tune', route: `${OPS_PATH}/pos/configuracion`, roles: ADMIN_MANAGER },
-          { label: 'Dispositivos', icon: 'tablet_android', route: `${OPS_PATH}/pos/dispositivos`, roles: ADMIN_MANAGER },
-          { label: 'Enrolamiento', icon: 'qr_code_2', route: `${OPS_PATH}/pos/enrolamiento`, roles: ADMIN_MANAGER },
-          { label: 'Operadores', icon: 'group', route: `${OPS_PATH}/pos/operadores`, roles: ADMIN_MANAGER },
+          { label: 'Políticas de caja', icon: 'tune', route: `${OPS_PATH}/pos/configuracion`, roles: OPS },
+          { label: 'Dispositivos', icon: 'tablet_android', route: `${OPS_PATH}/pos/dispositivos`, roles: OPS },
+          { label: 'Enrolamiento', icon: 'qr_code_2', route: `${OPS_PATH}/pos/enrolamiento`, roles: OPS },
+          { label: 'Operadores', icon: 'group', route: `${OPS_PATH}/pos/operadores`, roles: OPS },
         ],
       },
     ],
@@ -118,15 +118,15 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
   {
     id: 'inventory',
     label: 'Inventario',
-    roles: INVENTORY_READ,
+    roles: OPS,
     items: [
-      { label: 'Existencias', icon: 'warehouse', route: `${OPS_PATH}/inventario`, roles: INVENTORY_READ },
-      { label: 'Movimientos', icon: 'receipt_long', route: `${OPS_PATH}/inventario/ledger`, roles: INVENTORY_READ },
+      { label: 'Existencias', icon: 'warehouse', route: `${OPS_PATH}/inventario`, roles: OPS },
+      { label: 'Movimientos', icon: 'receipt_long', route: `${OPS_PATH}/inventario/ledger`, roles: OPS },
       // Pendiente reactivar en sidebar: transferencias entre sedes y conteos físicos en sede
       // (rutas siguen en app.routes.ts). Una sede activa + inventario en sede aún no maduro.
-      // { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: ADMIN_MANAGER },
-      // { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: ADMIN_MANAGER },
-      { label: 'Artículos maestros', icon: 'inventory_2', route: `${OPS_PATH}/catalogo`, roles: ADMIN_MANAGER },
+      // { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: OPS },
+      // { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: OPS },
+      { label: 'Artículos maestros', icon: 'inventory_2', route: `${OPS_PATH}/catalogo`, roles: OPS },
     ],
   },
 ];

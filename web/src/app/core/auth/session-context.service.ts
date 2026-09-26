@@ -31,14 +31,23 @@ export class SessionContextService {
   readonly userId = signal(0);
 
   readonly isAdmin = computed(() => this.roles().includes(AppRole.ADMIN));
+  readonly isDirector = computed(() => this.roles().includes(AppRole.DIRECTOR));
   readonly isManager = computed(() => this.roles().includes(AppRole.MANAGER));
-  readonly managerHeadquarterId = computed(() => {
-    const ids = this.assignedHeadquarterIds();
-    return this.isManager() && ids.length > 0 ? ids[0] : null;
-  });
-  readonly canAccessPos = computed(
-    () => this.isAdmin() || this.isManager() || this.roles().includes(AppRole.POS_OPERATOR),
+  readonly canViewPosFinancials = computed(() => this.isAdmin() || this.isDirector());
+  readonly canOperateOps = computed(
+    () =>
+      this.isAdmin() ||
+      this.isDirector() ||
+      this.isManager() ||
+      this.roles().includes(AppRole.EMPLOYEE),
   );
+  /** First assigned sede for non-admin staff. Administrators use the global selector. */
+  readonly managerHeadquarterId = computed(() => {
+    if (this.isAdmin()) return null;
+    const ids = this.assignedHeadquarterIds();
+    return ids.length > 0 ? ids[0] : null;
+  });
+  readonly canAccessPos = this.canOperateOps;
   readonly isUnassigned = computed(
     () => this.roles().length === 1 && this.roles()[0] === AppRole.USER,
   );
