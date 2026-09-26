@@ -34,10 +34,8 @@
   "products": [
     {
       "id": "product-0001",
-      "legacyId": "m9o8av2bzvcmf",
       "sku": "CAF-0001",
       "barcode": "CAF-0001",
-      "legacyBarcode": "CAF-0001",
       "name": "Hot Cakes con Avena y Plátano",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -46,15 +44,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745068943503
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0002",
-      "legacyId": "m9o8ialsipiwe",
       "sku": "CAF-0002",
       "barcode": "CAF-0002",
-      "legacyBarcode": "CAF-0002",
       "name": "Chapata de Jamón de Pavo/Pollo",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -63,15 +58,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788382091439
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0003",
-      "legacyId": "m9o8jg0pp3yym",
       "sku": "CAF-0003",
       "barcode": "CAF-0003",
-      "legacyBarcode": "CAF-0003",
       "name": "Chapata de Bistec",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -80,15 +72,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745068243721
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0004",
-      "legacyId": "m9o8kaygem8p8",
       "sku": "CAF-0004",
       "barcode": "CAF-0004",
-      "legacyBarcode": "CAF-0004",
       "name": "Chapa Pizza",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -97,15 +86,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745068223609
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0005",
-      "legacyId": "m9o8m0fog521y",
       "sku": "CAF-0005",
       "barcode": "CAF-0005",
-      "legacyBarcode": "CAF-0005",
       "name": "Lasaña de Carne",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -114,15 +100,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745068303284
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0006",
-      "legacyId": "m9o8nsjdmz9vv",
       "sku": "CAF-0006",
       "barcode": "CAF-0006",
-      "legacyBarcode": "CAF-0006",
       "name": "Sándwich De Jamón",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -131,15 +114,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788382287094
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0007",
-      "legacyId": "m9o8tga59jzul",
       "sku": "CAF-0007",
       "barcode": "CAF-0007",
-      "legacyBarcode": "CAF-0007",
       "name": "Sándwich de Pollo",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -148,15 +128,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069175972
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0008",
-      "legacyId": "m9o8w07lyzz9b",
       "sku": "CAF-0008",
       "barcode": "CAF-0008",
-      "legacyBarcode": "CAF-0008",
       "name": "Gringa",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -165,15 +142,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069186379
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0009",
-      "legacyId": "m9o8xmzmvz0m3",
       "sku": "CAF-0009",
       "barcode": "CAF-0009",
-      "legacyBarcode": "CAF-0009",
       "name": "Sincronizadas",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -182,15 +156,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069216305
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0010",
-      "legacyId": "m9o978kfqqzxr",
       "sku": "CAF-0010",
       "barcode": "CAF-0010",
-      "legacyBarcode": "CAF-0010",
       "name": "Burrito",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -199,15 +170,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788382353809
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0011",
-      "legacyId": "m9o98qmx98vfy",
       "sku": "CAF-0011",
       "barcode": "CAF-0011",
-      "legacyBarcode": "CAF-0011",
       "name": "Pizza",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -216,15 +184,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069438424
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0012",
-      "legacyId": "m9o99t3dwkr81",
       "sku": "CAF-0012",
       "barcode": "CAF-0012",
-      "legacyBarcode": "CAF-0012",
       "name": "Chicken Bake",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -233,15 +198,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069465665
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0013",
-      "legacyId": "m9o9btm3kc9hh",
       "sku": "CAF-0013",
       "barcode": "CAF-0013",
-      "legacyBarcode": "CAF-0013",
       "name": "Molletes Sencillos",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -250,15 +212,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069633714
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0014",
-      "legacyId": "m9o9cpvhr92ls",
       "sku": "CAF-0014",
       "barcode": "CAF-0014",
-      "legacyBarcode": "CAF-0014",
       "name": "Molletes con Jamón",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -267,15 +226,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069625575
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0015",
-      "legacyId": "m9o9drfw4fajm",
       "sku": "CAF-0015",
       "barcode": "CAF-0015",
-      "legacyBarcode": "CAF-0015",
       "name": "Sopa Pasta",
       "saleCategory": "Deli",
       "unit": "PIECE",
@@ -284,15 +240,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069597996
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0016",
-      "legacyId": "m9o9gb7dhhr6n",
       "sku": "CAF-0016",
       "barcode": "CAF-0016",
-      "legacyBarcode": "CAF-0016",
       "name": "Chilaquiles Sencillos",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -301,15 +254,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069716921
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0017",
-      "legacyId": "m9o9hyowglbua",
       "sku": "CAF-0017",
       "barcode": "CAF-0017",
-      "legacyBarcode": "CAF-0017",
       "name": "Chilaquiles Pollo",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -318,15 +268,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069824770
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0018",
-      "legacyId": "m9o9ja1ifjdbt",
       "sku": "CAF-0018",
       "barcode": "CAF-0018",
-      "legacyBarcode": "CAF-0018",
       "name": "Enchiladas",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -335,15 +282,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069855382
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0019",
-      "legacyId": "m9o9ku33rgdf9",
       "sku": "CAF-0019",
       "barcode": "CAF-0019",
-      "legacyBarcode": "CAF-0019",
       "name": "Tacos De Bistec 3pz",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -352,15 +296,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745069928015
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0020",
-      "legacyId": "m9o9myv5g3sld",
       "sku": "CAF-0020",
       "barcode": "CAF-0020",
-      "legacyBarcode": "CAF-0020",
       "name": "Quesadilla 3pz",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -369,15 +310,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070065079
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0021",
-      "legacyId": "m9o9of5g4ebsw",
       "sku": "CAF-0021",
       "barcode": "CAF-0021",
-      "legacyBarcode": "CAF-021",
       "name": "Huarache Sencillo",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -386,15 +324,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070095284
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0022",
-      "legacyId": "m9o9pxgw152e4",
       "sku": "CAF-0022",
       "barcode": "CAF-0022",
-      "legacyBarcode": "CAF-0022",
       "name": "Huarache Con Huevo",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -403,15 +338,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070165680
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0023",
-      "legacyId": "m9o9qqvrgm6us",
       "sku": "CAF-0023",
       "barcode": "CAF-0023",
-      "legacyBarcode": "CAF-0023",
       "name": "Huarache con Res",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -420,15 +352,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070203799
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0024",
-      "legacyId": "m9o9uzjtwq852",
       "sku": "CAF-0024",
       "barcode": "CAF-0024",
-      "legacyBarcode": "CAF-0024",
       "name": "Sope Sencillo",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -437,15 +366,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070401657
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0025",
-      "legacyId": "m9o9w60og1z7y",
       "sku": "CAF-0025",
       "barcode": "CAF-0025",
-      "legacyBarcode": "CAF-0025",
       "name": "Sope con Carne",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -454,15 +380,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070456696
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0026",
-      "legacyId": "m9o9xpde7lzru",
       "sku": "CAF-0026",
       "barcode": "CAF-0026",
-      "legacyBarcode": "CAF-0026",
       "name": "Torta de Jamón/Salchicha/Huevo",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -471,15 +394,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070541778
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0027",
-      "legacyId": "m9o9z77g2ff5j",
       "sku": "CAF-0027",
       "barcode": "CAF-0027",
-      "legacyBarcode": "CAF-0027",
       "name": "Torta de Pollo/Bistec",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -488,15 +408,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070643120
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0028",
-      "legacyId": "m9o9zwaulxcki",
       "sku": "CAF-0028",
       "barcode": "CAF-0028",
-      "legacyBarcode": "CAF-0028",
       "name": "Ingrediente Extra",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -505,15 +422,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070630727
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0029",
-      "legacyId": "m9oa158kaf49o",
       "sku": "CAF-0029",
       "barcode": "CAF-0029",
-      "legacyBarcode": "CAF-0029",
       "name": "Ensalada",
       "saleCategory": "Saludable",
       "unit": "PIECE",
@@ -522,15 +436,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070905673
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0030",
-      "legacyId": "m9oa23ci5t7vx",
       "sku": "CAF-0030",
       "barcode": "CAF-0030",
-      "legacyBarcode": "CAF-0030",
       "name": "Cóctel de Frutas",
       "saleCategory": "Saludable",
       "unit": "PIECE",
@@ -539,15 +450,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070915634
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0031",
-      "legacyId": "m9oa42qr2wm0c",
       "sku": "CAF-0031",
       "barcode": "CAF-0031",
-      "legacyBarcode": "CAF-0031",
       "name": "Vaso de Fruta",
       "saleCategory": "Saludable",
       "unit": "PIECE",
@@ -556,15 +464,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070930129
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0032",
-      "legacyId": "m9oa7a0aj6wa5",
       "sku": "CAF-0032",
       "barcode": "CAF-0032",
-      "legacyBarcode": "CAF-0032",
       "name": "Crudites",
       "saleCategory": "Saludable",
       "unit": "PIECE",
@@ -573,15 +478,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745070975082
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0033",
-      "legacyId": "m9oa8cptmb00i",
       "sku": "CAF-0033",
       "barcode": "CAF-0033",
-      "legacyBarcode": "CAF-0033",
       "name": "Yakimeshi",
       "saleCategory": "Japonesa",
       "unit": "PIECE",
@@ -590,15 +492,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071038565
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0034",
-      "legacyId": "m9oa9keusjsmw",
       "sku": "CAF-0034",
       "barcode": "CAF-0034",
-      "legacyBarcode": "CAF-0033",
       "name": "Sushi",
       "saleCategory": "Japonesa",
       "unit": "PIECE",
@@ -607,15 +506,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071119827
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0035",
-      "legacyId": "m9oab8orxdef6",
       "sku": "CAF-0035",
       "barcode": "CAF-0035",
-      "legacyBarcode": "CAF-0034",
       "name": "Ramen",
       "saleCategory": "Japonesa",
       "unit": "PIECE",
@@ -624,15 +520,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071159995
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0036",
-      "legacyId": "m9oacws2enjal",
       "sku": "CAF-0036",
       "barcode": "CAF-0036",
-      "legacyBarcode": "CAF-0035",
       "name": "Gelatina",
       "saleCategory": "Postres",
       "unit": "PIECE",
@@ -641,15 +534,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788383414984
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0037",
-      "legacyId": "m9oadvg3w2lmv",
       "sku": "CAF-0037",
       "barcode": "CAF-0037",
-      "legacyBarcode": "CAF-0036",
       "name": "Pay de Limón",
       "saleCategory": "Postres",
       "unit": "PIECE",
@@ -658,15 +548,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071282803
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0038",
-      "legacyId": "m9oaf0k01asdx",
       "sku": "CAF-0038",
       "barcode": "CAF-0038",
-      "legacyBarcode": "CAF-0037",
       "name": "Arroz con Leche",
       "saleCategory": "Postres",
       "unit": "PIECE",
@@ -675,15 +562,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071336080
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0039",
-      "legacyId": "m9oah29269544",
       "sku": "CAF-0039",
       "barcode": "CAF-0039",
-      "legacyBarcode": "CAF-0039",
       "name": "Fresas Con Crema",
       "saleCategory": "Postres",
       "unit": "PIECE",
@@ -692,15 +576,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071431590
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0040",
-      "legacyId": "m9oaij6cxw149",
       "sku": "CAF-0040",
       "barcode": "CAF-0040",
-      "legacyBarcode": "CAF-0040",
       "name": "Jugo de Naranja",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -709,15 +590,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071500180
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0041",
-      "legacyId": "m9oajl1fohumb",
       "sku": "CAF-0041",
       "barcode": "CAF-0041",
-      "legacyBarcode": "CAF-0041",
       "name": "Licuado De Platano",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -726,15 +604,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788383437616
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0042",
-      "legacyId": "m9oak4agk8db4",
       "sku": "CAF-0042",
       "barcode": "CAF-0042",
-      "legacyBarcode": "CAF-0042",
       "name": "Licuado de Fresa",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -743,15 +618,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071574200
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0043",
-      "legacyId": "m9oakyb48cn0a",
       "sku": "CAF-0043",
       "barcode": "CAF-0043",
-      "legacyBarcode": "CAF-0043",
       "name": "Licuado de Chocolate",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -760,15 +632,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071659882
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0044",
-      "legacyId": "m9oanqsh0a8js",
       "sku": "CAF-0044",
       "barcode": "CAF-0044",
-      "legacyBarcode": "CAF-0044",
       "name": "Cafe",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -777,15 +646,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071743329
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0045",
-      "legacyId": "m9oaofa7m2c3w",
       "sku": "CAF-0045",
       "barcode": "CAF-0045",
-      "legacyBarcode": "CAF-0045",
       "name": "Cafe con Leche",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -794,15 +660,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745071785491
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0046",
-      "legacyId": "m9oapf7v8n8b6",
       "sku": "CAF-0046",
       "barcode": "CAF-0046",
-      "legacyBarcode": "CAF-0046",
       "name": "Chocolate Caliente",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -811,15 +674,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745072388619
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0047",
-      "legacyId": "m9oardzil39d2",
       "sku": "CAF-0047",
       "barcode": "CAF-0047",
-      "legacyBarcode": "CAF-0047",
       "name": "Agua de Fruta 1lt",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -828,15 +688,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788383529841
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0048",
-      "legacyId": "m9oav1xfl64dg",
       "sku": "CAF-0048",
       "barcode": "CAF-0048",
-      "legacyBarcode": "CAF-0046",
       "name": "Paquete Desayuno",
       "saleCategory": "Paquete",
       "unit": "PIECE",
@@ -845,15 +702,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745072084355
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0049",
-      "legacyId": "m9oavusg471gd",
       "sku": "CAF-0049",
       "barcode": "CAF-0049",
-      "legacyBarcode": "CAF-0047",
       "name": "Paquete Comida",
       "saleCategory": "Paquete",
       "unit": "PIECE",
@@ -862,15 +716,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1745072121760
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0050",
-      "legacyId": "m9ob0ju7rn0gu",
       "sku": "CAF-0050",
       "barcode": "75003135",
-      "legacyBarcode": "75003135",
       "name": "Boing de Guayaba 500ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -879,15 +730,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379172143
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0051",
-      "legacyId": "m9ob4tvil8h1u",
       "sku": "CAF-0051",
       "barcode": "613008772901",
-      "legacyBarcode": "613008772901",
       "name": "Arizona 570ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -896,15 +744,12 @@
       "available": true,
       "stock": "-1",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379577714
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0052",
-      "legacyId": "m9ob6l2dto7mt",
       "sku": "CAF-0052",
       "barcode": "758104100422",
-      "legacyBarcode": "758104100422",
       "name": "Bonafont 1lt",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -913,15 +758,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745072622373
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0053",
-      "legacyId": "m9ob8cym26z8f",
       "sku": "CAF-0053",
       "barcode": "758104001712",
-      "legacyBarcode": "758104001712",
       "name": "Bonafont 600ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -930,15 +772,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "10",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745072705182
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0054",
-      "legacyId": "m9oba9v44onoo",
       "sku": "CAF-0054",
       "barcode": "7501073839854",
-      "legacyBarcode": "7501073839854",
       "name": "Peñafiel 600ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -947,15 +786,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745072829185
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0055",
-      "legacyId": "m9obdl5g0tkq9",
       "sku": "CAF-0055",
       "barcode": "7500326103483",
-      "legacyBarcode": "7500326103483",
       "name": "Chaparrita 250ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -964,15 +800,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745072949076
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0056",
-      "legacyId": "m9obeu2znzk1u",
       "sku": "CAF-0056",
       "barcode": "7501055320639",
-      "legacyBarcode": "7501055320639",
       "name": "Coca Zero 600ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -981,15 +814,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745073007307
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0057",
-      "legacyId": "m9obhed0hmyll",
       "sku": "CAF-0057",
       "barcode": "75007614",
-      "legacyBarcode": "75007614",
       "name": "Coca 600ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -998,15 +828,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745073126900
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0058",
-      "legacyId": "m9objjfk0xtcj",
       "sku": "CAF-0058",
       "barcode": "096619757572",
-      "legacyBarcode": "096619757572",
       "name": "Te Verde Kirklannd",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1015,15 +842,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745073226784
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0059",
-      "legacyId": "m9oblcig7sh92",
       "sku": "CAF-0059",
       "barcode": "7500326103360",
-      "legacyBarcode": "7500326103360",
       "name": "Sangría Señorial",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1032,15 +856,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745073311128
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0060",
-      "legacyId": "m9obn3nlozdxc",
       "sku": "CAF-0060",
       "barcode": "7501125118562",
-      "legacyBarcode": "7501125118562",
       "name": "Electrolit",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1049,15 +870,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745073487542
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0061",
-      "legacyId": "m9obtsdyyg78c",
       "sku": "CAF-0061",
       "barcode": "7501030419389",
-      "legacyBarcode": "7501030419389",
       "name": "Mantecadas de Nuez Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1066,15 +884,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745074587587
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0062",
-      "legacyId": "m9obw9kbvsqe5",
       "sku": "CAF-0062",
       "barcode": "7501000112401",
-      "legacyBarcode": "7501000112401",
       "name": "Mantecadas de Vainilla Bimbo",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1083,15 +898,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385623528
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0063",
-      "legacyId": "m9obx23mkqud1",
       "sku": "CAF-0063",
       "barcode": "7501030418399",
-      "legacyBarcode": "7501030418399",
       "name": "Donitas Espolvoreadas Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1100,15 +912,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745073857506
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0064",
-      "legacyId": "m9oby5x95muk9",
       "sku": "CAF-0064",
       "barcode": "7501000112388",
-      "legacyBarcode": "7501000112388",
       "name": "Panquesitos con Chispas Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1117,15 +926,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745073909118
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0065",
-      "legacyId": "m9obz9ahf170f",
       "sku": "CAF-0065",
       "barcode": "7501030477488",
-      "legacyBarcode": "7501030477488",
       "name": "Madalenas Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1134,15 +940,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745074734599
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0066",
-      "legacyId": "m9oc0yx9jx9o2",
       "sku": "CAF-0066",
       "barcode": "7501030464242",
-      "legacyBarcode": "7501030464242",
       "name": "Tiras Doraditas",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1151,15 +954,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745074551762
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0067",
-      "legacyId": "m9oc2luaz7oui",
       "sku": "CAF-0067",
       "barcode": "7501000116447",
-      "legacyBarcode": "7501000116447",
       "name": "Barra BranFrut Fresa",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1168,15 +968,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385488220
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0068",
-      "legacyId": "m9oc3rtla50w7",
       "sku": "CAF-0068",
       "barcode": "7501000112784",
-      "legacyBarcode": "7501000112784",
       "name": "Nito Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1185,15 +982,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745074489657
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0069",
-      "legacyId": "m9ocim6p5esj0",
       "sku": "CAF-0069",
       "barcode": "7500810015261",
-      "legacyBarcode": "7500810015261",
       "name": "Tartinas con Fresa Tía Rosa",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1202,15 +996,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745074863314
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0070",
-      "legacyId": "m9ockdt7u0mk5",
       "sku": "CAF-0070",
       "barcode": "7500810016190",
-      "legacyBarcode": "7500810016190",
       "name": "Tartinas con Piña Tía Rosa",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1219,15 +1010,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745074945772
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0071",
-      "legacyId": "m9oclf1o4mb38",
       "sku": "CAF-0071",
       "barcode": "7501030474227",
-      "legacyBarcode": "7501030474227",
       "name": "Donas de Azúcar Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1236,15 +1024,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745074994028
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0072",
-      "legacyId": "m9ocmk0j5th25",
       "sku": "CAF-0072",
       "barcode": "7501000116430",
-      "legacyBarcode": "7501000116430",
       "name": "Barra BranFrut de Piña",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1253,15 +1038,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745075047123
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0073",
-      "legacyId": "m9ocndjml86za",
       "sku": "CAF-0073",
       "barcode": "7501000138944",
-      "legacyBarcode": "7501000138944",
       "name": "Sponch Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1270,15 +1052,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745075085395
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0074",
-      "legacyId": "m9ocupk67zzp0",
       "sku": "CAF-0074",
       "barcode": "7500810011126",
-      "legacyBarcode": "7500810011126",
       "name": "Príncipe de Chocolate",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1287,15 +1066,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745075427558
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0075",
-      "legacyId": "m9od09gfhgkuc",
       "sku": "CAF-0075",
       "barcode": "7501030463740",
-      "legacyBarcode": "7501030463740",
       "name": "Deliciosas de Vainilla Lara",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1304,15 +1080,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745075686623
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0076",
-      "legacyId": "m9od1go33f7of",
       "sku": "CAF-0076",
       "barcode": "7500810022801",
-      "legacyBarcode": "7500810022801",
       "name": "Canelitas Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1321,15 +1094,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745077519490
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0077",
-      "legacyId": "m9odyrbqk6fxd",
       "sku": "CAF-0077",
       "barcode": "7500810014721",
-      "legacyBarcode": "7500810014721",
       "name": "Baritas De Fresa Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1338,15 +1108,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745078807320
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0078",
-      "legacyId": "m9oe14q9uzjy9",
       "sku": "CAF-0078",
       "barcode": "7500810014738",
-      "legacyBarcode": "7500810014738",
       "name": "Baritas De Pina Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1355,15 +1122,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385388297
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0079",
-      "legacyId": "m9oe5305u7eqn",
       "sku": "CAF-0079",
       "barcode": "7501000153800",
-      "legacyBarcode": "7501000153800",
       "name": "Pingüinos Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1372,15 +1136,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745077591157
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0080",
-      "legacyId": "m9oe5lyt4efv1",
       "sku": "CAF-0080",
       "barcode": "75002275",
-      "legacyBarcode": "75002275",
       "name": "Chocoroles Mariela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1389,15 +1150,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079144339
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0081",
-      "legacyId": "m9oe6hpsj5243",
       "sku": "CAF-0081",
       "barcode": "7501000153107",
-      "legacyBarcode": "7501000153107",
       "name": "Gansito Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1406,15 +1164,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745077656880
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0082",
-      "legacyId": "m9oeb2qsxveq8",
       "sku": "CAF-0082",
       "barcode": "7500810029077",
-      "legacyBarcode": "7500810029077",
       "name": "Bigotes Tia Rosa",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1423,15 +1178,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385411498
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0083",
-      "legacyId": "m9oeep4n0j2kl",
       "sku": "CAF-0083",
       "barcode": "7500810044056",
-      "legacyBarcode": "7500810044056",
       "name": "Principe Rees Marinela",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1440,15 +1192,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385628210
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0084",
-      "legacyId": "m9oefssf10yqd",
       "sku": "CAF-0084",
       "barcode": "7501030472698",
-      "legacyBarcode": "7501030472698",
       "name": "Bimbunuelos Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1457,15 +1206,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385548138
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0085",
-      "legacyId": "m9oeh9sujrk03",
       "sku": "CAF-0085",
       "barcode": "7500810011140",
-      "legacyBarcode": "7500810011140",
       "name": "Principe Chocolate Blanco",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1474,15 +1220,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079117160
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0086",
-      "legacyId": "m9oeimfsomfpf",
       "sku": "CAF-0086",
       "barcode": "7501030463726",
-      "legacyBarcode": "7501030463726",
       "name": "Deliciosas con sabor de chispas de chocolate Lara",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1491,15 +1234,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079191435
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0087",
-      "legacyId": "m9oeku171extk",
       "sku": "CAF-0087",
       "barcode": "7500810011157",
-      "legacyBarcode": "7500810011157",
       "name": "Principe de Limon Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1508,15 +1248,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745078326027
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0088",
-      "legacyId": "m9oelrvottms2",
       "sku": "CAF-0088",
       "barcode": "7501000140855",
-      "legacyBarcode": "7501000140855",
       "name": "Triki Trakes Marinela",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1525,15 +1262,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745078369892
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0089",
-      "legacyId": "m9oen1itw5q2g",
       "sku": "CAF-0089",
       "barcode": "7500810031278",
-      "legacyBarcode": "7500810031278",
       "name": "Pastisetas Suandy",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1542,15 +1276,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745078429045
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0090",
-      "legacyId": "m9oerata54t98",
       "sku": "CAF-0090",
       "barcode": "CAF-0090",
-      "legacyBarcode": "CAF-0021",
       "name": "Pechuga o BIstec Asado",
       "saleCategory": "Mexicano",
       "unit": "PIECE",
@@ -1559,15 +1290,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788382694114
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0091",
-      "legacyId": "m9oezjx77h5o5",
       "sku": "CAF-0091",
       "barcode": "7501000112845",
-      "legacyBarcode": "7501000112845",
       "name": "Rebanadas Bimbo",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -1576,15 +1304,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079092836
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0092",
-      "legacyId": "m9of4n83m9bbr",
       "sku": "CAF-0092",
       "barcode": "7502226815145",
-      "legacyBarcode": "7502226815145",
       "name": "Lucas Panzon",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1593,15 +1318,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079322103
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0093",
-      "legacyId": "m9of56t2j28t2",
       "sku": "CAF-0093",
       "barcode": "7622210267863",
-      "legacyBarcode": "7622210267863",
       "name": "Halls Caramelo",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1610,15 +1332,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079275702
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0094",
-      "legacyId": "m9of7sh6nkrl5",
       "sku": "CAF-0094",
       "barcode": "7622210267832",
-      "legacyBarcode": "7622210267832",
       "name": "Halls Yerbabuena",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1627,15 +1346,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079397099
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0095",
-      "legacyId": "m9of8pjoux2gt",
       "sku": "CAF-0095",
       "barcode": "7622210267856",
-      "legacyBarcode": "7622210267856",
       "name": "Halls Mora Azul",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1644,15 +1360,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079439956
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0096",
-      "legacyId": "m9of9n7ppa9jn",
       "sku": "CAF-0096",
       "barcode": "7501063500177",
-      "legacyBarcode": "7501063500177",
       "name": "Tutsi Pop",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1661,15 +1374,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385003480
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0097",
-      "legacyId": "m9ofagvmp44l2",
       "sku": "CAF-0097",
       "barcode": "7502226815053",
-      "legacyBarcode": "7502226815053",
       "name": "Lucas Muecas Cereza",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1678,15 +1388,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788384938028
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0098",
-      "legacyId": "m9ofb9kkh0vps",
       "sku": "CAF-0098",
       "barcode": "7502226815084",
-      "legacyBarcode": "7502226815084",
       "name": "Lucas Muecas Sandia",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1695,15 +1402,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788384964657
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0099",
-      "legacyId": "m9ofbzadg5btz",
       "sku": "CAF-0099",
       "barcode": "7502226815022",
-      "legacyBarcode": "7502226815022",
       "name": "Lucas Muecas Chamoy",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1712,15 +1416,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745079592549
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0100",
-      "legacyId": "m9ohamgymy8t0",
       "sku": "CAF-0100",
       "barcode": "CAF-0100",
-      "legacyBarcode": "CAF-0048",
       "name": "Paleta de Dulce Generica",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1729,15 +1430,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788385088714
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0101",
-      "legacyId": "m9ohczvyzat4t",
       "sku": "CAF-0101",
       "barcode": "7501056900168",
-      "legacyBarcode": "7501056900168",
       "name": "Paleta Bubbalo Xtreme",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1746,15 +1444,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745082999214
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0102",
-      "legacyId": "m9ohjtzf0s7wn",
       "sku": "CAF-0102",
       "barcode": "7501308300074",
-      "legacyBarcode": "7501308300074",
       "name": "Cacahuate Japones Nishikawa 60g",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -1763,15 +1458,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745083034562
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0103",
-      "legacyId": "m9ohk5j052y11",
       "sku": "CAF-0103",
       "barcode": "7501032398576",
-      "legacyBarcode": "7501032398576",
       "name": "Danone Fresas 220g",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1780,15 +1472,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745083070503
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0104",
-      "legacyId": "m9ohk7p8s5e6g",
       "sku": "CAF-0104",
       "barcode": "096619536740",
-      "legacyBarcode": "096619536740",
       "name": "Agua Purificada Kirkland 500ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1797,15 +1486,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "0",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1745083070503
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0105",
-      "legacyId": "mtkig30y6hc0d",
       "sku": "CAF-0105",
       "barcode": "CAF-0105",
-      "legacyBarcode": "CAF-0049",
       "name": "Brownie ChocoBro",
       "saleCategory": "Postres",
       "unit": "PIECE",
@@ -1814,15 +1500,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788378604883
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0106",
-      "legacyId": "mtkigvzx7etwd",
       "sku": "CAF-0106",
       "barcode": "CAF-0106",
-      "legacyBarcode": "CAF-0050",
       "name": "Flan",
       "saleCategory": "Postres",
       "unit": "PIECE",
@@ -1831,15 +1514,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788378642429
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0107",
-      "legacyId": "mtkik7v7hsi65",
       "sku": "CAF-0107",
       "barcode": "650240032301",
-      "legacyBarcode": "650240032301",
       "name": "Suerox Naranja Mandarina",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1848,15 +1528,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385633510
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0108",
-      "legacyId": "mtkil1eba92vt",
       "sku": "CAF-0108",
       "barcode": "650240032264",
-      "legacyBarcode": "650240032264",
       "name": "Suerox Fresa Kiwi",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1865,15 +1542,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379596448
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0109",
-      "legacyId": "mtkilpwx6h88o",
       "sku": "CAF-0109",
       "barcode": "650240035395",
-      "legacyBarcode": "650240035395",
       "name": "Suerox",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1882,15 +1556,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788378867825
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0110",
-      "legacyId": "mtkin86gjs1ch",
       "sku": "CAF-0110",
       "barcode": "650240032271",
-      "legacyBarcode": "650240032271",
       "name": "Suerox Uva",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1899,15 +1570,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788378938153
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0111",
-      "legacyId": "mtkiql9jq19ge",
       "sku": "CAF-0111",
       "barcode": "75003104",
-      "legacyBarcode": "75003104",
       "name": "Boing de Mango 500ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1916,15 +1584,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379095080
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0112",
-      "legacyId": "mtkirm2pj6y4z",
       "sku": "CAF-0112",
       "barcode": "75003166",
-      "legacyBarcode": "75003166",
       "name": "Boing de Fresa",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1933,15 +1598,12 @@
       "available": true,
       "stock": "-6",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385599026
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0113",
-      "legacyId": "mtkitub60zbv6",
       "sku": "CAF-0113",
       "barcode": "75003159",
-      "legacyBarcode": "75003159",
       "name": "Boing de Manzana",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1950,15 +1612,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385604585
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0114",
-      "legacyId": "mtkiw81iguygs",
       "sku": "CAF-0114",
       "barcode": "613008772963",
-      "legacyBarcode": "613008772963",
       "name": "Arizona de Mango 570ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1967,15 +1626,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379583241
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0115",
-      "legacyId": "mtkixufy6r1yx",
       "sku": "CAF-0115",
       "barcode": "613008772871",
-      "legacyBarcode": "613008772871",
       "name": "Arizona de Ponche de Frutas",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -1984,15 +1640,12 @@
       "available": true,
       "stock": "-1",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385577550
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0116",
-      "legacyId": "mtkizejt3njgw",
       "sku": "CAF-0116",
       "barcode": "613008772840",
-      "legacyBarcode": "613008772840",
       "name": "Arizona de Sandia 570ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -2001,15 +1654,12 @@
       "available": true,
       "stock": "-1",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385590945
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0117",
-      "legacyId": "mtkj46qbol026",
       "sku": "CAF-0117",
       "barcode": "4696932000001",
-      "legacyBarcode": "4696932000001",
       "name": "Muffin de Chocolate Kirkland",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -2018,15 +1668,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379729427
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0118",
-      "legacyId": "mtkj5se51b8rd",
       "sku": "CAF-0118",
       "barcode": "4665610000008",
-      "legacyBarcode": "4665610000008",
       "name": "Galleta de Macadamia Kirkland",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -2035,15 +1682,12 @@
       "available": true,
       "stock": "-4",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379804158
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0119",
-      "legacyId": "mtkj70ahjuomj",
       "sku": "CAF-0119",
       "barcode": "4542655000005",
-      "legacyBarcode": "4542655000005",
       "name": "Galleta de Chocolate Kirkland",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -2052,15 +1696,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379861049
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0120",
-      "legacyId": "mtkj8fjlvoh46",
       "sku": "CAF-0120",
       "barcode": "4696933000000",
-      "legacyBarcode": "4696933000000",
       "name": "Muffin de Vainilla Kirkland",
       "saleCategory": "Panaderia",
       "unit": "PIECE",
@@ -2069,15 +1710,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788379927473
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0121",
-      "legacyId": "mtkjbmqy8dh30",
       "sku": "CAF-0121",
       "barcode": "75039394",
-      "legacyBarcode": "75039394",
       "name": "Chicle Menta  Orbit",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -2086,15 +1724,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788380076778
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0122",
-      "legacyId": "mtkjclmasmuyv",
       "sku": "CAF-0122",
       "barcode": "75073244",
-      "legacyBarcode": "75073244",
       "name": "Chicle de Fresa Bubbalo",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -2103,15 +1738,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385612461
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0123",
-      "legacyId": "mtklanz6jo8c8",
       "sku": "CAF-0123",
       "barcode": "CAF-0123",
-      "legacyBarcode": "CAF-0051",
       "name": "Pollo a la Naranja",
       "saleCategory": "Japonesa",
       "unit": "PIECE",
@@ -2120,15 +1752,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788383390946
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0124",
-      "legacyId": "mtklet383du53",
       "sku": "CAF-0124",
       "barcode": "CAF-0124",
-      "legacyBarcode": "CAF-0052",
       "name": "Agua de Fruta 50ml",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -2137,15 +1766,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "NOT_CONTROLLED",
-      "legacyUpdatedAt": 1788383584196
+      "stockPolicy": "NOT_CONTROLLED"
     },
     {
       "id": "product-0125",
-      "legacyId": "mtklvkvwkauwu",
       "sku": "CAF-0125",
       "barcode": "75040437",
-      "legacyBarcode": "75040437",
       "name": "Chicle Orbit Polar Mint",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -2154,15 +1780,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788384366717
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0126",
-      "legacyId": "mtkm6p2n8dx8s",
       "sku": "CAF-0126",
       "barcode": "7622210267825",
-      "legacyBarcode": "7622210267825",
       "name": "Halls Cere",
       "saleCategory": "Bebidas",
       "unit": "PIECE",
@@ -2171,15 +1794,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385618354
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0127",
-      "legacyId": "mtkmdexa0v76g",
       "sku": "CAF-0127",
       "barcode": "759686272682",
-      "legacyBarcode": "759686272682",
       "name": "Palenta Pintazul Vero",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -2188,15 +1808,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385198799
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0128",
-      "legacyId": "mtkmed5efw37u",
       "sku": "CAF-0128",
       "barcode": "7503030374552",
-      "legacyBarcode": "7503030374552",
       "name": "Paleta Tarrito Vero",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -2205,15 +1822,12 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385243154
+      "stockPolicy": "CONTROLLED"
     },
     {
       "id": "product-0129",
-      "legacyId": "mtkmflmh8ct76",
       "sku": "CAF-0129",
       "barcode": "7503030374583",
-      "legacyBarcode": "7503030374583",
       "name": "Paleta Manita Vero",
       "saleCategory": "Dulces",
       "unit": "PIECE",
@@ -2222,8 +1836,7 @@
       "available": true,
       "stock": "0",
       "stockMin": "5",
-      "stockPolicy": "CONTROLLED",
-      "legacyUpdatedAt": 1788385311444
+      "stockPolicy": "CONTROLLED"
     }
   ],
   "openAmountCategories": [
@@ -2235,7 +1848,6 @@
   ],
   "notes": [
     "Catalog converted from docs/deprecated_product_data.json.",
-    "CAF- products are NOT_CONTROLLED until prepared-food inventory rules are defined.",
-    "Duplicate legacy barcodes receive a unique POS suffix and retain legacyBarcode."
+    "CAF- products are NOT_CONTROLLED until prepared-food inventory rules are defined."
   ]
 }

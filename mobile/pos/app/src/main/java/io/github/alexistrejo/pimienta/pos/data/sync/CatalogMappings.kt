@@ -8,10 +8,8 @@ import java.math.BigDecimal
 // Maps Device API catalog DTOs onto Room rows used by the sale UI.
 internal fun ProductDto.toProductEntity() = ProductEntity(
     id,
-    null,
     sku,
     barcode,
-    null,
     name,
     saleCategory,
     unit,
@@ -22,7 +20,6 @@ internal fun ProductDto.toProductEntity() = ProductEntity(
     stockMinQuantity.toString(),
     stockPolicy,
     negativeStockLimit,
-    null,
 )
 
 // Builds a training-only catalog row. Ids never leave the scratch sandbox database.

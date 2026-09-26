@@ -41,7 +41,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
          CashCountAttemptEntity::class, ShiftCloseEntity::class, SaleCancellationEntity::class, SyncStateEntity::class, TelemetryEventEntity::class,
          CatalogCategoryEntity::class, PosPolicyEntity::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {
@@ -64,6 +64,7 @@ abstract class PosDatabase : RoomDatabase() {
             Migrations.V5_TO_V6, Migrations.V6_TO_V7, Migrations.V7_TO_V8, Migrations.V8_TO_V9,
             Migrations.V9_TO_V10, Migrations.V10_TO_V11, Migrations.V11_TO_V12, Migrations.V12_TO_V13,
             Migrations.V13_TO_V14, Migrations.V14_TO_V15, Migrations.V15_TO_V16, Migrations.V16_TO_V17,
+            Migrations.V17_TO_V18,
         // Safety net: if another instance of this file is ever opened, Flows still get invalidated.
         ).enableMultiInstanceInvalidation().build()
     }
