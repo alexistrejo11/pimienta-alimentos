@@ -24,6 +24,7 @@ class DeviceApiMockWebServerTest {
   Assert.assertNull(result.policies.defaultNegativeStockLimit)
   Assert.assertEquals(24, result.policies.staleCatalogWarnHours)
   Assert.assertEquals(72, result.policies.staleCatalogBlockHours)
+  Assert.assertFalse(result.policies.stockless)
  }
 
  @Test fun changesUsesSequenceCursorInQuery()=runBlocking{
@@ -47,5 +48,33 @@ class DeviceApiMockWebServerTest {
   Assert.assertTrue(body.contains("\"saleCategory\":\"Bebidas\""))
   Assert.assertTrue(body.contains("\"createdByOperatorId\":42"))
   Assert.assertTrue(body.contains("\"stockPolicy\":\"NOT_CONTROLLED\""))
+ }
+ @Test fun renameProductPutsNameOnly()=runBlocking{
+  server.enqueue(MockResponse().setResponseCode(200).setBody("""{"id":"9","sku":"INT-1","name":"Horchata","saleCategory":"Bebidas","unit":"PIECE","priceCentavos":1500,"costCentavos":0,"available":true,"stockQuantity":0,"stockMinQuantity":0,"stockPolicy":"NOT_CONTROLLED"}""").addHeader("Content-Type","application/json"))
+  val updated=api.renameProduct("9", RenamePosProductRequest("Horchata", "7501"))
+  Assert.assertEquals("Horchata", updated.name)
+  val recorded=server.takeRequest()
+  Assert.assertEquals("PUT", recorded.method)
+  Assert.assertEquals("/api/v1/pos/sync/products/9", recorded.path)
+  val body=recorded.body.readUtf8()
+  Assert.assertTrue(body.contains("\"name\":\"Horchata\""))
+  Assert.assertTrue(body.contains("\"barcode\":\"7501\""))
+  Assert.assertEquals(1, server.requestCount)
+ }
+ @Test fun updateOfferPutsPriceAndStockPolicy()=runBlocking{
+  server.enqueue(MockResponse().setResponseCode(200).setBody("""{"id":"9","sku":"INT-1","name":"Agua","saleCategory":"Bebidas","unit":"PIECE","priceCentavos":1800,"costCentavos":0,"available":true,"stockQuantity":0,"stockMinQuantity":0,"stockPolicy":"CONTROLLED"}""").addHeader("Content-Type","application/json"))
+  applyPlannedProductEdit(
+   plan = ProductEditPlan(rename = false, offer = true),
+   rename = { api.renameProduct("9", RenamePosProductRequest("No")) },
+   offer = { api.updateProductOffer("9", UpdatePosProductOfferRequest(1800, "CONTROLLED")) },
+   persist = {},
+  )
+  Assert.assertEquals(1, server.requestCount)
+  val recorded=server.takeRequest()
+  Assert.assertEquals("PUT", recorded.method)
+  Assert.assertEquals("/api/v1/pos/sync/products/9/offer", recorded.path)
+  val body=recorded.body.readUtf8()
+  Assert.assertTrue(body.contains("\"salePriceCentavos\":1800"))
+  Assert.assertTrue(body.contains("\"stockPolicy\":\"CONTROLLED\""))
  }
 }

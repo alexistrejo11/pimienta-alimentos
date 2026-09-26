@@ -47,7 +47,8 @@ un schema no soportado hace fallar el lote y el cursor no avanza.
 
 La cantidad que consume el POS es la fila de `inventory_stock` asociada a la
 ubicación canónica `POS` de la sede. El servidor aplica movimientos, no saldos
-enviados por la tablet.
+enviados por la tablet. Si `headquarter_pos_settings.stockless` es verdadero,
+esas ventas y cancelaciones POS **no** generan movimiento.
 
 Una entrada `IN`, merma `OUT`, transferencia, ajuste, conteo o venta solo debe
 producir un cambio de stock para tablets cuando modifica esa ubicación POS. El
@@ -73,20 +74,18 @@ sí automáticamente.
 - no requiere PIN; el cajero confirma categoría e importe;
 - `authorizedByOperatorId` y `authorizedAt` pueden ser nulos;
 - no genera movimiento de inventario;
-- el backend conserva la venta y devuelve `REQUIRES_REVIEW` con incidencia
-  `OPEN_PRODUCT`.
+- el backend conserva la venta y la acepta (`ACCEPTED`), sin incidencia.
 
 La descripción se genera como `Producto abierto · {categoría}`. No se captura
-nota o descripción libre en caja. La nota obligatoria pertenece a la revisión
-posterior de Superadmin. Si el producto requiere una nota de cajero, esta
-decisión debe reabrirse antes de modificar el contrato.
+nota o descripción libre en caja. El monto abierto no se cataloga después.
 
 ### `PENDING_CATALOG`
 
 Un barcode desconocido conserva el flujo rápido existente: barcode crudo,
 importe y descripción generada, sin categoría manual, PIN ni movimiento de
-inventario. La acción de monto abierto puede ofrecerse como alternativa, pero
-debe ser explícita y no borrar la evidencia del barcode.
+inventario. El servidor acepta la venta (`ACCEPTED`) con `productId` nulo. La
+acción de monto abierto puede ofrecerse como alternativa, pero debe ser
+explícita y no borrar la evidencia del barcode.
 
 ## 4. Configuración web y ruta
 

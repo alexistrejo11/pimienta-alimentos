@@ -103,11 +103,66 @@ class PosSyncEventsIntegrationTest {
         .perform(
             AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"))
-        .andExpect(jsonPath("$.results[0].incidentId").isNotEmpty());
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
 
     Inventory inv = stockAtPos(hqId, itemId);
     org.junit.jupiter.api.Assertions.assertEquals(-3, inv.getAvailableQuantity());
+  }
+
+  @Test
+  void saleConfirmed_stockless_doesNotMoveInventory() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-STOCKLESS-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId, false, true);
+    long itemId = createItem(staffToken, "SKU-SL-" + UUID.randomUUID(), "Refresco");
+    putCatalog(staffToken, hqId, itemId, "Bebidas", "25.00", "CONTROLLED");
+    long operatorId = createOperator(staffToken, hqId, "Cajera SL");
+
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja SL");
+    posLocationUseCases.ensurePosLocation(hqId);
+    posSaleInventoryUseCases.applySaleStock(
+        new ApplyPosSaleStockCommand(hqId, itemId, -10, "seed", null, null));
+
+    UUID saleId = UUID.randomUUID();
+    String body = saleEventJson(device, hqId, UUID.randomUUID(), saleId, itemId, operatorId, 1, 2500, false);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
+
+    org.junit.jupiter.api.Assertions.assertEquals(10, stockAtPos(hqId, itemId).getAvailableQuantity());
+
+    String cancel =
+        shiftLifecycleEventJson(
+            device,
+            hqId,
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            UUID.randomUUID(),
+            101L,
+            "SALE_CANCELLED",
+            saleId,
+            """
+            {
+              "saleId": "%s",
+              "reason": "cliente",
+              "authorizedByUserId": "%d",
+              "authorizedByRole": "MANAGER"
+            }
+            """
+                .formatted(saleId, operatorId));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events", device.accessToken(), cancel))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    org.junit.jupiter.api.Assertions.assertEquals(10, stockAtPos(hqId, itemId).getAvailableQuantity());
   }
 
   @Test
@@ -373,7 +428,7 @@ class PosSyncEventsIntegrationTest {
   }
 
   @Test
-  void salesReport_listsRequiresReviewSyncStatus() throws Exception {
+  void salesReport_listsAcceptedSyncStatus() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-SALE-REV-" + UUID.randomUUID());
     putPosSettings(staffToken, hqId);
@@ -390,7 +445,8 @@ class PosSyncEventsIntegrationTest {
         .perform(
             AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"));
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
 
     mockMvc
         .perform(
@@ -401,7 +457,7 @@ class PosSyncEventsIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items", hasSize(1)))
         .andExpect(jsonPath("$.items[0].saleId").value(saleId.toString()))
-        .andExpect(jsonPath("$.items[0].syncStatus").value("REQUIRES_REVIEW"));
+        .andExpect(jsonPath("$.items[0].syncStatus").value("ACCEPTED"));
   }
 
   @Test
@@ -415,8 +471,8 @@ class PosSyncEventsIntegrationTest {
     String body = openSaleEventJson(device, hqId, UUID.randomUUID(), UUID.randomUUID(), itemId);
     mockMvc.perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.results[0].status").value("REQUIRES_REVIEW"))
-        .andExpect(jsonPath("$.results[0].message").value(org.hamcrest.Matchers.containsString("OPEN_PRODUCT")));
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[0].incidentId", nullValue()));
   }
 
   @Test
@@ -702,6 +758,11 @@ class PosSyncEventsIntegrationTest {
   }
 
   private void putPosSettings(String token, long hqId, boolean allowOpenProducts) throws Exception {
+    putPosSettings(token, hqId, allowOpenProducts, false);
+  }
+
+  private void putPosSettings(
+      String token, long hqId, boolean allowOpenProducts, boolean stockless) throws Exception {
     String body =
         """
         {
@@ -710,9 +771,10 @@ class PosSyncEventsIntegrationTest {
           "catalogStaleBlockHours": 72,
           "openAmountCategories": ["MISC"],
           "allowOpenProducts": %s,
-          "defaultNegativeStockLimit": 10
+          "defaultNegativeStockLimit": 10,
+          "stockless": %s
         }
-        """.formatted(allowOpenProducts);
+        """.formatted(allowOpenProducts, stockless);
     mockMvc
         .perform(
             AccountTestRequests.putJsonBearer(

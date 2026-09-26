@@ -15,11 +15,18 @@ describe('POS routes and permissions', () => {
     });
   });
 
-  it('allows POS operators to read the catalog but not edit settings', () => {
+  it('limits sales to admin and director and keeps ops open to floor staff', () => {
     const catalog = opsChildren.find((route) => route.path === 'pos/catalogo');
+    const sales = opsChildren.find((route) => route.path === 'pos/ventas');
     const settings = opsChildren.find((route) => route.path === 'pos/configuracion');
-    expect(catalog?.data?.['access']?.['roles']).toContain(AppRole.POS_OPERATOR);
-    expect(settings?.data?.['access']?.['roles']).toEqual([AppRole.ADMIN, AppRole.MANAGER]);
+    expect(catalog?.data?.['access']?.['roles']).toEqual([
+      AppRole.ADMIN,
+      AppRole.DIRECTOR,
+      AppRole.MANAGER,
+      AppRole.EMPLOYEE,
+    ]);
+    expect(sales?.data?.['access']?.['roles']).toEqual([AppRole.ADMIN, AppRole.DIRECTOR]);
+    expect(settings?.data?.['access']?.['roles']).toContain(AppRole.EMPLOYEE);
   });
 
   it('nests ERP under /app/erp for admins only', () => {

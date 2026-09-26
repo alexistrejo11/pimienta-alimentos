@@ -143,11 +143,9 @@ const ACCOUNT_STATUS_LABELS: Record<string, string> = {
 };
 
 const GENDER_LABELS: Record<string, string> = {
-  MALE: 'Masculino',
-  FEMALE: 'Femenino',
-  NON_BINARY: 'No binario',
+  MALE: 'Hombre',
+  FEMALE: 'Mujer',
   OTHER: 'Otro',
-  PREFER_NOT_TO_SAY: 'Prefiero no decir',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -155,8 +153,8 @@ const ROLE_LABELS: Record<string, string> = {
   SUPPORT: 'Soporte',
   SALES: 'Ventas',
   MANAGER: 'Gerente',
+  DIRECTOR: 'Director',
   ADMIN: 'Administrador',
-  POS_OPERATOR: 'Operador POS',
   EMPLOYEE: 'Empleado',
 };
 

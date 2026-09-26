@@ -13,7 +13,11 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inboun
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosSyncChanges;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosSyncCreateProduct;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosSyncEvents;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosSyncRenameProduct;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosSyncUpdateProductOffer;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceCreatePosProductRequest;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceRenamePosProductRequest;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceUpdatePosProductOfferRequest;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.PosBootstrapProductResponse;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.PosBootstrapResponse;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.PosSyncChangesResponse;
@@ -26,7 +30,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -98,5 +104,28 @@ public class PosSyncController {
                 request.barcode(),
                 request.createdByOperatorId(),
                 request.stockPolicy())));
+  }
+
+  @PutMapping("/products/{itemId}")
+  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+  @DocPosSyncRenameProduct
+  public PosBootstrapProductResponse renameProduct(
+      @AuthenticationPrincipal DeviceAuthenticationContext device,
+      @PathVariable("itemId") long itemId,
+      @Valid @RequestBody DeviceRenamePosProductRequest request) {
+    return PosWebMapper.toProductResponse(
+        deviceCatalogUseCases.renameProduct(device.deviceId(), itemId, request.name(), request.barcode()));
+  }
+
+  @PutMapping("/products/{itemId}/offer")
+  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+  @DocPosSyncUpdateProductOffer
+  public PosBootstrapProductResponse updateProductOffer(
+      @AuthenticationPrincipal DeviceAuthenticationContext device,
+      @PathVariable("itemId") long itemId,
+      @Valid @RequestBody DeviceUpdatePosProductOfferRequest request) {
+    return PosWebMapper.toProductResponse(
+        deviceCatalogUseCases.updateProductOffer(
+            device.deviceId(), itemId, request.salePriceCentavos(), request.stockPolicy()));
   }
 }

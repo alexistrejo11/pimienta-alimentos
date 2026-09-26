@@ -46,7 +46,7 @@ public class TelemetryIngestionService {
           device.deviceId(), device.headquarterId(), state(health.syncState()), health.pendingEvents(),
           health.oldestPendingAgeSeconds(), clean(health.appVersion(), 64));
       log.atInfo()
-          .addKeyValue("source", "pos-client")
+          .addKeyValue("channel", "pos-client")
           .addKeyValue("eventType", "health_snapshot")
           .addKeyValue("deviceId", device.deviceId().toString())
           .addKeyValue("siteId", device.headquarterId())
@@ -59,10 +59,10 @@ public class TelemetryIngestionService {
     return batch.events().size();
   }
 
-  private void logEvent(String source, int schemaVersion, String eventType, String level, String message, String stack,
+  private void logEvent(String channel, int schemaVersion, String eventType, String level, String message, String stack,
       String occurredAt, String deviceId, Long siteId, String route, String release, String traceId) {
     var event = log.atLevel(org.slf4j.event.Level.valueOf(level.toUpperCase(Locale.ROOT)))
-        .addKeyValue("source", source)
+        .addKeyValue("channel", channel)
         .addKeyValue("schemaVersion", schemaVersion)
         .addKeyValue("eventType", clean(eventType, 40))
          // The structured encoder already owns the reserved `message` field.

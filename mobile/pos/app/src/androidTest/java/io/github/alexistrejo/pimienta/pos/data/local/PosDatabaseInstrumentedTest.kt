@@ -108,13 +108,13 @@ class PosDatabaseInstrumentedTest {
   // Verifies that catalog changes emit immediately to the Compose-facing Room flow.
   @Test fun productFlowEmitsRemoteCatalogChanges() = runBlocking {
    Assert.assertTrue(db.productDao().observeAll().first().isEmpty())
-   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "UNLIMITED", null, null)))
+   db.productDao().insertAll(listOf(ProductEntity("p1", "SKU-1", null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "UNLIMITED", null)))
    Assert.assertEquals("Agua", db.productDao().observeAll().first().single().name)
   }
 
   // Verifies that unsynced local deductions remain visible over a newer central snapshot.
   @Test fun pendingStockDeltaIsKeptSeparateFromCentralSnapshot(){
-   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "CONTROLLED", null, null, "10")))
+   db.productDao().insertAll(listOf(ProductEntity("p1", "SKU-1", null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "CONTROLLED", null, "10")))
    db.operationsDao().insertOutbox(OutboxEventEntity("event-1", 1, "SALE_CONFIRMED", "sale-1", "PENDING", 1))
    db.operationsDao().insertMovements(listOf(InventoryMovementEntity("movement-1", "sale-1", "p1", -2, 1, syncEventId="event-1")))
    Assert.assertEquals(8, db.productDao().getAll().single().stock.toBigDecimal().toInt())
@@ -125,7 +125,7 @@ class PosDatabaseInstrumentedTest {
 
   // Verifies that a pending cancellation reverses only its own sale movement.
   @Test fun cancellationUsesItsOwnOutboxEvent(){
-   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "8", "0", "CONTROLLED", null, null, "8")))
+   db.productDao().insertAll(listOf(ProductEntity("p1", "SKU-1", null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "8", "0", "CONTROLLED", null, "8")))
    db.operationsDao().insertOutbox(OutboxEventEntity("sale-event", 1, "SALE_CONFIRMED", "sale-1", "SYNCED", 1))
    db.operationsDao().insertOutbox(OutboxEventEntity("cancel-event", 2, "SALE_CANCELLED", "sale-1", "PENDING", 2))
    db.operationsDao().insertMovements(listOf(
@@ -137,7 +137,7 @@ class PosDatabaseInstrumentedTest {
 
   // Verifies that operational movements do not alter products whose stock is not controlled.
   @Test fun pendingMovementDoesNotAlterUnlimitedStock(){
-   db.productDao().insertAll(listOf(ProductEntity("p1", null, "SKU-1", null, null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "UNLIMITED", null, null, "10")))
+   db.productDao().insertAll(listOf(ProductEntity("p1", "SKU-1", null, "Agua", "Bebidas", "PIECE", "10.00", "5.00", true, "10", "0", "UNLIMITED", null, "10")))
    db.operationsDao().insertOutbox(OutboxEventEntity("event-1", 1, "RESTOCK_RECORDED", "movement-1", "PENDING", 1))
    db.operationsDao().insertMovements(listOf(InventoryMovementEntity("movement-1", "movement-1", "p1", 5, 1, "RESTOCK", "event-1")))
    Assert.assertEquals(10, db.productDao().getAll().single().stock.toBigDecimal().toInt())

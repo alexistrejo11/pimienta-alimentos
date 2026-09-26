@@ -12,7 +12,8 @@
         "defaultNegativeStockLimit": -50,
         "staleCatalogWarnHours": 24,
         "staleCatalogBlockHours": 72,
-        "openAmountCategories": ["Bebidas", "Alimentos"]
+        "openAmountCategories": ["Bebidas", "Alimentos"],
+        "stockless": false
       }
     }
   ]

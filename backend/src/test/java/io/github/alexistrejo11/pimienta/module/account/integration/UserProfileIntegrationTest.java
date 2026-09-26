@@ -9,7 +9,6 @@ import com.jayway.jsonpath.JsonPath;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
-import java.time.LocalDate;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
@@ -82,8 +81,7 @@ class UserProfileIntegrationTest {
 
     String newPhone = uniquePhoneE164();
     String patch =
-        AccountTestRequests.updateProfileJson(
-            "Alexis", "Patched", newPhone, "MALE", LocalDate.of(2000, 1, 10));
+        AccountTestRequests.updateProfileJson("Alexis", "Patched", newPhone, "MALE");
 
     mockMvc
         .perform(AccountTestRequests.patchJsonBearer("/api/v1/users/me", accessToken, patch))
@@ -114,8 +112,7 @@ class UserProfileIntegrationTest {
               "firstName": "A",
               "lastName": "B",
               "gender": "MALE",
-              "phone": "123",
-              "dateOfBirth": "2000-01-10"
+              "phone": "123"
             }
             """;
 

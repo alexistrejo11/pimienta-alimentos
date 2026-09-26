@@ -32,6 +32,7 @@ import kotlinx.serialization.Serializable
     val staleCatalogWarnHours: Int = 24,
     val staleCatalogBlockHours: Int = 72,
     val openAmountCategories: List<String> = emptyList(),
+    val stockless: Boolean = false,
 )
 @Serializable data class CursorsDto(val changes: String)
 @Serializable data class BootstrapResponse(val schemaVersion: Int, val kind: String, val snapshotId: String, val generatedAt: String, val site: SiteDto, val device: DeviceDto, val operators: List<OperatorDto>, val products: List<ProductDto>, val openAmountCategories: List<String>, val policies: PoliciesDto, val cursors: CursorsDto)
@@ -46,6 +47,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class TelemetryHealthDto(val syncState: String, val pendingEvents: Int, val oldestPendingAgeSeconds: Long, val appVersion: String)
 @Serializable data class TelemetryBatchRequest(val events: List<TelemetryLogDto>, val health: TelemetryHealthDto? = null)
 @Serializable data class TelemetryAcceptedResponse(val accepted: Int)
+@Serializable data class RenamePosProductRequest(val name: String, val barcode: String? = null)
+@Serializable data class UpdatePosProductOfferRequest(val salePriceCentavos: Long, val stockPolicy: String)
 @Serializable data class CreatePosProductRequest(
     val name: String,
     val salePriceCentavos: Long,

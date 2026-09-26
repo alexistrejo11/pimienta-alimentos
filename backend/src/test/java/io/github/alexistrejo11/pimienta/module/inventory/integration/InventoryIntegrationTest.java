@@ -49,6 +49,19 @@ class InventoryIntegrationTest {
   @Test
   void dashboard_admin_returnsStockKpis() throws Exception {
     String token = obtainAccessToken();
+    MvcResult baseline =
+        mockMvc
+            .perform(AccountTestRequests.getBearer("/api/v1/inventory/dashboard", token))
+            .andExpect(status().isOk())
+            .andReturn();
+    String baselineJson = baseline.getResponse().getContentAsString();
+    long baseSkuCount = readLong(baselineJson, "$.skuCount");
+    long baseLowStockCount = readLong(baselineJson, "$.lowStockCount");
+    long baseOutOfStockCount = readLong(baselineJson, "$.outOfStockCount");
+    long baseOpenCountSessions = readLong(baselineJson, "$.openCountSessionCount");
+    long baseAvailableQty = readLong(baselineJson, "$.totalAvailableQuantity");
+    double baseStockValue = readDouble(baselineJson, "$.totalStockValue");
+
     String suffix = UUID.randomUUID().toString().substring(0, 8);
     long locId = createWarehouseLocation(token, "WH-DASH-" + suffix, "Dash WH " + suffix);
     String itemBody =
@@ -78,12 +91,12 @@ class InventoryIntegrationTest {
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/inventory/dashboard", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.skuCount").value(1))
-        .andExpect(jsonPath("$.lowStockCount").value(1))
-        .andExpect(jsonPath("$.outOfStockCount").value(0))
-        .andExpect(jsonPath("$.openCountSessionCount").value(0))
-        .andExpect(jsonPath("$.totalAvailableQuantity").value(4))
-        .andExpect(jsonPath("$.totalStockValue").value(40.0));
+        .andExpect(jsonPath("$.skuCount").value(baseSkuCount + 1))
+        .andExpect(jsonPath("$.lowStockCount").value(baseLowStockCount + 1))
+        .andExpect(jsonPath("$.outOfStockCount").value(baseOutOfStockCount))
+        .andExpect(jsonPath("$.openCountSessionCount").value(baseOpenCountSessions))
+        .andExpect(jsonPath("$.totalAvailableQuantity").value(baseAvailableQty + 4))
+        .andExpect(jsonPath("$.totalStockValue").value(baseStockValue + 40.0));
   }
 
   @Test
@@ -585,6 +598,25 @@ class InventoryIntegrationTest {
   }
 
   @Test
+  void managerForbiddenOnItemDelete_adminCanDelete() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    long itemId = createItem(admin.token(), "SKU-DEL-" + UUID.randomUUID(), "Global item");
+
+    mockMvc
+        .perform(AccountTestRequests.deleteBearer("/api/v1/inventory/items/" + itemId, manager.token()))
+        .andExpect(status().isForbidden());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/" + itemId, admin.token()))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.deleteBearer("/api/v1/inventory/items/" + itemId, admin.token()))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
   void managerForbiddenOnRawAdjustment_adminCanAdjust() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
     TokenPair manager = obtainToken(Set.of(Role.MANAGER));
@@ -856,6 +888,14 @@ class InventoryIntegrationTest {
   private static long extractLongId(String json, String path) {
     Number n = JsonPath.read(json, path);
     return n.longValue();
+  }
+
+  private static long readLong(String json, String path) {
+    return ((Number) JsonPath.read(json, path)).longValue();
+  }
+
+  private static double readDouble(String json, String path) {
+    return ((Number) JsonPath.read(json, path)).doubleValue();
   }
 
   private String obtainAccessToken() throws Exception {

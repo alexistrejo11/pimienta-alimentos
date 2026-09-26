@@ -6,6 +6,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.data.sync.OutboxPayloadBuilder
 import io.github.alexistrejo.pimienta.pos.data.sync.PinVerifier
+import io.github.alexistrejo.pimienta.pos.data.sync.catalogBarcode
 import io.github.alexistrejo.pimienta.pos.data.sync.trainingProductEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -143,6 +144,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         }.getOrDefault(emptyList())
     } ?: emptyList()
     fun allowOpenProducts(): Boolean = database.syncProjectionDao().policy()?.allowOpenProducts == true
+    // HQ flag: sales must not write local inventory movements.
+    fun stockless(): Boolean = database.syncProjectionDao().policy()?.stockless == true
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }
     fun withdrawals(shiftId: String) = database.operationsDao().withdrawals(shiftId)
     fun withdrawalTotal(shiftId: String) = database.operationsDao().withdrawalsForShift(shiftId)
@@ -242,6 +245,34 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         return Result.success(product)
     }
 
+    // Updates name, barcode, price, and stock policy only inside the training scratch database.
+    fun updateTrainingProduct(
+        product: ProductEntity,
+        name: String,
+        salePriceCentavos: Long,
+        controlledStock: Boolean,
+        barcode: String?,
+    ): Result<ProductEntity> {
+        if (mode != RuntimeMode.SANDBOX) {
+            return Result.failure(IllegalStateException("Solo capacitación edita productos en local."))
+        }
+        val nextBarcode = catalogBarcode(barcode, product.sku)
+        if (nextBarcode != null) {
+            val taken = database.productDao().findByCode(nextBarcode)
+            if (taken != null && taken.id != product.id) {
+                return Result.failure(IllegalStateException("Ya existe un producto con ese código de barras."))
+            }
+        }
+        val updated = product.copy(
+            name = name.trim(),
+            barcode = nextBarcode,
+            price = BigDecimal.valueOf(salePriceCentavos, 2).toPlainString(),
+            stockPolicy = if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
+        )
+        database.productDao().insertAll(listOf(updated))
+        return Result.success(updated)
+    }
+
     // Opens the single allowed shift and records a durable SHIFT_OPENED sync event.
     fun openShift(userId: String, openingCashCentavos: Long): ShiftEntity? = database.runInTransaction<ShiftEntity?> {
         val operations = database.operationsDao()
@@ -316,6 +347,9 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         }
     }
 
+    // Returns past cash count attempts for a shift ordered by newest first.
+    fun cashCounts(shiftId: String): List<CashCountAttemptEntity> = database.operationsDao().cashCounts(shiftId)
+
     // Rejects a count with an audit note so the cashier can submit a new attempt.
     fun rejectCashCount(attemptId: String, note: String): Boolean {
         if (note.isBlank()) return false
@@ -382,10 +416,12 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             operations.markSaleCancelled(sale.id)
             val cancellation = SaleCancellationEntity(UUID.randomUUID().toString(), sale.id, sale.shiftId, reason.trim(), manager.id, manager.role, cancelledAt)
             operations.insertCancellation(cancellation)
-            operations.insertMovements(
-                lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
-                    .map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId!!, line.quantity, cancelledAt, "SALE_CANCELLATION", eventId) }
-            )
+            if (!stockless()) {
+                operations.insertMovements(
+                    lines.filter { it.stockPolicy == "CONTROLLED" && it.productId != null }
+                        .map { line -> InventoryMovementEntity(UUID.randomUUID().toString(), sale.id, line.productId!!, line.quantity, cancelledAt, "SALE_CANCELLATION", eventId) }
+                )
+            }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CANCELLED", sale.id,
                 OutboxPayloadBuilder.saleCancelled(sale, cancellation), cancelledAt, eventId
@@ -409,7 +445,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     if (!product.available) {
                         return Result.failure(IllegalArgumentException("${product.name} no está disponible."))
                     }
-                    if (product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
+                    if (!stockless() && product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
                         val stock = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
                         if (stock < BigDecimal.valueOf(line.quantity.toLong())) {
                             return Result.failure(IllegalArgumentException("No hay existencias suficientes de ${product.name}."))
@@ -484,11 +520,13 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val payment = PaymentEntity(UUID.randomUUID().toString(), saleId, method.name, total)
             operations.insertPayment(payment)
             val controlledLines = lines.filter { it.lineType == SaleLineType.CATALOG && it.stockPolicy == "CONTROLLED" && it.productId != null }
-            operations.insertMovements(
-                controlledLines.map { line ->
-                    InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId!!, -line.quantity, confirmedAt, syncEventId = eventId)
-                }
-            )
+            if (!stockless()) {
+                operations.insertMovements(
+                    controlledLines.map { line ->
+                        InventoryMovementEntity(UUID.randomUUID().toString(), saleId, line.productId!!, -line.quantity, confirmedAt, syncEventId = eventId)
+                    }
+                )
+            }
             val products = lines.mapNotNull { line -> line.productId?.let { database.productDao().findById(it) } }.associateBy { it.id }
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CONFIRMED", saleId,

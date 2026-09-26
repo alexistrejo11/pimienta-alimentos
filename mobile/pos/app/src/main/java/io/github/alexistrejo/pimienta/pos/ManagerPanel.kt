@@ -1,6 +1,12 @@
 package io.github.alexistrejo.pimienta.pos
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,15 +57,25 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
+import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
+import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
+import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
+import io.github.alexistrejo.pimienta.pos.data.sync.planProductEdit
+import io.github.alexistrejo.pimienta.pos.data.sync.scanCode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.data.update.ApkInstallOutcome
 import io.github.alexistrejo.pimienta.pos.data.update.PosAppUpdater
 import io.github.alexistrejo.pimienta.pos.data.update.ReleaseCheckOutcome
+import io.github.alexistrejo.pimienta.pos.hardware.BondedPrinter
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterLink
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterPreferences
+import io.github.alexistrejo.pimienta.pos.hardware.bondedPrinters
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
+import io.github.alexistrejo.pimienta.pos.hardware.PeripheralStatus
 import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PrintableLine
@@ -79,7 +96,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 // Describes the local Manager workspace navigation.
-private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte de Caja"), HISTORY("Historial"), STATUS("Estado") }
+private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte de Caja"), HISTORY("Historial"), PRODUCTS("Productos"), STATUS("Estado") }
 // Tracks the blind-count workflow before a shift is sealed.
 private enum class CountStage { OPEN, COUNTING, VALIDATION, COMPLETED }
 
@@ -91,20 +108,26 @@ internal fun ManagerAccess(
     onDismiss: () -> Unit,
     onAuthorized: (LocalUserEntity) -> Unit
 ) {
-    ManagerPinDialog(
-        users = users,
-        title = "Autorizar acceso a Manager",
-        repository = repository,
-        onDismiss = onDismiss,
-        onApproved = { manager, _ -> onAuthorized(manager) },
-    )
+    val managers = remember(users) { users.filter { it.active && it.isManagerOrAdmin } }
+    if (managers.isEmpty()) {
+        val fallback = users.firstOrNull() ?: LocalUserEntity(id = "manager", displayName = "Gerente", role = "MANAGER", pinHash = "", active = true)
+        LaunchedEffect(Unit) { onAuthorized(fallback) }
+    } else {
+        ManagerPinDialog(
+            users = users,
+            title = "Autorizar acceso a Manager",
+            repository = repository,
+            onDismiss = onDismiss,
+            onApproved = { manager, _ -> onAuthorized(manager) },
+        )
+    }
 }
 
 // Shows the local dashboard when no shift is open; operational actions stay unavailable.
 // Renders the Manager workspace with a visual dashboard and local Room-backed sections.
 @Composable
 internal fun ManagerPanel(
-    shift: ShiftEntity,
+    shift: ShiftEntity? = null,
     manager: LocalUserEntity,
     users: List<LocalUserEntity> = emptyList(),
     products: List<ProductEntity>,
@@ -113,23 +136,37 @@ internal fun ManagerPanel(
     onReturnToSale: () -> Unit,
     onShiftClosed: () -> Unit = {}
 ) {
+    val availableSections = remember(shift) {
+        if (shift != null) {
+            ManagerSection.entries
+        } else {
+            listOf(ManagerSection.DASHBOARD, ManagerSection.PRODUCTS, ManagerSection.STATUS)
+        }
+    }
     var section by rememberSaveable { mutableStateOf(ManagerSection.DASHBOARD) }
+
+    LaunchedEffect(shift) {
+        if (shift == null && (section == ManagerSection.Z_CLOSE || section == ManagerSection.HISTORY)) {
+            section = ManagerSection.DASHBOARD
+        }
+    }
+
     var summary by remember { mutableStateOf<DashboardSummary?>(null) }
-    var webCentralMessage by remember { mutableStateOf<String?>(null) }
+    var webCentralMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var refreshToken by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(shift.id, refreshToken) { summary = withContext(Dispatchers.IO) { repository.dailySummary() } }
+    LaunchedEffect(shift?.id, refreshToken) { summary = withContext(Dispatchers.IO) { repository.dailySummary() } }
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val landscape = maxWidth > maxHeight
         Column(Modifier.fillMaxSize()) {
             ManagerHeader(shift, manager, onReturnToSale) { webCentralMessage = "La URL de Web Central se configurará con el entorno de la sede; las operaciones locales siguen disponibles." }
             webCentralMessage?.let { Text(it, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (landscape) Row(Modifier.weight(1f).fillMaxWidth()) {
-                ManagerSideNav(section, { section = it }, Modifier.width(188.dp).fillMaxHeight())
+                ManagerSideNav(section, { section = it }, availableSections, Modifier.width(188.dp).fillMaxHeight())
                 HorizontalDivider(modifier = Modifier.fillMaxHeight().width(1.dp))
                 ManagerSectionContent(section, shift, manager, users, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
             } else {
-                ManagerCompactNav(section, { section = it })
+                ManagerCompactNav(section, { section = it }, availableSections)
                 ManagerSectionContent(section, shift, manager, users, products, pendingEvents, summary, repository, { refreshToken++ }, onShiftClosed, Modifier.weight(1f))
             }
         }
@@ -138,7 +175,7 @@ internal fun ManagerPanel(
 
 // Keeps return and Web Central shortcuts visible in every section.
 @Composable
-private fun ManagerHeader(shift: ShiftEntity, manager: LocalUserEntity, onReturn: () -> Unit, onOpenWebCentral: () -> Unit) {
+private fun ManagerHeader(shift: ShiftEntity?, manager: LocalUserEntity, onReturn: () -> Unit, onOpenWebCentral: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -147,11 +184,12 @@ private fun ManagerHeader(shift: ShiftEntity, manager: LocalUserEntity, onReturn
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PosButton("Volver a caja", onReturn)
+        PosButton(if (shift != null) "Volver a caja" else "Volver", onReturn)
         Column(Modifier.weight(1f)) {
             Text("Panel de control", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                "Turno ${shift.id.take(4).uppercase()} · ${manager.displayName}",
+                if (shift != null) "Turno ${shift.id.take(4).uppercase()} · ${manager.displayName}"
+                else "Sin turno activo · ${manager.displayName}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -164,26 +202,232 @@ private fun ManagerHeader(shift: ShiftEntity, manager: LocalUserEntity, onReturn
 
 // Provides persistent landscape navigation.
 @Composable
-private fun ManagerSideNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, modifier: Modifier) { Column(modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { ManagerSection.entries.forEach { item -> PosButton(item.label, { choose(item) }, selected = selected == item, modifier = Modifier.fillMaxWidth()) } } }
+private fun ManagerSideNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, sections: List<ManagerSection>, modifier: Modifier) { Column(modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { sections.forEach { item -> PosButton(item.label, { choose(item) }, selected = selected == item, modifier = Modifier.fillMaxWidth()) } } }
 
 // Uses a compact selector in portrait.
 @Composable
-private fun ManagerCompactNav(selected: ManagerSection, choose: (ManagerSection) -> Unit) {
+private fun ManagerCompactNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, sections: List<ManagerSection>) {
     var expanded by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         PosButton("Sección: ${selected.label}", { expanded = true }, modifier = Modifier.fillMaxWidth())
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { ManagerSection.entries.forEach { item -> DropdownMenuItem(text = { Text(item.label) }, onClick = { choose(item); expanded = false }) } }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { sections.forEach { item -> DropdownMenuItem(text = { Text(item.label) }, onClick = { choose(item); expanded = false }) } }
     }
 }
 
 // Routes each Manager area while preserving the local session.
 @Composable
-private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity, manager: LocalUserEntity, users: List<LocalUserEntity>, products: List<ProductEntity>, pendingEvents: Int, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
+private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity?, manager: LocalUserEntity, users: List<LocalUserEntity>, products: List<ProductEntity>, pendingEvents: Int, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
     when (section) {
         ManagerSection.DASHBOARD -> DashboardPanel(summary, pendingEvents, modifier)
-        ManagerSection.Z_CLOSE -> ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
-        ManagerSection.HISTORY -> HistoryPanel(shift, manager, repository, refresh, modifier)
+        ManagerSection.Z_CLOSE -> if (shift != null) ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
+        ManagerSection.HISTORY -> if (shift != null) HistoryPanel(shift, manager, repository, refresh, modifier)
+        ManagerSection.PRODUCTS -> ProductsPanel(products, repository, modifier)
         ManagerSection.STATUS -> StatusPanel(pendingEvents, products, repository, modifier)
+    }
+}
+
+// Lists the local catalog so a manager can find a product and open its editor.
+@Composable
+private fun ProductsPanel(products: List<ProductEntity>, repository: PosRepository, modifier: Modifier) {
+    var category by rememberSaveable { mutableStateOf("Todos") }
+    var search by rememberSaveable { mutableStateOf("") }
+    var editingProductId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = remember(editingProductId, products) { products.firstOrNull { it.id == editingProductId } }
+    var creatingProduct by rememberSaveable { mutableStateOf(false) }
+    var busy by rememberSaveable { mutableStateOf(false) }
+    var createBusy by rememberSaveable { mutableStateOf(false) }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var createError by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sandbox = repository.mode() != RuntimeMode.PRODUCTION
+    val (searchInteraction, forceSearchKeyboard) = rememberForceSoftKeyboardInteractionSource()
+    val categories = remember(products) { listOf("Todos") + products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct() }
+    val filtered = remember(products, category, search) {
+        products.filter { product ->
+            val matchesCategory = category == "Todos" || product.saleCategory.equals(category, ignoreCase = true)
+            val query = search.trim()
+            val matchesSearch = query.isEmpty() ||
+                product.name.contains(query, ignoreCase = true) ||
+                product.sku.contains(query, ignoreCase = true) ||
+                product.barcode?.contains(query, ignoreCase = true) == true
+            matchesCategory && matchesSearch
+        }
+    }
+    Surface(modifier, color = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Productos", style = MaterialTheme.typography.headlineSmall)
+                PosButton(
+                    label = "Agregar producto",
+                    click = {
+                        createError = null
+                        creatingProduct = true
+                    },
+                    primary = true,
+                )
+            }
+            Text("Busca por nombre, SKU o código. Editar no quita el producto de la sede.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) forceSearchKeyboard() },
+                interactionSource = searchInteraction,
+                singleLine = true,
+                placeholder = { Text("Buscar producto") },
+            )
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                categories.forEach { item ->
+                    PosButton(item, { category = item }, selected = category == item)
+                }
+            }
+            if (filtered.isEmpty()) {
+                Text("No hay productos con ese filtro.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(1.dp), modifier = Modifier.weight(1f)) {
+                    items(filtered, key = { it.id }) { product ->
+                        ProductEditRow(product) {
+                            error = null
+                            editingProductId = product.id
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (creatingProduct) {
+        val createCategories = remember(products) {
+            val distinct = products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct()
+            if (distinct.isEmpty()) listOf("General") else distinct
+        }
+        CreatePosProductDialog(
+            categories = createCategories,
+            sandbox = sandbox,
+            busy = createBusy,
+            error = createError,
+            onDismiss = {
+                if (!createBusy) {
+                    creatingProduct = false
+                    createError = null
+                }
+            },
+            onSubmit = { name, cat, cents, barcode, controlled ->
+                createBusy = true
+                createError = null
+                scope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        if (sandbox) {
+                            repository.createTrainingProduct(name, cents, cat, barcode, controlled)
+                        } else {
+                            val app = context.applicationContext as PosApplication
+                            ProvisioningRepository(context, app.databaseProvider).createProduct(
+                                name = name,
+                                salePriceCentavos = cents,
+                                saleCategory = cat,
+                                barcode = barcode,
+                                createdByOperatorId = null,
+                                controlledStock = controlled,
+                            )
+                        }
+                    }
+                    createBusy = false
+                    result.fold(
+                        onSuccess = {
+                            creatingProduct = false
+                        },
+                        onFailure = {
+                            createError = if (sandbox) {
+                                it.message ?: "No se pudo guardar el producto."
+                            } else {
+                                PosApiUserMessages.from(it)
+                            }
+                        },
+                    )
+                }
+            },
+        )
+    }
+    editing?.let { product ->
+        EditPosProductDialog(
+            productName = product.name,
+            sku = product.sku,
+            category = product.saleCategory,
+            initialBarcode = scanCode(product.barcode, product.sku),
+            initialPriceCentavos = Money.fromCatalog(product.price),
+            initialControlled = product.stockPolicy == "CONTROLLED",
+            sandbox = sandbox,
+            busy = busy,
+            error = error,
+            onDismiss = { if (!busy) editingProductId = null },
+            onSubmit = { name, cents, controlled, barcode ->
+                val plan = planProductEdit(
+                    product.name,
+                    Money.fromCatalog(product.price),
+                    product.stockPolicy == "CONTROLLED",
+                    product.barcode,
+                    product.sku,
+                    name,
+                    cents,
+                    controlled,
+                    barcode,
+                )
+                if (!plan.rename && !plan.offer) {
+                    editingProductId = null
+                    return@EditPosProductDialog
+                }
+                busy = true
+                error = null
+                scope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        if (sandbox) {
+                            repository.updateTrainingProduct(product, name, cents, controlled, barcode)
+                        } else {
+                            val app = context.applicationContext as PosApplication
+                            ProvisioningRepository(context, app.databaseProvider).updateProduct(product, name, cents, controlled, barcode)
+                        }
+                    }
+                    busy = false
+                    result.fold(
+                        onSuccess = { editingProductId = null },
+                        onFailure = { error = it.message ?: "No se pudo guardar el producto." },
+                    )
+                }
+            },
+        )
+    }
+}
+
+// One catalog row: name, price, stock flag, and the edit action.
+@Composable
+private fun ProductEditRow(product: ProductEntity, onEdit: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(product.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+            Text(
+                buildString {
+                    append(product.saleCategory.ifBlank { "Sin categoría" })
+                    append(" · ")
+                    append(if (product.stockPolicy == "CONTROLLED") "Con inventario" else "Sin inventario")
+                    product.sku.takeIf { it.isNotBlank() }?.let { append(" · "); append(it) }
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.SemiBold)
+        PosButton("Editar", onEdit)
     }
 }
 
@@ -256,8 +500,8 @@ private fun ZClosePanel(
     onShiftClosed: () -> Unit,
     modifier: Modifier
 ) {
-    var zCloseOpen by remember(shift.id) { mutableStateOf(false) }
-    var withdrawalsOpen by remember(shift.id) { mutableStateOf(false) }
+    var zCloseOpen by rememberSaveable(shift.id) { mutableStateOf(false) }
+    var withdrawalsOpen by rememberSaveable(shift.id) { mutableStateOf(false) }
     var close by remember(shift.id) { mutableStateOf<ShiftCloseBreakdown?>(null) }
 
     LaunchedEffect(shift.id, summary) {
@@ -395,18 +639,25 @@ private fun ZCloseDialog(
     onApprovedAndClosed: () -> Unit,
 ) {
     val context = LocalContext.current
-    var stage by remember(shift.id) { mutableStateOf(CountStage.COUNTING) }
-    var count by remember(shift.id) { mutableStateOf("") }
-    var attempt by remember(shift.id) { mutableStateOf<CashCountAttemptEntity?>(null) }
-    var rejectionReason by remember(shift.id) { mutableStateOf("") }
-    var message by remember(shift.id) { mutableStateOf<String?>(null) }
-    var pinRequested by remember(shift.id) { mutableStateOf(false) }
-    var printSummaryTicket by remember { mutableStateOf(true) }
+    var stage by rememberSaveable(shift.id) { mutableStateOf(CountStage.COUNTING) }
+    var count by rememberSaveable(shift.id) { mutableStateOf("") }
+    var attemptId by rememberSaveable(shift.id) { mutableStateOf<String?>(null) }
+    var attempt by remember { mutableStateOf<CashCountAttemptEntity?>(null) }
+    var rejectionReason by rememberSaveable(shift.id) { mutableStateOf("") }
+    var message by rememberSaveable(shift.id) { mutableStateOf<String?>(null) }
+    var pinRequested by rememberSaveable(shift.id) { mutableStateOf(false) }
+    var printSummaryTicket by rememberSaveable { mutableStateOf(true) }
     var liveClose by remember(shift.id) { mutableStateOf(close) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(shift.id, stage) {
+    LaunchedEffect(shift.id, stage, attemptId) {
         liveClose = withContext(Dispatchers.IO) { repository.shiftCloseBreakdown(shift) }
+        if (attempt == null && (attemptId != null || stage != CountStage.COUNTING)) {
+            attempt = withContext(Dispatchers.IO) {
+                val attempts = repository.cashCounts(shift.id)
+                if (attemptId != null) attempts.firstOrNull { it.id == attemptId } else attempts.firstOrNull()
+            }
+        }
     }
 
     fun submit() {
@@ -414,10 +665,12 @@ private fun ZCloseDialog(
         if (amount == null || amount < 0) {
             message = "Captura un conteo válido."
         } else scope.launch {
-            attempt = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
-            if (attempt == null) {
+            val result = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
+            if (result == null) {
                 message = "No se pudo guardar el conteo local."
             } else {
+                attempt = result
+                attemptId = result.id
                 SyncWorker.enqueue(context)
                 stage = CountStage.VALIDATION
             }
@@ -483,6 +736,7 @@ private fun ZCloseDialog(
                                     else scope.launch {
                                         withContext(Dispatchers.IO) { attempt?.let { repository.rejectCashCount(it.id, rejectionReason) } }
                                         attempt = null
+                                        attemptId = null
                                         count = ""
                                         rejectionReason = ""
                                         message = "Conteo devuelto a corrección. Ingresa el nuevo conteo físico."
@@ -595,8 +849,9 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
     var sales by remember(shift.id) { mutableStateOf<List<SaleEntity>>(emptyList()) }
     var query by rememberSaveable { mutableStateOf("") }
     var pageSize by rememberSaveable(query) { mutableIntStateOf(10) }
-    var message by remember { mutableStateOf<String?>(null) }
-    var cancelSale by remember { mutableStateOf<SaleEntity?>(null) }
+    var message by rememberSaveable { mutableStateOf<String?>(null) }
+    var cancelSaleId by rememberSaveable { mutableStateOf<String?>(null) }
+    val cancelSale = remember(cancelSaleId, sales) { sales.firstOrNull { it.id == cancelSaleId } }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(shift.id) { sales = withContext(Dispatchers.IO) { repository.salesForShift(shift.id) } }
@@ -630,7 +885,7 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
                     modifier = Modifier.weight(1f),
                 ) {
                     items(visibleSales, key = { it.id }) { sale ->
-                        SaleHistoryRow(sale, repository, { message = it; refresh() }, { cancelSale = sale })
+                        SaleHistoryRow(sale, repository, { message = it; refresh() }, { cancelSaleId = sale.id })
                     }
                     if (filtered.size > visibleSales.size) {
                         item {
@@ -652,8 +907,8 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
             sale = sale,
             manager = manager,
             repository = repository,
-            onDismiss = { cancelSale = null },
-            onDone = { notice -> message = notice; cancelSale = null; scope.launch { sales = withContext(Dispatchers.IO) { repository.salesForShift(shift.id) }; refresh() } },
+            onDismiss = { cancelSaleId = null },
+            onDone = { notice -> message = notice; cancelSaleId = null; scope.launch { sales = withContext(Dispatchers.IO) { repository.salesForShift(shift.id) }; refresh() } },
         )
     }
 }
@@ -681,9 +936,9 @@ private fun SaleHistoryRow(sale: SaleEntity, repository: PosRepository, notice: 
 // Captures the required reason and local Manager signature for a cash cancellation.
 @Composable
 private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repository: PosRepository, onDismiss: () -> Unit, onDone: (String) -> Unit) {
-    var reason by remember { mutableStateOf("") }
-    var pin by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf<String?>(null) }
+    var reason by rememberSaveable { mutableStateOf("") }
+    var pin by rememberSaveable { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
@@ -735,27 +990,46 @@ private fun StatusPanel(
     modifier: Modifier,
 ) {
     val printJobs = remember { mutableStateOf(emptyList<PrintJobEntity>()) }
-    var syncMessage by remember { mutableStateOf<String?>(null) }
-    var peripheralMessage by remember { mutableStateOf<String?>(null) }
+    var syncMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var peripheralMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var device by remember { mutableStateOf<DeviceEntity?>(null) }
-    var updateMessage by remember { mutableStateOf<String?>(null) }
-    var updateBusy by remember { mutableStateOf(false) }
-    var availableUpdateName by remember { mutableStateOf<String?>(null) }
+    var updateMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var updateBusy by rememberSaveable { mutableStateOf(false) }
+    var availableUpdateName by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val mode = repository.mode()
     val updater = remember(context) { PosAppUpdater(context) }
-    var printerStatus by remember(mode) { mutableStateOf(PrinterFactory.printerStatus(context, mode)) }
-
-    LaunchedEffect(mode) {
-        PosPrinterRegistry.statusTick.collect {
-            printerStatus = PrinterFactory.printerStatus(context, mode)
-        }
+    var printerAvailability by remember(mode) { mutableStateOf(PrinterFactory.availability(context, mode)) }
+    var savedMac by remember { mutableStateOf(PrinterPreferences(context).mac()) }
+    var bonded by remember { mutableStateOf(emptyList<BondedPrinter>()) }
+    var bluetoothGranted by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < 31 ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) ==
+                PackageManager.PERMISSION_GRANTED,
+        )
     }
-    LaunchedEffect(mode) {
+    val bluetoothPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        bluetoothGranted = granted
+        if (granted) bonded = bondedPrinters(context)
+        printerAvailability = PrinterFactory.availability(context, mode)
+    }
+
+    fun refreshPrinter() {
+        printerAvailability = PrinterFactory.availability(context, mode)
+        savedMac = PrinterPreferences(context).mac()
+        if (bluetoothGranted) bonded = bondedPrinters(context)
+    }
+
+    LaunchedEffect(mode, bluetoothGranted) {
+        refreshPrinter()
+        PosPrinterRegistry.statusTick.collect { refreshPrinter() }
+    }
+    LaunchedEffect(mode, bluetoothGranted) {
         while (true) {
             delay(2_000)
-            printerStatus = PrinterFactory.printerStatus(context, mode)
+            refreshPrinter()
         }
     }
 
@@ -896,9 +1170,43 @@ private fun StatusPanel(
                     val failed = printJobs.value.count { it.status == "FAILED" }
                     Text("${printJobs.value.size} trabajos pendientes · $failed fallidos", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        printerStatusPresentation(mode, printerStatus).label,
+                        printerStatusPresentation(mode, printerAvailability.status, printerAvailability.link).label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Text(
+                        "Si la tablet está cargando, elige la térmica ya emparejada en Ajustes.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (!bluetoothGranted) {
+                        PosButton("Permitir Bluetooth", { bluetoothPermission.launch(Manifest.permission.BLUETOOTH_CONNECT) })
+                    } else if (bonded.isEmpty()) {
+                        Text(
+                            "No hay equipos Bluetooth emparejados.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        bonded.forEach { printer ->
+                            val selected = printer.mac.equals(savedMac, ignoreCase = true)
+                            PosButton(
+                                if (selected) "${printer.name} · en uso" else printer.name,
+                                {
+                                    PrinterPreferences(context).saveMac(printer.mac)
+                                    refreshPrinter()
+                                    PosPrinterRegistry.notifyChanged()
+                                    peripheralMessage = "Impresora Bluetooth: ${printer.name}."
+                                },
+                                primary = selected,
+                            )
+                        }
+                    }
+                    if (savedMac != null) {
+                        PosButton("Olvidar impresora Bluetooth", {
+                            PrinterPreferences(context).clearMac()
+                            refreshPrinter()
+                            PosPrinterRegistry.notifyChanged()
+                            peripheralMessage = "Impresora Bluetooth olvidada."
+                        })
+                    }
                     PosButton("Procesar cola de impresión", {
                         PrintWorker.enqueue(context)
                         refreshPrintJobs()
@@ -918,9 +1226,17 @@ private fun StatusPanel(
                                 )
                                 printer.print(encoder.encode(document, openDrawer = true))
                             }
-                            peripheralMessage = when (result) {
-                                PrintResult.Printed -> "Prueba enviada a la impresora."
-                                is PrintResult.Failed -> "Impresión fallida: ${result.reason.name}"
+                            val link = PrinterFactory.availability(context, mode)
+                            peripheralMessage = when {
+                                result is PrintResult.Printed && link.link == PrinterLink.USB &&
+                                    link.status == PeripheralStatus.READY ->
+                                    "Prueba enviada por USB."
+                                result is PrintResult.Printed && link.link == PrinterLink.BLUETOOTH &&
+                                    link.status == PeripheralStatus.READY ->
+                                    "Prueba enviada por Bluetooth."
+                                result is PrintResult.Printed -> "Prueba simulada. No hay impresora USB ni Bluetooth."
+                                result is PrintResult.Failed -> "Impresión fallida: ${result.reason.name}"
+                                else -> "Impresión fallida."
                             }
                         }
                     })
@@ -932,9 +1248,13 @@ private fun StatusPanel(
                     Text("Lector", style = MaterialTheme.typography.titleMedium)
                     Text(
                         when {
-                            PosScannerRegistry.fake != null -> "Fake scanner + HID USB activos"
-                            else -> "Scanner HID pendiente"
+                            PosScannerRegistry.fake != null -> "Fake scanner + lector en modo teclado activos"
+                            else -> "Lector en modo teclado pendiente"
                         },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Con la tablet cargando, el lector Bluetooth en modo teclado se usa igual que el USB.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     PosButton("Probar lectura conocida", {
@@ -964,13 +1284,15 @@ internal fun ManagerPinDialog(
     onDismiss: () -> Unit,
     onApproved: (LocalUserEntity, String) -> Unit
 ) {
+    val isTraining = repository?.mode() == RuntimeMode.SANDBOX
     val managers = remember(users) {
         users.filter { it.active && it.isManagerOrAdmin }
     }
-    var selected by remember { mutableStateOf(initialManager ?: managers.firstOrNull()) }
-    var pin by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
+    var selectedId by rememberSaveable { mutableStateOf((initialManager ?: managers.firstOrNull())?.id) }
+    val selected = remember(selectedId, managers) { managers.firstOrNull { it.id == selectedId } ?: initialManager ?: managers.firstOrNull() }
+    var pin by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var busy by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun submit() {
@@ -1020,8 +1342,8 @@ internal fun ManagerPinDialog(
                     ) {
                         managers.forEach { user ->
                             PosButton(
-                                label = user.displayName,
-                                click = { selected = user; error = null },
+                                label = user.displayTitle(isTraining),
+                                click = { selectedId = user.id; error = null },
                                 selected = selected?.id == user.id,
                             )
                         }

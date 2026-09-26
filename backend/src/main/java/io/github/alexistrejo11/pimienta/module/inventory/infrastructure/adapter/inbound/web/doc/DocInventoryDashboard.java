@@ -15,5 +15,5 @@ import java.lang.annotation.Target;
     description =
         """
         KPIs agregados de existencias y conteos físicos. Requiere Bearer JWT. Lectura: \
-        ADMIN, MANAGER, POS_OPERATOR.""")
+        ADMIN, DIRECTOR, MANAGER, EMPLOYEE.""")
 public @interface DocInventoryDashboard {}

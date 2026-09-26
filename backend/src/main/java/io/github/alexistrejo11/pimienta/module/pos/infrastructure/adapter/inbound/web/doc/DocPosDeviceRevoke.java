@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
 @DocJwtSecured
 @Operation(
     summary = "Revoke POS device",
-    description = "Immediately revokes the device and invalidates its refresh token.")
+    description = "Immediately revokes the device and invalidates its refresh token. Requires **ROLE_ADMIN**.")
 @ApiResponse(
     responseCode = "200",
     description = "Revoked.",

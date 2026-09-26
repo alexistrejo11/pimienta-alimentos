@@ -84,7 +84,8 @@ class HeadquarterPosCatalogIntegrationTest {
         .andExpect(jsonPath("$.openAmountCategories[0]").value("MISC"))
         .andExpect(jsonPath("$.openAmountCategories[1]").value("SERVICE"))
         .andExpect(jsonPath("$.allowOpenProducts").value(true))
-        .andExpect(jsonPath("$.defaultNegativeStockLimit").value(10));
+        .andExpect(jsonPath("$.defaultNegativeStockLimit").value(10))
+        .andExpect(jsonPath("$.stockless").value(false));
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hqId + "/pos-settings", token))
@@ -101,6 +102,16 @@ class HeadquarterPosCatalogIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.allowOpenProducts").value(false))
         .andExpect(jsonPath("$.openAmountCategories", hasSize(2)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"stockless\":true}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.stockless").value(true))
+        .andExpect(jsonPath("$.allowOpenProducts").value(false));
 
     mockMvc
         .perform(

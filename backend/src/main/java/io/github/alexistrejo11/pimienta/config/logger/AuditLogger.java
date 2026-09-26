@@ -9,12 +9,11 @@ import org.slf4j.LoggerFactory;
 public class AuditLogger {
   private static final Logger log = LoggerFactory.getLogger("audit");
   public void logAuditEvent(AuditEvent auditEvent) {
-    // Use native structured logging so Loki can query audit fields directly.
+    // Keep `service`/`source` for logging.structured.json.add; use `channel` for origin.
     log.atInfo()
-        .addKeyValue("source", "audit")
+        .addKeyValue("channel", "audit")
         .addKeyValue("eventId", auditEvent.getEventID())
         .addKeyValue("timestamp", auditEvent.getTimeStamp())
-        .addKeyValue("service", auditEvent.getServiceName())
         .addKeyValue("method", auditEvent.getMethod())
         .addKeyValue("endpoint", auditEvent.getEndpoint())
         .addKeyValue("operation", auditEvent.getOperation())

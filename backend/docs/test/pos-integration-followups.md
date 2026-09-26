@@ -54,3 +54,23 @@ No extra follow-ups from this pass.
 - `OPEN_PRODUCT_AUTHORIZATION_INVALID` remains mapped for historic incidents but is no longer emitted.
 
 No extra follow-ups from this pass.
+
+## 2026-09-23 — Sales accepted without review
+
+- `SALE_CONFIRMED` is stored as `ACCEPTED` with no sync incident. Open amount, pending catalog, price mismatch, and negative stock no longer open a review queue.
+- A `saleId` already stored under another `eventId` is `REJECTED` and does not overwrite the sale. No incident is created.
+- `V20` marks existing `REQUIRES_REVIEW` events `ACCEPTED` and closes open incidents so those tickets enter ACCEPTED-only reports. Sale lines and prices are unchanged.
+- The admin accept API remains in the backend. The web no longer lists or accepts incidents.
+- Linking a later catalog barcode back onto `PENDING_CATALOG` lines is not implemented in this pass.
+
+## 2026-09-23 — Stockless / sales-only HQ mode
+
+- `headquarter_pos_settings.stockless` defaults to `false`. When true, POS sale/cancel ingest skips `PosSaleInventoryUseCases`; web ledger movements are unchanged.
+- Turning the flag off does not backfill missed POS deductions.
+- Bootstrap/changes `policies.stockless` is the tablet source of truth for skipping local `inventory_movement` rows.
+
+No extra follow-ups from this pass.
+
+## 2026-09-23 — Device product rename and offer
+
+No extra follow-ups from this pass. Name and offer are separate device PUTs so a tablet can skip the side that did not change. Staff item and catalog PUTs stay closed to the device JWT.

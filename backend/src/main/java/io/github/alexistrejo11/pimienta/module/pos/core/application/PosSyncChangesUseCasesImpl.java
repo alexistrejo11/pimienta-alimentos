@@ -101,9 +101,16 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
       if (config == null) return ChangeOperation.deactivate("policies", entry.entityId());
       Policies policies = projector.toPolicies(config);
       return ChangeOperation.upsert(
-          "policies", entry.entityId(), new PoliciesData(policies.allowNegativeStock(), policies.allowOpenProducts(),
-              policies.defaultNegativeStockLimit(), policies.staleCatalogWarnHours(), policies.staleCatalogBlockHours(),
-              config.getOpenAmountCategories()));
+          "policies",
+          entry.entityId(),
+          new PoliciesData(
+              policies.allowNegativeStock(),
+              policies.allowOpenProducts(),
+              policies.defaultNegativeStockLimit(),
+              policies.staleCatalogWarnHours(),
+              policies.staleCatalogBlockHours(),
+              config.getOpenAmountCategories(),
+              policies.stockless()));
     }
     long itemId = Long.parseLong(entry.entityId());
     if (deactivate) return ChangeOperation.deactivate("product", entry.entityId());

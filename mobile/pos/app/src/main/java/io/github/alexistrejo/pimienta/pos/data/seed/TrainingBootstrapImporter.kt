@@ -59,6 +59,7 @@ class TrainingBootstrapImporter(private val context: Context) {
             staleCatalogWarnHours = 24,
             staleCatalogBlockHours = 72,
             openAmountCategoriesJson = JSONArray(openAmountCategoriesList).toString(),
+            stockless = false,
         )
 
         database.runInTransaction {
@@ -79,10 +80,8 @@ class TrainingBootstrapImporter(private val context: Context) {
 
     private fun JSONObject.toProductEntity(): ProductEntity = ProductEntity(
         id = getString("id"),
-        legacyId = optNullableString("legacyId"),
         sku = getString("sku"),
         barcode = getString("barcode"),
-        legacyBarcode = optNullableString("legacyBarcode"),
         name = getString("name"),
         saleCategory = getString("saleCategory"),
         unit = getString("unit"),
@@ -93,11 +92,7 @@ class TrainingBootstrapImporter(private val context: Context) {
         stockMin = getString("stockMin"),
         stockPolicy = getString("stockPolicy"),
         negativeStockLimit = null,
-        legacyUpdatedAt = if (has("legacyUpdatedAt")) getLong("legacyUpdatedAt") else null,
     )
-
-    private fun JSONObject.optNullableString(key: String): String? =
-        if (has(key) && !isNull(key)) optString(key) else null
 
     private fun JSONObject.toUserEntity(): LocalUserEntity = LocalUserEntity(
         id = getString("id"),

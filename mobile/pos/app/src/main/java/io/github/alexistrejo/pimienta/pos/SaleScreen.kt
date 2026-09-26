@@ -66,7 +66,6 @@ internal fun Sale(
     var busy by remember { mutableStateOf(false) }
     var paymentMethodDraft by rememberSaveable { mutableStateOf(PaymentMethod.CASH) }
     var tenderedDraft by rememberSaveable { mutableStateOf("") }
-    var locked by rememberSaveable { mutableStateOf(false) }
     var managerAccessRequested by rememberSaveable { mutableStateOf(false) }
     var managerId by rememberSaveable { mutableStateOf<String?>(null) }
     val manager = remember(managerId, users) { users.firstOrNull { it.id == managerId } }
@@ -102,6 +101,7 @@ internal fun Sale(
     var openAmountRequested by rememberSaveable { mutableStateOf(false) }
     var selectedOpenCategory by rememberSaveable { mutableStateOf<String?>(null) }
     var sectionsRequested by rememberSaveable { mutableStateOf(false) }
+    var hideBarcodedProducts by rememberSaveable { mutableStateOf(false) }
     val feedbackHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     val mode = repository.mode()
@@ -127,18 +127,28 @@ internal fun Sale(
         }
     }
 
-    val categories = remember(products, openAmountAllowed) {
-        val base = listOf("Todos") + products.map { it.saleCategory }.distinct()
+    // Filters visible categories to hide empty ones when barcoded products are hidden.
+    val visibleProductsForCategories = remember(products, hideBarcodedProducts, search) {
+        if (!hideBarcodedProducts || search.isNotBlank()) products else products.filter { !it.hasDistinctBarcode() }
+    }
+    val categories = remember(products, visibleProductsForCategories, openAmountAllowed) {
+        val base = listOf("Todos") + visibleProductsForCategories.map { it.saleCategory }.filter { it.isNotBlank() }.distinct()
         if (openAmountAllowed) base + "Monto Abierto" else base
     }
-    val filtered = remember(products, category, search) {
+    LaunchedEffect(categories) {
+        if (category != "Todos" && category != "Monto Abierto" && category !in categories) {
+            category = "Todos"
+        }
+    }
+    val filtered = remember(products, category, search, hideBarcodedProducts) {
         products.filter { product ->
+            val matchesFilter = !hideBarcodedProducts || search.isNotBlank() || !product.hasDistinctBarcode()
             val matchesCategory = category == "Todos" || category == "Monto Abierto" || product.saleCategory.equals(category, ignoreCase = true)
             val matchesSearch = search.isBlank() ||
                 product.name.contains(search, ignoreCase = true) ||
                 product.sku.contains(search, ignoreCase = true) ||
                 product.barcode?.contains(search, ignoreCase = true) == true
-            matchesCategory && matchesSearch
+            matchesFilter && matchesCategory && matchesSearch
         }
     }
 
@@ -327,14 +337,7 @@ internal fun Sale(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
     ) {
         val landscape = maxWidth > maxHeight
-        if (locked) {
-            LockedCashRegister(
-                repository = repository,
-                cashierId = shift.cashierId,
-                cashierName = cashier,
-                onUnlocked = { locked = false },
-            )
-        } else if (manager != null) {
+        if (manager != null) {
             ManagerPanel(
                 shift = shift,
                 manager = manager,
@@ -349,16 +352,10 @@ internal fun Sale(
             StatusBar(
                 cashier = cashier,
                 pending = pending,
-                syncLabel = inventorySyncLabel(syncState, pending),
+                syncLabel = if (policy?.stockless == true) salesOnlySyncLabel(pending) else inventorySyncLabel(syncState, pending),
                 dark = dark,
                 onTheme = onTheme,
                 landscape = landscape,
-                lockCashRegister = {
-                    checkout = false
-                    paymentMethodDraft = PaymentMethod.CASH
-                    tenderedDraft = ""
-                    locked = true
-                },
                 openManager = { managerAccessRequested = true },
                 openWithdrawal = { withdrawalRequested = true },
                 withdrawalEnabled = !checkout && !busy,
@@ -474,6 +471,8 @@ internal fun Sale(
                                     openAmountRequested = true
                                 },
                                 onOpenSections = { sectionsRequested = true },
+                                hideBarcoded = hideBarcodedProducts,
+                                onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
                             )
 
                             CatalogSplitDivider(
@@ -546,6 +545,8 @@ internal fun Sale(
                             openAmountRequested = true
                         },
                         onOpenSections = { sectionsRequested = true },
+                        hideBarcoded = hideBarcodedProducts,
+                        onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
                     )
                 } else {
                     CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }) { checkout = true }
@@ -625,4 +626,10 @@ internal fun inventorySyncLabel(state: SyncStateEntity?, pending: Int, now: Long
     } else {
         "Inventario sincronizado hace ${minutes} min"
     }
+}
+
+// Avoids inventory copy when the sede is configured as sales-only.
+internal fun salesOnlySyncLabel(pending: Int): String {
+    val pendingText = if (pending == 1) "1 cambio local pendiente" else "$pending cambios locales pendientes"
+    return "Solo venta · $pendingText"
 }

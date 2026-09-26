@@ -1,5 +1,20 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
-  <app-page-header title="Libro de movimientos" subtitle="Historial inmutable de entradas, salidas, transferencias y ajustes" />
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header title="Movimientos" subtitle="Historial de entradas, mermas, transferencias y ajustes" />
+    @if (canRegister()) {
+      <button
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+        (click)="abrirRegistro()"
+      >
+        <span class="material-symbols-outlined text-xl" aria-hidden="true">add</span>
+        Registrar movimiento
+      </button>
+    }
+  </div>
+  @if (notice()) {
+    <p class="rounded-lg bg-accent-container p-3 text-sm text-on-accent" role="status">{{ notice() }}</p>
+  }
   <div class="grid gap-3 rounded-xl ui-panel p-4 sm:grid-cols-2 lg:grid-cols-3">
     <input class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" placeholder="Buscar producto, SKU o código" [(ngModel)]="search" (ngModelChange)="filterChanged()" />
     <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [(ngModel)]="type" (ngModelChange)="filterChanged()"><option value="">Todos los movimientos</option><option value="PURCHASE">Compra</option><option value="TRANSFER">Transferencia</option><option value="SCRAP">Merma</option><option value="ADJUSTMENT_PLUS">Ajuste positivo</option><option value="ADJUSTMENT_MINUS">Ajuste negativo</option></select>
@@ -12,4 +27,7 @@
     <div class="responsive-table rounded-xl ui-panel"><table class="w-full text-sm"><thead class="bg-surface-container-low"><tr><th class="px-3 py-3 text-left">Fecha</th><th class="px-3 py-3 text-left">Producto</th><th class="px-3 py-3 text-left">Tipo</th><th class="px-3 py-3 text-left">Origen / destino</th><th class="px-3 py-3 text-right">Cantidad</th><th class="px-3 py-3 text-left">Motivo / referencia</th><th class="px-3 py-3 text-left">Operador</th></tr></thead><tbody class="divide-y divide-outline-variant/15">@for (row of rows(); track row.id) {<tr><td class="px-3 py-3 whitespace-nowrap">{{ row.createdAt | date:'short' }}</td><td class="px-3 py-3"><div>{{ row.itemSku }}</div><div class="text-xs text-on-surface-variant">#{{ row.itemId }}</div></td><td class="px-3 py-3">{{ movementTypeLabel(row.type) }}<div class="text-xs text-on-surface-variant">{{ directionLabel(row.direction) }}</div></td><td class="px-3 py-3">{{ row.sourceLocationCode || 'Inventario' }} → {{ row.destinationLocationCode || 'Inventario' }}</td><td class="px-3 py-3 text-right tabular-nums">{{ row.quantity }}</td><td class="px-3 py-3">{{ movementReason(row) }}</td><td class="px-3 py-3">{{ row.performedById || 'Sistema' }}</td></tr>}</tbody></table></div>
     @if (metadata(); as info) {<div class="flex items-center justify-between py-3 text-sm text-on-surface-variant"><span>{{ info.totalElements }} movimientos</span><div class="flex items-center gap-2"><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!info.hasPrevious" (click)="previous()">Anterior</button><span>Página {{ info.pageNumber + 1 }} de {{ info.totalPages }}</span><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!info.hasNext" (click)="next()">Siguiente</button></div></div>}
   </app-data-state>
+  @if (registrarAbierto()) {
+    <app-registrar-movimiento-modal (cerrar)="cerrarRegistro()" (registrado)="onRegistrado($event)" />
+  }
 </div>

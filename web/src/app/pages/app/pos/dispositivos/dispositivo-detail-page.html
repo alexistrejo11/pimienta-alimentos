@@ -15,10 +15,13 @@
       @let shift = shifts()[0];
       <section class="ui-panel flex flex-wrap items-center justify-between gap-4 p-5">
          <div><p class="text-on-surface-variant text-xs uppercase">Último turno</p><p class="mt-1 font-semibold">{{ posShiftStatusLabel(shift.status) }} · {{ shift.openedAt | date: 'short' }}</p></div>
+        @if (canViewPosFinancials()) {
         <div><p class="text-on-surface-variant text-xs uppercase">Diferencia de corte</p><p class="mt-1 font-semibold tabular-nums">{{ shift.differenceCentavos === null ? 'Pendiente' : formatCentavos(shift.differenceCentavos) }}</p></div>
+        }
       </section>
     }
 
+    @if (canViewPosFinancials()) {
     <section class="flex flex-col gap-3">
       <div><h2 class="font-headline text-lg font-bold">Actividad de hoy</h2><p class="text-on-surface-variant text-sm">Ventas sincronizadas desde este dispositivo.</p></div>
       @if (sales().length === 0) {
@@ -31,5 +34,6 @@
         </div>
       }
     </section>
+    }
   }
 </div>

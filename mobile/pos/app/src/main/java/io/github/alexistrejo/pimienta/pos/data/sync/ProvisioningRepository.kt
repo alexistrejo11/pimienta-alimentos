@@ -9,6 +9,7 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.BootstrapEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
+import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SiteEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.CatalogCategoryEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
@@ -194,6 +195,82 @@ class ProvisioningRepository(private val context: Context, private val provider:
         }
     }
 
+    /**
+     * Updates name and/or the site offer. Skips the call for a side that did not change
+     * and writes Room after each successful response.
+     */
+    suspend fun updateProduct(
+        product: ProductEntity,
+        name: String,
+        salePriceCentavos: Long,
+        controlledStock: Boolean,
+        barcode: String?,
+    ): Result<ProductEntity> {
+        val plan = planProductEdit(
+            originalName = product.name,
+            originalPriceCentavos = Money.fromCatalog(product.price),
+            originalControlled = product.stockPolicy == "CONTROLLED",
+            originalBarcode = product.barcode,
+            sku = product.sku,
+            name = name,
+            priceCentavos = salePriceCentavos,
+            controlled = controlledStock,
+            barcode = barcode,
+        )
+        if (!plan.rename && !plan.offer) return Result.success(product)
+        var saved = product
+        return try {
+            applyPlannedProductEdit(
+                plan = plan,
+                rename = {
+                    callDevice { api ->
+                        api.renameProduct(product.id, RenamePosProductRequest(name.trim(), catalogBarcode(barcode, product.sku)))
+                    }.getOrThrow()
+                },
+                offer = {
+                    callDevice { api ->
+                        api.updateProductOffer(
+                            product.id,
+                            UpdatePosProductOfferRequest(
+                                salePriceCentavos,
+                                if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
+                            ),
+                        )
+                    }.getOrThrow()
+                },
+                persist = { dto -> saved = persistCreatedProduct(dto) },
+            )
+            Result.success(saved)
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
+    }
+
+    // One device call, refreshing the access token once on 401.
+    private suspend fun <T> callDevice(block: suspend (DeviceApi) -> T): Result<T> {
+        val state = db.syncDao().state()
+        val baseUrl = state?.baseUrl?.trim()?.takeIf { it.isNotEmpty() }
+            ?: return Result.failure(IllegalStateException("Dispositivo no enrolado."))
+        val access = credentials.access()
+            ?: return Result.failure(IllegalStateException("Sesión del dispositivo inválida. Vuelve a enrolar."))
+        return try {
+            Result.success(block(retrofit(baseUrl, access)))
+        } catch (e: HttpException) {
+            if (e.code() != 401) return Result.failure(e)
+            val refresh = credentials.refresh()
+                ?: return Result.failure(IllegalStateException(DeviceSessionPolicy.missingRefreshTokenMessage()))
+            try {
+                val tokens = retrofit(baseUrl, null).refresh(RefreshRequest(refresh))
+                credentials.save(tokens.accessToken, tokens.refreshToken)
+                Result.success(block(retrofit(baseUrl, tokens.accessToken)))
+            } catch (refreshError: Exception) {
+                Result.failure(refreshError)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private fun persistCreatedProduct(dto: ProductDto): ProductEntity {
         val product = dto.toProductEntity()
         db.runInTransaction {
@@ -342,6 +419,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
         staleCatalogWarnHours = staleCatalogWarnHours,
         staleCatalogBlockHours = staleCatalogBlockHours,
         openAmountCategoriesJson = json.encodeToString(openAmountCategories.filter(String::isNotBlank).distinct()),
+        stockless = stockless,
     )
 
     private fun retrofit(url: String, access: String?): DeviceApi {

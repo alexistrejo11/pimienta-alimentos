@@ -23,7 +23,6 @@ class Phase1ComposeTest {
                     dark = true,
                     onTheme = {},
                     landscape = false,
-                    lockCashRegister = {},
                     openManager = {},
                     openWithdrawal = {},
                     withdrawalEnabled = true,

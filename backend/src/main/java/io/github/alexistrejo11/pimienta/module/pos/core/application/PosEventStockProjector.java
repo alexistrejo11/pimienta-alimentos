@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.application;
 
+import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
@@ -19,18 +21,32 @@ public class PosEventStockProjector {
 
   private final PosSaleInventoryUseCases posSaleInventoryUseCases;
   private final PosSaleRepository saleRepository;
+  private final PosOperationalConfigRepository posOperationalConfigRepository;
 
   public PosEventStockProjector(
-      PosSaleInventoryUseCases posSaleInventoryUseCases, PosSaleRepository saleRepository) {
+      PosSaleInventoryUseCases posSaleInventoryUseCases,
+      PosSaleRepository saleRepository,
+      PosOperationalConfigRepository posOperationalConfigRepository) {
     this.posSaleInventoryUseCases = posSaleInventoryUseCases;
     this.saleRepository = saleRepository;
+    this.posOperationalConfigRepository = posOperationalConfigRepository;
   }
 
   public void project(
       long headquarterId, UUID eventId, String eventType, UUID aggregateId, String payloadJson) {
+    if (isStockless(headquarterId)) {
+      return;
+    }
     if ("SALE_CANCELLED".equals(eventType)) {
       reverseCancelledSale(headquarterId, eventId, aggregateId);
     }
+  }
+
+  private boolean isStockless(long headquarterId) {
+    return posOperationalConfigRepository
+        .findByHeadquarterId(headquarterId)
+        .map(PosOperationalConfig::isStockless)
+        .orElse(false);
   }
 
   private void reverseCancelledSale(long headquarterId, UUID eventId, UUID saleId) {

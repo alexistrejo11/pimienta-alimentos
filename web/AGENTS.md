@@ -17,7 +17,7 @@ Visual tokens and layout patterns: use the UI skill below; do not invent ad-hoc 
 
 All **user-visible** text is Spanish and human-readable: labels, buttons, empty states, errors shown to the user, table headers, and **enum values**.
 
-- Wire/API codes stay English (`ACTIVE`, `POS_OPERATOR`, `FINISHED_GOOD`).
+- Wire/API codes stay English (`ACTIVE`, `DIRECTOR`, `FINISHED_GOOD`).
 - Templates must **never** print raw enum codes. Use helpers in `src/app/core/i18n/enum-labels.ts` (e.g. `roleLabel`, `itemCategoryLabel`, `inventoryStatusLabel`).
 - When adding a new API enum to the UI, add its Spanish label to `enum-labels.ts` in the same change.
 

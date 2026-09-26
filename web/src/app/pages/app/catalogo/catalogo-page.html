@@ -4,13 +4,22 @@
       title="Catálogo maestro"
       subtitle="Productos del inventario central para surtir en sedes POS"
     />
-    <a
-      routerLink="/app/ops/catalogo/nuevo"
-      class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
-    >
-      <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">add</span>
-      Nuevo producto
-    </a>
+    <div class="flex flex-wrap gap-2">
+      <a
+        routerLink="/app/ops/catalogo/nuevo/pos"
+        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+      >
+        <span class="material-symbols-outlined text-lg" aria-hidden="true">point_of_sale</span>
+        Producto para POS
+      </a>
+      <a
+        routerLink="/app/ops/catalogo/nuevo/almacen"
+        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg bg-surface-container-high px-4 py-2.5 text-sm font-semibold text-on-surface"
+      >
+        <span class="material-symbols-outlined text-lg" aria-hidden="true">warehouse</span>
+        Producto de almacén
+      </a>
+    </div>
   </div>
 
   <div class="flex flex-col gap-3 rounded-xl ui-panel p-4 sm:flex-row">

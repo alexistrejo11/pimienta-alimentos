@@ -25,7 +25,7 @@
       <section class="ui-panel p-6">
         <h2 class="font-headline text-lg font-bold text-on-surface">Políticas de caja y monto abierto</h2>
         <p class="mt-1 text-sm text-on-surface-variant">
-           Moneda, caducidad del catálogo, autorización de monto abierto y límites de stock negativo.
+           Moneda, caducidad del catálogo, autorización de monto abierto, modo solo venta y límites de stock negativo.
         </p>
         <form
           class="mt-4 grid gap-4 sm:grid-cols-2"
@@ -58,14 +58,17 @@
           <fieldset class="flex flex-col gap-3 text-sm sm:col-span-2">
             <legend class="font-medium">Categorías permitidas para monto abierto</legend>
             <p class="text-xs text-on-surface-variant">
-              Selecciona las categorías que podrá usar el POS. Puedes crear, renombrar, ordenar o archivar cada categoría.
+              Marca cuáles categorías de venta de esta sede puede usar el monto abierto. Para crearlas o renombrarlas, usa el catálogo POS.
             </p>
             @if (activeCategories().length === 0) {
-              <p class="text-xs text-on-surface-variant">No hay categorías POS activas para esta sede.</p>
+              <p class="text-xs text-on-surface-variant">
+                No hay categorías de venta en esta sede.
+                <a routerLink="/app/ops/pos/catalogo" class="font-semibold text-primary">Crearlas en el catálogo</a>.
+              </p>
             } @else {
               <div class="flex flex-col gap-2">
                 @for (category of activeCategories(); track category.id) {
-                  <div class="flex flex-wrap items-center gap-3 rounded-lg bg-surface-container px-3 py-2">
+                  <label class="flex min-h-11 items-center gap-3 rounded-lg bg-surface-container px-3 py-2">
                     <input
                       type="checkbox"
                       class="size-4 accent-primary"
@@ -73,39 +76,10 @@
                       [checked]="isCategorySelected(category.name)"
                       (change)="toggleCategory(category.name, $event)"
                     />
-                    @if (editingCategoryId() === category.id) {
-                      <input
-                        class="min-w-40 flex-1 rounded-lg bg-surface-container-lowest px-3 py-1.5"
-                        [value]="editingCategoryName()"
-                        (input)="setEditingCategoryName($event)"
-                        maxlength="64"
-                        aria-label="Nombre de categoría"
-                      />
-                      <button type="button" class="text-sm font-semibold text-primary" (click)="saveCategoryEdit(category)">Guardar</button>
-                      <button type="button" class="text-sm text-on-surface-variant" (click)="cancelCategoryEdit()">Cancelar</button>
-                    } @else {
-                      <span class="min-w-40 flex-1 font-medium">{{ category.name }}</span>
-                      <button type="button" class="text-sm text-on-surface-variant" (click)="moveCategory(category, -1)" [disabled]="isFirstCategory(category) || categorySaving()">Subir</button>
-                      <button type="button" class="text-sm text-on-surface-variant" (click)="moveCategory(category, 1)" [disabled]="isLastCategory(category) || categorySaving()">Bajar</button>
-                      <button type="button" class="text-sm text-on-surface-variant" (click)="beginCategoryEdit(category)">Renombrar</button>
-                      <button type="button" class="text-sm text-red-700" (click)="archiveCategory(category)" [disabled]="categorySaving()">Archivar</button>
-                    }
-                  </div>
+                    <span class="font-medium">{{ category.name }}</span>
+                  </label>
                 }
               </div>
-            }
-            <div class="flex flex-wrap gap-2">
-              <input
-                class="min-w-56 flex-1 rounded-lg bg-surface-container px-3 py-2"
-                placeholder="Nueva categoría"
-                maxlength="64"
-                [value]="categoryNameDraft()"
-                (input)="setCategoryNameDraft($event)"
-              />
-              <button type="button" class="rounded-lg bg-surface-container-high px-4 py-2 font-semibold" (click)="createCategory()" [disabled]="categorySaving()">Agregar categoría</button>
-            </div>
-            @if (categoryError()) {
-              <p class="text-xs text-red-700" role="alert">{{ categoryError() }}</p>
             }
             @if (settingsForm.hasError('openAmountCategoriesRequired')) {
               <p class="text-xs text-red-700" role="alert">Activa al menos una categoría para habilitar los montos abiertos.</p>
@@ -122,7 +96,17 @@
             <span>
               <span class="font-medium">Permitir montos abiertos</span><br />
               <span class="text-xs text-on-surface-variant"
-                >Requiere autorización de Gerente o Superadmin y queda sujeto a revisión.</span
+                >El cajero puede cobrar un importe libre en las categorías marcadas.</span
+              >
+            </span>
+          </label>
+          <label class="flex items-center gap-3 text-sm sm:col-span-2">
+            <input type="checkbox" class="size-4 accent-primary" formControlName="stockless" />
+            <span>
+              <span class="font-medium">Solo venta (sin stock)</span><br />
+              <span class="text-xs text-on-surface-variant"
+                >Las ventas y cancelaciones de esta sede no descuentan inventario. Se puede
+                desactivar después; el catálogo no se recataloga.</span
               >
             </span>
           </label>
