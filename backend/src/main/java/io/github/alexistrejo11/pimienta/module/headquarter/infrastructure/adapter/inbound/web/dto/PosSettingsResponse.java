@@ -14,6 +14,7 @@ public record PosSettingsResponse(
     List<String> openAmountCategories,
     boolean allowOpenProducts,
     Integer defaultNegativeStockLimit,
+    boolean stockless,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     Long version) {}

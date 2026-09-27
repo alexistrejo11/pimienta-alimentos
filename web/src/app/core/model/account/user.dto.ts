@@ -8,8 +8,8 @@ export interface UserResponse {
   lastName: string;
   gender: Gender;
   phone: string;
-  /** ISO date (yyyy-MM-dd). */
-  dateOfBirth: string;
+  /** Legacy column; may be null for newer accounts. */
+  dateOfBirth?: string | null;
   accountStatus: AccountStatus;
   bannedReason: string | null;
   bannedAt: string | null;
@@ -26,8 +26,6 @@ export interface UpdateProfileRequest {
   lastName: string;
   gender: Gender;
   phone: string;
-  /** ISO date (yyyy-MM-dd). */
-  dateOfBirth: string;
 }
 
 /** GET /api/v1/users/me/dashboard — métricas para el panel del gestor. */

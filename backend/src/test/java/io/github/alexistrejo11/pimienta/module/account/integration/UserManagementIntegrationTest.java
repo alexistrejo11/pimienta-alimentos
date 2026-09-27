@@ -193,10 +193,10 @@ class UserManagementIntegrationTest {
             AccountTestRequests.postJsonBearer(
                 "/api/v1/users/management/" + targetId + "/roles",
                 adminToken,
-                "{\"roles\":[\"EMPLOYEE\",\"POS_OPERATOR\",\"EMPLOYEE\"]}"))
+                "{\"roles\":[\"EMPLOYEE\",\"DIRECTOR\",\"EMPLOYEE\"]}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.roles", hasItem("EMPLOYEE")))
-        .andExpect(jsonPath("$.roles", hasItem("POS_OPERATOR")))
+        .andExpect(jsonPath("$.roles", hasItem("DIRECTOR")))
         .andExpect(jsonPath("$.roles", hasSize(2)))
         .andExpect(jsonPath("$.roles", org.hamcrest.Matchers.not(hasItem("SUPPORT"))));
 

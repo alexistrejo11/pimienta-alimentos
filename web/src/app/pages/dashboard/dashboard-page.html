@@ -24,6 +24,7 @@
     </div>
   </header>
 
+  @if (canViewPosFinancials()) {
   <section class="flex flex-col gap-4">
     <h2 class="font-headline text-lg font-bold text-on-surface">Punto de venta — hoy</h2>
     @if (posLoading() && !hasPosRows()) {
@@ -49,16 +50,10 @@
           <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ posTotals().cancellationCount }}</p>
         </li>
         <li class="ui-panel p-5">
-          <a routerLink="/app/ops/pos/incidencias" class="block">
-            <p class="text-xs font-medium uppercase text-on-surface-variant">Incidencias abiertas</p>
-            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ posTotals().openIncidentCount }}</p>
-          </a>
-        </li>
-        <li class="ui-panel p-5">
           <p class="text-xs font-medium uppercase text-on-surface-variant">Productos abiertos</p>
           <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(posTotals().openProductCentavos) }}</p>
           <p class="mt-1 text-xs text-on-surface-variant">
-            {{ posTotals().openProductLineCount }} líneas · {{ posTotals().openProductPendingReviewCount }} por revisar
+            {{ posTotals().openProductLineCount }} líneas
           </p>
         </li>
         <li class="ui-panel p-5">
@@ -70,6 +65,7 @@
       </ul>
     }
   </section>
+  }
 
   <section class="flex flex-col gap-4">
     <h2 class="font-headline text-lg font-bold text-on-surface">Inventario</h2>
@@ -115,7 +111,7 @@
     }
   </section>
 
-  @if (session.activeHeadquarterId() != null) {
+  @if (canViewPosFinancials() && session.activeHeadquarterId() != null) {
     <section class="flex flex-col gap-4">
       <div class="flex items-end justify-between gap-3">
         <div>

@@ -73,7 +73,7 @@ Older modules may use `adapter/` instead of `infrastructure/adapter/`, or `outbo
 - Exceptions (edit **`SecurityConfig`** only for these):
   - **Public**: auth, health, swagger, POS device enroll/refresh/APK.
       - **`/api/v1/users/me/**`** and **`POST /api/v1/telemetry/web/events`**: any staff JWT (`staffJwtOnly`).
-  - **`/api/v1/pos/admin/**`** and HQ **`pos-settings` / `pos-catalog`**: `ADMIN` or `MANAGER` (HQ scope via `HeadquarterAccessService`).
+  - **`/api/v1/pos/admin/**`** and HQ **`pos-settings` / `pos-catalog`**: `ADMIN`, `DIRECTOR`, `MANAGER`, or `EMPLOYEE` (HQ scope via `HeadquarterAccessService`). Sales, product, summary, and shift-close reports: `ADMIN` or `DIRECTOR`. Device revoke: `ADMIN` only. ERP (`clients`, `employees`, `contracts`, `payroll`, `tasks`, CRM): `ADMIN` only.
   - **Device** `/api/v1/pos/**`: `SCOPE_pos:sync`.
 - Unauthenticated secured call → **401**; authenticated without permission → **403**.
 - Client-facing error **`message`** is Spanish (`ClientErrorMessages` + `i18n/messages_es.properties`). Domain / logs stay English. Wire `errorCode` and enum names stay English.

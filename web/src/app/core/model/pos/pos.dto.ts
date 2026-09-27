@@ -53,6 +53,7 @@ export interface PosSettingsResponse {
   openAmountCategories: string[];
   allowOpenProducts: boolean;
   defaultNegativeStockLimit: number | null;
+  stockless: boolean;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -65,6 +66,7 @@ export interface PosSettingsRequest {
   openAmountCategories?: string[];
   allowOpenProducts?: boolean;
   defaultNegativeStockLimit?: number | null;
+  stockless?: boolean;
 }
 
 /** GET/PUT /api/v1/headquarters/{id}/pos-catalog/{itemId} */
@@ -222,25 +224,6 @@ export interface UpdatePosOperatorRequest {
   userId?: number | null;
   active?: boolean;
   headquarterIds?: number[];
-}
-
-/** GET /api/v1/pos/admin/sync-incidents */
-export interface PosSyncIncidentResponse {
-  id: string;
-  eventId: string;
-  headquarterId: number;
-  reasonCode: string;
-  detail: string;
-  acceptedAt: string | null;
-  acceptedBy: number | null;
-  acceptLabel: string | null;
-  acceptNote: string | null;
-  createdAt: string;
-}
-
-export interface AcceptPosSyncIncidentRequest {
-  label: string;
-  note: string;
 }
 
 /** GET /api/v1/pos/admin/reports/summary */

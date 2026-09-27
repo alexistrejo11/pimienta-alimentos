@@ -1,5 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
@@ -15,6 +21,19 @@ import type { Gender } from '../../../core/model/account/enums';
 import { accountStatusLabel, genderLabel } from '../../../core/i18n/enum-labels';
 import { BRAND_LOGO_URL, LANDING_COVER_IMAGE } from '../../home/brand';
 
+function passwordsMatch(control: AbstractControl): ValidationErrors | null {
+  const parent = control.parent;
+  if (!parent) {
+    return null;
+  }
+  const password = parent.get('password')?.value;
+  const confirm = control.value;
+  if (confirm === '' || password === confirm) {
+    return null;
+  }
+  return { mismatch: true };
+}
+
 @Component({
   selector: 'app-register',
   imports: [ReactiveFormsModule, RouterLink],
@@ -29,9 +48,10 @@ export class Register {
 
   /** Options for {@link RegisterRequest.gender}; labels are UI-only. */
   readonly genderOptions: { value: Gender; label: string }[] = (
-    ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER', 'PREFER_NOT_TO_SAY'] as Gender[]
+    ['MALE', 'FEMALE', 'OTHER'] as Gender[]
   ).map((value) => ({ value, label: genderLabel(value) }));
 
+  readonly passwordVisible = signal(false);
   readonly submitting = signal(false);
   /** Set when the API returns an error (parsed {@link ParsedApiError} for template + logging). */
   readonly apiError = signal<ParsedApiError | null>(null);
@@ -56,8 +76,18 @@ export class Register {
       ],
     ],
     password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(32)]],
-    dateOfBirth: ['', [Validators.required]],
+    confirmPassword: ['', [Validators.required, passwordsMatch]],
   });
+
+  constructor() {
+    this.form.controls.password.valueChanges.subscribe(() => {
+      this.form.controls.confirmPassword.updateValueAndValidity({ emitEvent: false });
+    });
+  }
+
+  togglePasswordVisible(): void {
+    this.passwordVisible.update((v) => !v);
+  }
 
   submit(): void {
     this.apiError.set(null);
@@ -75,7 +105,6 @@ export class Register {
       email: v.email.trim().toLowerCase(),
       phone: v.phone.trim(),
       password: v.password,
-      dateOfBirth: v.dateOfBirth,
     };
 
     this.submitting.set(true);
@@ -92,6 +121,7 @@ export class Register {
         next: (body) => {
           this.registerSuccess.set(body);
           this.form.reset();
+          this.passwordVisible.set(false);
         },
         error: (err: unknown) => {
           const parsed = parseApiError(err);

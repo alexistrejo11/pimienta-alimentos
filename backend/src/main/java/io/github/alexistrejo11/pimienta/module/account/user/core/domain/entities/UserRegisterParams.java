@@ -1,6 +1,5 @@
 package io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities;
 
-import java.time.LocalDate;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Gender;
 
 /**
@@ -25,8 +24,7 @@ public record UserRegisterParams(
     String firstName,
     String lastName,
     Gender gender,
-    String phone,
-    LocalDate dateOfBirth) {
+    String phone) {
 
   public static Builder builder() {
     return new Builder();
@@ -40,7 +38,6 @@ public record UserRegisterParams(
     private String lastName;
     private Gender gender;
     private String phone;
-    private LocalDate dateOfBirth;
 
     private Builder() {
     }
@@ -75,13 +72,8 @@ public record UserRegisterParams(
       return this;
     }
 
-    public Builder dateOfBirth(LocalDate dateOfBirth) {
-      this.dateOfBirth = dateOfBirth;
-      return this;
-    }
-
     public UserRegisterParams build() {
-      return new UserRegisterParams(email, passwordHash, firstName, lastName, gender, phone, dateOfBirth);
+      return new UserRegisterParams(email, passwordHash, firstName, lastName, gender, phone);
     }
   }
 }

@@ -7,10 +7,8 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "product")
 data class ProductEntity(
     @PrimaryKey val id: String,
-    val legacyId: String?,
     val sku: String,
     val barcode: String?,
-    val legacyBarcode: String?,
     val name: String,
     val saleCategory: String,
     val unit: String,
@@ -21,6 +19,11 @@ data class ProductEntity(
     val stockMin: String,
     val stockPolicy: String,
     val negativeStockLimit: Int?,
-    val legacyUpdatedAt: Long?,
     val centralStock: String = stock,
-)
+) {
+    // Checks if the product has a distinct supplier barcode (not blank and not equal to the SKU).
+    fun hasDistinctBarcode(): Boolean {
+        val trimmed = barcode?.trim() ?: return false
+        return trimmed.isNotEmpty() && !trimmed.equals(sku.trim(), ignoreCase = true)
+    }
+}

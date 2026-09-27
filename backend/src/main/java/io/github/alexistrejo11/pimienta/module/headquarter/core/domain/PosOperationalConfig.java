@@ -15,6 +15,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
   private List<String> openAmountCategories;
   private boolean allowOpenProducts;
   private Integer defaultNegativeStockLimit;
+  private boolean stockless;
 
   private PosOperationalConfig() {
     this.id = 0L;
@@ -24,6 +25,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     this.catalogStaleBlockHours = 72;
     this.openAmountCategories = new ArrayList<>();
     this.allowOpenProducts = false;
+    this.stockless = false;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.version = 0L;
@@ -57,6 +59,10 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     return allowOpenProducts;
   }
 
+  public boolean isStockless() {
+    return stockless;
+  }
+
   public void touch() {
     this.updatedAt = LocalDateTime.now();
   }
@@ -74,6 +80,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     private List<String> openAmountCategories;
     private Boolean allowOpenProducts;
     private Integer defaultNegativeStockLimit;
+    private Boolean stockless;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
@@ -119,6 +126,11 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       return this;
     }
 
+    public SafeBuilder withStockless(Boolean stockless) {
+      this.stockless = stockless;
+      return this;
+    }
+
     public SafeBuilder withCreatedAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -150,6 +162,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
           openAmountCategories != null ? new ArrayList<>(openAmountCategories) : new ArrayList<>();
       c.allowOpenProducts = allowOpenProducts != null && allowOpenProducts;
       c.defaultNegativeStockLimit = defaultNegativeStockLimit;
+      c.stockless = stockless != null && stockless;
       c.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       c.updatedAt = updatedAt != null ? updatedAt : c.createdAt;
       c.deletedAt = deletedAt;

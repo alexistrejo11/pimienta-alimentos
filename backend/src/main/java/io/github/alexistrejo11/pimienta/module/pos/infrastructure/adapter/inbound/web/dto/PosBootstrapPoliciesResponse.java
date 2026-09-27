@@ -10,4 +10,5 @@ public record PosBootstrapPoliciesResponse(
     boolean allowOpenProducts,
     Integer defaultNegativeStockLimit,
     int staleCatalogWarnHours,
-    int staleCatalogBlockHours) {}
+    int staleCatalogBlockHours,
+    boolean stockless) {}

@@ -76,7 +76,6 @@ public class AuthUseCasesImpl implements AuthUseCases {
         .lastName(command.lastName())
         .gender(command.gender())
         .phone(command.phone())
-        .dateOfBirth(command.dateOfBirth())
         .build();
 
     User user = User.register(params);

@@ -8,7 +8,6 @@ import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Ro
 import io.github.alexistrejo11.pimienta.module.account.user.core.port.input.AdminBootstrapUseCases;
 import io.github.alexistrejo11.pimienta.module.account.user.core.port.output.UserRepository;
 import io.github.alexistrejo11.pimienta.shared.validation.PasswordStrengthValidator;
-import java.time.LocalDate;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminBootstrapUseCasesImpl implements AdminBootstrapUseCases {
 
   private static final Logger log = LoggerFactory.getLogger(AdminBootstrapUseCasesImpl.class);
-  private static final LocalDate PLACEHOLDER_DATE_OF_BIRTH = LocalDate.of(1990, 1, 1);
   private static final PasswordStrengthValidator PASSWORD_STRENGTH = new PasswordStrengthValidator();
 
   private final AdminBootstrapProperties properties;
@@ -79,9 +77,8 @@ public class AdminBootstrapUseCasesImpl implements AdminBootstrapUseCases {
                 .passwordHash(passwordEncoder.encode(password))
                 .firstName(blankToDefault(properties.getFirstName(), "Admin"))
                 .lastName(blankToDefault(properties.getLastName(), "Pimienta"))
-                .gender(Gender.PREFER_NOT_TO_SAY)
+                .gender(Gender.OTHER)
                 .phone(phone)
-                .dateOfBirth(PLACEHOLDER_DATE_OF_BIRTH)
                 .build());
     user.activate();
     user.addRoles(List.of(Role.ADMIN));

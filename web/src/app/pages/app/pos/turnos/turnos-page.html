@@ -15,6 +15,7 @@
     >
       Turnos activos
     </button>
+    @if (canViewPosFinancials()) {
     <button
       type="button"
       class="px-4 py-2 text-sm font-semibold"
@@ -25,6 +26,7 @@
     >
       Historial / Cortes Z
     </button>
+    }
   </div>
 
   <div class="flex flex-wrap gap-3">
@@ -95,7 +97,9 @@
                 <th class="px-4 py-3 text-left">Diferencia</th>
               }
               <th class="px-4 py-3 text-left">Fondo inicial</th>
+              @if (canViewPosFinancials()) {
               <th class="px-4 py-3 text-left"></th>
+              }
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant/15">
@@ -117,13 +121,16 @@
                   </td>
                 }
                 <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.openingCashCentavos) }}</td>
+                @if (canViewPosFinancials()) {
                 <td class="px-4 py-3 text-xs text-on-surface-variant">Detalle</td>
+                }
               </tr>
             }
           </tbody>
         </table>
       </div>
 
+      @if (canViewPosFinancials()) {
       <aside class="rounded-xl border ui-panel p-4 text-sm">
         <h2 class="mb-3 font-bold">Detalle del turno</h2>
         @if (detailLoading()) {
@@ -177,6 +184,7 @@
           <p class="text-on-surface-variant">Selecciona un turno para ver el corte.</p>
         }
       </aside>
+      }
     </div>
   </app-data-state>
 </div>

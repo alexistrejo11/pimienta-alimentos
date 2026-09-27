@@ -10,7 +10,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Enforces headquarter scope for MANAGER web staff; ADMIN bypasses checks. */
+/** Enforces headquarter scope for sede staff. ADMIN bypasses checks. */
 @Service
 public class HeadquarterAccessService {
 
@@ -41,7 +41,7 @@ public class HeadquarterAccessService {
     requireHeadquarterAccess(principal, headquarterId);
   }
 
-  /** MANAGER must pass an assigned HQ; ADMIN may omit for global views. */
+  /** Scoped staff must pass an assigned HQ; ADMIN may omit for global views. */
   @Transactional(readOnly = true)
   public void requireGlobalPosAccess(JwtAuthenticationContext principal) {
     if (isAdmin(principal)) {
@@ -53,6 +53,29 @@ public class HeadquarterAccessService {
         "userId=" + principal.userId() + " attempted global POS access");
   }
 
+  /** Sales, product mix, shift closes, and cash reconciliation. */
+  @Transactional(readOnly = true)
+  public boolean canViewPosFinancials(JwtAuthenticationContext principal) {
+    return isAdmin(principal) || isDirector(principal);
+  }
+
+  @Transactional(readOnly = true)
+  public void requirePosFinancialAccess(JwtAuthenticationContext principal) {
+    if (canViewPosFinancials(principal)) {
+      return;
+    }
+    throw financialForbidden(principal);
+  }
+
+  /** Floor staff may inspect open shifts only. */
+  @Transactional(readOnly = true)
+  public void requireOpenShift(JwtAuthenticationContext principal, String status) {
+    if (canViewPosFinancials(principal) || "OPEN".equals(status)) {
+      return;
+    }
+    throw financialForbidden(principal);
+  }
+
   @Transactional(readOnly = true)
   public List<Long> assignedHeadquarters(JwtAuthenticationContext principal) {
     return loadUser(principal).getAssignedHeadquarterIds();
@@ -60,12 +83,17 @@ public class HeadquarterAccessService {
 
   @Transactional(readOnly = true)
   public boolean isAdmin(JwtAuthenticationContext principal) {
-    return principal.roles().stream().anyMatch(r -> "ADMIN".equals(r) || "ROLE_ADMIN".equals(r));
+    return hasRole(principal, "ADMIN");
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isDirector(JwtAuthenticationContext principal) {
+    return hasRole(principal, "DIRECTOR");
   }
 
   @Transactional(readOnly = true)
   public boolean isManager(JwtAuthenticationContext principal) {
-    return principal.roles().stream().anyMatch(r -> "MANAGER".equals(r) || "ROLE_MANAGER".equals(r));
+    return hasRole(principal, "MANAGER");
   }
 
   @Transactional(readOnly = true)
@@ -76,14 +104,14 @@ public class HeadquarterAccessService {
     }
     if (ids.isEmpty()) {
       throw new ForbiddenException(
-          "Manager has no assigned headquarter",
+          "Assigned headquarter is required",
           Map.of("userId", principal.userId()),
-          "MANAGER without account_user_headquarters row");
+          "scoped staff without account_user_headquarters row");
     }
     throw new ForbiddenException(
-        "Manager must have exactly one assigned headquarter for this operation",
+        "Exactly one assigned headquarter is required for this operation",
         Map.of("userId", principal.userId(), "assignedCount", ids.size()),
-        "MANAGER with multiple HQs");
+        "scoped staff with multiple HQs");
   }
 
   @Transactional(readOnly = true)
@@ -91,12 +119,12 @@ public class HeadquarterAccessService {
     if (isAdmin(principal)) {
       return requestedHeadquarterId;
     }
-    if (isManager(principal)) {
-      Long managerHq = resolveManagerHeadquarter(principal);
-      if (requestedHeadquarterId != null && !requestedHeadquarterId.equals(managerHq)) {
+    if (isScopedStaff(principal)) {
+      Long assigned = resolveManagerHeadquarter(principal);
+      if (requestedHeadquarterId != null && !requestedHeadquarterId.equals(assigned)) {
         throw forbidden(requestedHeadquarterId);
       }
-      return managerHq;
+      return assigned;
     }
     if (requestedHeadquarterId != null) {
       requireHeadquarterAccess(principal, requestedHeadquarterId);
@@ -118,9 +146,18 @@ public class HeadquarterAccessService {
   }
 
   private boolean isScopedStaff(JwtAuthenticationContext principal) {
-    return isManager(principal)
-        || principal.roles().stream()
-            .anyMatch(r -> "POS_OPERATOR".equals(r) || "ROLE_POS_OPERATOR".equals(r));
+    return isDirector(principal) || isManager(principal) || hasRole(principal, "EMPLOYEE");
+  }
+
+  private static boolean hasRole(JwtAuthenticationContext principal, String role) {
+    return principal.roles().stream().anyMatch(r -> role.equals(r) || ("ROLE_" + role).equals(r));
+  }
+
+  private static ForbiddenException financialForbidden(JwtAuthenticationContext principal) {
+    return new ForbiddenException(
+        "No tienes permiso para ver ventas ni cortes",
+        Map.of("userId", principal.userId()),
+        "pos financial access denied");
   }
 
   /** Null-owned warehouse locations are global data and are ADMIN-only. */

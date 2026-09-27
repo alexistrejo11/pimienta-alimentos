@@ -4,6 +4,8 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 // Defines the Spring Boot POS Device API used by the background worker.
@@ -15,5 +17,7 @@ interface DeviceApi {
     @GET("api/v1/pos/sync/changes") suspend fun changes(@Query("cursor") cursor: String): ChangesResponse
     @POST("api/v1/pos/sync/events") suspend fun events(@Body body: EventsRequest): EventsResponse
     @POST("api/v1/pos/sync/products") suspend fun createProduct(@Body body: CreatePosProductRequest): ProductDto
+    @PUT("api/v1/pos/sync/products/{itemId}") suspend fun renameProduct(@Path("itemId") itemId: String, @Body body: RenamePosProductRequest): ProductDto
+    @PUT("api/v1/pos/sync/products/{itemId}/offer") suspend fun updateProductOffer(@Path("itemId") itemId: String, @Body body: UpdatePosProductOfferRequest): ProductDto
     @POST("api/v1/pos/telemetry/events") suspend fun telemetry(@Body body: TelemetryBatchRequest): TelemetryAcceptedResponse
 }

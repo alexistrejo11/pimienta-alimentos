@@ -211,4 +211,52 @@ object Migrations {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_shift_deviceId_status` ON `shift` (`deviceId`, `status`)")
         }
     }
+
+    // Stores the HQ sales-only flag so the tablet can skip local stock movements.
+    val V16_TO_V17 = object : Migration(16, 17) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `pos_policy` ADD COLUMN `stockless` INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    // Drops unused catalog provenance columns that never belonged to the Device API product shape.
+    val V17_TO_V18 = object : Migration(17, 18) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `product_new` (
+                    `id` TEXT NOT NULL,
+                    `sku` TEXT NOT NULL,
+                    `barcode` TEXT,
+                    `name` TEXT NOT NULL,
+                    `saleCategory` TEXT NOT NULL,
+                    `unit` TEXT NOT NULL,
+                    `price` TEXT NOT NULL,
+                    `cost` TEXT NOT NULL,
+                    `available` INTEGER NOT NULL,
+                    `stock` TEXT NOT NULL,
+                    `stockMin` TEXT NOT NULL,
+                    `stockPolicy` TEXT NOT NULL,
+                    `negativeStockLimit` INTEGER,
+                    `centralStock` TEXT NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            database.execSQL(
+                """
+                INSERT INTO `product_new` (
+                    `id`, `sku`, `barcode`, `name`, `saleCategory`, `unit`, `price`, `cost`,
+                    `available`, `stock`, `stockMin`, `stockPolicy`, `negativeStockLimit`, `centralStock`
+                )
+                SELECT
+                    `id`, `sku`, `barcode`, `name`, `saleCategory`, `unit`, `price`, `cost`,
+                    `available`, `stock`, `stockMin`, `stockPolicy`, `negativeStockLimit`, `centralStock`
+                FROM `product`
+                """.trimIndent()
+            )
+            database.execSQL("DROP TABLE `product`")
+            database.execSQL("ALTER TABLE `product_new` RENAME TO `product`")
+        }
+    }
 }

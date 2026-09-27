@@ -46,21 +46,11 @@ class PosDatabaseProvider(private val context: Context) {
         }
     }
 
-    // Deletes the training scratch database and returns a fresh empty instance.
+    // Clears all tables in the training scratch database and returns the live instance.
     fun resetTrainingDatabase(): PosDatabase = synchronized(lock) {
-        close(RuntimeMode.SANDBOX)
-        deleteDatabaseFiles(TRAINING_DB_NAME)
-        database(RuntimeMode.SANDBOX)
-    }
-
-    private fun deleteDatabaseFiles(databaseName: String) {
-        context.deleteDatabase(databaseName)
-        deleteIfExists(context.getDatabasePath("$databaseName-wal"))
-        deleteIfExists(context.getDatabasePath("$databaseName-shm"))
-    }
-
-    private fun deleteIfExists(file: File) {
-        if (file.exists()) file.delete()
+        val db = database(RuntimeMode.SANDBOX)
+        db.clearAllTables()
+        db
     }
 
     private fun migrateLegacyDatabase() {

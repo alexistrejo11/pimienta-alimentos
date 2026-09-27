@@ -21,7 +21,7 @@ function identityFrom(session: SessionContextService) {
   };
 }
 
-/** Hub `/app`: admin elige área; el resto va a ops, asistencia o restringido. */
+/** Hub `/app`: admin elige área; director, gerente y empleado van a operaciones. */
 export const workspaceHubGuard: CanActivateFn = () => {
   const session = inject(SessionContextService);
   const router = inject(Router);
@@ -45,7 +45,7 @@ export const workspaceHubGuard: CanActivateFn = () => {
   );
 };
 
-/** Oficina (ERP): solo admin. Gerente/operador POS caen a operaciones. */
+/** Oficina (ERP): solo admin. Director, gerente y empleado caen a operaciones. */
 export const erpAreaGuard: CanActivateFn = () => {
   const session = inject(SessionContextService);
   const router = inject(Router);
@@ -69,7 +69,7 @@ export const erpAreaGuard: CanActivateFn = () => {
   );
 };
 
-/** Operaciones (inventario + POS): admin, gerente y operador POS. */
+/** Operaciones (inventario + POS): admin, director, gerente y empleado. */
 export const opsAreaGuard: CanActivateFn = () => {
   const session = inject(SessionContextService);
   const router = inject(Router);

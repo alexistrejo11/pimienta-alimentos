@@ -3,6 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { PosDeviceAdminResponse, PosSaleReportResponse, PosShiftResponse } from '../../../../core/model/pos/pos.dto';
@@ -21,6 +22,9 @@ export class DispositivoDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly posAdmin = inject(PosAdminService);
   private readonly lookup = inject(HeadquarterLookupService);
+  private readonly session = inject(SessionContextService);
+
+  readonly canViewPosFinancials = this.session.canViewPosFinancials;
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
@@ -57,13 +61,22 @@ export class DispositivoDetailPageComponent implements OnInit {
 
   private loadActivity(device: PosDeviceAdminResponse): void {
     const range = todayInstantRange();
-    this.posAdmin.reportSales({ headquarterId: device.headquarterId, from: range.from, to: range.to, page: 0, size: 100 }).subscribe({
-      next: (page) => this.sales.set(page.items.filter((sale) => sale.deviceId === device.id)),
-      error: () => this.sales.set([]),
-    });
-    this.posAdmin.listShifts({ headquarterId: device.headquarterId, page: 0, size: 100 }).subscribe({
-      next: (page) => this.shifts.set(page.items.filter((shift) => shift.deviceId === device.id)),
-      error: () => this.shifts.set([]),
-    });
+    if (this.session.canViewPosFinancials()) {
+      this.posAdmin.reportSales({ headquarterId: device.headquarterId, from: range.from, to: range.to, page: 0, size: 100 }).subscribe({
+        next: (page) => this.sales.set(page.items.filter((sale) => sale.deviceId === device.id)),
+        error: () => this.sales.set([]),
+      });
+    }
+    this.posAdmin
+      .listShifts({
+        headquarterId: device.headquarterId,
+        status: this.session.canViewPosFinancials() ? undefined : 'OPEN',
+        page: 0,
+        size: 100,
+      })
+      .subscribe({
+        next: (page) => this.shifts.set(page.items.filter((shift) => shift.deviceId === device.id)),
+        error: () => this.shifts.set([]),
+      });
   }
 }

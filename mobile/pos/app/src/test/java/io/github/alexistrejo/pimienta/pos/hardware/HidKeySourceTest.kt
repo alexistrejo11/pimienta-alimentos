@@ -1,5 +1,6 @@
 package io.github.alexistrejo.pimienta.pos.hardware
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -37,5 +38,15 @@ class HidKeySourceTest {
                 source = 0x101,
             ),
         )
+    }
+
+    @Test
+    fun barcodeCharUsesDigitKeycodesWhenUnicodeIsZero() {
+        assertEquals('5', HidKeySource.barcodeChar(HidKeySource.KEYCODE_0 + 5, unicodeChar = 0))
+        assertEquals('7', HidKeySource.barcodeChar(HidKeySource.KEYCODE_NUMPAD_0 + 7, unicodeChar = 0))
+        assertEquals('A', HidKeySource.barcodeChar(29, unicodeChar = 'A'.code))
+        assertTrue(HidKeySource.isEnterKeyCode(HidKeySource.KEYCODE_ENTER))
+        assertTrue(HidKeySource.isEnterKeyCode(HidKeySource.KEYCODE_NUMPAD_ENTER))
+        assertFalse(HidKeySource.isEnterKeyCode(HidKeySource.KEYCODE_0))
     }
 }

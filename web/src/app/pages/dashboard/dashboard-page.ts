@@ -64,6 +64,7 @@ export class DashboardPageComponent implements OnInit {
   readonly inventoryDash = signal<InventoryDashboardResponse | null>(null);
 
   readonly isAdmin = this.session.isAdmin;
+  readonly canViewPosFinancials = this.session.canViewPosFinancials;
   readonly formatCentavos = formatCentavos;
   private readonly destroyRef = inject(DestroyRef);
   private readonly refresh$ = new Subject<void>();
@@ -97,6 +98,12 @@ export class DashboardPageComponent implements OnInit {
     ticks$
       .pipe(
         switchMap(() => {
+          if (!this.session.canViewPosFinancials()) {
+            this.posLoading.set(false);
+            this.posTotals.set(EMPTY_POS);
+            this.hasPosRows.set(false);
+            return of(null);
+          }
           this.posError.set(null);
           this.posLoading.set(true);
           const range = todayInstantRange();
@@ -141,7 +148,7 @@ export class DashboardPageComponent implements OnInit {
       .pipe(
         switchMap(() => {
           const hqId = this.session.activeHeadquarterId();
-          if (hqId == null) {
+          if (!this.session.canViewPosFinancials() || hqId == null) {
             this.activity.set([]);
             return of(null);
           }

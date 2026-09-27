@@ -12,7 +12,13 @@
     }
   </div>
 
-  <!-- Estadísticas de sedes -->
+  @if (managerUnassigned()) {
+    <div class="ui-panel p-6 text-sm text-on-surface-variant">
+      No tienes sede asignada. Pide a un administrador que te asigne una sede en Usuarios.
+    </div>
+  }
+
+  <!-- Estadísticas de sedes (solo admin) -->
   @if (stats(); as s) {
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div class="ui-panel p-4">

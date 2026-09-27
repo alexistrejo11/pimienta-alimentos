@@ -104,40 +104,35 @@ public class SecurityConfig {
                 .access(staffJwtOnly())
                 .requestMatchers(HttpMethod.POST, BASE + "/telemetry/web/events")
                 .access(staffJwtOnly())
-                // POS operator read/report and sale access is deliberately narrower than POS
-                // admin.
+                // Device session revoke stays with ADMIN. Financial reports stay with ADMIN and DIRECTOR.
+                .requestMatchers(HttpMethod.POST, BASE + "/pos/admin/devices/*/revoke")
+                .hasRole("ADMIN")
                 .requestMatchers(
+                    BASE + "/pos/admin/reports/summary",
                     BASE + "/pos/admin/reports/sales",
                     BASE + "/pos/admin/reports/products",
-                    BASE + "/pos/admin/reports/waste-cancellations",
                     BASE + "/pos/admin/reports/shift-closes")
-                .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
+                .hasAnyRole("ADMIN", "DIRECTOR")
                 .requestMatchers(BASE + "/pos/admin/**")
-                .hasAnyRole("ADMIN", "MANAGER")
+                .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .requestMatchers(
                     BASE + "/headquarters/*/pos-settings",
-                    BASE + "/headquarters/*/pos-settings/**")
-                .hasAnyRole("ADMIN", "MANAGER")
-                .requestMatchers(
-                    HttpMethod.GET,
+                    BASE + "/headquarters/*/pos-settings/**",
                     BASE + "/headquarters/*/pos-catalog",
                     BASE + "/headquarters/*/pos-catalog/**",
                     BASE + "/headquarters/*/pos-categories",
                     BASE + "/headquarters/*/pos-categories/**")
-                .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
-                .requestMatchers(
-                    BASE + "/headquarters/*/pos-categories",
-                    BASE + "/headquarters/*/pos-categories/**")
-                .hasAnyRole("ADMIN", "MANAGER")
-                .requestMatchers(
-                    BASE + "/headquarters/*/pos-catalog",
-                    BASE + "/headquarters/*/pos-catalog/**")
-                .hasAnyRole("ADMIN", "MANAGER")
-                // POS operators may inspect stock only; inventory writes stay with staff roles.
-                .requestMatchers(HttpMethod.GET, BASE + "/inventory/**")
-                .hasAnyRole("ADMIN", "MANAGER", "POS_OPERATOR")
-                .requestMatchers(HttpMethod.POST, BASE + "/inventory/transactions/sale")
-                .hasAnyRole("ADMIN", "MANAGER")
+                .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/statistics")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/export")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/name/**")
+                .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
+                .requestMatchers(HttpMethod.GET, BASE + "/headquarters/*")
+                .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .requestMatchers(
                     HttpMethod.POST,
                     BASE + "/inventory/transactions/adjustment",
@@ -147,17 +142,12 @@ public class SecurityConfig {
                     HttpMethod.POST,
                     BASE + "/inventory/count-sessions/*/approve")
                 .hasRole("ADMIN")
-                // Managers own CRM, talent, tasks, and HQ-scoped inventory workflows.
-                .requestMatchers(
-                    BASE + "/clients/**",
-                    BASE + "/opportunities/**",
-                    BASE + "/projects/**",
-                    BASE + "/tasks/**",
-                    BASE + "/employees/**",
-                    BASE + "/contracts/**",
-                    BASE + "/payroll/**",
-                    BASE + "/inventory/**")
-                .hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers(HttpMethod.DELETE, BASE + "/inventory/items", BASE + "/inventory/items/**")
+                .hasRole("ADMIN")
+                .requestMatchers(BASE + "/suppliers/**")
+                .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
+                .requestMatchers(BASE + "/inventory/**")
+                .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .requestMatchers(BASE + "/pos/**")
                 .hasAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC)
                 .requestMatchers("/actuator/**").hasRole("ADMIN")

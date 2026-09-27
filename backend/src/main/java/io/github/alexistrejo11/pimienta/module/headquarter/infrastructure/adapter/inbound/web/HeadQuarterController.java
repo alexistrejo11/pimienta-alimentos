@@ -2,6 +2,8 @@ package io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapt
 
 import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 
+import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.input.HeadquarterUseCases;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.command.CreateHeadquarterCommand;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.command.UpdateHeadquarterCommand;
@@ -34,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -56,12 +59,15 @@ public class HeadQuarterController {
 
   private final HeadquarterUseCases headquarterUseCases;
   private final HeadquarterBulkSyncUseCases headquarterBulkSyncUseCases;
+  private final HeadquarterAccessService headquarterAccessService;
 
   public HeadQuarterController(
       HeadquarterUseCases headquarterUseCases,
-      HeadquarterBulkSyncUseCases headquarterBulkSyncUseCases) {
+      HeadquarterBulkSyncUseCases headquarterBulkSyncUseCases,
+      HeadquarterAccessService headquarterAccessService) {
     this.headquarterUseCases = headquarterUseCases;
     this.headquarterBulkSyncUseCases = headquarterBulkSyncUseCases;
+    this.headquarterAccessService = headquarterAccessService;
   }
 
   @GetMapping("/statistics")
@@ -113,7 +119,9 @@ public class HeadQuarterController {
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocHeadquarterGetById
-  public HeadQuarterResponse getHeadquarterById(@PathVariable Long id) {
+  public HeadQuarterResponse getHeadquarterById(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable Long id) {
+    headquarterAccessService.requireHeadquarterAccess(principal, id);
     Headquarter headquarter = headquarterUseCases.getById(id);
     return HeadQuarterWebMapper.toResponse(headquarter);
   }
@@ -121,8 +129,10 @@ public class HeadQuarterController {
   @GetMapping("/name/{name}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocHeadquarterGetByName
-  public HeadQuarterResponse getHeadquarterByName(@PathVariable String name) {
+  public HeadQuarterResponse getHeadquarterByName(
+      @AuthenticationPrincipal JwtAuthenticationContext principal, @PathVariable String name) {
     Headquarter headquarter = headquarterUseCases.getByName(name);
+    headquarterAccessService.requireHeadquarterAccess(principal, headquarter.getId());
     return HeadQuarterWebMapper.toResponse(headquarter);
   }
 

@@ -44,6 +44,7 @@ export class TurnosPageComponent implements OnInit {
   readonly reconciliation = signal<PosShiftReconciliationResponse | null>(null);
   readonly selectedShiftId = signal<string | null>(null);
   readonly isAdmin = this.session.isAdmin;
+  readonly canViewPosFinancials = this.session.canViewPosFinancials;
   readonly formatCentavos = formatCentavos;
   readonly shiftStatusLabel = posShiftStatusLabel;
 
@@ -63,7 +64,7 @@ export class TurnosPageComponent implements OnInit {
     this.dateTo = range.to.slice(0, 10);
 
     const tabParam = this.route.snapshot.queryParamMap.get('tab');
-    if (tabParam === 'history') {
+    if (tabParam === 'history' && this.session.canViewPosFinancials()) {
       this.tab = 'history';
     }
 
@@ -76,7 +77,7 @@ export class TurnosPageComponent implements OnInit {
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const t = params.get('tab');
-      if (t === 'history' && this.tab !== 'history') {
+      if (t === 'history' && this.session.canViewPosFinancials() && this.tab !== 'history') {
         this.tab = 'history';
         this.cargar();
       }
@@ -84,6 +85,7 @@ export class TurnosPageComponent implements OnInit {
   }
 
   setTab(tab: TurnosTab): void {
+    if (tab === 'history' && !this.session.canViewPosFinancials()) return;
     this.tab = tab;
     this.reconciliation.set(null);
     this.selectedShiftId.set(null);
@@ -145,6 +147,7 @@ export class TurnosPageComponent implements OnInit {
   }
 
   selectShift(row: PosShiftListItemResponse): void {
+    if (!this.session.canViewPosFinancials()) return;
     const hqId = this.selectedHeadquarterId;
     if (hqId == null) return;
     this.selectedShiftId.set(row.shiftId);

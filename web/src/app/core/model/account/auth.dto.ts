@@ -8,8 +8,6 @@ export interface RegisterRequest {
   email: string;
   phone: string;
   password: string;
-  /** ISO date (yyyy-MM-dd). */
-  dateOfBirth: string;
 }
 
 /**

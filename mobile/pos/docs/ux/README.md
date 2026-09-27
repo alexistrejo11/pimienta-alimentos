@@ -15,6 +15,7 @@ La aplicación tiene dos áreas principales:
 
 1. **Venta:** área de trabajo del cajero, disponible durante un turno activo.
 2. **Panel local de Manager:** supervisión de la tablet, turno, historial, inventario operativo y diagnósticos.
+3. **Impresión y dispositivos:** configuración de impresora y lector, abierta a cualquier cajero (sin PIN de Manager).
 
 El cobro no es una tercera pantalla ni un flujo de navegación separado. Es un estado temporal del panel derecho dentro de Venta. La web central es una aplicación administrativa independiente y no forma parte de la navegación offline de caja.
 

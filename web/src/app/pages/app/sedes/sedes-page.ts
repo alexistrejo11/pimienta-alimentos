@@ -13,7 +13,7 @@ import { SedeCardComponent } from './components/sede-card/sede-card';
 /** Página de listado de sedes con estadísticas y grid de tarjetas. */
 @Component({
   selector: 'app-sedes-page',
-  
+
   imports: [PageHeaderComponent, DataStateComponent, SedeCardComponent, RouterLink],
   templateUrl: './sedes-page.html',
 })
@@ -26,24 +26,53 @@ export class SedesPageComponent implements OnInit {
   readonly error = signal<ParsedApiError | null>(null);
   readonly sedes = signal<HeadQuarterResponse[]>([]);
   readonly stats = signal<HeadquarterStatisticsResponse | null>(null);
+  readonly managerUnassigned = signal(false);
 
   ngOnInit(): void {
-    this.cargar();
+    this.session.ensureLoaded().subscribe({
+      next: () => this.cargar(),
+      error: () => this.loading.set(false),
+    });
   }
 
   cargar(): void {
     this.error.set(null);
+    this.managerUnassigned.set(false);
     this.loading.set(true);
-    forkJoin({
-      page: this.service.list(),
-      stats: this.service.statistics(),
-    })
+
+    if (this.session.isAdmin()) {
+      forkJoin({
+        page: this.service.list(),
+        stats: this.service.statistics(),
+      })
+        .pipe(finalize(() => this.loading.set(false)))
+        .subscribe({
+          next: ({ page, stats }) => {
+            this.sedes.set(page.content);
+            this.stats.set(stats);
+          },
+          error: (err: unknown) => this.error.set(parseApiError(err)),
+        });
+      return;
+    }
+
+    const assigned = this.session.assignedHeadquarterIds();
+    const hqId = assigned[0];
+    if (hqId == null) {
+      this.sedes.set([]);
+      this.stats.set(null);
+      this.managerUnassigned.set(true);
+      this.loading.set(false);
+      return;
+    }
+
+    this.service
+      .getById(hqId)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ page, stats }) => {
-          // La lista de sedes usa Spring Data Page (campo content)
-          this.sedes.set(page.content);
-          this.stats.set(stats);
+        next: (sede) => {
+          this.sedes.set([sede]);
+          this.stats.set(null);
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });

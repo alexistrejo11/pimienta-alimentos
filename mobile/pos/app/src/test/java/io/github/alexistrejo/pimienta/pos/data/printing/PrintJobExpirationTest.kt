@@ -68,6 +68,7 @@ private open class FakeOperationsDao : OperationsDao {
     override fun insertDevice(device: io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity) {}
     override fun device(): io.github.alexistrejo.pimienta.pos.data.local.entity.DeviceEntity? = null
     override fun activeShift(): ShiftEntity? = null
+    override fun observeActiveShift(): kotlinx.coroutines.flow.Flow<ShiftEntity?> = kotlinx.coroutines.flow.emptyFlow()
     override fun insertShift(shift: ShiftEntity) {}
     override fun insertSale(sale: SaleEntity) {}
     override fun insertLines(lines: List<io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity>) {}

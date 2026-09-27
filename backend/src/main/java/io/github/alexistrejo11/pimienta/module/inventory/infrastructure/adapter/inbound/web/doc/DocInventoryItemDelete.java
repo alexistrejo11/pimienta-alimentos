@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
     example = "1")
 @Operation(
     summary = "Delete inventory item",
-    description = "Elimina el artículo. **204** si ok. Rate limit: **SENSITIVE_OPERATIONS**.")
+    description = "Elimina el artículo maestro (catálogo global). Solo **ROLE_ADMIN**. **204** si ok. Rate limit: **SENSITIVE_OPERATIONS**.")
 @ApiResponse(responseCode = "204", description = "Sin contenido.")
 @ApiResponse(
     responseCode = "404",

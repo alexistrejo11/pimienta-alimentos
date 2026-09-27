@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { guestAuthGuard } from './core/auth/guest-auth.guard';
 import { workspaceAuthGuard } from './core/auth/workspace-auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { dirtyFormGuard } from './core/auth/dirty-form.guard';
@@ -7,10 +8,8 @@ import { erpAreaGuard, opsAreaGuard, workspaceHubGuard } from './core/auth/works
 import { AppRole } from './core/model/account/enums';
 
 const ADMIN = [AppRole.ADMIN];
-const ADMIN_MANAGER = [AppRole.ADMIN, AppRole.MANAGER];
-const INVENTORY_READ = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
-const POS_STAFF = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
-const POS_ADMIN = [AppRole.ADMIN, AppRole.MANAGER];
+const OPS = [AppRole.ADMIN, AppRole.DIRECTOR, AppRole.MANAGER, AppRole.EMPLOYEE];
+const POS_FINANCIAL = [AppRole.ADMIN, AppRole.DIRECTOR];
 
 const erpChildren: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -176,6 +175,33 @@ const opsChildren: Routes = [
     loadComponent: () => import('./pages/app/sedes/sedes-page').then((m) => m.SedesPageComponent),
   },
   {
+    path: 'proveedores/nuevo',
+    loadComponent: () =>
+      import('./pages/app/proveedores/proveedor-form-page/proveedor-form-page').then(
+        (m) => m.ProveedorFormPageComponent,
+      ),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  {
+    path: 'proveedores/:id/editar',
+    loadComponent: () =>
+      import('./pages/app/proveedores/proveedor-form-page/proveedor-form-page').then(
+        (m) => m.ProveedorFormPageComponent,
+      ),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  {
+    path: 'proveedores',
+    loadComponent: () =>
+      import('./pages/app/proveedores/proveedores-page').then((m) => m.ProveedoresPageComponent),
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  {
     path: 'sedes/nueva',
     loadComponent: () =>
       import('./pages/app/sedes/sede-form-page/sede-form-page').then((m) => m.SedeFormPageComponent),
@@ -201,7 +227,7 @@ const opsChildren: Routes = [
     loadComponent: () =>
       import('./pages/app/sedes/sede-pos-page/sede-pos-page').then((m) => m.SedePosPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_STAFF } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'pos/sedes',
@@ -213,17 +239,28 @@ const opsChildren: Routes = [
     loadComponent: () =>
       import('./pages/app/pos/configuracion/pos-config-page').then((m) => m.PosConfigPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
+    data: { access: { roles: OPS } },
   },
+  { path: 'catalogo/nuevo', redirectTo: 'catalogo' },
   {
-    path: 'catalogo/nuevo',
+    path: 'catalogo/nuevo/pos',
     loadComponent: () =>
       import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
         (m) => m.CatalogoFormPageComponent,
       ),
     canDeactivate: [dirtyFormGuard],
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
+    data: { access: { roles: OPS }, itemKind: 'pos' },
+  },
+  {
+    path: 'catalogo/nuevo/almacen',
+    loadComponent: () =>
+      import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
+        (m) => m.CatalogoFormPageComponent,
+      ),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS }, itemKind: 'warehouse' },
   },
   {
     path: 'catalogo/:id/editar',
@@ -233,31 +270,23 @@ const opsChildren: Routes = [
       ),
     canDeactivate: [dirtyFormGuard],
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'catalogo',
     loadComponent: () =>
       import('./pages/app/catalogo/catalogo-page').then((m) => m.CatalogoPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'inventario',
     loadComponent: () =>
       import('./pages/app/inventario/inventario-page').then((m) => m.InventarioPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: INVENTORY_READ } },
+    data: { access: { roles: OPS } },
   },
-  {
-    path: 'inventario/entradas',
-    loadComponent: () =>
-      import('./pages/app/inventario/entradas/entradas-page').then(
-        (m) => m.InventarioEntradasPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
-  },
+  { path: 'inventario/entradas', redirectTo: 'inventario/ledger' },
   {
     path: 'inventario/ledger',
     loadComponent: () =>
@@ -265,7 +294,7 @@ const opsChildren: Routes = [
         (m) => m.InventarioLedgerPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: INVENTORY_READ } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'inventario/transferencias',
@@ -274,26 +303,10 @@ const opsChildren: Routes = [
         (m) => m.InventarioTransferPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
+    data: { access: { roles: OPS } },
   },
-  {
-    path: 'inventario/mermas',
-    loadComponent: () =>
-      import('./pages/app/inventario/mermas/mermas-hq-page').then(
-        (m) => m.InventarioMermasPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
-  },
-  {
-    path: 'inventario/ajustes',
-    loadComponent: () =>
-      import('./pages/app/inventario/ajustes/ajustes-page').then(
-        (m) => m.InventarioAjustesPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
-  },
+  { path: 'inventario/mermas', redirectTo: 'inventario/ledger' },
+  { path: 'inventario/ajustes', redirectTo: 'inventario/ledger' },
   {
     path: 'inventario/conteos/nuevo',
     loadComponent: () =>
@@ -301,7 +314,7 @@ const opsChildren: Routes = [
         (m) => m.CountSessionCreatePageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'inventario/conteos/:id/revision',
@@ -310,7 +323,7 @@ const opsChildren: Routes = [
         (m) => m.CountSessionDetailPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER, review: true } },
+    data: { access: { roles: OPS, review: true } },
   },
   {
     path: 'inventario/conteos/:id',
@@ -319,7 +332,7 @@ const opsChildren: Routes = [
         (m) => m.CountSessionDetailPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'inventario/conteos',
@@ -328,7 +341,7 @@ const opsChildren: Routes = [
         (m) => m.CountSessionListPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: ADMIN_MANAGER } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'pos/dispositivos',
@@ -337,7 +350,7 @@ const opsChildren: Routes = [
         (m) => m.DispositivosPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_ADMIN } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'pos/dispositivos/:id',
@@ -346,7 +359,7 @@ const opsChildren: Routes = [
         (m) => m.DispositivoDetailPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_ADMIN } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'pos/enrolamiento',
@@ -355,42 +368,35 @@ const opsChildren: Routes = [
         (m) => m.EnrolamientoPageComponent,
       ),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_ADMIN } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'pos/operadores',
     loadComponent: () =>
       import('./pages/app/pos/operadores/operadores-page').then((m) => m.OperadoresPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_ADMIN } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'pos/ventas',
     loadComponent: () =>
       import('./pages/app/pos/ventas/ventas-page').then((m) => m.VentasPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_STAFF } },
+    data: { access: { roles: POS_FINANCIAL } },
   },
   {
     path: 'pos/turnos',
     loadComponent: () =>
       import('./pages/app/pos/turnos/turnos-page').then((m) => m.TurnosPageComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_ADMIN } },
+    data: { access: { roles: OPS } },
   },
   {
     path: 'pos/cortes',
     loadComponent: () =>
       import('./pages/app/pos/cortes/cortes-redirect').then((m) => m.CortesRedirectComponent),
     canActivate: [roleGuard],
-    data: { access: { roles: POS_STAFF } },
-  },
-  {
-    path: 'pos/incidencias',
-    loadComponent: () =>
-      import('./pages/app/pos/incidencias/incidencias-page').then((m) => m.IncidenciasPageComponent),
-    canActivate: [roleGuard],
-    data: { access: { roles: ADMIN } },
+    data: { access: { roles: POS_FINANCIAL } },
   },
 ];
 
@@ -400,6 +406,7 @@ const legacyAppRedirects: Routes = [
   { path: 'inventario', redirectTo: 'ops/inventario' },
   { path: 'catalogo', redirectTo: 'ops/catalogo' },
   { path: 'sedes', redirectTo: 'ops/sedes' },
+  { path: 'proveedores', redirectTo: 'ops/proveedores' },
   { path: 'pos', redirectTo: 'ops/pos' },
   { path: 'crm', redirectTo: 'erp/crm' },
   { path: 'empleados', redirectTo: 'erp/empleados' },
@@ -417,15 +424,18 @@ export const routes: Routes = [
   {
     path: 'auth/login',
     loadComponent: () => import('./pages/auth/login/login').then((m) => m.Login),
+    canActivate: [guestAuthGuard],
   },
   {
     path: 'auth/register',
     loadComponent: () => import('./pages/auth/register/register').then((m) => m.Register),
+    canActivate: [guestAuthGuard],
   },
   {
     path: 'auth/pendiente-aprobacion',
     loadComponent: () =>
       import('./pages/auth/pending-approval/pending-approval').then((m) => m.PendingApprovalPage),
+    canActivate: [guestAuthGuard],
   },
   {
     path: 'app',

@@ -33,6 +33,39 @@ class AccountHeadquarterAccessIntegrationTest {
   @Autowired private UserJpaRepository userJpaRepository;
 
   @Test
+  void managerCanGetAssignedHeadquarterById() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq1 = createHeadquarter(admin.token(), "ACL-GET1-" + UUID.randomUUID());
+    long hq2 = createHeadquarter(admin.token(), "ACL-GET2-" + UUID.randomUUID());
+
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    assignHeadquarters(admin.token(), manager.userId(), hq1);
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hq1, manager.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value((int) hq1));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hq2, manager.token()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
+  void managerForbiddenOnHeadquarterList() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq1 = createHeadquarter(admin.token(), "ACL-LIST-" + UUID.randomUUID());
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    assignHeadquarters(admin.token(), manager.userId(), hq1);
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters?page=0&size=20", manager.token()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
   void managerForbiddenOnOtherHeadquarterPosCatalog() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
     long hq1 = createHeadquarter(admin.token(), "ACL-HQ1-" + UUID.randomUUID());
@@ -96,17 +129,71 @@ class AccountHeadquarterAccessIntegrationTest {
   }
 
   @Test
-  void managerCanReadTalentButNotUserManagement() throws Exception {
+  void managerCannotReadErpTalentOrUserManagement() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
     TokenPair manager = obtainToken(Set.of(Role.MANAGER));
 
     mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/employees?page=0&size=10", manager.token()))
+        .perform(AccountTestRequests.getBearer("/api/v1/employees?page=0&size=10", admin.token()))
         .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/employees?page=0&size=10", manager.token()))
+        .andExpect(status().isForbidden());
 
     mockMvc
         .perform(
             AccountTestRequests.getBearer(
                 "/api/v1/users/management?page=0&size=10", manager.token()))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void directorCanReadSalesForAssignedHeadquarterOnly() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq1 = createHeadquarter(admin.token(), "ACL-DIR1-" + UUID.randomUUID());
+    long hq2 = createHeadquarter(admin.token(), "ACL-DIR2-" + UUID.randomUUID());
+    TokenPair director = obtainToken(Set.of(Role.DIRECTOR));
+    assignHeadquarters(admin.token(), director.userId(), hq1);
+
+    String own =
+        "/api/v1/pos/admin/reports/sales?headquarterId=%d&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+            .formatted(hq1);
+    String other =
+        "/api/v1/pos/admin/reports/sales?headquarterId=%d&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+            .formatted(hq2);
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer(own, director.token()))
+        .andExpect(status().isOk());
+    mockMvc
+        .perform(AccountTestRequests.getBearer(other, director.token()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
+  void managerCannotReadSalesOrRevokeDevice() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq1 = createHeadquarter(admin.token(), "ACL-FLR-" + UUID.randomUUID());
+    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
+    TokenPair director = obtainToken(Set.of(Role.DIRECTOR));
+    assignHeadquarters(admin.token(), manager.userId(), hq1);
+    assignHeadquarters(admin.token(), director.userId(), hq1);
+
+    String sales =
+        "/api/v1/pos/admin/reports/sales?headquarterId=%d&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+            .formatted(hq1);
+    mockMvc
+        .perform(AccountTestRequests.getBearer(sales, manager.token()))
+        .andExpect(status().isForbidden());
+
+    String revoke = "/api/v1/pos/admin/devices/" + UUID.randomUUID() + "/revoke";
+    mockMvc
+        .perform(AccountTestRequests.postBearer(revoke, manager.token()))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(AccountTestRequests.postBearer(revoke, director.token()))
         .andExpect(status().isForbidden());
   }
 

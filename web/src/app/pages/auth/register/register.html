@@ -212,31 +212,26 @@
               </div>
 
               <div class="space-y-1.5">
-                <label class="auth-label" for="dateOfBirth">Fecha de nacimiento</label>
-                <input id="dateOfBirth" formControlName="dateOfBirth" type="date" class="auth-field" />
-                @if (form.controls.dateOfBirth.touched && form.controls.dateOfBirth.hasError('required')) {
-                  <p class="ml-1 text-xs text-[var(--color-error)]">Requerido (mín. 13 años en el servidor).</p>
-                }
-                @if (apiFieldMessage('dateOfBirth'); as m) {
-                  <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
-                }
-              </div>
-
-              <div class="space-y-1.5">
                 <label class="auth-label" for="password">Contraseña</label>
                 <div class="relative">
                   <input
                     id="password"
                     formControlName="password"
-                    type="password"
+                    [type]="passwordVisible() ? 'text' : 'password'"
                     autocomplete="new-password"
                     class="auth-field auth-field--icon"
                     placeholder="••••••••"
                   />
-                  <span
-                    class="material-symbols-outlined auth-field-icon pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl"
-                    >lock</span
+                  <button
+                    type="button"
+                    class="auth-field-icon absolute right-3 top-1/2 -translate-y-1/2 text-xl transition-colors hover:text-[var(--color-primary)]"
+                    (click)="togglePasswordVisible()"
+                    [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                   >
+                    <span class="material-symbols-outlined text-xl">
+                      {{ passwordVisible() ? 'visibility_off' : 'visibility' }}
+                    </span>
+                  </button>
                 </div>
                 @if (form.controls.password.touched && form.controls.password.hasError('required')) {
                   <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
@@ -246,6 +241,40 @@
                 }
                 @if (apiFieldMessage('password'); as m) {
                   <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+                }
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="auth-label" for="confirmPassword">Confirmar contraseña</label>
+                <div class="relative">
+                  <input
+                    id="confirmPassword"
+                    formControlName="confirmPassword"
+                    [type]="passwordVisible() ? 'text' : 'password'"
+                    autocomplete="new-password"
+                    class="auth-field auth-field--icon"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    class="auth-field-icon absolute right-3 top-1/2 -translate-y-1/2 text-xl transition-colors hover:text-[var(--color-primary)]"
+                    (click)="togglePasswordVisible()"
+                    [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                  >
+                    <span class="material-symbols-outlined text-xl">
+                      {{ passwordVisible() ? 'visibility_off' : 'visibility' }}
+                    </span>
+                  </button>
+                </div>
+                @if (
+                  form.controls.confirmPassword.touched && form.controls.confirmPassword.hasError('required')
+                ) {
+                  <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+                }
+                @if (
+                  form.controls.confirmPassword.touched && form.controls.confirmPassword.hasError('mismatch')
+                ) {
+                  <p class="ml-1 text-xs text-[var(--color-error)]">Las contraseñas no coinciden.</p>
                 }
               </div>
 

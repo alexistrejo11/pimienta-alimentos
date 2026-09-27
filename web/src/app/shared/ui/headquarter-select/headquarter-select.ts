@@ -27,7 +27,6 @@ export class HeadquarterSelectComponent implements OnInit {
   readonly sedes = signal<HeadQuarterResponse[]>([]);
   readonly loading = signal(true);
   readonly isAdmin = this.session.isAdmin;
-  readonly managerHqId = this.session.managerHeadquarterId;
   readonly assignedHqIds = this.session.assignedHeadquarterIds;
 
   ngOnInit(): void {
@@ -80,8 +79,8 @@ export class HeadquarterSelectComponent implements OnInit {
     return Array.isArray(v) && v.includes(id);
   }
 
-  protected managerSedeName(): string {
-    const id = this.managerHqId();
+  protected assignedSedeName(): string {
+    const id = this.assignedHqIds()[0] ?? null;
     if (id == null) return '—';
     return this.lookup.name(id);
   }

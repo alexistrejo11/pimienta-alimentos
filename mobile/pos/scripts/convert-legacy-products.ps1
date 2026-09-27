@@ -27,10 +27,8 @@ foreach ($item in $legacy.productos) {
 
     $products += [ordered]@{
         id = "product-$('{0:D4}' -f $nextId)"
-        legacyId = [string]$item.id
         sku = $barcode
         barcode = $barcode
-        legacyBarcode = $baseBarcode
         name = [string]$item.nombre
         saleCategory = [string]$item.categoria
         unit = "PIECE"
@@ -40,7 +38,6 @@ foreach ($item in $legacy.productos) {
         stock = $stock.ToString("0.####", [Globalization.CultureInfo]::InvariantCulture)
         stockMin = $stockMin.ToString("0.####", [Globalization.CultureInfo]::InvariantCulture)
         stockPolicy = $stockPolicy
-        legacyUpdatedAt = [long]$item.actualizado
     }
     $nextId++
 }
@@ -59,7 +56,7 @@ $bootstrap = [ordered]@{
     notes = @(
         "Catalog converted from docs/technical/data/deprecated_product_data.json.",
         "CAF- products are NOT_CONTROLLED until prepared-food inventory rules are defined.",
-        "Duplicate legacy barcodes receive a unique POS suffix and retain legacyBarcode."
+        "Duplicate barcodes receive a unique POS suffix."
     )
 }
 

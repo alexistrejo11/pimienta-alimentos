@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
-    [title]="itemId() ? 'Editar producto' : 'Nuevo producto'"
-    subtitle="Catálogo maestro de inventario"
+    [title]="pageTitle()"
+    [subtitle]="pageSubtitle()"
     backLink="/app/ops/catalogo"
     backLabel="Catálogo"
   />
@@ -18,98 +18,74 @@
       </div>
     }
 
+    @if (isEdit()) {
+      <div class="flex max-w-2xl flex-wrap gap-4 rounded-xl ui-panel px-4 py-3 text-sm">
+        <div>
+          <span class="text-on-surface-variant">SKU</span>
+          <p class="font-mono font-medium text-on-surface">{{ editSku() }}</p>
+        </div>
+        <div>
+          <span class="text-on-surface-variant">Uso del artículo</span>
+          <p class="font-medium text-on-surface">{{ catalogRoleLabel(editCatalogRole()) }}</p>
+        </div>
+      </div>
+    }
+
     <form class="flex max-w-2xl flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()">
       <div class="grid gap-4 sm:grid-cols-2">
-        <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">{{
-            itemId() ? 'SKU' : 'SKU (automático si se omite)'
-          }}</span>
-          <input
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            formControlName="sku"
-          />
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
+        <label class="flex flex-col gap-1 text-sm sm:col-span-2">
           <span class="font-medium text-on-surface">Nombre</span>
           <input
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
             formControlName="name"
           />
         </label>
-        <label class="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span class="font-medium text-on-surface">Descripción</span>
-          <textarea
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            rows="2"
-            formControlName="description"
-          ></textarea>
-        </label>
+
+        @if (isWarehouseCreate() || isEdit()) {
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium text-on-surface">Categoría</span>
+            <select
+              class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="category"
+            >
+              @for (c of categories; track c) {
+                <option [value]="c">{{ itemCategoryLabel(c) }}</option>
+              }
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium text-on-surface">Unidad</span>
+            <select
+              class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="unit"
+            >
+              @for (u of units; track u) {
+                <option [value]="u">{{ itemUnitLabel(u) }}</option>
+              }
+            </select>
+          </label>
+        }
+
         <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">Precio costo</span>
+          <span class="font-medium text-on-surface">Código de barras</span>
           <input
-            type="number"
-            step="0.01"
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            formControlName="costPrice"
-          />
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">Categoría</span>
-          <select
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            formControlName="category"
-          >
-            @for (c of categories; track c) {
-              <option [value]="c">{{ itemCategoryLabel(c) }}</option>
-            }
-          </select>
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">Unidad</span>
-          <select
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            formControlName="unit"
-          >
-            @for (u of units; track u) {
-              <option [value]="u">{{ itemUnitLabel(u) }}</option>
-            }
-          </select>
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">Punto de reorden</span>
-          <input
-            type="number"
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            formControlName="reorderPoint"
-          />
-        </label>
-        <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">Cantidad de reorden</span>
-          <input
-            type="number"
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            formControlName="reorderQuantity"
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            formControlName="barcode"
           />
         </label>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium text-on-surface">Marca</span>
           <input
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
             formControlName="brand"
           />
         </label>
-        <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">Código de barras</span>
-          <input
-            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-            formControlName="barcode"
-          />
-        </label>
-        @if (itemId()) {
+
+        @if (isEdit()) {
           <label class="flex flex-col gap-1 text-sm">
             <span class="font-medium text-on-surface">Estado</span>
             <select
-              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
               formControlName="status"
             >
               @for (s of statuses; track s) {
@@ -118,26 +94,102 @@
             </select>
           </label>
         }
-        <label class="flex flex-col gap-1 text-sm">
-          <span class="font-medium text-on-surface">Uso del artículo</span>
-          <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" formControlName="catalogRole">
-            <option value="INVENTORY_ONLY">{{ catalogRoleLabel('INVENTORY_ONLY') }}</option>
-            <option value="POS_SELLABLE">{{ catalogRoleLabel('POS_SELLABLE') }}</option>
-          </select>
-        </label>
       </div>
 
-      <div class="flex gap-3 pt-2">
+      <div class="rounded-xl ui-panel">
+        <button
+          type="button"
+          class="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-on-surface"
+          (click)="toggleDetails()"
+          [attr.aria-expanded]="detailsOpen()"
+        >
+          Agregar detalles
+          <span class="material-symbols-outlined text-on-surface-variant" aria-hidden="true">
+            {{ detailsOpen() ? 'expand_less' : 'expand_more' }}
+          </span>
+        </button>
+        @if (detailsOpen()) {
+          <div class="grid gap-4 border-t border-outline-variant/20 px-4 pb-4 pt-3 sm:grid-cols-2">
+            <p class="text-xs text-on-surface-variant sm:col-span-2">
+              Opcional. Precio de costo, reorden e inventario avanzado.
+            </p>
+            @if (isPosCreate() || isEdit()) {
+              <label class="flex flex-col gap-1 text-sm">
+                <span class="font-medium text-on-surface">Categoría de inventario</span>
+                <select
+                  class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                  formControlName="category"
+                >
+                  @for (c of categories; track c) {
+                    <option [value]="c">{{ itemCategoryLabel(c) }}</option>
+                  }
+                </select>
+              </label>
+              <label class="flex flex-col gap-1 text-sm">
+                <span class="font-medium text-on-surface">Unidad</span>
+                <select
+                  class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                  formControlName="unit"
+                >
+                  @for (u of units; track u) {
+                    <option [value]="u">{{ itemUnitLabel(u) }}</option>
+                  }
+                </select>
+              </label>
+            }
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-medium text-on-surface">Precio de costo</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                formControlName="costPrice"
+              />
+            </label>
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-medium text-on-surface">Punto de reorden</span>
+              <input
+                type="number"
+                min="0"
+                class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                formControlName="reorderPoint"
+              />
+            </label>
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-medium text-on-surface">Cantidad de reorden</span>
+              <input
+                type="number"
+                min="0"
+                class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                formControlName="reorderQuantity"
+              />
+            </label>
+            @if (isWarehouseCreate() || isEdit()) {
+              <label class="flex flex-col gap-1 text-sm sm:col-span-2">
+                <span class="font-medium text-on-surface">Descripción</span>
+                <textarea
+                  class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+                  rows="2"
+                  formControlName="description"
+                ></textarea>
+              </label>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
         <button
           type="submit"
-          class="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-60"
+          class="min-h-11 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-60"
           [disabled]="loading()"
         >
           {{ loading() ? 'Guardando…' : 'Guardar' }}
         </button>
         <a
           routerLink="/app/ops/catalogo"
-          class="rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold"
+          class="inline-flex min-h-11 items-center rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold"
           >Cancelar</a
         >
       </div>

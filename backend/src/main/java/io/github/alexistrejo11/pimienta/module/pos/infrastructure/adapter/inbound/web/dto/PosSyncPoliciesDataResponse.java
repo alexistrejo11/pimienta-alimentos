@@ -12,4 +12,5 @@ public record PosSyncPoliciesDataResponse(
     Integer defaultNegativeStockLimit,
     int staleCatalogWarnHours,
     int staleCatalogBlockHours,
-    List<String> openAmountCategories) {}
+    List<String> openAmountCategories,
+    boolean stockless) {}

@@ -6,6 +6,8 @@ Permitir supervisar y operar una tablet durante el turno sin depender de interne
 
 El acceso requiere PIN de Manager o Superadmin. Entrar y salir del panel no cambia la identidad del cajero que mantiene el turno ni elimina un carrito en curso. El **conteo ciego** es la excepción: el cajero titular puede iniciarlo desde la acción `Cerrar turno` de la caja, pero la revisión, corrección y aprobación siguen requiriendo Manager/Superadmin.
 
+**Impresión y dispositivos** (elegir térmica Bluetooth, olvidar destino, probar ticket/cajón/lectura) no es exclusivo de Manager: cualquier cajero lo abre desde **Acciones → Dispositivos** o el banner sin turno. La sección Manager **Estado** reutiliza el mismo panel.
+
 ## Alcance local
 
 El panel contiene un dashboard y cuatro secciones operativas:
@@ -14,7 +16,7 @@ El panel contiene un dashboard y cuatro secciones operativas:
 2. **Caja y Corte Z:** preparación, validación, cierre y consulta de sangrías del turno activo.
 3. **Inventario operativo:** reposiciones, mermas y movimientos recientes.
 4. **Historial local:** tickets originados en esta tablet, reimpresión y cancelación permitida.
-5. **Estado y periféricos:** sincronización, impresora, lector y diagnóstico básico.
+5. **Estado:** aplicación, sincronización y el mismo panel de **Impresión y dispositivos** que el cajero.
 
 La acción **Abrir Web Central** permanece fija en el encabezado y se ofrece de nuevo desde Inventario/Estado. Requiere internet y no sustituye las operaciones locales.
 
@@ -191,23 +193,30 @@ Muestra únicamente ventas creadas por la tablet, incluyendo las pendientes de s
 
 Cancelar está disponible solo para venta totalmente en efectivo, durante el turno actual y con autorización de Manager/Superadmin. No se ofrece para tarjeta externa.
 
-## Estado y periféricos
+## Estado e impresión y dispositivos
+
+La configuración de periféricos vive en **Impresión y dispositivos**. No requiere PIN. Indicadores de presencia (rojo de marca) solo aparecen si el hardware está detectado; no son interruptores. La lista Bluetooth ofrece **Usar para imprimir** solo en térmicas; un lector emparejado se nombra como texto, no como destino.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│ ESTADO Y PERIFÉRICOS                                                  │
-│ Sincronización: 12 eventos pendientes · última sync hace 3 h         │
-│ [Intentar sincronizar ahora]                                         │
+│ IMPRESIÓN Y DISPOSITIVOS                                              │
+│ Conectados ahora: [Impresora USB] [Lector]                           │
 │                                                                      │
-│ Impresora: lista / sin papel / desconectada                          │
-│ [Imprimir ticket de prueba] [Imprimir + abrir cajón*]                │
-│ Lector: conectado / sin lectura reciente        [Probar lectura]     │
+│ Bluetooth y destino                                                  │
+│ [Permitir Bluetooth]                                                 │
+│ POS-5890A · en uso para tickets                                      │
+│ [Olvidar impresora Bluetooth]                                        │
+│                                                                      │
+│ Pruebas                                                              │
+│ [Imprimir prueba y abrir cajón] [Procesar cola] [Probar lectura]     │
 │                                                                      │
 │ Las pruebas no alteran ventas ni eliminan eventos pendientes.         │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-La acción combinada de prueba de impresión y apertura de cajón queda pendiente de validar con el modelo físico. Si el adaptador y la impresora soportan el pulso de apertura, se habilita; si no, el botón permanece deshabilitado y la impresión de prueba continúa disponible. El POS usa USB o TCP/IP para impresión según la restricción técnica ya acordada; no se asume Bluetooth como ruta principal.
+Manager **Estado** añade versión de app, actualizaciones y sincronización encima de este mismo bloque.
+
+La acción combinada de prueba de impresión y apertura de cajón queda pendiente de validar con el modelo físico. USB gana cuando hay térmica en el hub; Bluetooth es el camino con la tablet cargando.
 
 ## Pendiente de diseño
 

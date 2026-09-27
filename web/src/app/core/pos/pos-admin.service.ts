@@ -5,7 +5,6 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import type { PagedResponse } from '../model/common/pagination';
 import type {
-  AcceptPosSyncIncidentRequest,
   CreateEnrollmentCodeRequest,
   CreatePosOperatorRequest,
   EnrollmentCodeResponse,
@@ -22,7 +21,6 @@ import type {
   PosShiftDetailResponse,
   PosShiftReconciliationResponse,
   PosShiftResponse,
-  PosSyncIncidentResponse,
   UpdatePosOperatorRequest,
 } from '../model/pos/pos.dto';
 
@@ -86,28 +84,6 @@ export class PosAdminService {
 
   unassignOperatorHeadquarter(id: number, headquarterId: number): Observable<PosOperatorResponse> {
     return this.http.delete<PosOperatorResponse>(`${this.base}/operators/${id}/headquarters/${headquarterId}`);
-  }
-
-  // ── Incidencias de sync ───────────────────────────────────────────────────
-
-  listSyncIncidents(params: PosAdminListParams = {}): Observable<PagedResponse<PosSyncIncidentResponse>> {
-    let p = new HttpParams()
-      .set('page', String(params.page ?? 0))
-      .set('size', String(params.size ?? 20));
-    if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
-    if (params.openOnly != null) p = p.set('openOnly', String(params.openOnly));
-    return this.http.get<PagedResponse<PosSyncIncidentResponse>>(`${this.base}/sync-incidents`, { params: p });
-  }
-
-  getSyncIncident(incidentId: string): Observable<PosSyncIncidentResponse> {
-    return this.http.get<PosSyncIncidentResponse>(`${this.base}/sync-incidents/${incidentId}`);
-  }
-
-  acceptSyncIncident(incidentId: string, body: AcceptPosSyncIncidentRequest): Observable<PosSyncIncidentResponse> {
-    return this.http.post<PosSyncIncidentResponse>(
-      `${this.base}/sync-incidents/${incidentId}/accept`,
-      body,
-    );
   }
 
   // ── Reportes ──────────────────────────────────────────────────────────────

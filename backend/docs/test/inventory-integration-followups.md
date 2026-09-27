@@ -19,3 +19,7 @@ No extra follow-ups from this pass beyond the item above.
 - **Low-stock vs row lists:** `GET /inventory/dashboard` groups by item (suma de ubicaciones), igual que el resumen global. `GET /inventory/stock/low-stock` sigue siendo por fila de ubicación; los conteos pueden no coincidir 1:1.
 
 No extra follow-ups from this pass beyond the item above.
+
+## 2026-09-23 — Item master delete is admin-only
+
+No extra follow-ups from this pass. `DELETE /inventory/items/{id}` is global catalog data and is now `ADMIN` only; other inventory deletes stay available to managers.

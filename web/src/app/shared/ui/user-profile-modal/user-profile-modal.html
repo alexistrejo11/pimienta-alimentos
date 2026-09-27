@@ -160,24 +160,6 @@
             }
           </div>
 
-          <div class="space-y-1.5">
-            <label class="auth-label" for="profile-dateOfBirth">Fecha de nacimiento</label>
-            <input
-              id="profile-dateOfBirth"
-              formControlName="dateOfBirth"
-              type="date"
-              class="auth-field"
-            />
-            @if (
-              form.controls.dateOfBirth.touched && form.controls.dateOfBirth.hasError('required')
-            ) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
-            @if (apiFieldMessage('dateOfBirth'); as m) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
-            }
-          </div>
-
           <button
             type="submit"
             [disabled]="saving() || loggingOut()"

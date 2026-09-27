@@ -1,0 +1,201 @@
+<div
+  class="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="registrar-movimiento-titulo"
+>
+  <div class="absolute inset-0 bg-black/40" (click)="loading() ? null : cerrar.emit()"></div>
+
+  <div
+    class="relative z-10 flex max-h-[min(92dvh,44rem)] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl bg-surface-container-lowest sm:rounded-2xl"
+  >
+    <header class="flex items-start justify-between gap-3 px-5 py-4 sm:px-6">
+      <div>
+        <h2 id="registrar-movimiento-titulo" class="font-headline text-lg font-bold text-on-surface">
+          Registrar movimiento
+        </h2>
+        <p class="text-sm text-on-surface-variant">Entrada, merma o ajuste de existencias.</p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container"
+        [disabled]="loading()"
+        aria-label="Cerrar"
+        (click)="cerrar.emit()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <form class="flex min-h-0 flex-1 flex-col" (ngSubmit)="guardar()">
+      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-4 sm:px-6">
+        <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo de movimiento">
+          <button
+            type="button"
+            class="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold"
+            role="radio"
+            [attr.aria-checked]="kind() === 'entry'"
+            [class.bg-primary]="kind() === 'entry'"
+            [class.text-on-primary]="kind() === 'entry'"
+            [class.bg-surface-container]="kind() !== 'entry'"
+            (click)="selectKind('entry')"
+          >
+            Entrada
+          </button>
+          <button
+            type="button"
+            class="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold"
+            role="radio"
+            [attr.aria-checked]="kind() === 'scrap'"
+            [class.bg-primary]="kind() === 'scrap'"
+            [class.text-on-primary]="kind() === 'scrap'"
+            [class.bg-surface-container]="kind() !== 'scrap'"
+            (click)="selectKind('scrap')"
+          >
+            Merma
+          </button>
+          @if (isAdmin()) {
+            <button
+              type="button"
+              class="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold"
+              role="radio"
+              [attr.aria-checked]="kind() === 'adjustment'"
+              [class.bg-primary]="kind() === 'adjustment'"
+              [class.text-on-primary]="kind() === 'adjustment'"
+              [class.bg-surface-container]="kind() !== 'adjustment'"
+              (click)="selectKind('adjustment')"
+            >
+              Ajuste
+            </button>
+          }
+        </div>
+
+        @if (kind() === 'entry') {
+          <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo de entrada">
+            <button
+              type="button"
+              class="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold"
+              role="radio"
+              [attr.aria-checked]="entryMode() === 'purchase'"
+              [class.bg-primary]="entryMode() === 'purchase'"
+              [class.text-on-primary]="entryMode() === 'purchase'"
+              [class.bg-surface-container]="entryMode() !== 'purchase'"
+              (click)="selectEntryMode('purchase')"
+            >
+              Compra / recepción
+            </button>
+            <button
+              type="button"
+              class="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold"
+              role="radio"
+              [attr.aria-checked]="entryMode() === 'initial'"
+              [class.bg-primary]="entryMode() === 'initial'"
+              [class.text-on-primary]="entryMode() === 'initial'"
+              [class.bg-surface-container]="entryMode() !== 'initial'"
+              (click)="selectEntryMode('initial')"
+            >
+              Stock inicial
+            </button>
+          </div>
+        }
+
+        @if (validation()) {
+          <p class="rounded-lg bg-primary-fixed p-3 text-sm text-on-primary-fixed" role="alert">{{ validation() }}</p>
+        }
+        @if (error(); as err) {
+          <p class="rounded-lg bg-primary-fixed p-3 text-sm text-on-primary-fixed" role="alert">{{ err.message }}</p>
+        }
+
+        @if (needsHeadquarter() && isAdmin()) {
+          <app-headquarter-select
+            label="Sede"
+            [value]="selectedHeadquarterId"
+            (valueChange)="onHeadquarterChange($event)"
+          />
+        }
+
+        <app-item-select
+          [value]="itemId"
+          (valueChange)="onItemChange($event)"
+          (itemChange)="onItemPicked($event)"
+        />
+
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-semibold">Ubicación</span>
+          <select class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" [(ngModel)]="locationId" name="locationId">
+            <option [ngValue]="null">Selecciona…</option>
+            @for (loc of locations(); track loc.id) {
+              <option [ngValue]="loc.id">{{ loc.code }} · {{ loc.name }}</option>
+            }
+          </select>
+        </label>
+
+        @if (kind() === 'adjustment') {
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-semibold">Nueva cantidad absoluta</span>
+            <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" type="number" min="0" name="newQuantity" [(ngModel)]="newQuantity" />
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-semibold">Motivo</span>
+            <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="reason" [(ngModel)]="reason" />
+          </label>
+        } @else {
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-semibold">Cantidad</span>
+              <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" type="number" min="1" name="quantity" [(ngModel)]="quantity" />
+            </label>
+            @if (kind() === 'scrap' || entryMode() === 'purchase') {
+              <label class="flex flex-col gap-1 text-sm">
+                <span class="font-semibold">Costo unitario</span>
+                <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" type="number" min="0" step="0.01" name="unitCost" [(ngModel)]="unitCost" />
+              </label>
+            }
+          </div>
+          @if (kind() === 'scrap') {
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-semibold">Motivo de salida</span>
+              <select class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="exitReason" [(ngModel)]="exitReason">
+                @for (r of exitReasons; track r) {
+                  <option [ngValue]="r">{{ exitReasonLabel(r) }}</option>
+                }
+              </select>
+            </label>
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-semibold">Detalle (opcional)</span>
+              <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="notes" [(ngModel)]="notes" />
+            </label>
+          }
+          @if (kind() === 'entry' && entryMode() === 'purchase') {
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-semibold">Referencia</span>
+              <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="reference" [(ngModel)]="reference" />
+            </label>
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-semibold">Notas</span>
+              <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="entryNotes" [(ngModel)]="notes" />
+            </label>
+          }
+        }
+      </div>
+
+      <footer class="flex flex-col-reverse gap-2 border-t border-outline-variant/20 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+        <button
+          type="button"
+          class="min-h-11 rounded-lg bg-surface-container px-4 py-2.5 text-sm font-semibold"
+          [disabled]="loading()"
+          (click)="cerrar.emit()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="min-h-11 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-60"
+          [disabled]="loading()"
+        >
+          {{ loading() ? 'Guardando…' : 'Registrar' }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

@@ -51,8 +51,8 @@ si no se puede reconstruir alguno, queda bloqueado y nunca se elimina.
 
 ### Monto abierto
 
-El cliente persiste `allowOpenProducts` y `openAmountCategories` desde el
-bootstrap y cada delta de `policies`. Antes de agregar la línea solicita una
+El cliente persiste `allowOpenProducts`, `openAmountCategories` y `stockless`
+desde el bootstrap y cada delta de `policies`. Antes de agregar la línea solicita una
 categoría configurada y un importe positivo, sin PIN de Manager. El payload
 conserva `lineType`, la identidad nula de producto y el snapshot generado.
 `authorizedByOperatorId` y `authorizedAt` pueden ir nulos.

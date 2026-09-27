@@ -467,7 +467,8 @@ public final class PosWebMapper {
             snapshot.policies().allowOpenProducts(),
             snapshot.policies().defaultNegativeStockLimit(),
             snapshot.policies().staleCatalogWarnHours(),
-            snapshot.policies().staleCatalogBlockHours()),
+            snapshot.policies().staleCatalogBlockHours(),
+            snapshot.policies().stockless()),
         new PosBootstrapCursorsResponse(snapshot.cursors().changes()));
   }
 
@@ -508,7 +509,8 @@ public final class PosWebMapper {
               pol.defaultNegativeStockLimit(),
               pol.staleCatalogWarnHours(),
               pol.staleCatalogBlockHours(),
-              pol.openAmountCategories());
+              pol.openAmountCategories(),
+              pol.stockless());
     }
     return new PosSyncChangeOperationResponse(op.op(), op.entity(), op.id(), data);
   }

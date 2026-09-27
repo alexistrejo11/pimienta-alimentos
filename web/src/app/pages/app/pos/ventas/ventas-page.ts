@@ -1,7 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
@@ -17,7 +16,7 @@ import { DataStateComponent } from '../../../../shared/ui/data-state/data-state'
 
 @Component({
   selector: 'app-ventas-page',
-  imports: [PageHeaderComponent, DataStateComponent, FormsModule, DatePipe, HeadquarterSelectComponent, RouterLink],
+  imports: [PageHeaderComponent, DataStateComponent, FormsModule, DatePipe, HeadquarterSelectComponent],
   templateUrl: './ventas-page.html',
 })
 export class VentasPageComponent implements OnInit {

@@ -3,7 +3,6 @@ package io.github.alexistrejo11.pimienta.module.account.integration;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.time.LocalDate;
 import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -12,7 +11,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 public final class AccountTestRequests {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final LocalDate DEFAULT_DOB = LocalDate.of(2000, 1, 10);
 
   private AccountTestRequests() {}
 
@@ -22,8 +20,7 @@ public final class AccountTestRequests {
       String email,
       String phone,
       String password,
-      String gender,
-      LocalDate dateOfBirth) {
+      String gender) {
     try {
       ObjectNode n = MAPPER.createObjectNode();
       n.put("firstName", firstName);
@@ -32,7 +29,6 @@ public final class AccountTestRequests {
       n.put("phone", phone);
       n.put("password", password);
       n.put("gender", gender);
-      n.put("dateOfBirth", dateOfBirth.toString());
       return MAPPER.writeValueAsString(n);
     } catch (JsonProcessingException e) {
       throw new IllegalStateException(e);
@@ -40,7 +36,7 @@ public final class AccountTestRequests {
   }
 
   public static String validRegisterJson(String email, String phone, String password) {
-    return registerJson("Alexis", "Trejo", email, phone, password, "MALE", DEFAULT_DOB);
+    return registerJson("Alexis", "Trejo", email, phone, password, "MALE");
   }
 
   public static String loginJson(String email, String password) {
@@ -68,14 +64,13 @@ public final class AccountTestRequests {
   }
 
   public static String updateProfileJson(
-      String firstName, String lastName, String phone, String gender, LocalDate dateOfBirth) {
+      String firstName, String lastName, String phone, String gender) {
     try {
       ObjectNode n = MAPPER.createObjectNode();
       n.put("firstName", firstName);
       n.put("lastName", lastName);
       n.put("phone", phone);
       n.put("gender", gender);
-      n.put("dateOfBirth", dateOfBirth.toString());
       return MAPPER.writeValueAsString(n);
     } catch (JsonProcessingException e) {
       throw new IllegalStateException(e);

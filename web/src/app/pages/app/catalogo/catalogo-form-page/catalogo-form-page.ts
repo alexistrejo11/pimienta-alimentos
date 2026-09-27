@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -7,8 +7,10 @@ import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import { itemCategoryLabel, itemStatusLabel, itemUnitLabel, catalogRoleLabel } from '../../../../core/i18n/enum-labels';
-import type { ItemCategory, ItemStatus, ItemUnit } from '../../../../core/model/inventory/inventory.enums';
+import type { CatalogRole, ItemCategory, ItemStatus, ItemUnit } from '../../../../core/model/inventory/inventory.enums';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
+
+export type ItemCreateKind = 'pos' | 'warehouse';
 
 const CATEGORIES: ItemCategory[] = [
   'RAW_MATERIAL',
@@ -41,6 +43,10 @@ export class CatalogoFormPageComponent implements OnInit {
   readonly loadingExisting = signal(false);
   readonly apiError = signal<ParsedApiError | null>(null);
   readonly itemId = signal<number | null>(null);
+  readonly createKind = signal<ItemCreateKind>('pos');
+  readonly detailsOpen = signal(false);
+  readonly editSku = signal('');
+  readonly editCatalogRole = signal<CatalogRole>('INVENTORY_ONLY');
 
   readonly categories = CATEGORIES;
   readonly units = UNITS;
@@ -50,22 +56,45 @@ export class CatalogoFormPageComponent implements OnInit {
   readonly itemUnitLabel = itemUnitLabel;
   readonly catalogRoleLabel = catalogRoleLabel;
 
+  readonly isEdit = computed(() => this.itemId() != null);
+  readonly isPosCreate = computed(() => !this.isEdit() && this.createKind() === 'pos');
+  readonly isWarehouseCreate = computed(() => !this.isEdit() && this.createKind() === 'warehouse');
+
+  readonly pageTitle = computed(() => {
+    if (this.isEdit()) return 'Editar producto';
+    return this.isPosCreate() ? 'Nuevo producto para POS' : 'Nuevo producto de almacén';
+  });
+
+  readonly pageSubtitle = computed(() => {
+    if (this.isEdit()) return 'Catálogo maestro de inventario';
+    if (this.isPosCreate()) {
+      return 'El precio de venta se configura en el surtido de cada sede, no aquí.';
+    }
+    return 'Para existencias, entradas y movimientos de almacén.';
+  });
+
   readonly form = this.fb.nonNullable.group({
-    sku: [''],
     name: ['', Validators.required],
-    description: [''],
+    brand: [''],
+    barcode: [''],
     costPrice: [0, [Validators.required, Validators.min(0)]],
     category: ['FINISHED_GOOD' as ItemCategory, Validators.required],
     unit: ['PIECE' as ItemUnit, Validators.required],
     reorderPoint: [0, [Validators.required, Validators.min(0)]],
     reorderQuantity: [0, [Validators.required, Validators.min(0)]],
-    brand: [''],
-    barcode: [''],
+    description: [''],
     status: ['ACTIVE' as ItemStatus],
-    catalogRole: ['INVENTORY_ONLY' as 'INVENTORY_ONLY' | 'POS_SELLABLE'],
   });
 
   ngOnInit(): void {
+    const kind = this.route.snapshot.data['itemKind'] as ItemCreateKind | undefined;
+    if (kind === 'pos' || kind === 'warehouse') {
+      this.createKind.set(kind);
+      if (kind === 'warehouse') {
+        this.form.patchValue({ category: 'RAW_MATERIAL' });
+      }
+    }
+
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       const id = Number(idParam);
@@ -76,9 +105,9 @@ export class CatalogoFormPageComponent implements OnInit {
         .pipe(finalize(() => this.loadingExisting.set(false)))
         .subscribe({
           next: (item) => {
-            this.form.controls.sku.addValidators(Validators.required);
+            this.editSku.set(item.sku);
+            this.editCatalogRole.set(item.catalogRole);
             this.form.patchValue({
-              sku: item.sku,
               name: item.name,
               description: item.description ?? '',
               costPrice: item.costPrice,
@@ -89,14 +118,22 @@ export class CatalogoFormPageComponent implements OnInit {
               brand: item.brand ?? '',
               barcode: item.barcode ?? '',
               status: item.status,
-              catalogRole: item.catalogRole,
             });
-            this.form.controls.sku.updateValueAndValidity({ emitEvent: false });
+            const hasDetails =
+              item.costPrice !== 0 ||
+              item.reorderPoint !== 0 ||
+              item.reorderQuantity !== 0 ||
+              !!(item.description?.trim());
+            this.detailsOpen.set(hasDetails);
             markFormPristine(this.form);
           },
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     }
+  }
+
+  toggleDetails(): void {
+    this.detailsOpen.update((open) => !open);
   }
 
   submit(): void {
@@ -109,34 +146,38 @@ export class CatalogoFormPageComponent implements OnInit {
     this.loading.set(true);
     const v = this.form.getRawValue();
     const id = this.itemId();
+    const catalogRole: CatalogRole = id
+      ? this.editCatalogRole()
+      : this.isPosCreate()
+        ? 'POS_SELLABLE'
+        : 'INVENTORY_ONLY';
 
     const request$ = id
       ? this.inventory.updateItem(id, {
-          sku: v.sku.trim(),
+          sku: this.editSku(),
           name: v.name,
-          description: v.description || undefined,
+          description: v.description.trim() || undefined,
           costPrice: v.costPrice,
           category: v.category,
           unit: v.unit,
           reorderPoint: v.reorderPoint,
           reorderQuantity: v.reorderQuantity,
-          brand: v.brand || undefined,
-          barcode: v.barcode || undefined,
+          brand: v.brand.trim() || undefined,
+          barcode: v.barcode.trim() || undefined,
           status: v.status,
-          catalogRole: v.catalogRole,
+          catalogRole,
         })
       : this.inventory.createItem({
-          sku: v.sku.trim() || undefined,
           name: v.name,
-          description: v.description || undefined,
           costPrice: v.costPrice,
           category: v.category,
           unit: v.unit,
           reorderPoint: v.reorderPoint,
           reorderQuantity: v.reorderQuantity,
-          brand: v.brand || undefined,
-          barcode: v.barcode || undefined,
-          catalogRole: v.catalogRole,
+          brand: v.brand.trim() || undefined,
+          barcode: v.barcode.trim() || undefined,
+          catalogRole,
+          ...(this.isWarehouseCreate() && v.description.trim() ? { description: v.description.trim() } : {}),
         });
 
     request$.pipe(finalize(() => this.loading.set(false))).subscribe({
@@ -147,5 +188,4 @@ export class CatalogoFormPageComponent implements OnInit {
       error: (err: unknown) => this.apiError.set(parseApiError(err)),
     });
   }
-
 }

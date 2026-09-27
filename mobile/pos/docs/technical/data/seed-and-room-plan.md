@@ -16,7 +16,6 @@ Su salida es `app/src/main/assets/pos-training-bootstrap.json`.
 La conversión actual:
 
 - asigna IDs POS incrementales (`product-0001`, etc.);
-- conserva el ID y código anterior como `legacyId` y `legacyBarcode`;
 - hace únicos los códigos duplicados agregando sufijos;
 - conserva nombre, categoría, precio, costo y stock;
 - usa `PIECE` para todos los productos de esta versión;

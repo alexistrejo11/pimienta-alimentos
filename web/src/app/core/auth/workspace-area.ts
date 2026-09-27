@@ -11,7 +11,12 @@ export const PENDING_PATH = '/app/pendiente-aprobacion';
 export const RESTRICTED_PATH = '/app/acceso-restringido';
 export const EMPLOYEE_HOME = '/app/mi-asistencia';
 
-const OPS_ROLES: readonly AppRole[] = [AppRole.ADMIN, AppRole.MANAGER, AppRole.POS_OPERATOR];
+const OPS_ROLES: readonly AppRole[] = [
+  AppRole.ADMIN,
+  AppRole.DIRECTOR,
+  AppRole.MANAGER,
+  AppRole.EMPLOYEE,
+];
 
 export interface WorkspaceIdentity {
   readonly roles: readonly AppRole[];

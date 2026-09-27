@@ -17,7 +17,9 @@ class FakeBarcodeScanner : BarcodeScanner {
     // Injects one complete barcode into the scanner stream.
     fun emit(rawValue: String) {
         require(rawValue.isNotBlank()) { "Barcode cannot be blank" }
-        _events.tryEmit(BarcodeRead(rawValue.trim(), ScannerSource.FAKE))
+        val code = rawValue.trim()
+        PosScannerRegistry.noteRead(code)
+        _events.tryEmit(BarcodeRead(code, ScannerSource.FAKE))
     }
 
     // Simulates a scanner connection change.

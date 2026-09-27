@@ -30,7 +30,12 @@
 
     @if (open()) {
       <ul
-        class="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-outline-variant/30 bg-surface-container-lowest shadow-md"
+        class="mt-1 w-full overflow-auto rounded-lg border border-outline-variant/30 bg-surface-container-lowest shadow-md"
+        [class.absolute]="listLayout() === 'overlay'"
+        [class.z-20]="listLayout() === 'overlay'"
+        [class.max-h-64]="listLayout() === 'overlay'"
+        [class.max-h-[min(45dvh,22rem)]]="listLayout() === 'inline'"
+        [class.min-h-[8rem]]="listLayout() === 'inline'"
         role="listbox"
       >
         @if (loading()) {
@@ -44,7 +49,7 @@
             <li role="option">
               <button
                 type="button"
-                class="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left text-sm hover:bg-surface-container"
+                class="flex min-h-11 w-full flex-col items-start justify-center gap-0.5 px-3 py-2 text-left text-sm hover:bg-surface-container"
                 [class.bg-surface-container]="value() === item.id"
                 (click)="select(item)"
               >

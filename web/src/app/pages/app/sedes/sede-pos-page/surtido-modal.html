@@ -1,0 +1,154 @@
+<div
+  class="fixed inset-0 z-50 flex items-end justify-center overflow-hidden p-0 sm:items-center sm:p-6"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="surtido-modal-titulo"
+>
+  <div class="absolute inset-0 bg-black/40" (click)="saving() ? null : cerrar.emit()"></div>
+  <div class="relative z-10 flex max-h-[min(92dvh,44rem)] w-full max-w-xl flex-col rounded-t-2xl bg-surface-container-lowest sm:max-w-2xl sm:rounded-2xl">
+    <header class="flex items-start justify-between gap-3 px-5 py-4 sm:px-6">
+      <div>
+        <h2 id="surtido-modal-titulo" class="font-headline text-lg font-bold text-on-surface">
+          @if (lookup() === 'form' && formMode() === 'edit') {
+            Editar en el surtido
+          } @else if (lookup() === 'form') {
+            Agregar al surtido
+          } @else {
+            Buscar artículo
+          }
+        </h2>
+        <p class="text-sm text-on-surface-variant">
+          @if (lookup() === 'form') {
+            {{ productLabel() }}
+          } @else {
+            Primero confirma si ya está en esta sede.
+          }
+        </p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container"
+        [disabled]="saving()"
+        aria-label="Cerrar"
+        (click)="cerrar.emit()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <div
+      class="min-h-0 flex-1 space-y-4 px-5 pb-4 sm:px-6"
+      [class.overflow-y-auto]="lookup() === 'form'"
+    >
+      @if (error(); as err) {
+        <p class="rounded-lg bg-primary-fixed p-3 text-sm text-on-primary-fixed" role="alert">{{ err.message }}</p>
+      }
+
+      @if (lookup() !== 'form') {
+        <div class="min-h-[min(50dvh,20rem)]">
+          <app-item-select
+            label="Artículo maestro vendible"
+            placeholder="Buscar por nombre, SKU o código"
+            catalogRole="POS_SELLABLE"
+            listLayout="inline"
+            [value]="picked()?.id ?? null"
+            (valueChange)="onItemChange($event)"
+            (itemChange)="onItemPicked($event)"
+          />
+        </div>
+        <p class="text-sm text-on-surface-variant">
+          Si no aparece en la búsqueda, créalo en
+          <a routerLink="/app/ops/catalogo" class="font-semibold text-primary" (click)="cerrar.emit()">Artículos maestros</a>.
+        </p>
+
+        @if (lookup() === 'checking') {
+          <p class="text-sm text-on-surface-variant" role="status">Revisando el surtido de la sede…</p>
+        }
+        @if (lookup() === 'in-catalog') {
+          <div class="rounded-lg bg-surface-container p-4">
+            <p class="text-sm font-semibold text-on-surface">Ya está en el surtido de esta sede.</p>
+            <p class="mt-1 text-sm text-on-surface-variant">
+              {{ productLabel() }} · {{ catalogRow()?.saleCategory }} · ${{ catalogRow()?.salePrice }}
+            </p>
+            <button
+              type="button"
+              class="mt-3 min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+              (click)="startEditFromLookup()"
+            >
+              Editar
+            </button>
+          </div>
+        }
+        @if (lookup() === 'not-configured') {
+          <div class="rounded-lg bg-surface-container p-4">
+            <p class="text-sm font-semibold text-on-surface">No está configurado en esta sede.</p>
+            <p class="mt-1 text-sm text-on-surface-variant">
+              {{ productLabel() }} existe como artículo maestro. Puedes agregarlo al surtido con precio y categoría de esta sede.
+            </p>
+            <button
+              type="button"
+              class="mt-3 min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+              (click)="startAdd()"
+            >
+              Configurar en esta sede
+            </button>
+          </div>
+        }
+      } @else {
+        <form class="grid gap-3 sm:grid-cols-2" [formGroup]="catalogForm" (ngSubmit)="guardar()" id="surtido-form">
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-semibold">Categoría de venta</span>
+            <select class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="saleCategory">
+              @for (category of categories(); track category.id) {
+                <option [value]="category.name">{{ category.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-semibold">Precio de venta</span>
+            <input type="number" step="0.01" min="0" class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="salePrice" />
+          </label>
+          <label class="flex flex-col gap-1 text-sm sm:col-span-2">
+            <span class="flex items-center gap-2">
+              <input type="checkbox" formControlName="available" />
+              Disponible en POS
+            </span>
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-semibold">Política de stock</span>
+            <select class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="stockPolicy">
+              @for (policy of stockPolicies; track policy) {
+                <option [value]="policy">{{ stockPolicyLabel(policy) }}</option>
+              }
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-semibold">Límite de stock negativo</span>
+            <input type="number" class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="negativeStockLimit" />
+          </label>
+        </form>
+      }
+    </div>
+
+    <footer class="flex flex-col-reverse gap-2 border-t border-outline-variant/20 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+      <button
+        type="button"
+        class="min-h-11 rounded-lg bg-surface-container px-4 py-2.5 text-sm font-semibold"
+        [disabled]="saving()"
+        (click)="cerrar.emit()"
+      >
+        Cancelar
+      </button>
+      @if (lookup() === 'form') {
+        <button
+          type="submit"
+          form="surtido-form"
+          class="min-h-11 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-60"
+          [disabled]="saving()"
+        >
+          {{ saving() ? 'Guardando…' : (formMode() === 'add' ? 'Agregar al surtido' : 'Guardar cambios') }}
+        </button>
+      }
+    </footer>
+  </div>
+</div>

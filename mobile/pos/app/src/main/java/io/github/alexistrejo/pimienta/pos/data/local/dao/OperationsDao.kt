@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
     @Insert(onConflict = OnConflictStrategy.REPLACE) fun insertDevice(device: DeviceEntity)
     @Query("SELECT * FROM device LIMIT 1") fun device(): DeviceEntity?
     @Query("SELECT * FROM shift WHERE status = 'OPEN' LIMIT 1") fun activeShift(): ShiftEntity?
+    @Query("SELECT * FROM shift WHERE status = 'OPEN' LIMIT 1") fun observeActiveShift(): Flow<ShiftEntity?>
     @Insert fun insertShift(shift: ShiftEntity)
     @Insert fun insertSale(sale: SaleEntity)
     @Insert fun insertLines(lines: List<SaleLineEntity>)

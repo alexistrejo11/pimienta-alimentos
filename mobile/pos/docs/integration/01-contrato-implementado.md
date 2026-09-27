@@ -28,6 +28,8 @@ abiertos; ver [../implementation/00-estado-actual.md](../implementation/00-estad
 | `GET /api/v1/pos/sync/changes?cursor=` | Descargar `upsert`/`deactivate`; cursor ajeno o inválido devuelve 409 y exige bootstrap. |
 | `POST /api/v1/pos/sync/events` | Enviar lote ordenado por secuencia y recibir resultado individual. |
 | `POST /api/v1/pos/sync/products` | Alta síncrona de un producto vendible en la sede del dispositivo. JWT de tablet; sede del claim. |
+| `PUT /api/v1/pos/sync/products/{itemId}` | Renombra el artículo maestro. No cambia precio ni política de stock. |
+| `PUT /api/v1/pos/sync/products/{itemId}/offer` | Cambia precio de venta y `stockPolicy` en la sede. No cambia el nombre. |
 
 El access JWT representa al dispositivo (`typ=device`, `scope=pos:sync`), no
 al cajero. El PIN del operador no viaja. `createdByOperatorId` en el alta de
@@ -46,6 +48,24 @@ servidor. Respuesta: la misma proyección de producto que bootstrap. 409
 Un barcode desconocido en caja sigue pudiendo cobrarse como `PENDING_CATALOG`
 sin crear maestro. Monto abierto no cambia.
 
+### Edición desde el panel de gerente
+
+El cliente llama solo el lado que cambió. Si cambian nombre y oferta, hace las
+dos peticiones en ese orden.
+
+`PUT /products/{itemId}` body: `{ "name", "barcode" }`. El producto tiene que estar en el
+catálogo de la sede del dispositivo; si no, **404** `HEADQUARTER_ITEM_NOT_FOUND`.
+El SKU no se reescribe. `barcode` vacío, nulo o igual al SKU se guarda como `null`:
+el escáner usa el SKU. Un código distinto reemplaza solo el barcode. Costo y rol no se pisan.
+**409** `ITEM_BARCODE_ALREADY_EXISTS` si ese código ya está en otro artículo.
+
+`PUT /products/{itemId}/offer` body: `{ "salePriceCentavos", "stockPolicy" }`
+con `CONTROLLED` o `NOT_CONTROLLED` y precio mínimo 1 centavo. Categoría,
+disponibilidad y límite negativo se conservan.
+
+Ambas responden la misma proyección de producto que el alta. Un JWT de staff
+sin `scope=pos:sync` recibe **403**. No hay borrado por estas rutas.
+
 ## Bootstrap y deltas
 
 El bootstrap contiene `site`, `device`, `operators`, `products`, categorías de
@@ -61,8 +81,18 @@ catálogo no modifica snapshots de ventas ni un carrito activo.
 ### Política de producto abierto
 
 El bootstrap y las operaciones `policies` de los deltas incluyen
-`allowOpenProducts`, además de `openAmountCategories`. La aplicación debe
-actualizar ambos valores atómicamente con el cursor.
+`allowOpenProducts`, `openAmountCategories` y `stockless`. La aplicación debe
+actualizar esos valores atómicamente con el cursor.
+
+### Modo solo venta (`stockless`)
+
+`PUT /api/v1/headquarters/{id}/pos-settings` acepta `stockless` (boolean, default
+`false`). Con `true`, el servidor **no** aplica movimientos de inventario POS
+para `SALE_CONFIRMED` ni `SALE_CANCELLED`. La venta se persiste igual. El
+catálogo puede seguir con `stockPolicy=CONTROLLED`. Al apagar el modo, las
+siguientes ventas CONTROLLED descuentan desde el saldo POS actual; no hay
+backfill. El tablet no escribe `inventory_movement` local ni bloquea por
+existencias cuando `policies.stockless` es verdadero.
 
 Una línea manual de monto abierto se envía dentro de `SALE_CONFIRMED` con esta
 forma:
@@ -89,8 +119,9 @@ el importe es positivo y el subtotal coincide. La categoría debe estar
 configurada en la sede y `allowOpenProducts` debe estar activo. No se exige
 autorizador ni PIN; esos campos pueden viajar nulos.
 
-Estas líneas no mueven inventario. El servidor conserva sus snapshots y siempre
-devuelve `REQUIRES_REVIEW` con una incidencia `OPEN_PRODUCT` para auditoría.
+Estas líneas no mueven inventario. El servidor conserva sus snapshots y acepta
+la venta (`ACCEPTED`). No abre incidencia ni pide revisión en la web. Un
+barcode desconocido (`PENDING_CATALOG`) también se acepta con `productId` nulo.
 
 ## Envelope y resultados
 
@@ -118,9 +149,9 @@ El servidor guarda cualquier evento recibido en el ledger. La proyección de
 existencias centrales aplica solo a:
 
 - **`SALE_CONFIRMED`:** persistencia de venta/líneas/pagos y movimiento POS de
-  inventario para líneas `CONTROLLED`.
+  inventario para líneas `CONTROLLED` **salvo** sede `stockless`.
 - **`SALE_CANCELLED`:** reversión del movimiento POS asociado a la venta
-  cancelada.
+  cancelada **salvo** sede `stockless`.
 
 **`WASTE_RECORDED` y `RESTOCK_RECORDED`** se aceptan como entradas de auditoría
 en el ledger (reportes operativos), pero **no modifican** el inventario HQ.
