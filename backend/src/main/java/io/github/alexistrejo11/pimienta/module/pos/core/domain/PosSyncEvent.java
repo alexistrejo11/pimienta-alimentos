@@ -34,7 +34,6 @@ public class PosSyncEvent extends BaseDomain<UUID> {
     this.serverReceivedAt = Instant.now();
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public String getEventType() {
@@ -256,7 +255,7 @@ public class PosSyncEvent extends BaseDomain<UUID> {
       e.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       e.updatedAt = updatedAt != null ? updatedAt : e.createdAt;
       e.deletedAt = deletedAt;
-      e.version = version != null ? version : 0L;
+      e.version = version;
       return e;
     }
 

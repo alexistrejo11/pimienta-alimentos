@@ -14,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.application.comman
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosLocationUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
+import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosChangeLogSpringDataRepository;
 import java.net.URLEncoder;
@@ -52,6 +53,7 @@ class PosSyncConcurrencyIntegrationTest {
   @Autowired private PosLocationUseCases posLocationUseCases;
   @Autowired private PosChangeLogSpringDataRepository posChangeLogRepository;
   @Autowired private InventoryRepository inventoryRepository;
+  @Autowired private ProductRepository productRepository;
 
   @AfterEach
   void releaseGate() {
@@ -101,7 +103,7 @@ class PosSyncConcurrencyIntegrationTest {
               () ->
                   posSaleInventoryUseCases.applySaleStock(
                       new ApplyPosSaleStockCommand(
-                          hqId, itemId, -1, "concurrent-stock", null, null)));
+                          hqId, stockItemId(itemId), -1, "concurrent-stock", null, null)));
 
       catalogMutation.get(10, TimeUnit.SECONDS);
       stockMutation.get(10, TimeUnit.SECONDS);
@@ -162,7 +164,10 @@ class PosSyncConcurrencyIntegrationTest {
       executor.shutdownNow();
     }
 
-    var stock = inventoryRepository.findByItemIdAndLocationId(itemId, location.getId()).orElseThrow();
+    var stock =
+        inventoryRepository
+            .findByItemIdAndLocationId(stockItemId(itemId), location.getId())
+            .orElseThrow();
     org.junit.jupiter.api.Assertions.assertEquals(-2, stock.getAvailableQuantity());
   }
 
@@ -172,7 +177,7 @@ class PosSyncConcurrencyIntegrationTest {
         throw new AssertionError("concurrent stock start was not released");
       }
       posSaleInventoryUseCases.applySaleStock(
-          new ApplyPosSaleStockCommand(hqId, itemId, 1, eventId, null, null));
+          new ApplyPosSaleStockCommand(hqId, stockItemId(itemId), 1, eventId, null, null));
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(ex);
@@ -226,23 +231,23 @@ class PosSyncConcurrencyIntegrationTest {
         mockMvc
             .perform(
                 AccountTestRequests.postJsonBearer(
-                    "/api/v1/inventory/items",
+                    "/api/v1/products",
                     token,
                     """
                     {
-                      "sku": "%s",
                       "name": "%s",
-                      "description": "IT",
-                      "costPrice": 10.00,
-                      "category": "CONSUMABLE",
                       "unit": "PIECE",
-                      "reorderPoint": 0,
-                      "reorderQuantity": 0
+                      "barcode": "%s",
+                      "trackStock": true
                     }
-                    """.formatted(sku, name)))
+                    """.formatted(name, sku)))
             .andExpect(status().isCreated())
             .andReturn();
     return ((Number) JsonPath.read(result.getResponse().getContentAsString(), "$.id")).longValue();
+  }
+
+  private long stockItemId(long productId) {
+    return productRepository.findById(productId).orElseThrow().getInventoryItemId();
   }
 
   private long createHeadquarter(String token, String name) throws Exception {

@@ -24,7 +24,9 @@ export type ItemUnit =
 
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemStatus}. */
 export type ItemStatus = 'ACTIVE' | 'DISCONTINUED' | 'OUT_OF_STOCK' | 'PENDING_APPROVAL';
-export type CatalogRole = 'INVENTORY_ONLY' | 'POS_SELLABLE';
+
+/** Mirrors {@link io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemKind}. */
+export type ItemKind = 'PRODUCT' | 'WAREHOUSE';
 
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory.InventoryStatus}. */
 export type InventoryStatus = 'NORMAL' | 'LOW_STOCK' | 'OUT_OF_STOCK';

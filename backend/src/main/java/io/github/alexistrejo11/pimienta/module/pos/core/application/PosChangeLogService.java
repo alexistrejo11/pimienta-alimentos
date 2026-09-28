@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
+import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository.PosChangeLogEntry;
 import java.util.List;
@@ -15,19 +16,22 @@ import org.springframework.stereotype.Service;
 public class PosChangeLogService {
 
   private final PosChangeLogRepository repository;
+  private final ProductRepository productRepository;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public PosChangeLogService(PosChangeLogRepository repository) {
+  public PosChangeLogService(
+      PosChangeLogRepository repository, ProductRepository productRepository) {
     this.repository = repository;
+    this.productRepository = productRepository;
   }
 
   public void appendCatalogItem(HeadquarterItem item) {
     append(
         item.getHeadquarterId(),
         "CATALOG_ITEM",
-        String.valueOf(item.getItemId()),
+        String.valueOf(item.getProductId()),
         item.getDeletedAt() == null ? "UPSERT" : "DEACTIVATE",
-        Map.of("itemId", item.getItemId()));
+        Map.of("itemId", item.getProductId()));
   }
 
   public void appendInventoryStock(Inventory inventory) {
@@ -36,12 +40,16 @@ public class PosChangeLogService {
     }
     if (inventory.getLocation().getType() != null
         && "POS".equals(inventory.getLocation().getType().name())) {
-      append(
-          inventory.getLocation().getHeadquarterId(),
-          "INVENTORY_STOCK",
-          String.valueOf(inventory.getItem().getId()),
-          "UPSERT",
-          Map.of("itemId", inventory.getItem().getId()));
+      productRepository
+          .findByInventoryItemId(inventory.getItem().getId())
+          .ifPresent(
+              product ->
+                  append(
+                      inventory.getLocation().getHeadquarterId(),
+                      "INVENTORY_STOCK",
+                      String.valueOf(product.getId()),
+                      "UPSERT",
+                      Map.of("itemId", product.getId())));
     }
   }
 

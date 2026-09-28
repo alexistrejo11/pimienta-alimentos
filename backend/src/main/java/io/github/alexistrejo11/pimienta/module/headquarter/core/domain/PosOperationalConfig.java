@@ -28,7 +28,6 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     this.stockless = false;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public Long getHeadquarterId() {
@@ -166,7 +165,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       c.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       c.updatedAt = updatedAt != null ? updatedAt : c.createdAt;
       c.deletedAt = deletedAt;
-      c.version = version != null ? version : 0L;
+      c.version = version;
       return c;
     }
 
@@ -177,7 +176,6 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       c.createdAt = now;
       c.updatedAt = now;
       c.deletedAt = null;
-      c.version = 0L;
       return c;
     }
 
@@ -188,7 +186,7 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       c.createdAt = existing.getCreatedAt();
       c.deletedAt = existing.getDeletedAt();
       c.updatedAt = LocalDateTime.now();
-      c.version = existing.getVersion() != null ? existing.getVersion() : 0L;
+      c.version = existing.getVersion();
       return c;
     }
   }

@@ -49,6 +49,14 @@ orchestration and invariants that belong to application services.
 
 ## JPA entities
 
+- Extend **`shared/jpa/BaseJpaEntity`** (`created_at`, `updated_at`, `deleted_at` as `LocalDateTime` +
+  `@Version`). Tables without that audit shape (e.g. `Instant` timestamps or no `deleted_at`) extend
+  **`VersionedJpaEntity`** and keep their own timestamps. Do not redeclare these fields.
+- **Persistence owns `version`:** new aggregates leave it `null` (no `0L`/`1L` in `register()` or
+  builders), mappers copy `domain.getVersion()` as-is, and nothing bumps it in memory (`touch()`
+  only updates `updatedAt`). `@PrePersist` seeds **1** and Hibernate increments on update.
+- Never save the same loaded domain instance twice in one transaction after a flush (e.g. via a
+  cascading repository save and again explicitly): the second save resends a stale version.
 - Use **`nullable = true`** on columns that are **not** critical for row integrity or locking (e.g.
   optional text, status-like fields that can be backfilled).
 - Keep **`nullable = false`** where the physical model requires it (`created_at`, `updated_at`,

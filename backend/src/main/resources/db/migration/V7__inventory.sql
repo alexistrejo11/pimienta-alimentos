@@ -1,24 +1,20 @@
--- Pimienta Alimentos — inventory catalog, locations, stock, transactions, and movements
+-- Pimienta Alimentos — warehouse items, sale products, locations, stock, and movements
 
 CREATE TABLE inventory_items (
     id               BIGSERIAL PRIMARY KEY,
-    sku              VARCHAR(64)  NOT NULL,
     name             VARCHAR(300) NOT NULL,
     description      VARCHAR(4000),
     category         VARCHAR(32)  NOT NULL,
     unit             VARCHAR(32)  NOT NULL,
     brand            VARCHAR(120),
-    barcode          VARCHAR(64),
     cost_price       NUMERIC(19, 6) NOT NULL DEFAULT 0,
     reorder_point    INTEGER      NOT NULL DEFAULT 0,
     reorder_quantity INTEGER      NOT NULL DEFAULT 0,
     status           VARCHAR(32)  NOT NULL,
-    catalog_role     VARCHAR(32)  NOT NULL DEFAULT 'INVENTORY_ONLY',
     created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at       TIMESTAMP,
     version          BIGINT       NOT NULL DEFAULT 1,
-    CONSTRAINT uk_inventory_items_sku UNIQUE (sku),
     CONSTRAINT ck_inventory_items_category
         CHECK (category IN (
             'RAW_MATERIAL', 'FINISHED_GOOD', 'CONSUMABLE', 'SPARE_PART', 'PACKAGING',
@@ -27,22 +23,15 @@ CREATE TABLE inventory_items (
     CONSTRAINT ck_inventory_items_unit
         CHECK (unit IN ('PIECE', 'KG', 'GRAM', 'LITER', 'ML', 'BOX', 'DOZEN', 'METER', 'SQUARE_METER')),
     CONSTRAINT ck_inventory_items_status
-        CHECK (status IN ('ACTIVE', 'DISCONTINUED', 'OUT_OF_STOCK', 'PENDING_APPROVAL')),
-    CONSTRAINT ck_inventory_items_catalog_role
-        CHECK (catalog_role IN ('INVENTORY_ONLY', 'POS_SELLABLE'))
+        CHECK (status IN ('ACTIVE', 'DISCONTINUED', 'OUT_OF_STOCK', 'PENDING_APPROVAL'))
 );
-
-CREATE UNIQUE INDEX uk_inventory_items_barcode_not_null
-    ON inventory_items (barcode)
-    WHERE barcode IS NOT NULL;
 
 CREATE INDEX idx_inventory_items_status ON inventory_items (status);
 CREATE INDEX idx_inventory_items_deleted_at ON inventory_items (deleted_at);
-CREATE INDEX idx_inventory_items_catalog_role ON inventory_items (catalog_role);
 
-COMMENT ON TABLE inventory_items IS 'Catalog of stock-keeping units (SKU) and cost metadata.';
+COMMENT ON TABLE inventory_items IS 'Warehouse things that can be counted: supplies, furniture, and stock behind a sale product.';
 
-CREATE SEQUENCE inventory_item_sku_seq
+CREATE SEQUENCE product_sku_seq
     AS BIGINT
     START WITH 1
     INCREMENT BY 1
@@ -52,42 +41,63 @@ CREATE FUNCTION next_internal_item_sku()
 RETURNS VARCHAR(64)
 LANGUAGE sql
 AS $$
-    SELECT 'CAF-' || LPAD(nextval('inventory_item_sku_seq')::TEXT, 6, '0');
+    SELECT 'CAF-' || LPAD(nextval('product_sku_seq')::TEXT, 6, '0');
 $$;
 
-COMMENT ON FUNCTION next_internal_item_sku() IS 'Returns the next backend-generated internal SKU.';
-COMMENT ON SEQUENCE inventory_item_sku_seq IS 'Sequence for backend-generated internal CAF SKUs.';
+COMMENT ON FUNCTION next_internal_item_sku() IS 'Returns the next sale-product SKU. Assigned by trg_products_assign_sku.';
+COMMENT ON SEQUENCE product_sku_seq IS 'Sequence for sale-product CAF SKUs.';
 
-CREATE TABLE inventory_item_identifiers (
-    id               BIGSERIAL PRIMARY KEY,
-    item_id          BIGINT      NOT NULL REFERENCES inventory_items (id),
-    value            VARCHAR(64) NOT NULL,
-    value_normalized VARCHAR(64) NOT NULL,
-    type             VARCHAR(32) NOT NULL,
-    active           BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at       TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at       TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at       TIMESTAMP,
-    version          BIGINT      NOT NULL DEFAULT 1,
-    CONSTRAINT ck_inventory_item_identifiers_type
-        CHECK (type IN ('SKU', 'SUPPLIER_BARCODE'))
+CREATE TABLE products (
+    id                BIGSERIAL PRIMARY KEY,
+    sku               VARCHAR(64)  NOT NULL,
+    name              VARCHAR(300) NOT NULL,
+    description       VARCHAR(4000),
+    unit              VARCHAR(32)  NOT NULL,
+    barcode           VARCHAR(64),
+    status            VARCHAR(32)  NOT NULL,
+    inventory_item_id BIGINT REFERENCES inventory_items (id),
+    created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at        TIMESTAMP,
+    version           BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT uk_products_sku UNIQUE (sku),
+    CONSTRAINT ck_products_unit
+        CHECK (unit IN ('PIECE', 'KG', 'GRAM', 'LITER', 'ML', 'BOX', 'DOZEN', 'METER', 'SQUARE_METER')),
+    CONSTRAINT ck_products_status
+        CHECK (status IN ('ACTIVE', 'DISCONTINUED'))
 );
 
-CREATE UNIQUE INDEX uk_inventory_item_identifiers_value_active
-    ON inventory_item_identifiers (value_normalized)
-    WHERE deleted_at IS NULL AND active = TRUE;
+CREATE UNIQUE INDEX uk_products_barcode_active
+    ON products (barcode)
+    WHERE barcode IS NOT NULL AND deleted_at IS NULL;
 
-CREATE UNIQUE INDEX uk_inventory_item_identifiers_item_type_active
-    ON inventory_item_identifiers (item_id, type)
-    WHERE deleted_at IS NULL AND active = TRUE;
+CREATE UNIQUE INDEX uk_products_inventory_item_active
+    ON products (inventory_item_id)
+    WHERE inventory_item_id IS NOT NULL AND deleted_at IS NULL;
 
-CREATE INDEX idx_inventory_item_identifiers_item_id
-    ON inventory_item_identifiers (item_id);
+CREATE INDEX idx_products_status ON products (status);
+CREATE INDEX idx_products_deleted_at ON products (deleted_at);
+CREATE INDEX idx_products_inventory_item_id ON products (inventory_item_id);
 
-CREATE INDEX idx_inventory_item_identifiers_value_normalized
-    ON inventory_item_identifiers (value_normalized);
+COMMENT ON TABLE products IS 'Sale catalog. SKU is required and filled by trigger. inventory_item_id is set only when the product is stocked.';
+COMMENT ON COLUMN products.inventory_item_id IS 'Stock identity for a controlled product. Null for dishes prepared to order.';
 
-COMMENT ON TABLE inventory_item_identifiers IS 'Unique internal SKU and supplier barcode identifiers for inventory items.';
+CREATE FUNCTION assign_product_sku()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.sku IS NULL OR BTRIM(NEW.sku) = '' THEN
+        NEW.sku := next_internal_item_sku();
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_products_assign_sku
+    BEFORE INSERT ON products
+    FOR EACH ROW
+    EXECUTE FUNCTION assign_product_sku();
 
 CREATE TABLE storage_locations (
     id                BIGSERIAL PRIMARY KEY,

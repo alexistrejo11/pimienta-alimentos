@@ -42,7 +42,7 @@
           <li class="px-3 py-2.5 text-sm text-on-surface-variant">Buscando…</li>
         } @else if (options().length === 0) {
           <li class="px-3 py-2.5 text-sm text-on-surface-variant">
-            Sin resultados. Prueba SKU (p. ej. CAF-104) o Enter para lookup exacto.
+            Sin resultados. Prueba el nombre del artículo.
           </li>
         } @else {
           @for (item of options(); track item.id) {
@@ -54,7 +54,9 @@
                 (click)="select(item)"
               >
                 <span class="font-medium text-on-surface">{{ item.name }}</span>
-                <span class="font-mono text-xs text-on-surface-variant">{{ item.sku }}</span>
+                @if (item.saleSku) {
+                  <span class="font-mono text-xs text-on-surface-variant">{{ item.saleSku }}</span>
+                }
               </button>
             </li>
           }

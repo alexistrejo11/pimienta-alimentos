@@ -52,7 +52,6 @@ public class Inventory extends BaseDomain<Long> {
     this.status = InventoryStatus.NORMAL;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   // ─────────────────────────────────────────────

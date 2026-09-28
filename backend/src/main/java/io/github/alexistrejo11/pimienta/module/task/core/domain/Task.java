@@ -58,7 +58,6 @@ public class Task extends BaseDomain<Long> {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.deletedAt = null;
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {
@@ -67,7 +66,6 @@ public class Task extends BaseDomain<Long> {
 
   public void touch() {
     this.updatedAt = LocalDateTime.now();
-    this.version = this.version != null ? this.version + 1 : 1L;
   }
 
   public void delete() {
@@ -331,7 +329,7 @@ public class Task extends BaseDomain<Long> {
     }
 
     public SafeBuilder withVersion(Long version) {
-      this.version = version != null ? version : 0L;
+      this.version = version;
       return this;
     }
 
@@ -355,7 +353,7 @@ public class Task extends BaseDomain<Long> {
       t.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       t.updatedAt = updatedAt != null ? updatedAt : t.createdAt;
       t.deletedAt = deletedAt;
-      t.version = version != null ? version : 0L;
+      t.version = version;
       return t;
     }
 
@@ -381,7 +379,7 @@ public class Task extends BaseDomain<Long> {
       t.createdAt = createdAt != null ? createdAt : now;
       t.updatedAt = updatedAt != null ? updatedAt : now;
       t.deletedAt = deletedAt;
-      t.version = version != null ? version : 0L;
+      t.version = version;
       return t;
     }
 

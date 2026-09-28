@@ -1,61 +1,43 @@
 package io.github.alexistrejo11.pimienta.module.inventory.core.domain;
 
+import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import io.github.alexistrejo11.pimienta.shared.BaseDomain;
-
+/** Warehouse thing that can be counted. Sale identity lives on {@code products}. */
 public class Item extends BaseDomain<Long> {
 
-  // ─────────────────────────────────────────────
-  // IDENTIFICACIÓN
-  // ─────────────────────────────────────────────
-  /** Código interno / SKU */
-  private String sku;
   private String name;
   private String description;
-
-  // ─────────────────────────────────────────────
-  // CLASIFICACIÓN
-  // ─────────────────────────────────────────────
   private ItemCategory category;
-  private ItemUnit unit; // pieza, kg, litro, caja…
+  private ItemUnit unit;
   private String brand;
-  private String barcode;
-
-  // ─────────────────────────────────────────────
-  // COSTO
-  // ─────────────────────────────────────────────
-  /** Precio de compra (costo). Sale price lives on headquarter_items. */
   private BigDecimal costPrice;
-
-  // ─────────────────────────────────────────────
-  // STOCK — quantity se elimina de aquí:
-  // la cantidad real vive en Inventory, no en Item.
-  // Item describe QUÉ es; Inventory describe CUÁNTO hay y DÓNDE.
-  // ─────────────────────────────────────────────
-  /** Cantidad mínima antes de disparar alerta de reorden */
   private int reorderPoint;
-  /** Cantidad sugerida al reordenar */
   private int reorderQuantity;
-
   private ItemStatus status;
-  private CatalogRole catalogRole = CatalogRole.INVENTORY_ONLY;
 
-  // ─────────────────────────────────────────────
-  // ENUMERACIONES
-  // ─────────────────────────────────────────────
+  /** Sale SKU when a product points at this item. Not stored on the item row. */
+  private String saleSku;
+
+  /** Product that points at this item. Not stored on the item row. */
+  private Long productId;
+
+  public enum ItemKind {
+    PRODUCT,
+    WAREHOUSE
+  }
 
   public enum ItemCategory {
-    RAW_MATERIAL, // materia prima
-    FINISHED_GOOD, // producto terminado
-    CONSUMABLE, // consumible (papel, limpieza…)
-    SPARE_PART, // refacción
-    PACKAGING, // empaque
-    TOOL, // herramienta
-    MACHINE, // máquina
-    FURNITURE, // mobiliario
-    OTHER, // otro
+    RAW_MATERIAL,
+    FINISHED_GOOD,
+    CONSUMABLE,
+    SPARE_PART,
+    PACKAGING,
+    TOOL,
+    MACHINE,
+    FURNITURE,
+    OTHER
   }
 
   public enum ItemUnit {
@@ -77,17 +59,10 @@ public class Item extends BaseDomain<Long> {
     PENDING_APPROVAL
   }
 
-  public enum CatalogRole { INVENTORY_ONLY, POS_SELLABLE }
-
-  // ─────────────────────────────────────────────
-  // CONSTRUCTOR
-  // ─────────────────────────────────────────────
-
   public Item() {
     this.id = 0L;
     this.name = "";
     this.description = "";
-    this.sku = "";
     this.costPrice = BigDecimal.ZERO;
     this.reorderPoint = 0;
     this.reorderQuantity = 0;
@@ -95,20 +70,17 @@ public class Item extends BaseDomain<Long> {
     this.status = ItemStatus.ACTIVE;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
-  // ─────────────────────────────────────────────
-  // FACTORY METHODS
-  // ─────────────────────────────────────────────
-
-  public static Item create(String sku, String name, String description,
+  public static Item create(
+      String name,
+      String description,
       BigDecimal costPrice,
-      ItemCategory category, ItemUnit unit,
-      int reorderPoint, int reorderQuantity) {
-    var now = LocalDateTime.now();
-    var item = new Item();
-    item.sku = sku;
+      ItemCategory category,
+      ItemUnit unit,
+      int reorderPoint,
+      int reorderQuantity) {
+    Item item = new Item();
     item.name = name;
     item.description = description;
     item.costPrice = costPrice;
@@ -117,34 +89,10 @@ public class Item extends BaseDomain<Long> {
     item.reorderPoint = reorderPoint;
     item.reorderQuantity = reorderQuantity;
     item.status = ItemStatus.ACTIVE;
-    item.createdAt = now;
-    item.updatedAt = now;
+    item.createdAt = LocalDateTime.now();
+    item.updatedAt = item.createdAt;
     return item;
   }
-
-  public static Item update(Long id, String sku, String name, String description,
-      BigDecimal costPrice,
-      ItemCategory category, ItemUnit unit,
-      int reorderPoint, int reorderQuantity) {
-    var now = LocalDateTime.now();
-    var item = new Item();
-    item.id = id;
-    item.sku = sku;
-    item.name = name;
-    item.description = description;
-    item.costPrice = costPrice;
-    item.category = category;
-    item.unit = unit;
-    item.reorderPoint = reorderPoint;
-    item.reorderQuantity = reorderQuantity;
-    item.status = ItemStatus.ACTIVE;
-    item.updatedAt = now;
-    return item;
-  }
-
-  // ─────────────────────────────────────────────
-  // LÓGICA DE DOMINIO
-  // ─────────────────────────────────────────────
 
   public void discontinue() {
     this.status = ItemStatus.DISCONTINUED;
@@ -159,18 +107,6 @@ public class Item extends BaseDomain<Long> {
   public void delete() {
     this.deletedAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-  }
-
-  // ─────────────────────────────────────────────
-  // GETTERS & SETTERS
-  // ─────────────────────────────────────────────
-
-  public String getSku() {
-    return sku;
-  }
-
-  public void setSku(String sku) {
-    this.sku = sku;
   }
 
   public String getName() {
@@ -213,17 +149,6 @@ public class Item extends BaseDomain<Long> {
     this.brand = brand;
   }
 
-  public String getBarcode() {
-    return barcode;
-  }
-
-  public void setBarcode(String barcode) {
-    this.barcode = barcode;
-  }
-
-  public CatalogRole getCatalogRole() { return catalogRole; }
-  public void setCatalogRole(CatalogRole catalogRole) { this.catalogRole = catalogRole != null ? catalogRole : CatalogRole.INVENTORY_ONLY; }
-
   public BigDecimal getCostPrice() {
     return costPrice;
   }
@@ -254,5 +179,29 @@ public class Item extends BaseDomain<Long> {
 
   public void setStatus(ItemStatus status) {
     this.status = status;
+  }
+
+  public String getSaleSku() {
+    return saleSku != null ? saleSku : "";
+  }
+
+  public void setSaleSku(String saleSku) {
+    this.saleSku = saleSku;
+  }
+
+  public Long getProductId() {
+    return productId;
+  }
+
+  public void setProductId(Long productId) {
+    this.productId = productId;
+  }
+
+  public ItemKind getKind() {
+    return productId != null ? ItemKind.PRODUCT : ItemKind.WAREHOUSE;
+  }
+
+  public boolean isLinkedToProduct() {
+    return productId != null;
   }
 }

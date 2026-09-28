@@ -27,13 +27,12 @@ public class AttendancePersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
     if (domain.getId() != null && domain.getId() > 0) {
       e.setUpdatedAt(LocalDateTime.now());
     }
     e.fillCreatedAndUpdatedIfNull();
     e.fillUpdatedIfNull();
-    e.normalizeVersionIfNull();
     return e;
   }
 

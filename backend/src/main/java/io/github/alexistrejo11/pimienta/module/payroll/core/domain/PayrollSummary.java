@@ -25,7 +25,6 @@ public class PayrollSummary extends BaseDomain<Long> {
     this.totalDebt = BigDecimal.ZERO;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {

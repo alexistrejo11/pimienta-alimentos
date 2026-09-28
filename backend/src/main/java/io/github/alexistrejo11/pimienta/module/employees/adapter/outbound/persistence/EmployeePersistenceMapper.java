@@ -68,11 +68,10 @@ public class EmployeePersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
 
     e.fillCreatedAndUpdatedIfNull();
     e.fillUpdatedIfNull();
-    e.normalizeVersionIfNull();
     return e;
   }
 

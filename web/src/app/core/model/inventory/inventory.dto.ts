@@ -1,6 +1,7 @@
 import type {
   InventoryStatus,
   ItemCategory,
+  ItemKind,
   ItemStatus,
   ItemUnit,
   LocationType,
@@ -10,71 +11,67 @@ import type {
   InventoryTransactionStatus,
   InventoryMovementType,
   MovementDirection,
-  CatalogRole,
   InventoryExitReason,
 } from './inventory.enums';
 
 /** GET /api/v1/inventory/items */
 export interface ItemResponse {
   id: number;
-  sku: string;
   name: string;
   description: string;
   category: ItemCategory;
   unit: ItemUnit;
   brand: string;
-  barcode: string | null;
   costPrice: number;
   reorderPoint: number;
   reorderQuantity: number;
   status: ItemStatus;
+  kind: ItemKind;
+  productId: number | null;
+  saleSku: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
   version: number;
-  catalogRole: CatalogRole;
 }
 
-/** POST /api/v1/inventory/items */
+/** POST /api/v1/inventory/items — always creates a warehouse item. */
 export interface ItemCreateRequest {
-  sku?: string;
   name: string;
   description?: string;
-  costPrice: number;
   category: ItemCategory;
   unit: ItemUnit;
-  reorderPoint: number;
-  reorderQuantity: number;
   brand?: string;
-  barcode?: string;
-  catalogRole?: 'INVENTORY_ONLY' | 'POS_SELLABLE';
+  costPrice?: number;
+  reorderPoint?: number;
+  reorderQuantity?: number;
 }
 
-/** PUT /api/v1/inventory/items/:id */
+/** PUT /api/v1/inventory/items/:id — identity of a warehouse item only. */
 export interface ItemUpdateRequest {
-  sku: string;
   name: string;
   description?: string;
-  costPrice: number;
   category: ItemCategory;
   unit: ItemUnit;
+  brand?: string;
+}
+
+/** PUT /api/v1/inventory/items/:id/stock-settings — any item. */
+export interface ItemStockSettingsRequest {
+  costPrice: number;
   reorderPoint: number;
   reorderQuantity: number;
-  brand?: string;
-  barcode?: string;
   status: ItemStatus;
-  catalogRole?: 'INVENTORY_ONLY' | 'POS_SELLABLE';
 }
 
 export interface ItemSearchParams {
   page?: number;
   size?: number;
   name?: string;
-  sku?: string;
   category?: ItemCategory;
   status?: ItemStatus;
+  kind?: ItemKind;
   search?: string;
-  catalogRole?: CatalogRole;
   minCost?: number;
   maxCost?: number;
 }

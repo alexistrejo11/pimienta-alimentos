@@ -148,6 +148,8 @@ public class SecurityConfig {
                 .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .requestMatchers(BASE + "/inventory/**")
                 .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
+                .requestMatchers(BASE + "/products", BASE + "/products/**")
+                .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .requestMatchers(BASE + "/pos/**")
                 .hasAuthority(DeviceAuthenticationContext.AUTHORITY_SCOPE_POS_SYNC)
                 .requestMatchers("/actuator/**").hasRole("ADMIN")

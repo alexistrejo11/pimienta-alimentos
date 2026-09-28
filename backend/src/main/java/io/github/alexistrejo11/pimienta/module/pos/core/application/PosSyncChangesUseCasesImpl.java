@@ -114,7 +114,7 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
     }
     long itemId = Long.parseLong(entry.entityId());
     if (deactivate) return ChangeOperation.deactivate("product", entry.entityId());
-    return headquarterItemRepository.findByHeadquarterIdAndItemId(hqId, itemId)
+    return headquarterItemRepository.findByHeadquarterIdAndProductId(hqId, itemId)
         .flatMap(projector::toProductRow)
         .map(row -> ChangeOperation.upsert("product", row.id(), toProductData(row)))
         .orElseGet(() -> ChangeOperation.deactivate("product", entry.entityId()));

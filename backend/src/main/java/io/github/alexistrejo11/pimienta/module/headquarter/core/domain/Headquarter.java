@@ -22,7 +22,6 @@ public class Headquarter extends BaseDomain<Long> {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.deletedAt = null;
-    this.version = 0L;
   }
 
   public String getName() {
@@ -108,7 +107,7 @@ public class Headquarter extends BaseDomain<Long> {
     }
 
     public SafeBuilder withVersion(Long version) {
-      this.version = version != null ? version : 0L;
+      this.version = version;
       return this;
     }
 
@@ -122,7 +121,7 @@ public class Headquarter extends BaseDomain<Long> {
       h.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       h.updatedAt = updatedAt != null ? updatedAt : h.createdAt;
       h.deletedAt = deletedAt;
-      h.version = version != null ? version : 0L;
+      h.version = version;
       return h;
     }
 
@@ -137,7 +136,7 @@ public class Headquarter extends BaseDomain<Long> {
       h.createdAt = now;
       h.updatedAt = now;
       h.deletedAt = null;
-      h.version = version != null ? version : 0L;
+      h.version = version;
       return h;
     }
 
@@ -151,7 +150,7 @@ public class Headquarter extends BaseDomain<Long> {
       h.address = address != null ? address : "";
       h.description = description != null ? description : "";
       h.updatedAt = LocalDateTime.now();
-      h.version = existing.getVersion() != null ? existing.getVersion() : 0L;
+      h.version = existing.getVersion();
       return h;
     }
 

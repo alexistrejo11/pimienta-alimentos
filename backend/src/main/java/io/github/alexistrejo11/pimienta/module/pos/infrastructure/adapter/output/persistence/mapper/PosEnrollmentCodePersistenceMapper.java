@@ -39,7 +39,7 @@ public final class PosEnrollmentCodePersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     e.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt() : LocalDateTime.now());
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
     return e;
   }
 }

@@ -35,7 +35,7 @@ public class ProjectPersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
     return e;
   }
 

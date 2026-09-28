@@ -13,7 +13,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
   }
 
   private Long headquarterId;
-  private Long itemId;
+  private Long productId;
   private Long posSaleCategoryId;
   private String saleCategory;
   private BigDecimal salePrice;
@@ -24,7 +24,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
   private HeadquarterItem() {
     this.id = 0L;
     this.headquarterId = 0L;
-    this.itemId = 0L;
+    this.productId = 0L;
     this.posSaleCategoryId = 0L;
     this.saleCategory = "";
     this.salePrice = BigDecimal.ZERO;
@@ -32,15 +32,14 @@ public class HeadquarterItem extends BaseDomain<Long> {
     this.stockPolicy = StockPolicy.CONTROLLED;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public Long getHeadquarterId() {
     return headquarterId;
   }
 
-  public Long getItemId() {
-    return itemId;
+  public Long getProductId() {
+    return productId;
   }
 
   public Long getPosSaleCategoryId() {
@@ -83,7 +82,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
   public static final class SafeBuilder {
     private Long id;
     private Long headquarterId;
-    private Long itemId;
+    private Long productId;
     private Long posSaleCategoryId;
     private String saleCategory;
     private BigDecimal salePrice;
@@ -105,8 +104,8 @@ public class HeadquarterItem extends BaseDomain<Long> {
       return this;
     }
 
-    public SafeBuilder withItemId(Long itemId) {
-      this.itemId = itemId;
+    public SafeBuilder withProductId(Long productId) {
+      this.productId = productId;
       return this;
     }
 
@@ -164,7 +163,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
       HeadquarterItem h = new HeadquarterItem();
       h.id = id != null ? id : 0L;
       h.headquarterId = headquarterId != null ? headquarterId : 0L;
-      h.itemId = itemId != null ? itemId : 0L;
+      h.productId = productId != null ? productId : 0L;
       h.posSaleCategoryId = posSaleCategoryId != null ? posSaleCategoryId : 0L;
       h.saleCategory = saleCategory != null ? saleCategory.strip() : "";
       h.salePrice = salePrice != null ? salePrice : BigDecimal.ZERO;
@@ -174,7 +173,7 @@ public class HeadquarterItem extends BaseDomain<Long> {
       h.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       h.updatedAt = updatedAt != null ? updatedAt : h.createdAt;
       h.deletedAt = deletedAt;
-      h.version = version != null ? version : 0L;
+      h.version = version;
       return h;
     }
 
@@ -185,7 +184,6 @@ public class HeadquarterItem extends BaseDomain<Long> {
       h.createdAt = now;
       h.updatedAt = now;
       h.deletedAt = null;
-      h.version = 0L;
       return h;
     }
 
@@ -193,11 +191,11 @@ public class HeadquarterItem extends BaseDomain<Long> {
       HeadquarterItem h = reconstruct();
       h.id = existing.getId();
       h.headquarterId = existing.getHeadquarterId();
-      h.itemId = existing.getItemId();
+      h.productId = existing.getProductId();
       h.createdAt = existing.getCreatedAt();
       h.deletedAt = existing.getDeletedAt();
       h.updatedAt = LocalDateTime.now();
-      h.version = existing.getVersion() != null ? existing.getVersion() : 0L;
+      h.version = existing.getVersion();
       return h;
     }
   }

@@ -14,6 +14,6 @@ import java.lang.annotation.Target;
     name = "Operations — Suppliers",
     description =
         """
-        Vendor contact directory (name, contact, phone, parent brand) linked to headquarters. \
+        People who supply a brand (name, phone, brand), with an active flag per headquarter. \
         Requires staff JWT. OPS roles: ADMIN, DIRECTOR, MANAGER, EMPLOYEE.""")
 public @interface DocSuppliers {}

@@ -18,7 +18,6 @@ public class PosEnrollmentCode extends BaseDomain<Long> {
     this.headquarterId = 0L;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public String getCode() {
@@ -136,7 +135,7 @@ public class PosEnrollmentCode extends BaseDomain<Long> {
       c.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       c.updatedAt = updatedAt != null ? updatedAt : LocalDateTime.now();
       c.deletedAt = deletedAt;
-      c.version = version != null ? version : 0L;
+      c.version = version;
       return c;
     }
 
@@ -145,7 +144,6 @@ public class PosEnrollmentCode extends BaseDomain<Long> {
       c.id = 0L;
       c.createdAt = LocalDateTime.now();
       c.updatedAt = c.createdAt;
-      c.version = 0L;
       return c;
     }
   }

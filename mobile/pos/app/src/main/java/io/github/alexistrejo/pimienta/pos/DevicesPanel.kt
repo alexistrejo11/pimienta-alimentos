@@ -195,7 +195,8 @@ internal fun DevicesPanel(
     val showUsbChip = usbStatus == PeripheralStatus.READY || usbStatus == PeripheralStatus.PERMISSION_REQUIRED
     val showBtChip = savedMac != null && radioReady &&
         printerAvailability.link == PrinterLink.BLUETOOTH &&
-        printerAvailability.status == PeripheralStatus.READY
+        (printerAvailability.status == PeripheralStatus.READY ||
+            printerAvailability.status == PeripheralStatus.DISCOVERED)
     val btConfiguredOffline = savedMac != null && !showBtChip
     val showScannerChip = scannerLooksPresent(scanners)
 
@@ -267,6 +268,7 @@ internal fun DevicesPanel(
                                     "Usar para imprimir",
                                     {
                                         PrinterPreferences(context).saveMac(printer.mac)
+                                        PosPrinterRegistry.bluetoothPrinter(context, printer.mac)
                                         refreshPrinter()
                                         PosPrinterRegistry.notifyChanged()
                                         peripheralMessage = "Impresora Bluetooth: ${printer.name}."
@@ -291,6 +293,7 @@ internal fun DevicesPanel(
                 if (savedMac != null) {
                     PosButton("Olvidar impresora Bluetooth", {
                         PrinterPreferences(context).clearMac()
+                        PosPrinterRegistry.releaseBluetooth()
                         refreshPrinter()
                         PosPrinterRegistry.notifyChanged()
                         peripheralMessage = "Ya no se usará esa impresora Bluetooth para tickets. Sigue emparejada en Android."

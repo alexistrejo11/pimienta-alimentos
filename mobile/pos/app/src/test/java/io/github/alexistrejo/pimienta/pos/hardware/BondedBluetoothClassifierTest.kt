@@ -70,4 +70,26 @@ class BondedBluetoothClassifierTest {
         )
         assertEquals(BondedBluetoothKind.OTHER, kind)
     }
+
+    @Test
+    fun pos5890NameWithoutUuidsIsAPrinter() {
+        val kind = classifyBondedBluetooth(
+            name = "POS-5890A",
+            majorClass = 0,
+            deviceClass = 0,
+            uuids = emptyList(),
+        )
+        assertEquals(BondedBluetoothKind.PRINTER, kind)
+    }
+
+    @Test
+    fun zj5890NameWithoutUuidsIsAPrinter() {
+        val kind = classifyBondedBluetooth(
+            name = "ZJ-5890A",
+            majorClass = 0,
+            deviceClass = 0,
+            uuids = emptyList(),
+        )
+        assertEquals(BondedBluetoothKind.PRINTER, kind)
+    }
 }

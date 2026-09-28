@@ -10,7 +10,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquart
 
 public interface HeadquarterItemRepository {
 
-  Optional<HeadquarterItem> findByHeadquarterIdAndItemId(long headquarterId, long itemId);
+  Optional<HeadquarterItem> findByHeadquarterIdAndProductId(long headquarterId, long productId);
 
   Page<HeadquarterItem> findByHeadquarterId(long headquarterId, Pageable pageable);
 
@@ -19,7 +19,9 @@ public interface HeadquarterItemRepository {
 
   List<HeadquarterItem> findAllByHeadquarterId(long headquarterId);
 
-  List<HeadquarterItem> findAllByItemId(long itemId);
+  List<HeadquarterItem> findAllByProductId(long productId);
+
+  boolean existsControlledByProductId(long productId);
 
   /** Soft-deleted catalog rows for POS deactivate deltas. */
   List<HeadquarterItem> findDeletedByHeadquarterIdAndDeletedAtAfter(

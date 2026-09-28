@@ -4,6 +4,8 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquart
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product;
+import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand;
@@ -58,6 +60,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
   private final PosEventStockProjector eventStockProjector;
   private final TransactionTemplate transactionTemplate;
   private final PosShiftRepository shiftRepository;
+  private final ProductRepository productRepository;
 
   public PosSyncEventsUseCasesImpl(
       PosDeviceRepository deviceRepository,
@@ -68,7 +71,8 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       PosSaleInventoryUseCases posSaleInventoryUseCases,
       PosEventStockProjector eventStockProjector,
       PlatformTransactionManager transactionManager,
-      PosShiftRepository shiftRepository) {
+      PosShiftRepository shiftRepository,
+      ProductRepository productRepository) {
     this.deviceRepository = deviceRepository;
     this.syncEventRepository = syncEventRepository;
     this.saleRepository = saleRepository;
@@ -78,6 +82,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
     this.eventStockProjector = eventStockProjector;
     this.transactionTemplate = new TransactionTemplate(transactionManager);
     this.shiftRepository = shiftRepository;
+    this.productRepository = productRepository;
   }
 
   @Override
@@ -407,7 +412,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
         continue;
       }
       Optional<HeadquarterItem> catalog =
-          headquarterItemRepository.findByHeadquarterIdAndItemId(headquarterId, line.productId());
+          headquarterItemRepository.findByHeadquarterIdAndProductId(headquarterId, line.productId());
       if (catalog.isEmpty()
           || catalog.get().getStockPolicy() != HeadquarterItem.StockPolicy.CONTROLLED) {
         continue;
@@ -415,10 +420,14 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       if (line.quantity() == 0) {
         continue;
       }
+      Product product = productRepository.findById(line.productId()).orElse(null);
+      if (product == null || product.getInventoryItemId() == null) {
+        continue;
+      }
       posSaleInventoryUseCases.applySaleStock(
           new ApplyPosSaleStockCommand(
               headquarterId,
-              line.productId(),
+              product.getInventoryItemId(),
               line.quantity(),
               eventId.toString(),
               null,

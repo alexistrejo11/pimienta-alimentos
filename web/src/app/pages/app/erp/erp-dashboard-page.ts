@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { SessionContextService } from '../../../core/auth/session-context.service';
 import {
   parseApiError,
   type ParsedApiError,
@@ -10,6 +11,7 @@ import type { UserDashboardResponse } from '../../../core/model/account/user.dto
 import { UserProfileService } from '../../../core/user/user-profile.service';
 
 type MetricKey = keyof UserDashboardResponse;
+type MetricDef = { key: MetricKey; label: string; hint: string; route: string };
 
 @Component({
   selector: 'app-erp-dashboard-page',
@@ -18,12 +20,13 @@ type MetricKey = keyof UserDashboardResponse;
 })
 export class ErpDashboardPageComponent implements OnInit {
   private readonly profile = inject(UserProfileService);
+  private readonly session = inject(SessionContextService);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
   readonly dashboard = signal<UserDashboardResponse | null>(null);
 
-  readonly metrics: { key: MetricKey; label: string; hint: string; route: string }[] = [
+  private readonly allMetrics: MetricDef[] = [
     {
       key: 'totalActiveEmployees',
       label: 'Empleados activos',
@@ -67,6 +70,12 @@ export class ErpDashboardPageComponent implements OnInit {
       route: '/app/erp/tareas',
     },
   ];
+
+  readonly metrics = computed(() =>
+    this.allMetrics.filter(
+      (m) => m.key !== 'totalActiveHeadquarters' || this.session.isAdmin(),
+    ),
+  );
 
   ngOnInit(): void {
     this.load();

@@ -6,7 +6,7 @@
       [backLink]="globalMode() ? '/app/ops/dashboard' : '/app/ops/sedes/' + headquarterId()"
       [backLabel]="globalMode() ? 'Dashboard' : 'Detalle de sede'"
     />
-    @if (globalMode()) {
+    @if (globalMode() && isAdmin()) {
       <div class="w-full max-w-xs">
         <app-headquarter-select
           label="Sede a configurar"
@@ -21,13 +21,14 @@
     <p class="text-sm text-red-700" role="alert">No tienes acceso al catálogo POS de esta sede.</p>
   } @else if (headquarterId() <= 0) {
     <p class="text-sm text-on-surface-variant">Selecciona una sede para ver su catálogo.</p>
+  } @else if (pageLoading()) {
+    <app-data-state [loading]="true" [error]="null" [empty]="false" />
   } @else {
-    <app-data-state [loading]="loading()" [error]="error()" [empty]="false">
-      <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6">
       <section class="ui-panel p-6">
         <h2 class="font-headline text-lg font-bold text-on-surface">Categorías de venta</h2>
         <p class="mt-1 text-sm text-on-surface-variant">
-          Agrupan los productos del POS en esta sede. El orden en pantalla (filas y columnas) es el de las pestañas en la tablet.
+          Agrupan los productos del POS en esta sede. Se muestran en orden alfabético, igual que en la tablet.
           El monto abierto elige cuáles categorías puede usar, en Políticas de caja.
         </p>
         @if (activeCategories().length === 0) {
@@ -53,50 +54,6 @@
                     <span class="min-w-0 truncate text-sm font-medium" [title]="category.name">{{ category.name }}</span>
                     @if (canEditCatalog()) {
                       <div class="flex shrink-0 items-center gap-0.5 text-xs">
-                        @if (categoryGridColumns() > 1) {
-                          <button
-                            type="button"
-                            class="rounded px-1.5 py-1 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-40"
-                            (click)="moveCategoryHorizontal(category, -1)"
-                            [disabled]="!canMoveCategoryLeft(category) || categorySaving()"
-                            title="Mover a la izquierda"
-                            aria-label="Izquierda"
-                          >
-                            ←
-                          </button>
-                        }
-                        <button
-                          type="button"
-                          class="rounded px-1.5 py-1 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-40"
-                          (click)="moveCategoryVertical(category, -1)"
-                          [disabled]="!canMoveCategoryUp(category) || categorySaving()"
-                          title="Mover arriba"
-                          aria-label="Subir"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          class="rounded px-1.5 py-1 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-40"
-                          (click)="moveCategoryVertical(category, 1)"
-                          [disabled]="!canMoveCategoryDown(category) || categorySaving()"
-                          title="Mover abajo"
-                          aria-label="Bajar"
-                        >
-                          ↓
-                        </button>
-                        @if (categoryGridColumns() > 1) {
-                          <button
-                            type="button"
-                            class="rounded px-1.5 py-1 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-40"
-                            (click)="moveCategoryHorizontal(category, 1)"
-                            [disabled]="!canMoveCategoryRight(category) || categorySaving()"
-                            title="Mover a la derecha"
-                            aria-label="Derecha"
-                          >
-                            →
-                          </button>
-                        }
                         <button type="button" class="rounded px-1.5 py-1 text-on-surface-variant hover:bg-surface-container-high" (click)="beginCategoryEdit(category)">
                           Renombrar
                         </button>
@@ -163,18 +120,18 @@
                 Agregar al surtido
               </button>
             }
-          <button
-            type="button"
-            class="min-h-11 rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-            (click)="printCatalogLabels()"
-            [disabled]="printingLabels()"
-          >
-            @if (printingLabels()) {
-              Preparando etiquetas…
-            } @else {
-              Imprimir etiquetas
-            }
-          </button>
+            <button
+              type="button"
+              class="min-h-11 rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              (click)="printCatalogLabels()"
+              [disabled]="printingLabels()"
+            >
+              @if (printingLabels()) {
+                Preparando etiquetas…
+              } @else {
+                Imprimir etiquetas
+              }
+            </button>
           </div>
         </div>
 
@@ -186,12 +143,11 @@
         }
 
         <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input
-            class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+          <app-list-search-field
+            class="sm:col-span-2 lg:col-span-2"
             placeholder="Buscar nombre, SKU o código"
-            [ngModel]="catalogSearch()"
-            (ngModelChange)="onCatalogSearchChange($event)"
-            [ngModelOptions]="{ standalone: true }"
+            [(draft)]="catalogSearchDraft"
+            (search)="applyCatalogSearch($event)"
           />
           <select
             class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
@@ -227,85 +183,89 @@
           </select>
         </div>
 
-        <div class="responsive-table mt-4">
-          <table class="w-full text-sm">
-            <thead class="border-b border-outline-variant/20 bg-surface-container-low">
-              <tr>
-                <th class="px-3 py-2 text-left">Producto</th>
-                <th class="px-3 py-2 text-left">SKU</th>
-                <th class="px-3 py-2 text-left">Categoría</th>
-                <th class="px-3 py-2 text-left">Precio</th>
-                <th class="px-3 py-2 text-left">Stock</th>
-                <th class="px-3 py-2 text-left">Disponible</th>
-                <th class="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-outline-variant/15">
-              @for (row of catalog(); track row.id) {
+        <app-data-state
+          [loading]="catalogLoading()"
+          [error]="error()"
+          [empty]="catalog().length === 0"
+          emptyMessage="No hay productos en el surtido con estos filtros."
+          (retry)="reloadCatalog()"
+        >
+          <div class="responsive-table mt-4">
+            <table class="w-full text-sm">
+              <thead class="border-b border-outline-variant/20 bg-surface-container-low">
                 <tr>
-                  <td class="px-3 py-2">{{ row.itemName || itemName(row.itemId) }}</td>
-                  <td class="px-3 py-2 font-mono text-xs">{{ row.itemSku || itemSku(row.itemId) }}</td>
-                  <td class="px-3 py-2">{{ row.saleCategory }}</td>
-                  <td class="px-3 py-2 tabular-nums">${{ row.salePrice }}</td>
-                  <td class="px-3 py-2">{{ stockPolicyLabel(row.stockPolicy) }}</td>
-                  <td class="px-3 py-2">{{ row.available ? 'Sí' : 'No' }}</td>
-                  <td class="px-3 py-2 text-right">
-                    <button type="button" class="mr-3 text-sm font-semibold text-primary" (click)="printItemLabel(row)">
-                      Etiqueta
-                    </button>
-                    <button
-                      type="button"
-                      class="text-sm font-semibold text-primary"
-                      (click)="startEditCatalog(row)"
-                      [disabled]="!canEditCatalog()"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      class="ml-3 text-sm font-semibold text-error"
-                      [disabled]="!canEditCatalog()"
-                      (click)="removeCatalogItem(row)"
-                      title="Elimina el producto de esta sede; el POS lo quita en el próximo sync"
-                    >
-                      Quitar de la sede
-                    </button>
-                  </td>
+                  <th class="px-3 py-2 text-left">Producto</th>
+                  <th class="px-3 py-2 text-left">SKU</th>
+                  <th class="px-3 py-2 text-left">Categoría</th>
+                  <th class="px-3 py-2 text-left">Precio</th>
+                  <th class="px-3 py-2 text-left">Stock</th>
+                  <th class="px-3 py-2 text-left">Disponible</th>
+                  <th class="px-3 py-2"></th>
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        @if (catalog().length === 0) {
-          <p class="mt-3 text-sm text-on-surface-variant">No hay productos en el surtido con estos filtros.</p>
-        }
-        @if (catalogMetadata(); as pageInfo) {
-          <div class="mt-3 flex items-center justify-between text-sm text-on-surface-variant">
-            <span>{{ pageInfo.totalElements }} productos</span>
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
-                [disabled]="!pageInfo.hasPrevious"
-                (click)="previousCatalogPage()"
-              >
-                Anterior
-              </button>
-              <span>Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span>
-              <button
-                type="button"
-                class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
-                [disabled]="!pageInfo.hasNext"
-                (click)="nextCatalogPage()"
-              >
-                Siguiente
-              </button>
-            </div>
+              </thead>
+              <tbody class="divide-y divide-outline-variant/15">
+                @for (row of catalog(); track row.id) {
+                  <tr>
+                    <td class="px-3 py-2">{{ row.productName || productName(row.productId) }}</td>
+                    <td class="px-3 py-2 font-mono text-xs">{{ row.productSku || productSku(row.productId) }}</td>
+                    <td class="px-3 py-2">{{ row.saleCategory }}</td>
+                    <td class="px-3 py-2 tabular-nums">${{ row.salePrice }}</td>
+                    <td class="px-3 py-2">{{ stockPolicyLabel(row.stockPolicy) }}</td>
+                    <td class="px-3 py-2">{{ row.available ? 'Sí' : 'No' }}</td>
+                    <td class="px-3 py-2 text-right">
+                      <button type="button" class="mr-3 text-sm font-semibold text-primary" (click)="printItemLabel(row)">
+                        Etiqueta
+                      </button>
+                      <button
+                        type="button"
+                        class="text-sm font-semibold text-primary"
+                        (click)="startEditCatalog(row)"
+                        [disabled]="!canEditCatalog()"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        class="ml-3 text-sm font-semibold text-error"
+                        [disabled]="!canEditCatalog()"
+                        (click)="removeCatalogItem(row)"
+                        title="Elimina el producto de esta sede; el POS lo quita en el próximo sync"
+                      >
+                        Quitar de la sede
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
-        }
+          @if (catalogMetadata(); as pageInfo) {
+            <div class="mt-3 flex items-center justify-between text-sm text-on-surface-variant">
+              <span>{{ pageInfo.totalElements }} productos</span>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+                  [disabled]="!pageInfo.hasPrevious"
+                  (click)="previousCatalogPage()"
+                >
+                  Anterior
+                </button>
+                <span>Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span>
+                <button
+                  type="button"
+                  class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+                  [disabled]="!pageInfo.hasNext"
+                  (click)="nextCatalogPage()"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          }
+        </app-data-state>
       </section>
-      </div>
-    </app-data-state>
+    </div>
     @if (surtidoAbierto()) {
       <app-surtido-modal
         [headquarterId]="headquarterId()"

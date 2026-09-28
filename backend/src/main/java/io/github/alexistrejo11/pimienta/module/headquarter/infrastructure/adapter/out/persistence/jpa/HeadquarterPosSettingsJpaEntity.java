@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.out.persistence.jpa;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,8 +8,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -20,7 +19,7 @@ import org.hibernate.type.SqlTypes;
     indexes = {
       @Index(name = "idx_headquarter_pos_settings_deleted_at", columnList = "deleted_at")
     })
-public class HeadquarterPosSettingsJpaEntity {
+public class HeadquarterPosSettingsJpaEntity extends BaseJpaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,19 +49,6 @@ public class HeadquarterPosSettingsJpaEntity {
 
   @Column(name = "stockless", nullable = false)
   private boolean stockless;
-
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Version
-  @Column(nullable = false)
-  private Long version;
 
   public Long getId() {
     return id;
@@ -135,37 +121,5 @@ public class HeadquarterPosSettingsJpaEntity {
 
   public void setStockless(boolean stockless) {
     this.stockless = stockless;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

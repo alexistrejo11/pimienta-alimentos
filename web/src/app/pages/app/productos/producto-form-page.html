@@ -1,0 +1,108 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <app-page-header
+    [title]="isEdit() ? 'Editar producto' : 'Nuevo producto'"
+    [subtitle]="isEdit() ? 'El SKU no se edita. El precio de venta vive en el surtido de cada sede.' : 'El SKU se asigna al guardar. El precio de venta se configura en el surtido de cada sede.'"
+    backLink="/app/ops/productos"
+    backLabel="Productos"
+  />
+
+  @if (loadingExisting()) {
+    <p class="text-sm text-on-surface-variant">Cargando producto…</p>
+  } @else {
+    @if (apiError(); as err) {
+      <div
+        role="alert"
+        class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
+      >
+        {{ err.message }}
+      </div>
+    }
+
+    @if (isEdit()) {
+      <div class="max-w-2xl rounded-xl ui-panel px-4 py-3 text-sm">
+        <span class="text-on-surface-variant">SKU</span>
+        <p class="font-mono font-medium text-on-surface">{{ sku() }}</p>
+      </div>
+    }
+
+    <form class="flex max-w-2xl flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium text-on-surface">Nombre</span>
+        <input
+          class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          formControlName="name"
+        />
+      </label>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium text-on-surface">Código de barras</span>
+          <input
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            formControlName="barcode"
+          />
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium text-on-surface">Unidad</span>
+          <select
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            formControlName="unit"
+          >
+            @for (u of units; track u) {
+              <option [value]="u">{{ itemUnitLabel(u) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <label class="flex items-center gap-3 text-sm">
+        <input type="checkbox" class="size-4" formControlName="trackStock" />
+        <span>
+          <span class="font-medium text-on-surface">Controlar existencias</span>
+          <span class="block text-on-surface-variant">
+            Crea el artículo de inventario que se descuenta en un surtido controlado.
+          </span>
+        </span>
+      </label>
+
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium text-on-surface">Descripción</span>
+        <textarea
+          class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          rows="2"
+          formControlName="description"
+        ></textarea>
+      </label>
+
+      @if (isEdit()) {
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium text-on-surface">Estado</span>
+          <select
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            formControlName="status"
+          >
+            @for (s of statuses; track s) {
+              <option [value]="s">{{ itemStatusLabel(s) }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button
+          type="submit"
+          class="min-h-11 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-60"
+          [disabled]="loading()"
+        >
+          {{ loading() ? 'Guardando…' : 'Guardar' }}
+        </button>
+        <a
+          routerLink="/app/ops/productos"
+          class="inline-flex min-h-11 items-center rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold"
+        >
+          Cancelar
+        </a>
+      </div>
+    </form>
+  }
+</div>

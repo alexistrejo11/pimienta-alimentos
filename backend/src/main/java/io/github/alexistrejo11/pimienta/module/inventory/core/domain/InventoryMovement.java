@@ -85,7 +85,6 @@ public class InventoryMovement extends BaseDomain<Long> {
     this.id = 0L;
     this.quantity = 0;
     this.unitCost = BigDecimal.ZERO;
-    this.version = 0L;
   }
 
   // ─────────────────────────────────────────────

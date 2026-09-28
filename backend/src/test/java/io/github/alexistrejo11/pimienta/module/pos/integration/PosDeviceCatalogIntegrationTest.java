@@ -100,7 +100,7 @@ class PosDeviceCatalogIntegrationTest {
     mockMvc
         .perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/products", access, body))
         .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.errorCode").value("ITEM_BARCODE_ALREADY_EXISTS"));
+        .andExpect(jsonPath("$.errorCode").value("PRODUCT_BARCODE_ALREADY_EXISTS"));
   }
 
   @Test

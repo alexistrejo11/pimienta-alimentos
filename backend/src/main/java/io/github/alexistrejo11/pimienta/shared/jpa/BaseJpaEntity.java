@@ -2,16 +2,17 @@ package io.github.alexistrejo11.pimienta.shared.jpa;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
 
 import java.time.LocalDateTime;
 
 /**
  * Auditing fields shared by JPA entities. Domain aggregates guarantee non-null
- * timestamps; rows from legacy imports or partial writes may have nulls—use
- * the helpers before persist when needed.
+ * timestamps; rows from legacy imports or partial writes may have nulls, so
+ * they are filled on persist.
  */
 @MappedSuperclass
-public abstract class BaseJpaEntity {
+public abstract class BaseJpaEntity extends VersionedJpaEntity {
 
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
@@ -21,9 +22,6 @@ public abstract class BaseJpaEntity {
 
   @Column(name = "deleted_at")
   private LocalDateTime deletedAt;
-
-  @Column(nullable = false)
-  private Long version;
 
   public LocalDateTime getCreatedAt() {
     return createdAt;
@@ -49,14 +47,6 @@ public abstract class BaseJpaEntity {
     this.deletedAt = deletedAt;
   }
 
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
-  }
-
   /** Sets {@code createdAt} and {@code updatedAt} to {@code now} when null (new row). */
   public void fillCreatedAndUpdatedIfNull() {
     LocalDateTime now = LocalDateTime.now();
@@ -75,9 +65,8 @@ public abstract class BaseJpaEntity {
     }
   }
 
-  public void normalizeVersionIfNull() {
-    if (version == null) {
-      version = 0L;
-    }
+  @PrePersist
+  protected void fillAuditTimestamps() {
+    fillCreatedAndUpdatedIfNull();
   }
 }

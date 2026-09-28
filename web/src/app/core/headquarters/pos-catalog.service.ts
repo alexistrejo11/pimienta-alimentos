@@ -76,20 +76,12 @@ export class PosCatalogService {
     return this.http.get<PosSaleCategoryResponse[]>(`${this.hqBase}/${headquarterId}/pos-categories`, { params });
   }
 
-  createCategory(headquarterId: number, name: string, displayOrder = 0): Observable<PosSaleCategoryResponse> {
-    return this.http.post<PosSaleCategoryResponse>(`${this.hqBase}/${headquarterId}/pos-categories`, { name, displayOrder });
+  createCategory(headquarterId: number, name: string): Observable<PosSaleCategoryResponse> {
+    return this.http.post<PosSaleCategoryResponse>(`${this.hqBase}/${headquarterId}/pos-categories`, { name });
   }
 
-  updateCategory(
-    headquarterId: number,
-    categoryId: number,
-    name: string,
-    displayOrder: number,
-  ): Observable<PosSaleCategoryResponse> {
-    return this.http.put<PosSaleCategoryResponse>(
-      `${this.hqBase}/${headquarterId}/pos-categories/${categoryId}`,
-      { name, displayOrder },
-    );
+  updateCategory(headquarterId: number, categoryId: number, name: string): Observable<PosSaleCategoryResponse> {
+    return this.http.put<PosSaleCategoryResponse>(`${this.hqBase}/${headquarterId}/pos-categories/${categoryId}`, { name });
   }
 
   archiveCategory(headquarterId: number, categoryId: number): Observable<void> {

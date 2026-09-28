@@ -10,6 +10,7 @@ import type { SupplierResponse } from '../../../core/model/supplier/supplier.dto
 import { SupplierService } from '../../../core/suppliers/supplier.service';
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
 import { HeadquarterSelectComponent } from '../../../shared/ui/headquarter-select/headquarter-select';
+import { ListSearchFieldComponent } from '../../../shared/ui/list-search-field/list-search-field';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header';
 
 @Component({
@@ -20,6 +21,7 @@ import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header'
     PageHeaderComponent,
     DataStateComponent,
     HeadquarterSelectComponent,
+    ListSearchFieldComponent,
   ],
   templateUrl: './proveedores-page.html',
 })
@@ -42,7 +44,8 @@ export class ProveedoresPageComponent implements OnInit {
   readonly deletingId = signal<number | null>(null);
 
   selectedHeadquarterId: number | null = null;
-  search = '';
+  searchDraft = '';
+  searchApplied = '';
   page = 0;
   private initialLoad = true;
 
@@ -78,11 +81,6 @@ export class ProveedoresPageComponent implements OnInit {
     return this.hqLookup.name(id);
   }
 
-  headquarterLabels(ids: number[]): string {
-    if (ids.length === 0) return '—';
-    return ids.map((id) => this.hqLookup.name(id)).join(', ');
-  }
-
   onHeadquarterChange(id: number | number[] | null): void {
     const hqId = Array.isArray(id) ? (id[0] ?? null) : id;
     this.selectedHeadquarterId = hqId;
@@ -105,8 +103,13 @@ export class ProveedoresPageComponent implements OnInit {
     this.cargar();
   }
 
-  onSearchInput(value: string): void {
-    this.search = value;
+  applySearch(term: string): void {
+    const normalized = term.trim();
+    if (normalized === this.searchApplied) {
+      return;
+    }
+    this.searchApplied = normalized;
+    this.searchDraft = normalized;
     this.page = 0;
     this.cargar();
   }
@@ -125,7 +128,7 @@ export class ProveedoresPageComponent implements OnInit {
         page: this.page,
         size: 20,
         headquarterId: hqId ?? undefined,
-        search: this.search,
+        search: this.searchApplied,
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -138,7 +141,7 @@ export class ProveedoresPageComponent implements OnInit {
   }
 
   eliminar(item: SupplierResponse): void {
-    const label = item.contactName || item.name;
+    const label = item.name;
     if (!confirm(`¿Eliminar el proveedor "${label}"?`)) return;
     this.deletingId.set(item.id);
     this.suppliers.delete(item.id).subscribe({

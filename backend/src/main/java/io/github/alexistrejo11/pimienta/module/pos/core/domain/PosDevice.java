@@ -23,7 +23,6 @@ public class PosDevice extends BaseDomain<UUID> {
     this.minAppVersion = "1.0.0";
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public Long getHeadquarterId() {
@@ -186,7 +185,7 @@ public class PosDevice extends BaseDomain<UUID> {
       d.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       d.updatedAt = updatedAt != null ? updatedAt : LocalDateTime.now();
       d.deletedAt = deletedAt;
-      d.version = version != null ? version : 0L;
+      d.version = version;
       return d;
     }
 

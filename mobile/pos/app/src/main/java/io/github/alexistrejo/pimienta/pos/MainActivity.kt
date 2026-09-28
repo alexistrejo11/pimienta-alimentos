@@ -1,10 +1,14 @@
 package io.github.alexistrejo.pimienta.pos
 
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbManager
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -88,6 +92,7 @@ class MainActivity : ComponentActivity() {
     private val fakeScanner = FakeBarcodeScanner()
     private val barcodeScanner = MultiplexBarcodeScanner(listOf(hidScanner, fakeScanner))
     private var usbReceiver: BroadcastReceiver? = null
+    private var bluetoothReceiver: BroadcastReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,6 +101,7 @@ class MainActivity : ComponentActivity() {
         PosScannerRegistry.fake = fakeScanner
         PosScannerRegistry.primary = barcodeScanner
         registerUsbReceiver()
+        registerBluetoothReceiver()
         handleUsbAttachIntent(intent)
 
         val preferences = getSharedPreferences("pos-demo", MODE_PRIVATE)
@@ -127,6 +133,8 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         usbReceiver?.let { unregisterReceiver(it) }
         usbReceiver = null
+        bluetoothReceiver?.let { unregisterReceiver(it) }
+        bluetoothReceiver = null
         super.onDestroy()
     }
 
@@ -151,6 +159,21 @@ class MainActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, usbReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
+    // Drains the print queue when the saved thermal printer's ACL comes back.
+    private fun registerBluetoothReceiver() {
+        val filter = IntentFilter().apply {
+            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+        }
+        bluetoothReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                onBluetoothPrinterEvent(context, intent)
+            }
+        }
+        ContextCompat.registerReceiver(this, bluetoothReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
+    }
+
     companion object {
         // Ignores hub/HID attaches and coalesces printer permission prompts.
         private fun onUsbPrinterEvent(context: Context, intent: Intent) {
@@ -173,6 +196,38 @@ class MainActivity : ComponentActivity() {
                     if (device != null) UsbPrintTransport.markPermissionResolved(device)
                     PosPrinterRegistry.notifyChanged()
                 }
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        private fun onBluetoothPrinterEvent(context: Context, intent: Intent) {
+            when (intent.action) {
+                BluetoothAdapter.ACTION_STATE_CHANGED -> {
+                    val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+                    if (state == BluetoothAdapter.STATE_OFF || state == BluetoothAdapter.STATE_TURNING_OFF) {
+                        PosPrinterRegistry.onBluetoothRadioOff()
+                    }
+                }
+                BluetoothDevice.ACTION_ACL_CONNECTED, BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                    val device = bluetoothDeviceFrom(intent) ?: return
+                    val mac = try {
+                        device.address
+                    } catch (_: SecurityException) {
+                        return
+                    }
+                    val connected = intent.action == BluetoothDevice.ACTION_ACL_CONNECTED
+                    PosPrinterRegistry.onBluetoothAcl(context, mac, connected)
+                    if (connected) PrintWorker.enqueueAfterLink(context)
+                }
+            }
+        }
+
+        private fun bluetoothDeviceFrom(intent: Intent): BluetoothDevice? {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
             }
         }
     }

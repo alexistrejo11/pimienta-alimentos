@@ -11,7 +11,7 @@ public final class InventoryStockWebMapper {
     return new InventoryStockResponse(
         inv.getId(),
         inv.getItem().getId(),
-        inv.getItem().getSku(),
+        inv.getItem().getSaleSku(),
         inv.getItem().getName(),
         inv.getLocation().getId(),
         inv.getLocation().getCode(),

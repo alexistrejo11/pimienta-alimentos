@@ -17,7 +17,7 @@ object PrinterFactory {
             PrinterRoute.USB_PERMISSION -> PermissionPendingTicketPrinter
             PrinterRoute.BLUETOOTH -> {
                 if (mac != null && bluetoothRadioReady(context)) {
-                    BluetoothTicketPrinter(context, mac)
+                    PosPrinterRegistry.bluetoothPrinter(context, mac)
                 } else if (mode == RuntimeMode.SANDBOX) {
                     FakeTicketPrinter(profile = PrinterProfiles.pos5890A)
                 } else {
@@ -38,7 +38,11 @@ object PrinterFactory {
             PrinterRoute.USB -> PrinterAvailability(PeripheralStatus.READY, PrinterLink.USB)
             PrinterRoute.USB_PERMISSION -> PrinterAvailability(PeripheralStatus.PERMISSION_REQUIRED, PrinterLink.USB)
             PrinterRoute.BLUETOOTH -> PrinterAvailability(
-                if (bluetoothRadioReady(context)) PeripheralStatus.READY else PeripheralStatus.DISCONNECTED,
+                if (bluetoothRadioReady(context)) {
+                    PosPrinterRegistry.bluetoothStatus()
+                } else {
+                    PeripheralStatus.DISCONNECTED
+                },
                 PrinterLink.BLUETOOTH,
             )
             PrinterRoute.NONE -> PrinterAvailability(PeripheralStatus.DISCONNECTED, PrinterLink.NONE)

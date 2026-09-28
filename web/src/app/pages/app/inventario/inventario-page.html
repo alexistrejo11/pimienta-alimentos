@@ -11,10 +11,13 @@
       [value]="selectedHeadquarterId"
       (valueChange)="onHeadquarterChange($event)"
     />
-    <label class="flex min-w-64 flex-col gap-1 text-sm">
-      <span class="font-semibold text-on-surface-variant">Buscar producto</span>
-      <input class="rounded-lg bg-surface-container px-3 py-2.5" placeholder="SKU, código de barras o nombre" [value]="search" (change)="onSearch($event)" />
-    </label>
+    <app-list-search-field
+      class="min-w-64 flex-1"
+      label="Buscar producto"
+      placeholder="SKU, código de barras o nombre"
+      [(draft)]="searchDraft"
+      (search)="applySearch($event)"
+    />
     <label class="flex flex-col gap-1 text-sm"><span class="font-semibold text-on-surface-variant">Categoría</span><select class="rounded-lg bg-surface-container px-3 py-2.5" [(ngModel)]="selectedCategory" (change)="onFilterChange()"><option value="">Todas</option>@for (category of categories; track category) { <option [value]="category">{{ itemCategoryLabel(category) }}</option> }</select></label>
     <label class="flex flex-col gap-1 text-sm"><span class="font-semibold text-on-surface-variant">Estado</span><select class="rounded-lg bg-surface-container px-3 py-2.5" [(ngModel)]="selectedStatus" (change)="onFilterChange()"><option value="">Todos</option>@for (status of statuses; track status) { <option [value]="status">{{ inventoryStatusLabel(status) }}</option> }</select></label>
     <label class="flex w-24 flex-col gap-1 text-sm"><span class="font-semibold text-on-surface-variant">Costo mín.</span><input class="rounded-lg bg-surface-container px-3 py-2.5" type="number" [(ngModel)]="minCost" (change)="onFilterChange()" /></label>

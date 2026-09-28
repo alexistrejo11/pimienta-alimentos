@@ -35,8 +35,6 @@ public final class NotificationTestData {
     entity.setAttemptCount(0);
     entity.setCreatedAt(ts);
     entity.setUpdatedAt(ts);
-    entity.setVersion(0L);
-    entity.normalizeVersionIfNull();
     if (status == NotificationStatus.SENT) {
       entity.setSentAt(ts);
     }

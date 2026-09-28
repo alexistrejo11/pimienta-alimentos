@@ -10,15 +10,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface HeadquarterItemJpaRepository
     extends JpaRepository<HeadquarterItemJpaEntity, Long> {
 
-  Optional<HeadquarterItemJpaEntity> findByHeadquarterIdAndItemIdAndDeletedAtIsNull(
-      Long headquarterId, Long itemId);
+  Optional<HeadquarterItemJpaEntity> findByHeadquarterIdAndProductIdAndDeletedAtIsNull(
+      Long headquarterId, Long productId);
 
   Page<HeadquarterItemJpaEntity> findByHeadquarterIdAndDeletedAtIsNull(
       Long headquarterId, Pageable pageable);
 
   List<HeadquarterItemJpaEntity> findByHeadquarterIdAndDeletedAtIsNull(Long headquarterId);
 
-  List<HeadquarterItemJpaEntity> findByItemIdAndDeletedAtIsNull(Long itemId);
+  List<HeadquarterItemJpaEntity> findByProductIdAndDeletedAtIsNull(Long productId);
+
+  boolean existsByProductIdAndStockPolicyAndDeletedAtIsNull(
+      Long productId, io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem.StockPolicy stockPolicy);
 
   List<HeadquarterItemJpaEntity> findByHeadquarterIdAndDeletedAtIsNotNullAndDeletedAtAfter(
       Long headquarterId, LocalDateTime deletedAt);

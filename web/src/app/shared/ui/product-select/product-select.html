@@ -1,0 +1,65 @@
+<label class="flex flex-col gap-1 text-sm">
+  <span class="font-semibold text-on-surface">{{ label() }}</span>
+  <div class="relative">
+    <div class="flex gap-2">
+      <input
+        type="search"
+        class="min-w-0 flex-1 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2.5"
+        [placeholder]="placeholder()"
+        [disabled]="disabled()"
+        [ngModel]="query()"
+        (ngModelChange)="onQueryInput($event)"
+        (focus)="onFocus()"
+        (keydown)="onKeydown($event)"
+        autocomplete="off"
+        role="combobox"
+        [attr.aria-expanded]="open()"
+        aria-autocomplete="list"
+      />
+      @if (allowNull() && value() != null) {
+        <button
+          type="button"
+          class="rounded-lg border border-outline-variant/30 px-3 text-sm font-semibold text-on-surface-variant"
+          [disabled]="disabled()"
+          (click)="clear()"
+        >
+          Limpiar
+        </button>
+      }
+    </div>
+
+    @if (open()) {
+      <ul
+        class="mt-1 w-full overflow-auto rounded-lg border border-outline-variant/30 bg-surface-container-lowest shadow-md"
+        [class.absolute]="listLayout() === 'overlay'"
+        [class.z-20]="listLayout() === 'overlay'"
+        [class.max-h-64]="listLayout() === 'overlay'"
+        [class.max-h-[min(45dvh,22rem)]]="listLayout() === 'inline'"
+        [class.min-h-[8rem]]="listLayout() === 'inline'"
+        role="listbox"
+      >
+        @if (loading()) {
+          <li class="px-3 py-2.5 text-sm text-on-surface-variant">Buscando…</li>
+        } @else if (options().length === 0) {
+          <li class="px-3 py-2.5 text-sm text-on-surface-variant">
+            Sin resultados. Prueba el SKU o pulsa Enter para una búsqueda exacta.
+          </li>
+        } @else {
+          @for (product of options(); track product.id) {
+            <li role="option">
+              <button
+                type="button"
+                class="flex min-h-11 w-full flex-col items-start justify-center gap-0.5 px-3 py-2 text-left text-sm hover:bg-surface-container"
+                [class.bg-surface-container]="value() === product.id"
+                (click)="select(product)"
+              >
+                <span class="font-medium text-on-surface">{{ product.name }}</span>
+                <span class="font-mono text-xs text-on-surface-variant">{{ product.sku }}</span>
+              </button>
+            </li>
+          }
+        }
+      </ul>
+    }
+  </div>
+</label>

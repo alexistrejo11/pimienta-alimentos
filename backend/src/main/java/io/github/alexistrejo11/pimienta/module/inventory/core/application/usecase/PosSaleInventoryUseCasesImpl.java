@@ -84,8 +84,9 @@ public class PosSaleInventoryUseCasesImpl implements PosSaleInventoryUseCases {
     inv.setLocation(posLocation);
     inv.setItem(item);
     inv.applyPosSaleDelta(command.quantityOut());
+    // InventoryRepository.save also persists the location; saving posLocation again would
+    // resend a stale @Version and fail optimistic locking.
     Inventory saved = inventoryRepository.save(inv);
-    storageLocationRepository.save(posLocation);
 
     BigDecimal unitCost =
         command.unitCost() != null ? command.unitCost() : item.getCostPrice();

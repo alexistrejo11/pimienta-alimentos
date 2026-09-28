@@ -3,15 +3,16 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.ItemSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
-import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.specification.ItemSpecifications;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.ItemJpaEntity;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.mapper.ItemPersistenceMapper;
-
-import java.util.Optional;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.specification.ItemSpecifications;
 import java.util.List;
-import java.util.UUID;
-import org.springframework.dao.DataAccessException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
@@ -27,62 +28,47 @@ public class ItemRepositoryImpl implements ItemRepository {
 
   @Override
   public Optional<Item> findById(long id) {
-    return jpaRepository.findByIdAndDeletedAtIsNull(id).map(ItemPersistenceMapper::toDomain);
-  }
-
-  @Override
-  public Optional<Item> findBySkuOrBarcode(String skuOrBarcode) {
-    if (skuOrBarcode == null || skuOrBarcode.isBlank()) {
-      return Optional.empty();
-    }
     return jpaRepository
-        .findActiveBySkuOrBarcode(skuOrBarcode.trim())
-        .map(ItemPersistenceMapper::toDomain);
+        .findByIdAndDeletedAtIsNull(id)
+        .map(entity -> withProductLinks(List.of(entity)).getFirst());
   }
 
   @Override
   public Page<Item> search(ItemSearchCriteria criteria, Pageable pageable) {
     Specification<ItemJpaEntity> spec = ItemSpecifications.fromCriteria(criteria);
-    return jpaRepository.findAll(spec, pageable).map(ItemPersistenceMapper::toDomain);
+    Page<ItemJpaEntity> page = jpaRepository.findAll(spec, pageable);
+    return new PageImpl<>(withProductLinks(page.getContent()), pageable, page.getTotalElements());
   }
 
   @Override
   public Item save(Item item) {
-    ItemJpaEntity entity = ItemPersistenceMapper.toJpa(item);
-    ItemJpaEntity saved = jpaRepository.save(entity);
-    return ItemPersistenceMapper.toDomain(saved);
+    ItemJpaEntity saved = jpaRepository.save(ItemPersistenceMapper.toJpa(item));
+    return withProductLinks(List.of(saved)).getFirst();
   }
 
-  @Override
-  public String nextInternalSku() {
-    try {
-      return jpaRepository.nextInternalSku();
-    } catch (DataAccessException ex) {
-      // Keep local/test databases usable when the optional database function is absent.
-      return "CAF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+  /**
+   * Formula columns on a managed entity keep the value from when it entered the persistence
+   * context, so the product link is read with a query that always hits the database.
+   */
+  private List<Item> withProductLinks(List<ItemJpaEntity> entities) {
+    if (entities.isEmpty()) {
+      return List.of();
     }
-  }
-
-  @Override
-  public List<Item> findPosCandidates(long headquarterId) {
-    return jpaRepository.findPosCandidates(headquarterId).stream().map(ItemPersistenceMapper::toDomain).toList();
-  }
-
-  @Override
-  public boolean existsBySkuIgnoreCaseExcludingId(String sku, Long excludeId) {
-    if (sku == null || sku.isBlank()) {
-      return false;
-    }
-    Long ex = excludeId != null && excludeId > 0 ? excludeId : 0L;
-    return jpaRepository.existsBySkuIgnoreCaseAndIdNot(sku.trim(), ex);
-  }
-
-  @Override
-  public boolean existsByBarcodeIgnoreCaseExcludingId(String barcode, Long excludeId) {
-    if (barcode == null || barcode.isBlank()) {
-      return false;
-    }
-    Long ex = excludeId != null && excludeId > 0 ? excludeId : 0L;
-    return jpaRepository.existsByBarcodeIgnoreCaseAndIdNot(barcode.trim(), ex);
+    List<Long> ids = entities.stream().map(ItemJpaEntity::getId).toList();
+    Map<Long, ItemProductLinkProjection> links =
+        jpaRepository.findProductLinks(ids).stream()
+            .collect(
+                Collectors.toMap(
+                    ItemProductLinkProjection::getItemId, Function.identity(), (a, b) -> a));
+    return entities.stream()
+        .map(
+            entity -> {
+              Item item = ItemPersistenceMapper.toDomain(entity);
+              ItemProductLinkProjection link = links.get(entity.getId());
+              item.setProductId(link != null ? link.getProductId() : null);
+              item.setSaleSku(link != null ? link.getSku() : null);
+              return item;
+            })
+        .toList();
   }
 }

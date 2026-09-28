@@ -2,6 +2,8 @@ package io.github.alexistrejo11.pimienta.module.pos.core.application;
 
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product;
+import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
@@ -22,14 +24,17 @@ public class PosEventStockProjector {
   private final PosSaleInventoryUseCases posSaleInventoryUseCases;
   private final PosSaleRepository saleRepository;
   private final PosOperationalConfigRepository posOperationalConfigRepository;
+  private final ProductRepository productRepository;
 
   public PosEventStockProjector(
       PosSaleInventoryUseCases posSaleInventoryUseCases,
       PosSaleRepository saleRepository,
-      PosOperationalConfigRepository posOperationalConfigRepository) {
+      PosOperationalConfigRepository posOperationalConfigRepository,
+      ProductRepository productRepository) {
     this.posSaleInventoryUseCases = posSaleInventoryUseCases;
     this.saleRepository = saleRepository;
     this.posOperationalConfigRepository = posOperationalConfigRepository;
+    this.productRepository = productRepository;
   }
 
   public void project(
@@ -68,10 +73,14 @@ public class PosEventStockProjector {
       if (line.stockPolicy() != PosSaleStockPolicy.CONTROLLED) {
         continue;
       }
+      Product product = productRepository.findById(line.productId()).orElse(null);
+      if (product == null || product.getInventoryItemId() == null) {
+        continue;
+      }
       posSaleInventoryUseCases.applySaleStock(
           new ApplyPosSaleStockCommand(
               headquarterId,
-              line.productId(),
+              product.getInventoryItemId(),
               -line.quantity(),
               eventId.toString(),
               null,

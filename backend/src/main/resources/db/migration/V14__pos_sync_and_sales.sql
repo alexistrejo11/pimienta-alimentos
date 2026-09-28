@@ -92,7 +92,7 @@ CREATE TABLE pos_sale_lines (
     id                          BIGSERIAL PRIMARY KEY,
     sale_id                     UUID         NOT NULL REFERENCES pos_sales (sale_id),
     line_id                     UUID         NOT NULL,
-    product_id                  BIGINT       REFERENCES inventory_items (id),
+    product_id                  BIGINT       REFERENCES products (id),
     product_name                VARCHAR(255) NOT NULL,
     sale_category               VARCHAR(64),
     quantity                    INTEGER      NOT NULL,

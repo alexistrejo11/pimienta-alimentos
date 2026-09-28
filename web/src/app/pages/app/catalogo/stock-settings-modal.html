@@ -1,0 +1,75 @@
+<div
+  class="fixed inset-0 z-50 flex items-end justify-center overflow-hidden p-0 sm:items-center sm:p-6"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="stock-settings-titulo"
+>
+  <div class="absolute inset-0 bg-black/40" (click)="saving() ? null : cerrar.emit()"></div>
+  <div class="relative z-10 flex max-h-[min(92dvh,40rem)] w-full max-w-xl flex-col rounded-t-2xl bg-surface-container-lowest sm:rounded-2xl">
+    <header class="flex items-start justify-between gap-3 px-5 py-4 sm:px-6">
+      <div>
+        <h2 id="stock-settings-titulo" class="font-headline text-lg font-bold text-on-surface">Configurar stock</h2>
+        <p class="text-sm text-on-surface-variant">
+          {{ itemKindLabel(item().kind) }} · {{ item().saleSku ? item().saleSku + ' · ' : '' }}{{ item().name }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container"
+        [disabled]="saving()"
+        aria-label="Cerrar"
+        (click)="cerrar.emit()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-4 sm:px-6">
+      @if (error(); as err) {
+        <p class="rounded-lg bg-primary-fixed p-3 text-sm text-on-primary-fixed" role="alert">{{ err.message }}</p>
+      }
+
+      <form class="grid gap-3 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="guardar()" id="stock-settings-form">
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-semibold">Precio de costo</span>
+          <input type="number" step="0.01" min="0" class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="costPrice" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-semibold">Estado</span>
+          <select class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="status">
+            @for (s of statuses; track s) {
+              <option [value]="s">{{ itemStatusLabel(s) }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-semibold">Punto de reorden</span>
+          <input type="number" min="0" class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="reorderPoint" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-semibold">Cantidad de reorden</span>
+          <input type="number" min="0" class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="reorderQuantity" />
+        </label>
+      </form>
+    </div>
+
+    <footer class="flex flex-col-reverse gap-2 border-t border-outline-variant/20 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+      <button
+        type="button"
+        class="min-h-11 rounded-lg bg-surface-container px-4 py-2.5 text-sm font-semibold"
+        [disabled]="saving()"
+        (click)="cerrar.emit()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        form="stock-settings-form"
+        class="min-h-11 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-60"
+        [disabled]="saving()"
+      >
+        {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </footer>
+  </div>
+</div>

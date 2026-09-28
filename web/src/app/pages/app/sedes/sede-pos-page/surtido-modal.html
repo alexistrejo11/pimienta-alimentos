@@ -46,19 +46,18 @@
 
       @if (lookup() !== 'form') {
         <div class="min-h-[min(50dvh,20rem)]">
-          <app-item-select
-            label="Artículo maestro vendible"
+          <app-product-select
+            label="Producto"
             placeholder="Buscar por nombre, SKU o código"
-            catalogRole="POS_SELLABLE"
             listLayout="inline"
             [value]="picked()?.id ?? null"
             (valueChange)="onItemChange($event)"
-            (itemChange)="onItemPicked($event)"
+            (productChange)="onProductPicked($event)"
           />
         </div>
         <p class="text-sm text-on-surface-variant">
           Si no aparece en la búsqueda, créalo en
-          <a routerLink="/app/ops/catalogo" class="font-semibold text-primary" (click)="cerrar.emit()">Artículos maestros</a>.
+          <a routerLink="/app/ops/productos" class="font-semibold text-primary" (click)="cerrar.emit()">Productos</a>.
         </p>
 
         @if (lookup() === 'checking') {

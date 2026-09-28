@@ -43,3 +43,9 @@ Non-fatal behaviors, consistency gaps, and product decisions to revisit. **Resol
 
 - Added deterministic bootstrap watermark concurrency coverage and retained-history cursor coverage.
 - No additional non-fatal follow-ups surfaced from this test pass.
+
+## Version starts at 1 (2026-09-27)
+
+- `version_startsAtOneOnCreate_andIncrementsOnUpdate` asserts create returns `version: 1` and a later GET returns `2`. Hibernate used to seed `@Version` at 0 on insert (the Flyway `DEFAULT 1` never applied); `VersionedJpaEntity` now seeds 1 in `@PrePersist`.
+- Under `@Transactional` tests the increment only shows after `EntityManager.flush()`; the PUT response itself still reports the pre-flush version. Clients that cache `version` from a PUT response should re-read if they start sending it back.
+- Tests run on H2 with Flyway disabled, so the Flyway `version DEFAULT 1` columns are not exercised by the suite.

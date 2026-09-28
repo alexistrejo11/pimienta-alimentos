@@ -1,19 +1,22 @@
 /** Mirrors backend SupplierResponse / UpsertSupplierRequest. */
+export interface SupplierHeadquarterAssignment {
+  headquarterId: number;
+  active: boolean;
+}
+
 export interface SupplierResponse {
   id: number;
   name: string;
-  contactName: string;
   phone: string;
   brand: string;
-  headquarterIds: number[];
+  headquarters: SupplierHeadquarterAssignment[];
 }
 
 export interface UpsertSupplierRequest {
   name: string;
-  contactName: string;
   phone: string;
   brand: string;
-  headquarterIds: number[];
+  headquarters: SupplierHeadquarterAssignment[];
 }
 
 export interface SupplierSearchParams {

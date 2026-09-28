@@ -30,6 +30,7 @@ export class Login {
 
   readonly logoUrl = BRAND_LOGO_URL;
   readonly coverImageUrl = LANDING_COVER_IMAGE;
+  readonly passwordVisible = signal(false);
   readonly submitting = signal(false);
   readonly apiError = signal<ParsedApiError | null>(null);
   readonly apiErrorMessage = signal<string | null>(null);
@@ -42,6 +43,10 @@ export class Login {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
   });
+
+  togglePasswordVisible(): void {
+    this.passwordVisible.update((v) => !v);
+  }
 
   submit(): void {
     this.apiError.set(null);

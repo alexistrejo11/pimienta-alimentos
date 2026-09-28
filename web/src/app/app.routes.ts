@@ -241,34 +241,57 @@ const opsChildren: Routes = [
     canActivate: [roleGuard],
     data: { access: { roles: OPS } },
   },
-  { path: 'catalogo/nuevo', redirectTo: 'catalogo' },
+  { path: 'catalogo/nuevo', redirectTo: 'productos/nuevo' },
+  { path: 'catalogo/nuevo/pos', redirectTo: 'productos/nuevo' },
   {
-    path: 'catalogo/nuevo/pos',
+    path: 'productos/nuevo',
     loadComponent: () =>
-      import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
-        (m) => m.CatalogoFormPageComponent,
+      import('./pages/app/productos/producto-form-page').then((m) => m.ProductoFormPageComponent),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  {
+    path: 'productos/:id/editar',
+    loadComponent: () =>
+      import('./pages/app/productos/producto-form-page').then((m) => m.ProductoFormPageComponent),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  {
+    path: 'productos',
+    loadComponent: () =>
+      import('./pages/app/productos/productos-page').then((m) => m.ProductosPageComponent),
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  { path: 'catalogo/nuevo/almacen', redirectTo: 'bodega/nuevo' },
+  { path: 'catalogo/:id/editar', redirectTo: 'bodega/:id/editar' },
+  {
+    path: 'bodega/nuevo',
+    loadComponent: () =>
+      import('./pages/app/bodega/bodega-form-page/bodega-form-page').then(
+        (m) => m.BodegaFormPageComponent,
       ),
     canDeactivate: [dirtyFormGuard],
     canActivate: [roleGuard],
-    data: { access: { roles: OPS }, itemKind: 'pos' },
+    data: { access: { roles: OPS } },
   },
   {
-    path: 'catalogo/nuevo/almacen',
+    path: 'bodega/:id/editar',
     loadComponent: () =>
-      import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
-        (m) => m.CatalogoFormPageComponent,
+      import('./pages/app/bodega/bodega-form-page/bodega-form-page').then(
+        (m) => m.BodegaFormPageComponent,
       ),
     canDeactivate: [dirtyFormGuard],
     canActivate: [roleGuard],
-    data: { access: { roles: OPS }, itemKind: 'warehouse' },
+    data: { access: { roles: OPS } },
   },
   {
-    path: 'catalogo/:id/editar',
+    path: 'bodega',
     loadComponent: () =>
-      import('./pages/app/catalogo/catalogo-form-page/catalogo-form-page').then(
-        (m) => m.CatalogoFormPageComponent,
-      ),
-    canDeactivate: [dirtyFormGuard],
+      import('./pages/app/bodega/bodega-page').then((m) => m.BodegaPageComponent),
     canActivate: [roleGuard],
     data: { access: { roles: OPS } },
   },

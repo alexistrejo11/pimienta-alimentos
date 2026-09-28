@@ -148,7 +148,6 @@ public class PayrollRepositoryImpl implements PayrollRepository {
     entity.setReason(reason != null ? reason.trim() : "");
     entity.fillCreatedAndUpdatedIfNull();
     entity.fillUpdatedIfNull();
-    entity.normalizeVersionIfNull();
     adjustmentJpaRepository.save(entity);
   }
 

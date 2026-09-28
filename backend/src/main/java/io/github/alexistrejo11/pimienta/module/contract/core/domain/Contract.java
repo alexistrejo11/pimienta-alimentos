@@ -44,7 +44,6 @@ public class Contract extends BaseDomain<Long> {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.deletedAt = null;
-    this.version = 1L;
   }
 
   public void renew() {
@@ -118,7 +117,6 @@ public class Contract extends BaseDomain<Long> {
 
   public void touch() {
     updatedAt = LocalDateTime.now();
-    version = version != null ? version + 1 : 1L;
   }
 
   public boolean isIndefinite() {
@@ -415,7 +413,7 @@ public class Contract extends BaseDomain<Long> {
     }
 
     public SafeBuilder Version(Long version) {
-      this.version = version != null ? version : 1L;
+      this.version = version;
       return this;
     }
 
@@ -443,7 +441,7 @@ public class Contract extends BaseDomain<Long> {
       c.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       c.updatedAt = updatedAt != null ? updatedAt : c.createdAt;
       c.deletedAt = deletedAt;
-      c.version = version != null ? version : 1L;
+      c.version = version;
       return c;
     }
 
@@ -473,13 +471,13 @@ public class Contract extends BaseDomain<Long> {
       c.createdAt = now;
       c.updatedAt = now;
       c.deletedAt = null;
-      c.version = version != null ? version : 1L;
+      c.version = version;
       return c;
     }
 
     /**
-     * New state for update: keeps identity, renewal history, audit markers; bumps
-     * version.
+     * New state for update: keeps identity, renewal history, audit markers and the
+     * loaded version (persistence increments it).
      */
     public Contract revise(Contract existing) {
       validateRevision(this);
@@ -505,7 +503,7 @@ public class Contract extends BaseDomain<Long> {
       c.currencyCode = currencyCode;
       c.renewalCycleMonths = renewalCycleMonths;
       c.updatedAt = LocalDateTime.now();
-      c.version = existing.getVersion() != null ? existing.getVersion() + 1 : 1L;
+      c.version = existing.getVersion();
       return c;
     }
 

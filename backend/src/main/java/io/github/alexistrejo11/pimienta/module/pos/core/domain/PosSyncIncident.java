@@ -22,7 +22,6 @@ public class PosSyncIncident extends BaseDomain<UUID> {
     this.reasonCode = "";
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public UUID getEventId() {
@@ -173,7 +172,7 @@ public class PosSyncIncident extends BaseDomain<UUID> {
       i.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       i.updatedAt = updatedAt != null ? updatedAt : i.createdAt;
       i.deletedAt = deletedAt;
-      i.version = version != null ? version : 0L;
+      i.version = version;
       return i;
     }
 

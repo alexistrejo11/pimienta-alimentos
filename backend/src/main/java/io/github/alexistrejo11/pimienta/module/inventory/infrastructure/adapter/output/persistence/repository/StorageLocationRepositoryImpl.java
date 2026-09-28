@@ -6,7 +6,9 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.Storag
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.StorageLocationJpaEntity;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.mapper.StorageLocationPersistenceMapper;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.specification.StorageLocationSpecifications;
-
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,9 @@ public class StorageLocationRepositoryImpl implements StorageLocationRepository 
 
   private final StorageLocationJpaRepository jpaRepository;
   private final InventoryJpaRepository inventoryJpaRepository;
+
+  @PersistenceContext
+  private EntityManager entityManager;
 
   public StorageLocationRepositoryImpl(
       StorageLocationJpaRepository jpaRepository, InventoryJpaRepository inventoryJpaRepository) {
@@ -33,7 +38,17 @@ public class StorageLocationRepositoryImpl implements StorageLocationRepository 
 
   @Override
   public Optional<StorageLocation> findByIdForUpdate(long id) {
-    return jpaRepository.findByIdForUpdate(id).map(StorageLocationPersistenceMapper::toDomain);
+    StorageLocationJpaEntity entity = entityManager.find(StorageLocationJpaEntity.class, id);
+    if (entity == null) {
+      return Optional.empty();
+    }
+    // refresh (not a locking query) so a copy already in the persistence context is reloaded at
+    // the committed @Version once the lock is granted, instead of failing as a version conflict.
+    entityManager.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
+    if (entity.getDeletedAt() != null) {
+      return Optional.empty();
+    }
+    return Optional.of(StorageLocationPersistenceMapper.toDomain(entity));
   }
 
   @Override

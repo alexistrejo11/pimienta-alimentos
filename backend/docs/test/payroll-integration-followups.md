@@ -26,7 +26,7 @@ Items to revisit for correctness, API semantics, or UX. None of these block the 
 
 ## Concurrency
 
-- **Version field:** Payroll JPA entities use a **`version`** column on **`BaseJpaEntity`** **without** **`@Version`**. There is no JPA optimistic locking; concurrent updates are last-write-wins. Add **`@Version`** (and align domain mapping) if you need conflict detection.
+- **Version field (resolved 2026-09-27):** **`BaseJpaEntity`** now extends **`VersionedJpaEntity`**, which declares **`@Version`** and seeds new rows at **1**. Payroll entities have JPA optimistic locking; a stale update raises **`ObjectOptimisticLockingFailureException`** instead of last-write-wins. Mappers pass **`domain.getVersion()`** through (null for new rows); do not assign or bump it manually.
 
 ## Tests
 

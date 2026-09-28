@@ -23,7 +23,7 @@ interface SyncProjectionDao {
     @Query("DELETE FROM pos_policy")
     fun clearPolicy()
 
-    @Query("SELECT * FROM catalog_category WHERE siteId = :siteId AND active = 1 ORDER BY name")
+    @Query("SELECT * FROM catalog_category WHERE siteId = :siteId AND active = 1 ORDER BY name COLLATE NOCASE")
     fun activeCategories(siteId: String): List<CatalogCategoryEntity>
 
     @Query("SELECT * FROM pos_policy WHERE id = 1")

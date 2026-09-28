@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize, forkJoin, type Observable } from 'rxjs';
+import { concatMap, finalize, forkJoin, type Observable } from 'rxjs';
 
 import { HeadquarterLookupService } from '../../../core/headquarters/headquarter-lookup.service';
 import { HeadquarterService } from '../../../core/headquarters/headquarter.service';
@@ -128,11 +128,14 @@ export class UsuariosPageComponent implements OnInit {
     }
     this.roleWarning.set(null);
     this.savingId.set(user.id);
-    const saves: Observable<unknown>[] = [this.service.replaceRoles(user.id, { roles })];
-    if (needsSede && hqId != null) {
-      saves.push(this.service.assignHeadquarters(user.id, { headquarterIds: [hqId] }));
-    }
-    forkJoin(saves)
+    const rolesSave: Observable<unknown> = this.service.replaceRoles(user.id, { roles });
+    const save =
+      needsSede && hqId != null
+        ? rolesSave.pipe(
+            concatMap(() => this.service.assignHeadquarters(user.id, { headquarterIds: [hqId] })),
+          )
+        : rolesSave;
+    save
       .pipe(finalize(() => this.savingId.set(null)))
       .subscribe({
         next: () => this.load(),

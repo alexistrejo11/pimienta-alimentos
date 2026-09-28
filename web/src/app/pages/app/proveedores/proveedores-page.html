@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <app-page-header
       title="Proveedores"
-      subtitle="Contactos de surtido por sede"
+      subtitle="Personas que surten una marca por sede"
     />
     <a
       routerLink="/app/ops/proveedores/nuevo"
@@ -26,15 +26,13 @@
         [value]="selectedHeadquarterId"
         (valueChange)="onHeadquarterChange($event)"
       />
-      <label class="flex min-w-64 flex-col gap-1 text-sm">
-        <span class="font-semibold text-on-surface-variant">Buscar</span>
-        <input
-          class="rounded-lg bg-surface-container px-3 py-2.5"
-          placeholder="Negocio, contacto, teléfono o marca"
-          [value]="search"
-          (input)="onSearchInput($any($event.target).value)"
-        />
-      </label>
+      <app-list-search-field
+        class="max-w-md flex-1"
+        label="Buscar"
+        placeholder="Nombre, teléfono o marca"
+        [(draft)]="searchDraft"
+        (search)="applySearch($event)"
+      />
     </div>
 
     <app-data-state
@@ -48,9 +46,9 @@
         <table class="w-full text-sm" aria-label="Proveedores">
           <thead class="border-b border-outline-variant/20 bg-surface-container-low">
             <tr>
-              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Marca</th>
-              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Contacto</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Nombre</th>
               <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Teléfono</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Marca</th>
               <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Sedes</th>
               <th class="px-4 py-3"></th>
             </tr>
@@ -58,13 +56,23 @@
           <tbody class="divide-y divide-outline-variant/15">
             @for (row of items(); track row.id) {
               <tr>
-                <td class="px-4 py-3 font-medium">{{ row.brand }}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium">{{ row.contactName }}</div>
-                  <div class="text-xs text-on-surface-variant">{{ row.name }}</div>
-                </td>
+                <td class="px-4 py-3 font-medium">{{ row.name }}</td>
                 <td class="px-4 py-3 tabular-nums">{{ row.phone }}</td>
-                <td class="px-4 py-3 text-on-surface-variant">{{ headquarterLabels(row.headquarterIds) }}</td>
+                <td class="px-4 py-3">{{ row.brand }}</td>
+                <td class="px-4 py-3 text-on-surface-variant">
+                  @if (row.headquarters.length === 0) {
+                    —
+                  } @else {
+                    <ul class="space-y-1">
+                      @for (hq of row.headquarters; track hq.headquarterId) {
+                        <li>
+                          {{ headquarterLabel(hq.headquarterId) }}
+                          · {{ hq.active ? 'Surte' : 'No surte' }}
+                        </li>
+                      }
+                    </ul>
+                  }
+                </td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                   <a
                     [routerLink]="['/app/ops/proveedores', row.id, 'editar']"

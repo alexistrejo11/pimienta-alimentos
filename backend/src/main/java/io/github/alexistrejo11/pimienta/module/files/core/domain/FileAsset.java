@@ -179,17 +179,11 @@ public class FileAsset extends BaseDomain<UUID> {
       if (a.updatedAt == null) {
         a.updatedAt = now;
       }
-      if (a.version == null) {
-        a.version = 0L;
-      }
       return a;
     }
 
     /** Hydration from persistence — no validation. */
     public FileAsset reconstruct() {
-      if (a.version == null) {
-        a.version = 0L;
-      }
       return a;
     }
   }

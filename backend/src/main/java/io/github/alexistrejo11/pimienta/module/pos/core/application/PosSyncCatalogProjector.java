@@ -8,6 +8,8 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLoca
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosLocationUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product;
+import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.OperatorRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.Policies;
@@ -21,39 +23,53 @@ import org.springframework.stereotype.Component;
 @Component
 public class PosSyncCatalogProjector {
 
+  private final ProductRepository productRepository;
   private final ItemRepository itemRepository;
   private final PosLocationUseCases posLocationUseCases;
   private final InventoryRepository inventoryRepository;
 
   public PosSyncCatalogProjector(
+      ProductRepository productRepository,
       ItemRepository itemRepository,
       PosLocationUseCases posLocationUseCases,
       InventoryRepository inventoryRepository) {
+    this.productRepository = productRepository;
     this.itemRepository = itemRepository;
     this.posLocationUseCases = posLocationUseCases;
     this.inventoryRepository = inventoryRepository;
   }
 
   public Optional<ProductRow> toProductRow(HeadquarterItem row) {
-    Optional<Item> itemOpt = itemRepository.findById(row.getItemId());
-    if (itemOpt.isEmpty()) {
+    Optional<Product> productOpt = productRepository.findById(row.getProductId());
+    if (productOpt.isEmpty()) {
       return Optional.empty();
     }
-    Item item = itemOpt.get();
-    int stockQty = stockQuantity(row.getHeadquarterId(), item.getId());
+    Product product = productOpt.get();
+    Item stockItem = null;
+    if (product.getInventoryItemId() != null) {
+      stockItem = itemRepository.findById(product.getInventoryItemId()).orElse(null);
+    }
+    int stockQty = 0;
+    int reorderPoint = 0;
+    long costCentavos = 0L;
+    if (stockItem != null) {
+      stockQty = stockQuantity(row.getHeadquarterId(), stockItem.getId());
+      reorderPoint = stockItem.getReorderPoint();
+      costCentavos = toCentavos(stockItem.getCostPrice());
+    }
     return Optional.of(
         new ProductRow(
-            String.valueOf(item.getId()),
-            item.getSku(),
-            item.getBarcode(),
-            item.getName(),
+            String.valueOf(product.getId()),
+            product.getSku(),
+            product.getBarcode(),
+            product.getName(),
             row.getSaleCategory(),
-            item.getUnit() != null ? item.getUnit().name() : "PIECE",
+            product.getUnit().name(),
             toCentavos(row.getSalePrice()),
-            toCentavos(item.getCostPrice()),
+            costCentavos,
             row.isAvailable(),
             stockQty,
-            item.getReorderPoint(),
+            reorderPoint,
             row.getStockPolicy(),
             row.getNegativeStockLimit()));
   }

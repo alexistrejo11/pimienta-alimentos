@@ -13,6 +13,8 @@ fun printerStatusPresentation(
     return when {
         status == PeripheralStatus.READY && link == PrinterLink.BLUETOOTH ->
             PrinterStatusPresentation("Impresora Bluetooth en línea", alert = false)
+        status == PeripheralStatus.DISCOVERED && link == PrinterLink.BLUETOOTH ->
+            PrinterStatusPresentation("Impresora Bluetooth vinculada", alert = false)
         status == PeripheralStatus.READY && link == PrinterLink.USB ->
             PrinterStatusPresentation("Impresora USB en línea", alert = false)
         status == PeripheralStatus.READY ->

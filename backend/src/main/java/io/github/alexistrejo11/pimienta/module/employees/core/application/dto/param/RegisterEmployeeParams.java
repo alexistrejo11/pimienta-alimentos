@@ -90,7 +90,6 @@ public record RegisterEmployeeParams(
                                 .withCreatedAt(now)
                                 .withUpdatedAt(now)
                                 .withDeletedAt(null)
-                                .withVersion(1L)
                                 .build();
         }
 }

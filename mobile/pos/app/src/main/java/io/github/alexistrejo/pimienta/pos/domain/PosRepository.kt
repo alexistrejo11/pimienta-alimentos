@@ -132,7 +132,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun observePendingEvents(): Flow<Int> = database.operationsDao().observePendingEventCount()
     fun saleCategoryNames(): List<String> {
         val siteId = database.siteDao().current()?.id ?: return emptyList()
-        return database.syncProjectionDao().activeCategories(siteId).map { it.name }.filter { it.isNotBlank() }
+        return sortedCategoryNames(database.syncProjectionDao().activeCategories(siteId).map { it.name })
     }
     fun findProductByCode(code: String): ProductEntity? = database.productDao().findByCode(code.trim())
     fun activeShift() = database.operationsDao().activeShift()

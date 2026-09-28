@@ -14,7 +14,7 @@ public final class InventoryMovementWebMapper {
     return new InventoryMovementResponse(
         m.getId(),
         m.getItem().getId(),
-        m.getItem().getSku(),
+        m.getItem().getSaleSku(),
         src != null ? src.getId() : null,
         src != null ? src.getCode() : null,
         dst != null ? dst.getId() : null,

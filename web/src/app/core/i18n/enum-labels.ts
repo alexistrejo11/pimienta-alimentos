@@ -44,8 +44,8 @@ export function itemUnitLabel(unit: string): string {
   return ITEM_UNIT_LABELS[unit] ?? unit;
 }
 
-export function catalogRoleLabel(role: string): string {
-  return CATALOG_ROLE_LABELS[role] ?? role;
+export function itemKindLabel(kind: string): string {
+  return ITEM_KIND_LABELS[kind] ?? kind;
 }
 
 export function inventoryStatusLabel(status: string): string {
@@ -223,9 +223,9 @@ const ITEM_UNIT_LABELS: Record<string, string> = {
   SQUARE_METER: 'Metro cuadrado',
 };
 
-const CATALOG_ROLE_LABELS: Record<string, string> = {
-  INVENTORY_ONLY: 'Sólo inventario',
-  POS_SELLABLE: 'Vendible en POS',
+const ITEM_KIND_LABELS: Record<string, string> = {
+  PRODUCT: 'Producto',
+  WAREHOUSE: 'Bodega',
 };
 
 const INVENTORY_STATUS_LABELS: Record<string, string> = {

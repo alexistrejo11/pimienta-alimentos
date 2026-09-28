@@ -8,10 +8,10 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquart
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.exception.PosSaleCategoryNotFoundException;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.input.HeadquarterPosCatalogUseCases;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosSaleCategoryRepository;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemUnit;
-import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.ItemManagementUseCases;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product.Unit;
+import io.github.alexistrejo11.pimienta.module.product.core.port.input.ProductManagementUseCases;
+import io.github.alexistrejo11.pimienta.module.product.core.application.command.UpdateProductCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.DeviceCreatePosProductCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator;
@@ -36,7 +36,7 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
   private final PosSaleCategoryRepository saleCategories;
   private final PosProductManagementUseCases posProductManagementUseCases;
   private final PosSyncCatalogProjector projector;
-  private final ItemManagementUseCases itemManagementUseCases;
+  private final ProductManagementUseCases productManagementUseCases;
   private final HeadquarterPosCatalogUseCases headquarterPosCatalogUseCases;
 
   public PosDeviceCatalogUseCasesImpl(
@@ -45,14 +45,14 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
       PosSaleCategoryRepository saleCategories,
       PosProductManagementUseCases posProductManagementUseCases,
       PosSyncCatalogProjector projector,
-      ItemManagementUseCases itemManagementUseCases,
+      ProductManagementUseCases productManagementUseCases,
       HeadquarterPosCatalogUseCases headquarterPosCatalogUseCases) {
     this.deviceRepository = deviceRepository;
     this.operatorRepository = operatorRepository;
     this.saleCategories = saleCategories;
     this.posProductManagementUseCases = posProductManagementUseCases;
     this.projector = projector;
-    this.itemManagementUseCases = itemManagementUseCases;
+    this.productManagementUseCases = productManagementUseCases;
     this.headquarterPosCatalogUseCases = headquarterPosCatalogUseCases;
   }
 
@@ -61,9 +61,16 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
   public ProductRow renameProduct(UUID deviceId, long itemId, String name, String barcode) {
     long hqId = requireActiveDevice(deviceId).getHeadquarterId();
     HeadquarterItem catalog = headquarterPosCatalogUseCases.get(hqId, itemId);
-    Item existing = itemManagementUseCases.getById(itemId);
-    itemManagementUseCases.update(
-        itemId, copyWithNameAndBarcode(existing, name.strip(), catalogBarcode(barcode, existing.getSku())));
+    Product existing = productManagementUseCases.getById(itemId);
+    productManagementUseCases.update(
+        itemId,
+        new UpdateProductCommand(
+            name.strip(),
+            existing.getDescription(),
+            existing.getUnit(),
+            catalogBarcode(barcode, existing.getSku()),
+            existing.getStatus(),
+            existing.isTrackStock()));
     return project(catalog);
   }
 
@@ -73,6 +80,8 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
       UUID deviceId, long itemId, long salePriceCentavos, StockPolicy stockPolicy) {
     long hqId = requireActiveDevice(deviceId).getHeadquarterId();
     headquarterPosCatalogUseCases.get(hqId, itemId);
+    ensureControlledStock(itemId, stockPolicy);
+
     HeadquarterItem saved =
         headquarterPosCatalogUseCases.upsert(
             hqId,
@@ -80,6 +89,31 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
             new UpsertHeadquarterItemCommand(
                 null, BigDecimal.valueOf(salePriceCentavos, 2), null, stockPolicy, null));
     return project(saved);
+  }
+
+  /**
+   * A cashier turning stock control on needs a warehouse item. Staff catalog
+   * edits still reject a controlled row that has no item.
+   */
+  private void ensureControlledStock(long productId, StockPolicy stockPolicy) {
+    if (stockPolicy != StockPolicy.CONTROLLED) {
+      return;
+    }
+
+    Product existing = productManagementUseCases.getById(productId);
+    if (existing.getInventoryItemId() != null) {
+      return;
+    }
+
+    productManagementUseCases.update(
+        productId,
+        new UpdateProductCommand(
+            existing.getName(),
+            existing.getDescription(),
+            existing.getUnit(),
+            existing.getBarcode(),
+            existing.getStatus(),
+            true));
   }
 
   @Override
@@ -99,14 +133,9 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
             new CreatePosProductCommand(
                 command.name().strip(),
                 null,
-                BigDecimal.ZERO,
-                salePrice,
-                ItemCategory.FINISHED_GOOD,
-                ItemUnit.PIECE,
-                null,
                 command.barcode(),
-                0,
-                0,
+                Unit.PIECE,
+                salePrice,
                 category.getId(),
                 true,
                 command.stockPolicy() != null ? command.stockPolicy() : StockPolicy.NOT_CONTROLLED,
@@ -141,25 +170,6 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
       return null;
     }
     return trimmed;
-  }
-
-  /** Full field copy so item update does not clear SKU, cost, or catalog role. */
-  private static Item copyWithNameAndBarcode(Item existing, String name, String barcode) {
-    Item merged = new Item();
-    merged.setId(existing.getId());
-    merged.setSku(existing.getSku());
-    merged.setName(name);
-    merged.setDescription(existing.getDescription() != null ? existing.getDescription() : "");
-    merged.setCategory(existing.getCategory());
-    merged.setUnit(existing.getUnit());
-    merged.setBrand(existing.getBrand());
-    merged.setBarcode(barcode);
-    merged.setCostPrice(existing.getCostPrice());
-    merged.setReorderPoint(existing.getReorderPoint());
-    merged.setReorderQuantity(existing.getReorderQuantity());
-    merged.setStatus(existing.getStatus());
-    merged.setCatalogRole(existing.getCatalogRole());
-    return merged;
   }
 
   private void assertOperatorAssigned(long headquarterId, Long operatorId) {

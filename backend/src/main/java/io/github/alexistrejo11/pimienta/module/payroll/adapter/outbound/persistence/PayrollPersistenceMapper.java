@@ -48,7 +48,6 @@ public class PayrollPersistenceMapper {
     entity.setVersion(domain.getVersion());
     entity.fillCreatedAndUpdatedIfNull();
     entity.fillUpdatedIfNull();
-    entity.normalizeVersionIfNull();
     return entity;
   }
 
@@ -95,7 +94,6 @@ public class PayrollPersistenceMapper {
     entity.setVersion(domain.getVersion());
     entity.fillCreatedAndUpdatedIfNull();
     entity.fillUpdatedIfNull();
-    entity.normalizeVersionIfNull();
     return entity;
   }
 
@@ -145,7 +143,6 @@ public class PayrollPersistenceMapper {
     entity.setVersion(domain.getVersion());
     entity.fillCreatedAndUpdatedIfNull();
     entity.fillUpdatedIfNull();
-    entity.normalizeVersionIfNull();
     return entity;
   }
 
@@ -186,7 +183,6 @@ public class PayrollPersistenceMapper {
     entity.setVersion(domain.getVersion());
     entity.fillCreatedAndUpdatedIfNull();
     entity.fillUpdatedIfNull();
-    entity.normalizeVersionIfNull();
     return entity;
   }
 

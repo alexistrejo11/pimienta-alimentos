@@ -16,9 +16,10 @@ import type { ItemCategory } from '../../../../core/model/inventory/inventory.en
 import type { PageMetadata } from '../../../../core/model/common/pagination';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
+import { ListSearchFieldComponent } from '../../../../shared/ui/list-search-field/list-search-field';
 import { RegistrarMovimientoModalComponent } from './registrar-movimiento-modal';
 
-@Component({ selector: 'app-inventario-ledger-page', imports: [FormsModule, DatePipe, PageHeaderComponent, DataStateComponent, RegistrarMovimientoModalComponent], templateUrl: './inventario-ledger-page.html' })
+@Component({ selector: 'app-inventario-ledger-page', imports: [FormsModule, DatePipe, PageHeaderComponent, DataStateComponent, ListSearchFieldComponent, RegistrarMovimientoModalComponent], templateUrl: './inventario-ledger-page.html' })
 export class InventarioLedgerPageComponent implements OnInit {
   private readonly inventory = inject(InventoryService);
   private readonly session = inject(SessionContextService);
@@ -30,7 +31,9 @@ export class InventarioLedgerPageComponent implements OnInit {
   readonly notice = signal('');
   readonly canRegister = computed(() => this.session.canOperateOps());
   readonly page = signal(0);
-  search = ''; type = ''; direction = ''; category = ''; fromDate = ''; toDate = '';
+  searchDraft = '';
+  searchApplied = '';
+  type = ''; direction = ''; category = ''; fromDate = ''; toDate = '';
   readonly categories: ItemCategory[] = ['RAW_MATERIAL', 'FINISHED_GOOD', 'CONSUMABLE', 'SPARE_PART', 'PACKAGING', 'TOOL', 'MACHINE', 'FURNITURE', 'OTHER'];
   readonly itemCategoryLabel = itemCategoryLabel;
   readonly movementTypeLabel = inventoryMovementTypeLabel;
@@ -39,7 +42,16 @@ export class InventarioLedgerPageComponent implements OnInit {
   ngOnInit(): void { this.load(); }
   load(page = this.page()): void {
     this.page.set(page); this.loading.set(true); this.error.set(null);
-    this.inventory.searchMovements({ page, size: 20, search: this.search || undefined, type: this.type as never || undefined, direction: this.direction as never || undefined, category: this.category as ItemCategory || undefined, fromDate: this.fromDate ? `${this.fromDate}T00:00:00` : undefined, toDate: this.toDate ? `${this.toDate}T23:59:59` : undefined }).pipe(finalize(() => this.loading.set(false))).subscribe({ next: result => { this.rows.set(result.items); this.metadata.set(result.metadata); }, error: err => this.error.set(parseApiError(err)) });
+    this.inventory.searchMovements({ page, size: 20, search: this.searchApplied || undefined, type: this.type as never || undefined, direction: this.direction as never || undefined, category: this.category as ItemCategory || undefined, fromDate: this.fromDate ? `${this.fromDate}T00:00:00` : undefined, toDate: this.toDate ? `${this.toDate}T23:59:59` : undefined }).pipe(finalize(() => this.loading.set(false))).subscribe({ next: result => { this.rows.set(result.items); this.metadata.set(result.metadata); }, error: err => this.error.set(parseApiError(err)) });
+  }
+  applySearch(term: string): void {
+    const normalized = term.trim();
+    if (normalized === this.searchApplied) {
+      return;
+    }
+    this.searchApplied = normalized;
+    this.searchDraft = normalized;
+    this.load(0);
   }
   filterChanged(): void { this.load(0); }
   previous(): void { if (this.metadata()?.hasPrevious) this.load(this.page() - 1); }

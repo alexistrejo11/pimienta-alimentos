@@ -79,7 +79,6 @@ public class StorageLocation extends BaseDomain<Long> {
     this.status = LocationStatus.ACTIVE;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   // ─────────────────────────────────────────────

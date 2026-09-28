@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { EMPTY, expand, finalize, forkJoin, reduce } from 'rxjs';
@@ -18,6 +18,7 @@ import type { PageMetadata } from '../../../../core/model/common/pagination';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
+import { ListSearchFieldComponent } from '../../../../shared/ui/list-search-field/list-search-field';
 import { SurtidoModalComponent } from './surtido-modal';
 
 @Component({
@@ -27,6 +28,7 @@ import { SurtidoModalComponent } from './surtido-modal';
     DataStateComponent,
     FormsModule,
     HeadquarterSelectComponent,
+    ListSearchFieldComponent,
     SurtidoModalComponent,
   ],
   templateUrl: './sede-pos-page.html',
@@ -41,7 +43,8 @@ export class SedePosPageComponent implements OnInit {
   readonly headquarterId = signal(0);
   readonly globalMode = signal(false);
   readonly sedeName = signal('');
-  readonly loading = signal(true);
+  readonly pageLoading = signal(true);
+  readonly catalogLoading = signal(false);
   readonly error = signal<ParsedApiError | null>(null);
   readonly catalog = signal<HeadquarterPosCatalogItemResponse[]>([]);
   readonly catalogMetadata = signal<PageMetadata | null>(null);
@@ -55,7 +58,8 @@ export class SedePosPageComponent implements OnInit {
   readonly surtidoAbierto = signal(false);
   readonly surtidoEdit = signal<HeadquarterPosCatalogItemResponse | null>(null);
   readonly notice = signal('');
-  readonly catalogSearch = signal('');
+  readonly catalogSearchDraft = signal('');
+  readonly catalogSearchApplied = signal('');
   readonly catalogCategory = signal('');
   readonly catalogAvailability = signal('');
   readonly catalogStockPolicy = signal('');
@@ -65,70 +69,68 @@ export class SedePosPageComponent implements OnInit {
   readonly stockPolicies: StockPolicy[] = ['CONTROLLED', 'NOT_CONTROLLED'];
   readonly stockPolicyLabel = stockPolicyLabel;
   readonly canEditCatalog = computed(() => this.session.canOperateOps());
-  private catalogSearchTimer: ReturnType<typeof setTimeout> | undefined;
+  readonly isAdmin = this.session.isAdmin;
 
   readonly activeCategories = computed(() =>
     this.saleCategories()
       .filter((category) => category.active)
-      .sort((a, b) => a.displayOrder - b.displayOrder),
+      .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })),
   );
 
-  /** Matches Tailwind sm:grid-cols-2 xl:grid-cols-3 for category grid. */
-  readonly categoryGridColumns = signal(1);
-
   ngOnInit(): void {
-    this.syncCategoryGridColumns();
     const routeId = this.route.snapshot.paramMap.get('id');
     const id = routeId ? Number(routeId) : Number(this.session.activeHeadquarterId() ?? 0);
     this.globalMode.set(!routeId);
     this.headquarterId.set(id);
-    if (id > 0) this.cargar(id);
-    else this.loading.set(false);
-  }
-
-  @HostListener('window:resize')
-  onWindowResize(): void {
-    this.syncCategoryGridColumns();
-  }
-
-  private syncCategoryGridColumns(): void {
-    if (typeof window === 'undefined') return;
-    const w = window.innerWidth;
-    if (w >= 1280) this.categoryGridColumns.set(3);
-    else if (w >= 640) this.categoryGridColumns.set(2);
-    else this.categoryGridColumns.set(1);
-  }
-
-  private categoryIndex(category: PosSaleCategoryResponse): number {
-    return this.activeCategories().findIndex((item) => item.id === category.id);
+    if (id > 0) this.loadInitial(id);
+    else this.pageLoading.set(false);
   }
 
   onHeadquarterChange(value: number | number[] | null): void {
     if (!this.globalMode() || typeof value !== 'number' || value === this.headquarterId()) return;
     this.catalogPage.set(0);
+    this.catalogSearchDraft.set('');
+    this.catalogSearchApplied.set('');
     this.cerrarSurtido();
     this.cancelCategoryEdit();
     this.headquarterId.set(value);
-    this.cargar(value);
+    this.loadInitial(value);
   }
 
-  cargar(id: number): void {
+  loadInitial(id: number): void {
     this.error.set(null);
-    this.loading.set(true);
+    this.pageLoading.set(true);
 
     this.hqService.getById(id).subscribe({
       next: (hq) => this.sedeName.set(hq.name),
       error: () => {},
     });
 
+    forkJoin({
+      categories: this.posCatalog.listCategories(id),
+      catalog: this.posCatalog.listCatalog(id, this.catalogPage(), 20, this.catalogListFilters()),
+    })
+      .pipe(finalize(() => this.pageLoading.set(false)))
+      .subscribe({
+        next: ({ categories, catalog }) => {
+          this.saleCategories.set(categories);
+          this.catalog.set(catalog.items);
+          this.catalogMetadata.set(catalog.metadata);
+        },
+        error: (err: unknown) => this.error.set(parseApiError(err)),
+      });
+  }
+
+  reloadCatalog(): void {
+    const id = this.headquarterId();
+    if (id <= 0) return;
+
+    this.error.set(null);
+    this.catalogLoading.set(true);
+
     this.posCatalog
-      .listCatalog(id, this.catalogPage(), 20, {
-        search: this.catalogSearch(),
-        saleCategory: this.catalogCategory(),
-        available: this.catalogAvailability() === '' ? undefined : this.catalogAvailability() === 'true',
-        stockPolicy: this.catalogStockPolicy() || undefined,
-      })
-      .pipe(finalize(() => this.loading.set(false)))
+      .listCatalog(id, this.catalogPage(), 20, this.catalogListFilters())
+      .pipe(finalize(() => this.catalogLoading.set(false)))
       .subscribe({
         next: (page) => {
           this.catalog.set(page.items);
@@ -136,36 +138,52 @@ export class SedePosPageComponent implements OnInit {
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
+  }
 
-    this.posCatalog.listCategories(id).subscribe({
-      next: (categories) => this.saleCategories.set(categories),
-      error: () => {},
-    });
+  private catalogListFilters(): {
+    search?: string;
+    saleCategory?: string;
+    available?: boolean;
+    stockPolicy?: string;
+  } {
+    const applied = this.catalogSearchApplied().trim();
+    return {
+      search: applied || undefined,
+      saleCategory: this.catalogCategory() || undefined,
+      available:
+        this.catalogAvailability() === '' ? undefined : this.catalogAvailability() === 'true',
+      stockPolicy: this.catalogStockPolicy() || undefined,
+    };
+  }
+
+  applyCatalogSearch(term: string): void {
+    const normalized = term.trim();
+    if (normalized === this.catalogSearchApplied()) {
+      return;
+    }
+    this.catalogSearchApplied.set(normalized);
+    this.catalogSearchDraft.set(normalized);
+    this.catalogPage.set(0);
+    this.reloadCatalog();
   }
 
   previousCatalogPage(): void {
     if (this.catalogMetadata()?.hasPrevious) {
       this.catalogPage.update((page) => page - 1);
-      this.cargar(this.headquarterId());
+      this.reloadCatalog();
     }
   }
 
   nextCatalogPage(): void {
     if (this.catalogMetadata()?.hasNext) {
       this.catalogPage.update((page) => page + 1);
-      this.cargar(this.headquarterId());
+      this.reloadCatalog();
     }
   }
 
   onCatalogFilterChange(): void {
     this.catalogPage.set(0);
-    this.cargar(this.headquarterId());
-  }
-
-  onCatalogSearchChange(value: string): void {
-    this.catalogSearch.set(value);
-    if (this.catalogSearchTimer) clearTimeout(this.catalogSearchTimer);
-    this.catalogSearchTimer = setTimeout(() => this.onCatalogFilterChange(), 300);
+    this.reloadCatalog();
   }
 
   abrirAgregar(): void {
@@ -188,24 +206,24 @@ export class SedePosPageComponent implements OnInit {
   onSurtidoGuardado(message: string): void {
     this.cerrarSurtido();
     this.notice.set(message);
-    this.cargar(this.headquarterId());
+    this.reloadCatalog();
   }
 
   removeCatalogItem(row: HeadquarterPosCatalogItemResponse): void {
-    const name = row.itemName || this.itemName(row.itemId);
+    const name = row.productName || this.productName(row.productId);
     if (
       !confirm(
-        `¿Quitar «${name}» del catálogo POS de esta sede?\n\nDejará de aparecer en el POS tras el próximo sync. El artículo maestro del inventario no se borra.`,
+        `¿Quitar «${name}» del catálogo POS de esta sede?\n\nDejará de aparecer en el POS tras el próximo sync. El producto no se borra.`,
       )
     ) {
       return;
     }
-    this.posCatalog.deleteCatalogItem(this.headquarterId(), row.itemId).subscribe({
+    this.posCatalog.deleteCatalogItem(this.headquarterId(), row.productId).subscribe({
       next: () => {
         this.printNotice.set(
           `«${name}» se quitó de la sede. El POS lo eliminará en el próximo sync.`,
         );
-        this.cargar(this.headquarterId());
+        this.reloadCatalog();
       },
       error: (err: unknown) => this.error.set(parseApiError(err)),
     });
@@ -224,7 +242,7 @@ export class SedePosPageComponent implements OnInit {
     this.categoryError.set(null);
     this.categorySaving.set(true);
     this.posCatalog
-      .createCategory(this.headquarterId(), name, this.activeCategories().length)
+      .createCategory(this.headquarterId(), name)
       .pipe(finalize(() => this.categorySaving.set(false)))
       .subscribe({
         next: () => {
@@ -260,7 +278,7 @@ export class SedePosPageComponent implements OnInit {
     }
     this.categorySaving.set(true);
     this.posCatalog
-      .updateCategory(this.headquarterId(), category.id, name, category.displayOrder)
+      .updateCategory(this.headquarterId(), category.id, name)
       .pipe(finalize(() => this.categorySaving.set(false)))
       .subscribe({
         next: () => {
@@ -288,66 +306,6 @@ export class SedePosPageComponent implements OnInit {
       });
   }
 
-  /** Vertical move in the on-screen grid (not linear list index). */
-  moveCategoryVertical(category: PosSaleCategoryResponse, direction: -1 | 1): void {
-    this.swapCategoriesAt(category, this.categoryIndex(category) + direction * this.categoryGridColumns());
-  }
-
-  /** Horizontal move in the grid; changes order left-to-right on the same row. */
-  moveCategoryHorizontal(category: PosSaleCategoryResponse, direction: -1 | 1): void {
-    const index = this.categoryIndex(category);
-    const cols = this.categoryGridColumns();
-    const row = Math.floor(index / cols);
-    const swapIndex = index + direction;
-    if (Math.floor(swapIndex / cols) !== row) return;
-    this.swapCategoriesAt(category, swapIndex);
-  }
-
-  private swapCategoriesAt(category: PosSaleCategoryResponse, swapIndex: number): void {
-    if (this.categorySaving()) return;
-    const active = [...this.activeCategories()];
-    const index = active.findIndex((item) => item.id === category.id);
-    if (index < 0 || swapIndex < 0 || swapIndex >= active.length) return;
-
-    [active[index], active[swapIndex]] = [active[swapIndex], active[index]];
-
-    const hq = this.headquarterId();
-    this.categorySaving.set(true);
-    forkJoin(
-      active.map((cat, displayOrder) =>
-        this.posCatalog.updateCategory(hq, cat.id, cat.name, displayOrder),
-      ),
-    )
-      .pipe(finalize(() => this.categorySaving.set(false)))
-      .subscribe({
-        next: () => this.reloadCategories(),
-        error: (err: unknown) => this.categoryError.set(parseApiError(err).message),
-      });
-  }
-
-  canMoveCategoryUp(category: PosSaleCategoryResponse): boolean {
-    return this.categoryIndex(category) >= this.categoryGridColumns();
-  }
-
-  canMoveCategoryDown(category: PosSaleCategoryResponse): boolean {
-    const index = this.categoryIndex(category);
-    return index + this.categoryGridColumns() < this.activeCategories().length;
-  }
-
-  canMoveCategoryLeft(category: PosSaleCategoryResponse): boolean {
-    const index = this.categoryIndex(category);
-    const cols = this.categoryGridColumns();
-    return index % cols !== 0;
-  }
-
-  canMoveCategoryRight(category: PosSaleCategoryResponse): boolean {
-    const index = this.categoryIndex(category);
-    const cols = this.categoryGridColumns();
-    const row = Math.floor(index / cols);
-    const next = index + 1;
-    return next < this.activeCategories().length && Math.floor(next / cols) === row;
-  }
-
   setCategoryNameDraft(event: Event): void {
     this.categoryNameDraft.set((event.target as HTMLInputElement).value);
   }
@@ -356,12 +314,12 @@ export class SedePosPageComponent implements OnInit {
     this.editingCategoryName.set((event.target as HTMLInputElement).value);
   }
 
-  itemName(itemId: number): string {
-    return this.catalog().find((row) => row.itemId === itemId)?.itemName || `Ítem #${itemId}`;
+  productName(productId: number): string {
+    return this.catalog().find((row) => row.productId === productId)?.productName || `Producto #${productId}`;
   }
 
-  itemSku(itemId: number): string {
-    return this.catalog().find((row) => row.itemId === itemId)?.itemSku ?? '';
+  productSku(productId: number): string {
+    return this.catalog().find((row) => row.productId === productId)?.productSku ?? '';
   }
 
   printCatalogLabels(): void {
@@ -371,12 +329,7 @@ export class SedePosPageComponent implements OnInit {
     this.printNotice.set(null);
     this.printingLabels.set(true);
 
-    const filters = {
-      search: this.catalogSearch(),
-      saleCategory: this.catalogCategory(),
-      available: this.catalogAvailability() === '' ? undefined : this.catalogAvailability() === 'true',
-      stockPolicy: this.catalogStockPolicy() || undefined,
-    };
+    const filters = this.catalogListFilters();
     const pageSize = 100;
 
     this.posCatalog
@@ -397,8 +350,8 @@ export class SedePosPageComponent implements OnInit {
         next: (rows) => {
           const labels = rows
             .map((row) => ({
-              sku: row.itemSku || '',
-              name: row.itemName || this.itemName(row.itemId),
+              sku: row.productSku || '',
+              name: row.productName || this.productName(row.productId),
               price: row.salePrice,
             }))
             .filter((label) => label.sku);
@@ -423,14 +376,14 @@ export class SedePosPageComponent implements OnInit {
   }
 
   printItemLabel(row: HeadquarterPosCatalogItemResponse): void {
-    const sku = row.itemSku || this.itemSku(row.itemId);
+    const sku = row.productSku || this.productSku(row.productId);
     if (!sku) {
       this.printNotice.set('Este producto no tiene SKU; no se puede imprimir la etiqueta.');
       return;
     }
     this.printNotice.set(null);
     void this.labelPrint.print([
-      { sku, name: row.itemName || this.itemName(row.itemId), price: row.salePrice },
+      { sku, name: row.productName || this.productName(row.productId), price: row.salePrice },
     ]);
   }
 

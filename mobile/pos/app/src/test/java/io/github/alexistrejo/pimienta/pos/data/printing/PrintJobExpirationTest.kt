@@ -62,6 +62,23 @@ class PrintJobExpirationTest {
 
         assertFalse(PrintJobProcessor.shouldExpire(manualReprint, fakeDao, now))
     }
+
+    @Test
+    fun printingAttemptOlderThanTwoMinutesIsReclaimed() {
+        val threeMinutesAgo = now - (3 * 60 * 1000L)
+        assertTrue(PrintJobProcessor.shouldReclaimPrinting(threeMinutesAgo, now))
+    }
+
+    @Test
+    fun recentPrintingAttemptIsNotReclaimed() {
+        val thirtySecondsAgo = now - 30_000L
+        assertFalse(PrintJobProcessor.shouldReclaimPrinting(thirtySecondsAgo, now))
+    }
+
+    @Test
+    fun printingWithoutAttemptTimestampIsReclaimed() {
+        assertTrue(PrintJobProcessor.shouldReclaimPrinting(null, now))
+    }
 }
 
 private open class FakeOperationsDao : OperationsDao {
@@ -119,6 +136,7 @@ private open class FakeOperationsDao : OperationsDao {
     override fun nextPrintJob(): PrintJobEntity? = null
     override fun markPrintJobPrinting(id: String, attemptedAt: Long): Int = 0
     override fun finishPrintJob(id: String, status: String, error: String?) {}
+    override fun reclaimStalePrintingJobs(olderThan: Long, error: String): Int = 0
     override fun inventoryMovementsBetween(from: Long, to: Long): List<io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity> = emptyList()
     override fun recentInventoryMovements(): List<io.github.alexistrejo.pimienta.pos.data.local.entity.InventoryMovementEntity> = emptyList()
     override fun cancellationCountForShift(shiftId: String): Int = 0

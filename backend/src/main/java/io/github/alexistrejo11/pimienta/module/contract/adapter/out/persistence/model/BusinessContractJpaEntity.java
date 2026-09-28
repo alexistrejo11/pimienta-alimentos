@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.contract.adapter.out.persistence.model;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import io.github.alexistrejo11.pimienta.module.contract.core.domain.enums.ContractCategory;
 import io.github.alexistrejo11.pimienta.module.contract.core.domain.enums.ContractTermKind;
 import jakarta.persistence.Column;
@@ -25,7 +26,7 @@ import java.time.LocalDateTime;
       @Index(name = "idx_business_contracts_reference_code", columnList = "reference_code"),
       @Index(name = "idx_business_contracts_deleted_at", columnList = "deleted_at")
     })
-public class BusinessContractJpaEntity {
+public class BusinessContractJpaEntity extends BaseJpaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,18 +84,6 @@ public class BusinessContractJpaEntity {
 
   @Column(name = "last_renewed_at")
   private LocalDateTime lastRenewedAt;
-
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Column(nullable = false)
-  private Long version;
 
   public Long getId() {
     return id;
@@ -238,37 +227,5 @@ public class BusinessContractJpaEntity {
 
   public void setLastRenewedAt(LocalDateTime lastRenewedAt) {
     this.lastRenewedAt = lastRenewedAt;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

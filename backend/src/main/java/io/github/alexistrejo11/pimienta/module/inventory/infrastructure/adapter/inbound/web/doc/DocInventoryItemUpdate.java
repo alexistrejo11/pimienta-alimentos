@@ -29,8 +29,11 @@ import java.lang.annotation.Target;
     description = "Identificador del artículo.",
     example = "1")
 @Operation(
-    summary = "Update inventory item",
-    description = "Actualiza campos del artículo. **404** si no existe. Rate limit: **SENSITIVE_OPERATIONS**.")
+    summary = "Update warehouse item identity",
+    description =
+        "Actualiza nombre, descripción, categoría, unidad y marca de un artículo de bodega."
+            + " **409** `ITEM_LINKED_TO_PRODUCT` si pertenece a un producto (se edita en Productos)."
+            + " **404** si no existe. Rate limit: **SENSITIVE_OPERATIONS**.")
 @RequestBody(
     required = true,
     description = "Cuerpo JSON (**ItemUpdateRequest**).",
@@ -48,6 +51,13 @@ import java.lang.annotation.Target;
 @ApiResponse(
     responseCode = "404",
     description = "No encontrado.",
+    content =
+        @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ApiErrorResponse.class)))
+@ApiResponse(
+    responseCode = "409",
+    description = "El artículo pertenece a un producto.",
     content =
         @Content(
             mediaType = "application/json",

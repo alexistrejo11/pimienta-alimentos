@@ -34,7 +34,7 @@ public final class ContractPersistenceMapper {
         .CreatedAt(entity.getCreatedAt())
         .UpdatedAt(entity.getUpdatedAt())
         .DeletedAt(entity.getDeletedAt())
-        .Version(entity.getVersion() != null ? entity.getVersion() : 1L)
+        .Version(entity.getVersion())
         .reconstruct();
   }
 
@@ -65,7 +65,7 @@ public final class ContractPersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : now());
     e.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt() : now());
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 1L);
+    e.setVersion(domain.getVersion());
     return e;
   }
 

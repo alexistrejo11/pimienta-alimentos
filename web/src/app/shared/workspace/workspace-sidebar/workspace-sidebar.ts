@@ -29,6 +29,8 @@ export interface WorkspaceNavSection {
   readonly label: string;
   readonly items: readonly WorkspaceNavItem[];
   readonly roles?: readonly AppRole[];
+  /** When false, section links stay visible (no accordion). Default true. */
+  readonly collapsible?: boolean;
 }
 
 const OPS = [AppRole.ADMIN, AppRole.DIRECTOR, AppRole.MANAGER, AppRole.EMPLOYEE];
@@ -82,22 +84,48 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
   {
     id: 'overview',
     label: 'Resumen',
+    collapsible: false,
     items: [
       { label: 'Resumen', icon: 'dashboard', route: `${OPS_PATH}/dashboard`, roles: OPS },
     ],
   },
   {
-    id: 'sites',
+    id: 'headquarters',
     label: 'Sedes',
+    collapsible: false,
     items: [
       { label: 'Sedes', icon: 'location_on', route: `${OPS_PATH}/sedes`, roles: OPS },
+    ],
+  },
+  {
+    id: 'suppliers',
+    label: 'Proveedores',
+    collapsible: false,
+    items: [
       { label: 'Proveedores', icon: 'local_shipping', route: `${OPS_PATH}/proveedores`, roles: OPS },
+    ],
+  },
+  {
+    id: 'products',
+    label: 'Productos',
+    collapsible: false,
+    items: [
+      { label: 'Productos', icon: 'restaurant', route: `${OPS_PATH}/productos`, roles: OPS },
+    ],
+  },
+  {
+    id: 'warehouse-items',
+    label: 'Artículos de bodega',
+    collapsible: false,
+    items: [
+      { label: 'Artículos de bodega', icon: 'inventory_2', route: `${OPS_PATH}/bodega`, roles: OPS },
     ],
   },
   {
     id: 'pos',
     label: 'Punto de venta',
     roles: OPS,
+    collapsible: true,
     items: [
       { label: 'Catálogo por sede', icon: 'storefront', route: `${OPS_PATH}/pos/catalogo`, roles: OPS },
       { label: 'Ventas', icon: 'receipt_long', route: `${OPS_PATH}/pos/ventas`, roles: POS_FINANCIAL },
@@ -119,6 +147,7 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
     id: 'inventory',
     label: 'Inventario',
     roles: OPS,
+    collapsible: true,
     items: [
       { label: 'Existencias', icon: 'warehouse', route: `${OPS_PATH}/inventario`, roles: OPS },
       { label: 'Movimientos', icon: 'receipt_long', route: `${OPS_PATH}/inventario/ledger`, roles: OPS },
@@ -126,7 +155,7 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
       // (rutas siguen en app.routes.ts). Una sede activa + inventario en sede aún no maduro.
       // { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: OPS },
       // { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: OPS },
-      { label: 'Artículos maestros', icon: 'inventory_2', route: `${OPS_PATH}/catalogo`, roles: OPS },
+      { label: 'Catálogo de stock', icon: 'category', route: `${OPS_PATH}/catalogo`, roles: OPS },
     ],
   },
 ];
@@ -163,6 +192,18 @@ export class WorkspaceSidebarComponent {
   readonly isAdmin = this.session.isAdmin;
   readonly opsHome = OPS_HOME;
   readonly erpHome = ERP_HOME;
+  /** Routes that prefix a sibling route (e.g. /inventario vs /inventario/ledger) must match exactly. */
+  readonly exactRoutes = computed(() => {
+    const routes = this.catalog()
+      .flatMap((section) => section.items.flatMap((item) => [item, ...(item.children ?? [])]))
+      .map((item) => item.route)
+      .filter((route): route is string => !!route);
+    return new Set([
+      OPS_HOME,
+      ERP_HOME,
+      ...routes.filter((route) => routes.some((other) => other.startsWith(`${route}/`))),
+    ]);
+  });
 
   readonly cerrar = output<void>();
   readonly abrirAsistenciaHoy = output<void>();
@@ -178,7 +219,9 @@ export class WorkspaceSidebarComponent {
       this.currentUrl.set(event.urlAfterRedirects);
     });
     effect(() => {
-      const active = this.navigation().find((section) => this.sectionIsActive(section));
+      const active = this.navigation().find(
+        (section) => this.sectionCollapsible(section) && this.sectionIsActive(section),
+      );
       if (active) {
         this.expandedSections.update((expanded) => {
           const next = new Set(expanded);
@@ -190,6 +233,10 @@ export class WorkspaceSidebarComponent {
         });
       }
     });
+  }
+
+  sectionCollapsible(section: WorkspaceNavSection): boolean {
+    return section.collapsible !== false;
   }
 
   toggleSection(sectionId: string): void {

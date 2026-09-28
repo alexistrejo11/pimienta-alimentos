@@ -71,7 +71,24 @@ export class DashboardPageComponent implements OnInit {
   private pollingStarted = false;
 
   ngOnInit(): void {
-    this.startPolling();
+    void this.session.ensureLoaded().subscribe({
+      next: () => {
+        this.ensureStaffHeadquarter();
+        this.startPolling();
+      },
+      error: () => this.startPolling(),
+    });
+  }
+
+  /** Staff OPS: fija sede activa desde asignación cuando no hay selector en header. */
+  private ensureStaffHeadquarter(): void {
+    if (this.session.isAdmin()) return;
+    if (this.session.activeHeadquarterId() != null) return;
+    const assigned = this.session.assignedHeadquarterIds();
+    if (assigned.length > 0) {
+      this.session.selectHeadquarter(assigned[0]);
+      this.refresh$.next();
+    }
   }
 
   reload(): void {

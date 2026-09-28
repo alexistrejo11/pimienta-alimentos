@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosRole;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -13,14 +14,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "pos_operators")
-public class PosOperatorJpaEntity {
+public class PosOperatorJpaEntity extends BaseJpaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,19 +47,6 @@ public class PosOperatorJpaEntity {
       joinColumns = @JoinColumn(name = "operator_id"))
   @Column(name = "headquarter_id")
   private Set<Long> headquarterIds = new HashSet<>();
-
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Version
-  @Column(nullable = false)
-  private Long version;
 
   public Long getId() {
     return id;
@@ -116,37 +102,5 @@ public class PosOperatorJpaEntity {
 
   public void setHeadquarterIds(Set<Long> headquarterIds) {
     this.headquarterIds = headquarterIds != null ? headquarterIds : new HashSet<>();
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

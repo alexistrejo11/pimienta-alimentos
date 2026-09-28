@@ -61,8 +61,9 @@ import kotlinx.coroutines.flow.Flow
     @Query("SELECT * FROM cash_withdrawal WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun withdrawalsBetween(from: Long, to: Long): List<CashWithdrawalEntity>
     @Query("SELECT * FROM cash_count_attempt WHERE shiftId = :shiftId ORDER BY createdAtEpochMillis DESC") fun cashCounts(shiftId: String): List<CashCountAttemptEntity>
     @Query("SELECT * FROM print_job WHERE status IN ('PENDING', 'FAILED') ORDER BY createdAtEpochMillis DESC") fun pendingPrintJobs(): List<PrintJobEntity>
-    @Query("SELECT * FROM print_job WHERE status IN ('PENDING', 'FAILED') ORDER BY createdAtEpochMillis ASC LIMIT 1") fun nextPrintJob(): PrintJobEntity?
+    @Query("SELECT * FROM print_job WHERE status = 'PENDING' OR (status = 'FAILED' AND IFNULL(lastError, '') != 'UNSUPPORTED') ORDER BY createdAtEpochMillis ASC LIMIT 1") fun nextPrintJob(): PrintJobEntity?
     @Query("UPDATE print_job SET status = 'PRINTING', attemptCount = attemptCount + 1, lastAttemptAtEpochMillis = :attemptedAt, lastError = NULL WHERE id = :id AND status IN ('PENDING', 'FAILED')") fun markPrintJobPrinting(id: String, attemptedAt: Long): Int
+    @Query("UPDATE print_job SET status = 'FAILED', lastError = :error WHERE status = 'PRINTING' AND (lastAttemptAtEpochMillis IS NULL OR lastAttemptAtEpochMillis < :olderThan)") fun reclaimStalePrintingJobs(olderThan: Long, error: String): Int
     @Query("UPDATE print_job SET status = :status, lastError = :error WHERE id = :id") fun finishPrintJob(id: String, status: String, error: String?)
     @Query("SELECT * FROM inventory_movement WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun inventoryMovementsBetween(from: Long, to: Long): List<InventoryMovementEntity>
     @Query("SELECT * FROM inventory_movement ORDER BY createdAtEpochMillis DESC LIMIT 20") fun recentInventoryMovements(): List<InventoryMovementEntity>

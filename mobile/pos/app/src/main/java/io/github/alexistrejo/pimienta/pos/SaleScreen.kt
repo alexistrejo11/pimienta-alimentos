@@ -124,7 +124,7 @@ internal fun Sale(
     }
     LaunchedEffect(products) {
         saleCategories = withContext(Dispatchers.IO) {
-            repository.saleCategoryNames().ifEmpty { products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct() }
+            repository.saleCategoryNames().ifEmpty { sortedCategoryNames(products.map { it.saleCategory }) }
         }
     }
 
@@ -133,7 +133,7 @@ internal fun Sale(
         if (!hideBarcodedProducts || search.isNotBlank()) products else products.filter { !it.hasDistinctBarcode() }
     }
     val categories = remember(products, visibleProductsForCategories, openAmountAllowed) {
-        val base = listOf("Todos") + visibleProductsForCategories.map { it.saleCategory }.filter { it.isNotBlank() }.distinct()
+        val base = listOf("Todos") + sortedCategoryNames(visibleProductsForCategories.map { it.saleCategory })
         if (openAmountAllowed) base + "Monto Abierto" else base
     }
     LaunchedEffect(categories) {

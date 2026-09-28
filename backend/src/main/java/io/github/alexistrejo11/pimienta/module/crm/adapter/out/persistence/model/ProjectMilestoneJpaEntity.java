@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.crm.adapter.out.persistence.model;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import io.github.alexistrejo11.pimienta.module.crm.core.domain.ProjectMilestone;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,7 +13,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
       @Index(name = "idx_crm_project_milestones_project_sort", columnList = "project_id, sort_order"),
       @Index(name = "idx_crm_project_milestones_deleted_at", columnList = "deleted_at")
     })
-public class ProjectMilestoneJpaEntity {
+public class ProjectMilestoneJpaEntity extends BaseJpaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,18 +54,6 @@ public class ProjectMilestoneJpaEntity {
 
   @Column(name = "sort_order", nullable = false)
   private int sortOrder;
-
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Column(nullable = false)
-  private Long version;
 
   public Long getId() {
     return id;
@@ -145,37 +133,5 @@ public class ProjectMilestoneJpaEntity {
 
   public void setSortOrder(int sortOrder) {
     this.sortOrder = sortOrder;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

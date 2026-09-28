@@ -384,21 +384,17 @@ class PosAdminSyncIncidentIntegrationTest {
     String body =
         """
         {
-          "sku": "%s",
           "name": "%s",
-          "description": "IT",
-          "costPrice": 10.00,
-          "category": "CONSUMABLE",
           "unit": "PIECE",
-          "reorderPoint": 0,
-          "reorderQuantity": 0
+          "barcode": "%s",
+          "trackStock": true
         }
         """
-            .formatted(sku, name);
+            .formatted(name, sku);
     MvcResult r =
         mockMvc
             .perform(
-                AccountTestRequests.postJson("/api/v1/inventory/items", body)
+                AccountTestRequests.postJson("/api/v1/products", body)
                     .header("Authorization", "Bearer " + token))
             .andExpect(status().isCreated())
             .andReturn();

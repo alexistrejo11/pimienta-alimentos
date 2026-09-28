@@ -1,18 +1,18 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "pos_sync_incidents")
-public class PosSyncIncidentJpaEntity implements Persistable<UUID> {
+public class PosSyncIncidentJpaEntity extends BaseJpaEntity implements Persistable<UUID> {
 
   @Id private UUID id;
 
@@ -41,19 +41,6 @@ public class PosSyncIncidentJpaEntity implements Persistable<UUID> {
 
   @Column(name = "accept_note", length = 1024)
   private String acceptNote;
-
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Version
-  @Column(nullable = false)
-  private Long version;
 
   @Override
   public UUID getId() {
@@ -135,37 +122,5 @@ public class PosSyncIncidentJpaEntity implements Persistable<UUID> {
 
   public void setAcceptNote(String acceptNote) {
     this.acceptNote = acceptNote;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

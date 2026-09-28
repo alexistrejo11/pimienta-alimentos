@@ -50,7 +50,6 @@ class InventoryPosSaleDeltaTest {
   private static Item sampleItem() {
     Item item = new Item();
     item.setId(10L);
-    item.setSku("SKU-1");
     item.setName("Test");
     item.setCostPrice(BigDecimal.ONE);
     item.setReorderPoint(0);

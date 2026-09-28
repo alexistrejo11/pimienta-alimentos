@@ -54,9 +54,12 @@ class SupplierIntegrationTest {
                 AccountTestRequests.postJsonBearer(
                     "/api/v1/suppliers",
                     manager.token(),
-                    body("Marinela Centro", "Juan Pérez", "+528110000001", "Marinela", hq1)))
+                    body("Juan Pérez", "+528110000001", "Marinela", hq1, true)))
             .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.name").value("Juan Pérez"))
             .andExpect(jsonPath("$.brand").value("Marinela"))
+            .andExpect(jsonPath("$.headquarters[0].headquarterId").value((int) hq1))
+            .andExpect(jsonPath("$.headquarters[0].active").value(true))
             .andReturn();
     long supplierId =
         ((Number) JsonPath.read(created.getResponse().getContentAsString(), "$.id")).longValue();
@@ -73,7 +76,7 @@ class SupplierIntegrationTest {
             AccountTestRequests.postJsonBearer(
                 "/api/v1/suppliers",
                 manager.token(),
-                body("Otro", "Ana", "+528110000002", "Barcel", hq2)))
+                body("Ana", "+528110000002", "Barcel", hq2, true)))
         .andExpect(status().isForbidden());
 
     mockMvc
@@ -101,7 +104,7 @@ class SupplierIntegrationTest {
                 AccountTestRequests.postJsonBearer(
                     "/api/v1/suppliers",
                     director.token(),
-                    body("Proveedor", "Contacto", "+528110000003", "Sabritas", hq)))
+                    body("María López", "+528110000003", "Sabritas", hq, true)))
             .andExpect(status().isCreated())
             .andReturn();
     long id = ((Number) JsonPath.read(created.getResponse().getContentAsString(), "$.id")).longValue();
@@ -110,16 +113,26 @@ class SupplierIntegrationTest {
         .perform(AccountTestRequests.putJsonBearer(
             "/api/v1/suppliers/" + id,
             director.token(),
-            body("Proveedor SA", "Contacto", "+528110000004", "Sabritas", hq)))
+            body("María López", "+528110000004", "Sabritas", hq, false)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.name").value("Proveedor SA"));
+        .andExpect(jsonPath("$.name").value("María López"))
+        .andExpect(jsonPath("$.phone").value("+528110000004"))
+        .andExpect(jsonPath("$.headquarters[0].active").value(false));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/suppliers?headquarterId=" + hq + "&page=0&size=20", director.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value((int) id))
+        .andExpect(jsonPath("$.items[0].headquarters[0].active").value(false));
   }
 
-  private static String body(String name, String contact, String phone, String brand, long hqId) {
+  private static String body(String name, String phone, String brand, long hqId, boolean active) {
     return """
-        {"name":"%s","contactName":"%s","phone":"%s","brand":"%s","headquarterIds":[%d]}
+        {"name":"%s","phone":"%s","brand":"%s","headquarters":[{"headquarterId":%d,"active":%s}]}
         """
-        .formatted(name, contact, phone, brand, hqId);
+        .formatted(name, phone, brand, hqId, active);
   }
 
   private record TokenPair(String token, Long userId) {}

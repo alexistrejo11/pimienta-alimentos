@@ -27,11 +27,21 @@ import java.lang.annotation.Target;
     example = "1")
 @Operation(
     summary = "Delete inventory item",
-    description = "Elimina el artículo maestro (catálogo global). Solo **ROLE_ADMIN**. **204** si ok. Rate limit: **SENSITIVE_OPERATIONS**.")
+    description =
+        "Elimina un artículo de bodega. Solo **ROLE_ADMIN**. **204** si ok. **409**"
+            + " `ITEM_LINKED_TO_PRODUCT` si pertenece a un producto. Rate limit:"
+            + " **SENSITIVE_OPERATIONS**.")
 @ApiResponse(responseCode = "204", description = "Sin contenido.")
 @ApiResponse(
     responseCode = "404",
     description = "No encontrado.",
+    content =
+        @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ApiErrorResponse.class)))
+@ApiResponse(
+    responseCode = "409",
+    description = "El artículo pertenece a un producto.",
     content =
         @Content(
             mediaType = "application/json",

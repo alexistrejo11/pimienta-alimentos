@@ -23,6 +23,7 @@ import type {
   ItemCreateRequest,
   ItemResponse,
   ItemSearchParams,
+  ItemStockSettingsRequest,
   ItemUpdateRequest,
   OpenInventoryCountRequest,
   PurchaseTransactionRequest,
@@ -46,12 +47,10 @@ export class InventoryService {
     let p = new HttpParams()
       .set('page', String(params.page ?? 0))
       .set('size', String(params.size ?? 20));
-    if (params.name) p = p.set('name', params.name);
-    if (params.sku) p = p.set('sku', params.sku);
     if (params.search) p = p.set('search', params.search);
     if (params.category) p = p.set('category', params.category);
     if (params.status) p = p.set('status', params.status);
-    if (params.catalogRole) p = p.set('catalogRole', params.catalogRole);
+    if (params.kind) p = p.set('kind', params.kind);
     if (params.minCost != null) p = p.set('minCost', String(params.minCost));
     if (params.maxCost != null) p = p.set('maxCost', String(params.maxCost));
     return this.http.get<PagedResponse<ItemResponse>>(this.itemsBase, { params: p });
@@ -61,17 +60,16 @@ export class InventoryService {
     return this.http.get<ItemResponse>(`${this.itemsBase}/${id}`);
   }
 
-  lookupItem(q: string): Observable<ItemResponse> {
-    const params = new HttpParams().set('q', q);
-    return this.http.get<ItemResponse>(`${this.itemsBase}/lookup`, { params });
-  }
-
   createItem(body: ItemCreateRequest): Observable<ItemResponse> {
     return this.http.post<ItemResponse>(this.itemsBase, body);
   }
 
   updateItem(id: number, body: ItemUpdateRequest): Observable<ItemResponse> {
     return this.http.put<ItemResponse>(`${this.itemsBase}/${id}`, body);
+  }
+
+  updateStockSettings(id: number, body: ItemStockSettingsRequest): Observable<ItemResponse> {
+    return this.http.put<ItemResponse>(`${this.itemsBase}/${id}/stock-settings`, body);
   }
 
   discontinueItem(id: number): Observable<ItemResponse> {

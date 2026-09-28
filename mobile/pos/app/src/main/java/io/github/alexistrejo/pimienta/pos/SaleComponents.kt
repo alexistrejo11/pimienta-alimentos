@@ -240,7 +240,7 @@ internal fun rememberForceSoftKeyboardInteractionSource(): Pair<MutableInteracti
             keyboardController?.show()
             runCatching {
                 val imm = ContextCompat.getSystemService(context, InputMethodManager::class.java)
-                imm?.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY)
+                imm?.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
             }
             Unit
         }
@@ -507,7 +507,7 @@ internal fun OpenAmountDialog(
     }
 }
 
-// Shows categories grouped in columns of up to 6 items to jump quickly between sections.
+// Shows categories grouped in compact columns of up to 3 items so all sections fit without vertical scrolling.
 @Composable
 internal fun SectionsDialog(
     categories: List<String>,
@@ -515,27 +515,31 @@ internal fun SectionsDialog(
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit
 ) {
-    val chunks = remember(categories) { categories.chunked(6) }
+    val chunks = remember(categories) { categories.chunked(3) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface) {
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.widthIn(max = 840.dp)
+        ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 840.dp)
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text("Secciones del catálogo", style = MaterialTheme.typography.titleLarge)
                 Row(
                     modifier = Modifier
                         .horizontalScroll(rememberScrollState())
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     chunks.forEach { columnCategories ->
                         Column(
-                            modifier = Modifier.width(180.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.width(170.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             columnCategories.forEach { category ->
                                 PosButton(
@@ -545,7 +549,8 @@ internal fun SectionsDialog(
                                         onDismiss()
                                     },
                                     selected = selected == category,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                                 )
                             }
                         }
@@ -855,6 +860,8 @@ internal fun DiscountAuthorization(
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val (amountInteraction, forceAmountKeyboard) = rememberForceSoftKeyboardInteractionSource()
+    val (reasonInteraction, forceReasonKeyboard) = rememberForceSoftKeyboardInteractionSource()
 
     // Uses the same validation for the keypad enter key and the primary action.
     fun authorize() {
@@ -882,8 +889,28 @@ internal fun DiscountAuthorization(
             ) {
                 Text("Descuento / cortesía", style = MaterialTheme.typography.titleLarge)
                 Text("Venta bruta: ${Money.format(gross)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(amount, { amount = it }, label = { Text("Importe fijo en pesos") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceAmountKeyboard() },
+                    interactionSource = amountInteraction,
+                    label = { Text("Importe fijo en pesos") },
+                    singleLine = true,
+                    colors = catalogFieldColors(),
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceReasonKeyboard() },
+                    interactionSource = reasonInteraction,
+                    label = { Text("Motivo obligatorio") },
+                    singleLine = true,
+                    colors = catalogFieldColors(),
+                )
                 val isTraining = repository.mode() == RuntimeMode.SANDBOX
                 managers.forEach { user -> PosButton(user.displayTitle(isTraining), { selected = user }, selected = selected?.id == user.id, modifier = Modifier.fillMaxWidth()) }
                 Text("PIN de Gerente o Administrador", style = MaterialTheme.typography.labelLarge)
@@ -1055,7 +1082,7 @@ internal fun QuantityButton(label: String, click: () -> Unit, enabled: Boolean =
     }
 }
 
-// Collects payment methods and cash inputs, positioned cleanly without redundant top headers.
+// Collects payment methods and cash inputs, positioned cleanly without redundant top headers or vertical scrolling.
 @Composable
 internal fun Checkout(
     modifier: Modifier,
@@ -1072,10 +1099,10 @@ internal fun Checkout(
     val tenderedMoney = Money.fromInput(tendered) ?: 0
 
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.fillMaxSize().padding(10.dp)) {
+        Column(Modifier.fillMaxSize().padding(8.dp)) {
             Column(
-                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Row(
                     modifier = Modifier
@@ -1084,16 +1111,28 @@ internal fun Checkout(
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = MaterialTheme.shapes.extraSmall,
                         )
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text("Total a cobrar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(Money.format(total), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                    Text(Money.format(total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                 }
-                if (!courtesy) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PosButton("Efectivo", { onMethodChanged(PaymentMethod.CASH) }, method == PaymentMethod.CASH, modifier = Modifier.weight(1f))
-                    PosButton("Tarjeta externa", { onMethodChanged(PaymentMethod.EXTERNAL_CARD_MP) }, method == PaymentMethod.EXTERNAL_CARD_MP, modifier = Modifier.weight(1f))
+                if (!courtesy) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    PosButton(
+                        "Efectivo",
+                        { onMethodChanged(PaymentMethod.CASH) },
+                        method == PaymentMethod.CASH,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                    PosButton(
+                        "Tarjeta externa",
+                        { onMethodChanged(PaymentMethod.EXTERNAL_CARD_MP) },
+                        method == PaymentMethod.EXTERNAL_CARD_MP,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    )
                 }
                 if (courtesy) {
                     Text("Cortesía autorizada · no se recibe efectivo ni tarjeta", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1104,15 +1143,22 @@ internal fun Checkout(
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PosButton("Volver", back, enabled = !busy, modifier = Modifier.weight(1f))
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                PosButton(
+                    "Volver",
+                    back,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                )
                 PosButton(
                     if (busy) "Confirmando…" else if (courtesy) "Confirmar cortesía" else "Confirmar cobro",
                     { confirm(if (courtesy) PaymentMethod.CORTESIA else method, if (courtesy) 0 else if (method == PaymentMethod.CASH) tenderedMoney else total) },
                     enabled = !busy && (courtesy || method != PaymentMethod.CASH || tenderedMoney >= total),
                     primary = true,
                     modifier = Modifier.weight(1.5f),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                 )
             }
         }
@@ -1148,17 +1194,17 @@ internal fun CashEntry(modifier: Modifier, value: String, changed: (String) -> U
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Efectivo recibido", style = MaterialTheme.typography.labelLarge)
+            Text("Efectivo recibido", style = MaterialTheme.typography.labelMedium)
             val displayMoney = if (value.isBlank()) Money.format(0) else Money.format(received)
-            Text(displayMoney, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(displayMoney, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
         if (received > total) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(3.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.extraSmall)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -1166,8 +1212,8 @@ internal fun CashEntry(modifier: Modifier, value: String, changed: (String) -> U
                 Text(Money.format(change), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
             }
         }
-        Spacer(Modifier.height(6.dp))
-        Numpad(value, changed, decimal = true, showDisplay = false)
+        Spacer(Modifier.height(4.dp))
+        Numpad(value, changed, decimal = true, showDisplay = false, keyHeight = 36.dp, keySpacing = 4.dp)
     }
 }
 
@@ -1250,7 +1296,7 @@ private fun NumpadDisplay(
     Spacer(Modifier.height(4.dp))
 }
 
-// Provides number-only input without a nested scroll grid so parent screens can scroll the full pad.
+// Provides number-only input without a nested scroll grid so parent screens can render cleanly.
 @Composable
 internal fun Numpad(
     value: String,
@@ -1260,6 +1306,8 @@ internal fun Numpad(
     onSubmit: (() -> Unit)? = null,
     revealValue: Boolean = false,
     showDisplay: Boolean = true,
+    keyHeight: androidx.compose.ui.unit.Dp = 38.dp,
+    keySpacing: androidx.compose.ui.unit.Dp = 5.dp,
 ) {
     val keys = when {
         decimal -> listOf("7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "⌫")
@@ -1272,16 +1320,16 @@ internal fun Numpad(
         }
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(7.dp),
+            verticalArrangement = Arrangement.spacedBy(keySpacing),
         ) {
             keys.chunked(3).forEach { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    horizontalArrangement = Arrangement.spacedBy(keySpacing),
                 ) {
                     row.forEach { key ->
                         if (key.isEmpty()) {
-                            Spacer(modifier = Modifier.weight(1f).height(48.dp))
+                            Spacer(modifier = Modifier.weight(1f).height(keyHeight))
                         } else {
                             PosButton(
                                 key,
@@ -1304,7 +1352,8 @@ internal fun Numpad(
                                     }
                                 },
                                 enabled = key != "Entrar" || (onSubmit != null && value.isNotBlank()),
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier.weight(1f).height(keyHeight),
+                                contentPadding = PaddingValues(0.dp),
                             )
                         }
                     }

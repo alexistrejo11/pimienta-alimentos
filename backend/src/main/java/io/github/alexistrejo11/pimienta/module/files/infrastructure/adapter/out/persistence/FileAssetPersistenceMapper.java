@@ -24,7 +24,7 @@ final class FileAssetPersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : now);
     e.setUpdatedAt(now);
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
     return e;
   }
 

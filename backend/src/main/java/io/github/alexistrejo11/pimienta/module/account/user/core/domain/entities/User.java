@@ -123,7 +123,6 @@ public class User extends BaseDomain<Long> {
     u.createdAt = now;
     u.updatedAt = now;
     u.deletedAt = null;
-    u.version = 0L;
     u.id = null;
     return u;
   }
@@ -150,7 +149,7 @@ public class User extends BaseDomain<Long> {
     u.createdAt = params.createdAt() != null ? params.createdAt() : LocalDateTime.now();
     u.updatedAt = params.updatedAt() != null ? params.updatedAt() : u.createdAt;
     u.deletedAt = params.deletedAt();
-    u.version = params.version() != null ? params.version() : 0L;
+    u.version = params.version();
     return u;
   }
 
@@ -241,6 +240,5 @@ public class User extends BaseDomain<Long> {
 
   private void touch() {
     this.updatedAt = LocalDateTime.now();
-    this.version = this.version != null ? this.version + 1 : 1L;
   }
 }

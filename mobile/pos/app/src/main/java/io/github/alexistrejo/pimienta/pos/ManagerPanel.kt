@@ -70,6 +70,7 @@ import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
 import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseBreakdown
 import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseCalculator
+import io.github.alexistrejo.pimienta.pos.domain.sortedCategoryNames
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -241,7 +242,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
     val scope = rememberCoroutineScope()
     val sandbox = repository.mode() != RuntimeMode.PRODUCTION
     val (searchInteraction, forceSearchKeyboard) = rememberForceSoftKeyboardInteractionSource()
-    val categories = remember(products) { listOf("Todos") + products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct() }
+    val categories = remember(products) { listOf("Todos") + sortedCategoryNames(products.map { it.saleCategory }) }
     val filtered = remember(products, category, search) {
         products.filter { product ->
             val matchesCategory = category == "Todos" || product.saleCategory.equals(category, ignoreCase = true)
@@ -302,7 +303,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
     }
     if (creatingProduct) {
         val createCategories = remember(products) {
-            val distinct = products.map { it.saleCategory }.filter { it.isNotBlank() }.distinct()
+            val distinct = sortedCategoryNames(products.map { it.saleCategory })
             if (distinct.isEmpty()) listOf("General") else distinct
         }
         CreatePosProductDialog(
@@ -643,6 +644,7 @@ private fun ZCloseDialog(
     var attemptId by rememberSaveable(shift.id) { mutableStateOf<String?>(null) }
     var attempt by remember { mutableStateOf<CashCountAttemptEntity?>(null) }
     var rejectionReason by rememberSaveable(shift.id) { mutableStateOf("") }
+    val (rejectionReasonInteraction, forceRejectionReasonKeyboard) = rememberForceSoftKeyboardInteractionSource()
     var message by rememberSaveable(shift.id) { mutableStateOf<String?>(null) }
     var pinRequested by rememberSaveable(shift.id) { mutableStateOf(false) }
     var printSummaryTicket by rememberSaveable { mutableStateOf(true) }
@@ -727,8 +729,12 @@ private fun ZCloseDialog(
                         OutlinedTextField(
                             value = rejectionReason,
                             onValueChange = { rejectionReason = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { if (it.isFocused) forceRejectionReasonKeyboard() },
+                            interactionSource = rejectionReasonInteraction,
                             label = { Text("Motivo si se devuelve a corrección") },
-                            modifier = Modifier.fillMaxWidth()
+                            colors = catalogFieldColors(),
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -860,6 +866,7 @@ private fun WithdrawalsPanel(shift: ShiftEntity, repository: PosRepository, modi
 private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repository: PosRepository, refresh: () -> Unit, modifier: Modifier) {
     var sales by remember(shift.id) { mutableStateOf<List<SaleEntity>>(emptyList()) }
     var query by rememberSaveable { mutableStateOf("") }
+    val (queryInteraction, forceQueryKeyboard) = rememberForceSoftKeyboardInteractionSource()
     var pageSize by rememberSaveable(query) { mutableIntStateOf(10) }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
     var cancelSaleId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -883,10 +890,14 @@ private fun HistoryPanel(shift: ShiftEntity, manager: LocalUserEntity, repositor
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) forceQueryKeyboard() },
+                interactionSource = queryInteraction,
                 label = { Text("Buscar por folio (búsqueda parcial)") },
                 placeholder = { Text("Ej. 0001") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                colors = catalogFieldColors(),
             )
 
             if (filtered.isEmpty()) {
@@ -949,6 +960,7 @@ private fun SaleHistoryRow(sale: SaleEntity, repository: PosRepository, notice: 
 @Composable
 private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repository: PosRepository, onDismiss: () -> Unit, onDone: (String) -> Unit) {
     var reason by rememberSaveable { mutableStateOf("") }
+    val (reasonInteraction, forceReasonKeyboard) = rememberForceSoftKeyboardInteractionSource()
     var pin by rememberSaveable { mutableStateOf("") }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -964,7 +976,17 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
             ) {
                 Text("Cancelar venta en efectivo", style = MaterialTheme.typography.titleLarge)
                 Text("El ticket se conserva como cancelado y se revierte el movimiento de inventario.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(reason, { reason = it }, label = { Text("Motivo obligatorio") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceReasonKeyboard() },
+                    interactionSource = reasonInteraction,
+                    label = { Text("Motivo obligatorio") },
+                    singleLine = true,
+                    colors = catalogFieldColors(),
+                )
                 Text("PIN de ${manager.displayName}", style = MaterialTheme.typography.labelLarge)
                 Numpad(pin, { pin = it }, masked = true)
                 message?.let { Text(it, color = MaterialTheme.colorScheme.error) }

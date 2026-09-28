@@ -12,10 +12,18 @@ import type { InventoryStatus, ItemCategory } from '../../../core/model/inventor
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
 import { HeadquarterSelectComponent } from '../../../shared/ui/headquarter-select/headquarter-select';
+import { ListSearchFieldComponent } from '../../../shared/ui/list-search-field/list-search-field';
 
 @Component({
   selector: 'app-inventario-page',
-  imports: [DecimalPipe, FormsModule, PageHeaderComponent, DataStateComponent, HeadquarterSelectComponent],
+  imports: [
+    DecimalPipe,
+    FormsModule,
+    PageHeaderComponent,
+    DataStateComponent,
+    HeadquarterSelectComponent,
+    ListSearchFieldComponent,
+  ],
   templateUrl: './inventario-page.html',
 })
 export class InventarioPageComponent implements OnInit {
@@ -31,7 +39,8 @@ export class InventarioPageComponent implements OnInit {
   readonly statuses: InventoryStatus[] = ['NORMAL', 'LOW_STOCK', 'OUT_OF_STOCK'];
 
   selectedHeadquarterId: number | null = null;
-  search = '';
+  searchDraft = '';
+  searchApplied = '';
   selectedCategory: ItemCategory | '' = '';
   selectedStatus: InventoryStatus | '' = '';
   minCost: number | undefined;
@@ -74,8 +83,13 @@ export class InventarioPageComponent implements OnInit {
     this.cargarStock();
   }
 
-  onSearch(event: Event): void {
-    this.search = (event.target as HTMLInputElement).value;
+  applySearch(term: string): void {
+    const normalized = term.trim();
+    if (normalized === this.searchApplied) {
+      return;
+    }
+    this.searchApplied = normalized;
+    this.searchDraft = normalized;
     this.page = 0;
     this.cargarStock();
   }
@@ -89,7 +103,7 @@ export class InventarioPageComponent implements OnInit {
     this.loading.set(true);
     this.inventory
       .searchGlobalSummary({
-        search: this.search,
+        search: this.searchApplied,
         headquarterId: hqId ?? undefined,
         page: this.page,
         size: 20,

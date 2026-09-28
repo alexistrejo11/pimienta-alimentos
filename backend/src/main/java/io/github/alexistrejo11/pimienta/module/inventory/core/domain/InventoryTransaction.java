@@ -78,7 +78,6 @@ public class InventoryTransaction extends BaseDomain<Long> {
     this.movements = new ArrayList<>();
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   // ─────────────────────────────────────────────

@@ -37,7 +37,6 @@ public class ProjectMilestone extends BaseDomain<Long> {
     this.billed = false;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {
@@ -51,8 +50,6 @@ public class ProjectMilestone extends BaseDomain<Long> {
   public void softDelete() {
     setDeletedAt(LocalDateTime.now());
     setUpdatedAt(LocalDateTime.now());
-    Long v = getVersion();
-    setVersion(v != null ? v + 1 : 1L);
   }
 
   public boolean isOverdue() {
@@ -226,7 +223,7 @@ public class ProjectMilestone extends BaseDomain<Long> {
       m.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
       m.setUpdatedAt(updatedAt != null ? updatedAt : m.getCreatedAt());
       m.setDeletedAt(deletedAt);
-      m.setVersion(version != null ? version : 0L);
+      m.setVersion(version);
       m.projectId = projectId;
       m.name = name;
       m.description = description;
@@ -254,7 +251,7 @@ public class ProjectMilestone extends BaseDomain<Long> {
       m.setCreatedAt(now);
       m.setUpdatedAt(now);
       m.setDeletedAt(null);
-      m.setVersion(version != null ? version : 0L);
+      m.setVersion(version);
       return m;
     }
   }

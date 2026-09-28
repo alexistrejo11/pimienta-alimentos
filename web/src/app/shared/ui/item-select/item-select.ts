@@ -16,7 +16,7 @@ import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap,
 
 import { InventoryService } from '../../../core/inventory/inventory.service';
 import type { ItemResponse } from '../../../core/model/inventory/inventory.dto';
-import type { CatalogRole, ItemStatus } from '../../../core/model/inventory/inventory.enums';
+import type { ItemStatus } from '../../../core/model/inventory/inventory.enums';
 
 @Component({
   selector: 'app-item-select',
@@ -30,11 +30,10 @@ export class ItemSelectComponent implements OnInit {
   private readonly query$ = new Subject<string>();
 
   readonly label = input('Artículo');
-  readonly placeholder = input('Buscar por SKU, nombre o código…');
+  readonly placeholder = input('Buscar por nombre');
   readonly allowNull = input(true);
   readonly disabled = input(false);
   readonly status = input<ItemStatus | undefined>('ACTIVE');
-  readonly catalogRole = input<CatalogRole | undefined>(undefined);
   /** Inline list expands in document flow (better inside modals with overflow). */
   readonly listLayout = input<'overlay' | 'inline'>('overlay');
 
@@ -83,7 +82,6 @@ export class ItemSelectComponent implements OnInit {
               size: 20,
               search: term.trim() || undefined,
               status: this.status(),
-              catalogRole: this.catalogRole(),
             })
             .pipe(
               catchError(() => of({ items: [] as ItemResponse[] })),
@@ -129,25 +127,13 @@ export class ItemSelectComponent implements OnInit {
     }
     if (event.key === 'Enter') {
       event.preventDefault();
+      const needle = this.query().trim().toLowerCase();
       const exact = this.options().find(
         (item) =>
-          item.sku.toLowerCase() === this.query().trim().toLowerCase() ||
-          (item.barcode?.toLowerCase() ?? '') === this.query().trim().toLowerCase(),
+          item.name.toLowerCase() === needle ||
+          (item.saleSku?.toLowerCase() ?? '') === needle,
       );
-      if (exact) {
-        this.select(exact);
-        return;
-      }
-      const q = this.query().trim();
-      if (!q) return;
-      this.loading.set(true);
-      this.inventory.lookupItem(q).subscribe({
-        next: (item) => {
-          this.loading.set(false);
-          this.select(item);
-        },
-        error: () => this.loading.set(false),
-      });
+      if (exact) this.select(exact);
     }
   }
 
@@ -169,7 +155,7 @@ export class ItemSelectComponent implements OnInit {
   }
 
   protected optionLabel(item: ItemResponse): string {
-    return `${item.sku} · ${item.name}`;
+    return item.saleSku ? `${item.saleSku} · ${item.name}` : item.name;
   }
 
   private syncQueryToSelected(): void {

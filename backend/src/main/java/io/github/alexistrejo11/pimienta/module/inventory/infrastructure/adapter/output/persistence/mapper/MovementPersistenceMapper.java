@@ -42,7 +42,7 @@ public class MovementPersistenceMapper {
     e.setStockAfterMovement(domain.getStockAfterMovement());
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
     return e;
   }
 

@@ -5,12 +5,16 @@ import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
+import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import {
   fieldMessage,
   parseApiError,
   type ParsedApiError,
 } from '../../../../core/http/parse-api-error';
-import type { UpsertSupplierRequest } from '../../../../core/model/supplier/supplier.dto';
+import type {
+  SupplierHeadquarterAssignment,
+  UpsertSupplierRequest,
+} from '../../../../core/model/supplier/supplier.dto';
 import { SupplierService } from '../../../../core/suppliers/supplier.service';
 import { ApiFormErrorComponent } from '../../../../shared/ui/api-form-error/api-form-error';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
@@ -33,18 +37,18 @@ export class ProveedorFormPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly service = inject(SupplierService);
   private readonly session = inject(SessionContextService);
+  private readonly hqLookup = inject(HeadquarterLookupService);
 
   readonly loading = signal(false);
   readonly loadingExisting = signal(false);
   readonly apiError = signal<ParsedApiError | null>(null);
   readonly supplierId = signal<number | null>(null);
-  readonly headquarterIds = signal<number[]>([]);
+  readonly headquarters = signal<SupplierHeadquarterAssignment[]>([]);
 
   readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(512)]],
-    contactName: ['', [Validators.required, Validators.maxLength(512)]],
-    phone: ['', [Validators.required, Validators.maxLength(64)]],
-    brand: ['', [Validators.required, Validators.maxLength(512)]],
+    name: ['', [Validators.required, Validators.maxLength(200)]],
+    phone: ['', [Validators.required, Validators.maxLength(40)]],
+    brand: ['', [Validators.required, Validators.maxLength(120)]],
   });
 
   get isEdit(): boolean {
@@ -52,6 +56,7 @@ export class ProveedorFormPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    void this.hqLookup.ensureLoaded();
     const isEditRoute = this.route.snapshot.url.some((u) => u.path === 'editar');
     const idRaw = isEditRoute ? this.route.snapshot.paramMap.get('id') : null;
 
@@ -69,20 +74,28 @@ export class ProveedorFormPageComponent implements OnInit {
     });
   }
 
+  headquarterIds(): number[] {
+    return this.headquarters().map((row) => row.headquarterId);
+  }
+
+  headquarterLabel(id: number): string {
+    return this.hqLookup.name(id);
+  }
+
   private prefillHeadquartersForCreate(): void {
     if (this.session.isAdmin()) {
       const active = this.session.activeHeadquarterId();
       if (active != null) {
-        this.headquarterIds.set([active]);
+        this.headquarters.set([{ headquarterId: active, active: true }]);
       }
       return;
     }
     const assigned = this.session.assignedHeadquarterIds();
     const active = this.session.activeHeadquarterId();
     if (active != null && assigned.includes(active)) {
-      this.headquarterIds.set([active]);
+      this.headquarters.set([{ headquarterId: active, active: true }]);
     } else if (assigned.length > 0) {
-      this.headquarterIds.set([assigned[0]]);
+      this.headquarters.set([{ headquarterId: assigned[0], active: true }]);
     }
   }
 
@@ -95,11 +108,10 @@ export class ProveedorFormPageComponent implements OnInit {
         next: (supplier) => {
           this.form.patchValue({
             name: supplier.name,
-            contactName: supplier.contactName,
             phone: supplier.phone,
             brand: supplier.brand,
           });
-          this.headquarterIds.set(supplier.headquarterIds);
+          this.headquarters.set(supplier.headquarters.map((row) => ({ ...row })));
           markFormPristine(this.form);
         },
         error: (err: unknown) => this.apiError.set(parseApiError(err)),
@@ -107,13 +119,20 @@ export class ProveedorFormPageComponent implements OnInit {
   }
 
   onHeadquartersChange(ids: number | number[] | null): void {
-    if (Array.isArray(ids)) {
-      this.headquarterIds.set(ids);
-    } else if (ids != null) {
-      this.headquarterIds.set([ids]);
-    } else {
-      this.headquarterIds.set([]);
-    }
+    const nextIds = Array.isArray(ids) ? ids : ids != null ? [ids] : [];
+    const previous = new Map(this.headquarters().map((row) => [row.headquarterId, row.active]));
+    this.headquarters.set(
+      nextIds.map((headquarterId) => ({
+        headquarterId,
+        active: previous.get(headquarterId) ?? true,
+      })),
+    );
+  }
+
+  setSupplyActive(headquarterId: number, active: boolean): void {
+    this.headquarters.update((rows) =>
+      rows.map((row) => (row.headquarterId === headquarterId ? { ...row, active } : row)),
+    );
   }
 
   apiFieldMessage(field: string): string | undefined {
@@ -128,14 +147,14 @@ export class ProveedorFormPageComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const hqIds = this.headquarterIds();
-    if (hqIds.length === 0) {
+    const headquarters = this.headquarters();
+    if (headquarters.length === 0) {
       this.apiError.set({
         message: 'Selecciona al menos una sede.',
         httpStatus: 400,
         traceId: null,
         errorCode: 'VALIDATION',
-        fieldErrors: [{ field: 'headquarterIds', message: 'Requerido.' }],
+        fieldErrors: [{ field: 'headquarters', message: 'Requerido.' }],
         context: null,
         rawBody: null,
       });
@@ -145,10 +164,9 @@ export class ProveedorFormPageComponent implements OnInit {
     const v = this.form.getRawValue();
     const body: UpsertSupplierRequest = {
       name: v.name.trim(),
-      contactName: v.contactName.trim(),
       phone: v.phone.trim(),
       brand: v.brand.trim(),
-      headquarterIds: hqIds,
+      headquarters,
     };
 
     const id = this.supplierId();

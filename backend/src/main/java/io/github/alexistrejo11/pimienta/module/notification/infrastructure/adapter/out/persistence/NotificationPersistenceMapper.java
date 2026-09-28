@@ -38,8 +38,6 @@ final class NotificationPersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : now);
     e.setUpdatedAt(now);
     e.setDeletedAt(null);
-    e.setVersion(0L);
-    e.normalizeVersionIfNull();
     return e;
   }
 

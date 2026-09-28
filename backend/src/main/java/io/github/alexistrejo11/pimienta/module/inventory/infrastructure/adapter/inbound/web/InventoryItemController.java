@@ -9,12 +9,13 @@ import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItemDelete;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItemDiscontinue;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItemGetById;
-import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItemLookup;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItemSearch;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItemStockSettings;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItemUpdate;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc.DocInventoryItems;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.ItemCreateRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.ItemSearchRequest;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.ItemStockSettingsRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.ItemUpdateRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.ItemResponse;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.mapper.InventoryItemWebMapper;
@@ -22,7 +23,6 @@ import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -59,14 +58,6 @@ public class InventoryItemController {
     return PagedResponse.map(page, InventoryItemWebMapper::toResponse);
   }
 
-  @GetMapping("/lookup")
-  @RateLimit(profile = RateLimitProfile.READ_HEAVY)
-  @DocInventoryItemLookup
-  public ItemResponse getItemBySkuOrBarcode(@RequestParam("q") @NotBlank String skuOrBarcode) {
-    Item item = itemManagementUseCases.getBySkuOrBarcode(skuOrBarcode.trim());
-    return InventoryItemWebMapper.toResponse(item);
-  }
-
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocInventoryItemGetById
@@ -88,8 +79,18 @@ public class InventoryItemController {
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
   @DocInventoryItemUpdate
   public ItemResponse updateItem(@PathVariable Long id, @Valid @RequestBody ItemUpdateRequest request) {
-    Item merged = InventoryItemWebMapper.toMergedDomain(id, request);
-    Item updated = itemManagementUseCases.update(id, merged);
+    Item updated =
+        itemManagementUseCases.updateIdentity(id, InventoryItemWebMapper.toCommand(request));
+    return InventoryItemWebMapper.toResponse(updated);
+  }
+
+  @PutMapping("/{id}/stock-settings")
+  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+  @DocInventoryItemStockSettings
+  public ItemResponse updateItemStockSettings(
+      @PathVariable Long id, @Valid @RequestBody ItemStockSettingsRequest request) {
+    Item updated =
+        itemManagementUseCases.updateStockSettings(id, InventoryItemWebMapper.toCommand(request));
     return InventoryItemWebMapper.toResponse(updated);
   }
 

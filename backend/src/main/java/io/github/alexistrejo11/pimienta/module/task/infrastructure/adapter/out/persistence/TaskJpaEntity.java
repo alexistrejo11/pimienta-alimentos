@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.task.infrastructure.adapter.out.persistence;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import io.github.alexistrejo11.pimienta.module.task.core.domain.Task;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,7 +29,7 @@ import org.hibernate.type.SqlTypes;
       @Index(name = "idx_tasks_due_date", columnList = "due_date"),
       @Index(name = "idx_tasks_deleted_at", columnList = "deleted_at")
     })
-public class TaskJpaEntity {
+public class TaskJpaEntity extends BaseJpaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -78,18 +79,6 @@ public class TaskJpaEntity {
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "checklist")
   private List<ChecklistItemJson> checklist = new ArrayList<>();
-
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Column(nullable = false)
-  private Long version;
 
   public Long getId() {
     return id;
@@ -209,37 +198,5 @@ public class TaskJpaEntity {
 
   public void setChecklist(List<ChecklistItemJson> checklist) {
     this.checklist = checklist != null ? checklist : new ArrayList<>();
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

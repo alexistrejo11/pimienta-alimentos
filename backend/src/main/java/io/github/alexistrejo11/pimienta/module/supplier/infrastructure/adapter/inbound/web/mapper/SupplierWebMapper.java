@@ -3,6 +3,9 @@ package io.github.alexistrejo11.pimienta.module.supplier.infrastructure.adapter.
 import io.github.alexistrejo11.pimienta.module.supplier.core.application.command.UpsertSupplierCommand;
 import io.github.alexistrejo11.pimienta.module.supplier.core.application.query.SupplierSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.supplier.core.domain.Supplier;
+import io.github.alexistrejo11.pimienta.module.supplier.core.domain.SupplierHeadquarterLink;
+import io.github.alexistrejo11.pimienta.module.supplier.infrastructure.adapter.inbound.web.dto.SupplierHeadquarterRequest;
+import io.github.alexistrejo11.pimienta.module.supplier.infrastructure.adapter.inbound.web.dto.SupplierHeadquarterResponse;
 import io.github.alexistrejo11.pimienta.module.supplier.infrastructure.adapter.inbound.web.dto.SupplierResponse;
 import io.github.alexistrejo11.pimienta.module.supplier.infrastructure.adapter.inbound.web.dto.SupplierSearchRequest;
 import io.github.alexistrejo11.pimienta.module.supplier.infrastructure.adapter.inbound.web.dto.UpsertSupplierRequest;
@@ -21,18 +24,21 @@ public final class SupplierWebMapper {
   }
 
   public static UpsertSupplierCommand toCommand(UpsertSupplierRequest request) {
-    List<Long> ids = request.headquarterIds() != null ? request.headquarterIds() : List.of();
-    return new UpsertSupplierCommand(
-        request.name(), request.contactName(), request.phone(), request.brand(), ids);
+    List<SupplierHeadquarterRequest> rows =
+        request.headquarters() != null ? request.headquarters() : List.of();
+    List<SupplierHeadquarterLink> links =
+        rows.stream()
+            .map(row -> new SupplierHeadquarterLink(row.headquarterId(), Boolean.TRUE.equals(row.active())))
+            .toList();
+    return new UpsertSupplierCommand(request.name(), request.phone(), request.brand(), links);
   }
 
   public static SupplierResponse toResponse(Supplier supplier) {
+    List<SupplierHeadquarterResponse> headquarters =
+        supplier.getHeadquarters().stream()
+            .map(link -> new SupplierHeadquarterResponse(link.headquarterId(), link.active()))
+            .toList();
     return new SupplierResponse(
-        supplier.getId(),
-        supplier.getName(),
-        supplier.getContactName(),
-        supplier.getPhone(),
-        supplier.getBrand(),
-        supplier.getHeadquarterIds());
+        supplier.getId(), supplier.getName(), supplier.getPhone(), supplier.getBrand(), headquarters);
   }
 }

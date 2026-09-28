@@ -23,12 +23,12 @@ describe('PosCatalogService category administration', () => {
     request.flush([]);
   });
 
-  it('renames and reorders a category through the category endpoint', () => {
-    service.updateCategory(7, 12, 'Bebidas frías', 2).subscribe();
+  it('renames a category through the category endpoint', () => {
+    service.updateCategory(7, 12, 'Bebidas frías').subscribe();
     const request = http.expectOne('http://localhost:8080/api/v1/headquarters/7/pos-categories/12');
     expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toEqual({ name: 'Bebidas frías', displayOrder: 2 });
-    request.flush({ id: 12, headquarterId: 7, name: 'Bebidas frías', displayOrder: 2, active: true });
+    expect(request.request.body).toEqual({ name: 'Bebidas frías' });
+    request.flush({ id: 12, headquarterId: 7, name: 'Bebidas frías', active: true });
   });
 
   it('archives a category through the category endpoint', () => {

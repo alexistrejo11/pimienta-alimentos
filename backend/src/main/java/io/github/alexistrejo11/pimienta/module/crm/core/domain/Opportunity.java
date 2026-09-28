@@ -59,7 +59,6 @@ public class Opportunity extends BaseDomain<Long> {
     this.source = OpportunitySource.OTHER;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {
@@ -74,8 +73,6 @@ public class Opportunity extends BaseDomain<Long> {
   public void softDelete() {
     setDeletedAt(LocalDateTime.now());
     setUpdatedAt(LocalDateTime.now());
-    Long v = getVersion();
-    setVersion(v != null ? v + 1 : 1L);
   }
 
   /** Weighted value by probability (read model). */
@@ -374,7 +371,7 @@ public class Opportunity extends BaseDomain<Long> {
       o.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
       o.setUpdatedAt(updatedAt != null ? updatedAt : o.getCreatedAt());
       o.setDeletedAt(deletedAt);
-      o.setVersion(version != null ? version : 0L);
+      o.setVersion(version);
       o.contactName = contactName;
       o.contactEmail = contactEmail;
       o.contactPhone = contactPhone;
@@ -420,7 +417,7 @@ public class Opportunity extends BaseDomain<Long> {
       o.setCreatedAt(now);
       o.setUpdatedAt(now);
       o.setDeletedAt(null);
-      o.setVersion(version != null ? version : 0L);
+      o.setVersion(version);
       return o;
     }
   }

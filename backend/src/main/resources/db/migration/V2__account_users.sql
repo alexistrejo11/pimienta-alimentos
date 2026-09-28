@@ -8,7 +8,7 @@ CREATE TABLE account_users (
     last_name      VARCHAR(120) NOT NULL,
     gender         VARCHAR(32)  NOT NULL,
     phone          VARCHAR(32)  NOT NULL,
-    date_of_birth  DATE         NOT NULL,
+    date_of_birth  DATE,
     account_status VARCHAR(32)  NOT NULL,
     banned_reason  VARCHAR(500),
     banned_at      TIMESTAMP,
@@ -18,7 +18,7 @@ CREATE TABLE account_users (
     version        BIGINT       NOT NULL DEFAULT 1,
     CONSTRAINT uk_account_users_email UNIQUE (email),
     CONSTRAINT ck_account_users_gender
-        CHECK (gender IN ('MALE', 'FEMALE', 'NON_BINARY', 'OTHER', 'PREFER_NOT_TO_SAY')),
+        CHECK (gender IN ('MALE', 'FEMALE', 'OTHER')),
     CONSTRAINT ck_account_users_account_status
         CHECK (account_status IN ('PENDING_APPROVAL', 'ACTIVE', 'BANNED'))
 );
@@ -34,7 +34,7 @@ CREATE TABLE account_user_roles (
     role    VARCHAR(32) NOT NULL,
     PRIMARY KEY (user_id, role),
     CONSTRAINT ck_account_user_roles_role
-        CHECK (role IN ('ADMIN', 'MANAGER', 'SALES', 'POS_OPERATOR', 'EMPLOYEE', 'SUPPORT', 'USER'))
+        CHECK (role IN ('ADMIN', 'DIRECTOR', 'MANAGER', 'SALES', 'EMPLOYEE', 'SUPPORT', 'USER'))
 );
 
 CREATE INDEX idx_account_user_roles_user_id ON account_user_roles (user_id);

@@ -24,7 +24,6 @@ public class FileAssetRepositoryImpl implements FileAssetRepository {
   public FileAsset save(FileAsset fileAsset) {
     FileAssetJpaEntity entity = FileAssetPersistenceMapper.toJpa(fileAsset);
     entity.fillCreatedAndUpdatedIfNull();
-    entity.normalizeVersionIfNull();
     return FileAssetPersistenceMapper.toDomain(jpaRepository.save(entity));
   }
 

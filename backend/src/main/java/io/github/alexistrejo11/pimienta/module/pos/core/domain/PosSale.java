@@ -36,7 +36,6 @@ public class PosSale extends BaseDomain<UUID> {
     this.occurredAt = Instant.now();
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public UUID getEventId() {
@@ -248,7 +247,7 @@ public class PosSale extends BaseDomain<UUID> {
       s.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       s.updatedAt = updatedAt != null ? updatedAt : s.createdAt;
       s.deletedAt = deletedAt;
-      s.version = version != null ? version : 0L;
+      s.version = version;
       return s;
     }
 

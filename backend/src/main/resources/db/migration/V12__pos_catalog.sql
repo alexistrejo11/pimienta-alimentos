@@ -9,6 +9,7 @@ CREATE TABLE headquarter_pos_settings (
     open_amount_categories       JSONB        NOT NULL DEFAULT '[]'::jsonb,
     allow_open_products          BOOLEAN      NOT NULL DEFAULT FALSE,
     default_negative_stock_limit INTEGER,
+    stockless                    BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at                   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at                   TIMESTAMP,
@@ -20,12 +21,13 @@ CREATE INDEX idx_headquarter_pos_settings_deleted_at
     ON headquarter_pos_settings (deleted_at);
 
 COMMENT ON TABLE headquarter_pos_settings IS 'POS operational config per headquarter (currency, catalog stale thresholds, open-amount categories).';
+COMMENT ON COLUMN headquarter_pos_settings.stockless IS
+    'When true, POS sale and cancel events do not generate inventory movements for this headquarter.';
 
 CREATE TABLE pos_sale_categories (
     id              BIGSERIAL PRIMARY KEY,
     headquarter_id  BIGINT       NOT NULL REFERENCES headquarters (id),
     name            VARCHAR(64)  NOT NULL,
-    display_order   INTEGER      NOT NULL DEFAULT 0,
     active          BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -48,7 +50,7 @@ COMMENT ON TABLE pos_sale_categories IS 'Managed sale categories for the POS cat
 CREATE TABLE headquarter_items (
     id                   BIGSERIAL PRIMARY KEY,
     headquarter_id       BIGINT         NOT NULL REFERENCES headquarters (id),
-    item_id              BIGINT         NOT NULL REFERENCES inventory_items (id),
+    product_id           BIGINT         NOT NULL REFERENCES products (id),
     pos_sale_category_id BIGINT         NOT NULL REFERENCES pos_sale_categories (id),
     sale_category        VARCHAR(64)    NOT NULL,
     sale_price           NUMERIC(19, 6) NOT NULL DEFAULT 0,
@@ -63,16 +65,16 @@ CREATE TABLE headquarter_items (
         CHECK (stock_policy IN ('CONTROLLED', 'NOT_CONTROLLED'))
 );
 
-CREATE UNIQUE INDEX uk_headquarter_items_hq_item_active
-    ON headquarter_items (headquarter_id, item_id)
+CREATE UNIQUE INDEX uk_headquarter_items_hq_product_active
+    ON headquarter_items (headquarter_id, product_id)
     WHERE deleted_at IS NULL;
 
 CREATE INDEX idx_headquarter_items_headquarter_id ON headquarter_items (headquarter_id);
-CREATE INDEX idx_headquarter_items_item_id ON headquarter_items (item_id);
+CREATE INDEX idx_headquarter_items_product_id ON headquarter_items (product_id);
 CREATE INDEX idx_headquarter_items_pos_sale_category_id ON headquarter_items (pos_sale_category_id);
 CREATE INDEX idx_headquarter_items_deleted_at ON headquarter_items (deleted_at);
 
-COMMENT ON TABLE headquarter_items IS 'Effective POS catalog row per headquarter and global inventory item.';
+COMMENT ON TABLE headquarter_items IS 'Effective POS catalog row per headquarter and sale product.';
 COMMENT ON COLUMN headquarter_items.sale_category IS 'Deprecated compatibility value; use pos_sale_category_id.';
 
 CREATE FUNCTION sync_headquarter_item_pos_sale_category()
@@ -97,8 +99,8 @@ BEGIN
     LIMIT 1;
 
     IF category_id IS NULL THEN
-        INSERT INTO pos_sale_categories (headquarter_id, name, display_order)
-        VALUES (NEW.headquarter_id, category_name, 0)
+        INSERT INTO pos_sale_categories (headquarter_id, name)
+        VALUES (NEW.headquarter_id, category_name)
         RETURNING id INTO category_id;
     END IF;
 

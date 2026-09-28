@@ -39,7 +39,7 @@ final class TaskPersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : now());
     e.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt() : now());
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
     return e;
   }
 
@@ -74,7 +74,7 @@ final class TaskPersistenceMapper {
         .withCreatedAt(e.getCreatedAt())
         .withUpdatedAt(e.getUpdatedAt())
         .withDeletedAt(e.getDeletedAt())
-        .withVersion(e.getVersion() != null ? e.getVersion() : 0L)
+        .withVersion(e.getVersion())
         .reconstruct();
   }
 

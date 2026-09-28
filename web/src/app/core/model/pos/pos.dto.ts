@@ -1,26 +1,20 @@
 import type { PosDeviceStatus, PosRole, StockPolicy } from './pos.enums';
-import type { ItemCategory, ItemUnit } from '../inventory/inventory.enums';
-import type { ItemResponse } from '../inventory/inventory.dto';
+import type { ItemUnit } from '../inventory/inventory.enums';
+import type { ProductResponse } from '../product/product.dto';
 
 export interface PosSaleCategoryResponse {
   id: number;
   headquarterId: number;
   name: string;
-  displayOrder: number;
   active: boolean;
 }
 
 export interface CreatePosProductRequest {
   name: string;
   description?: string;
-  costPrice: number;
-  salePrice: number;
-  category?: ItemCategory;
-  unit: ItemUnit;
-  brand?: string;
   barcode?: string;
-  reorderPoint: number;
-  reorderQuantity: number;
+  unit?: ItemUnit;
+  salePrice: number;
   posSaleCategoryId: number;
   available?: boolean;
   stockPolicy?: StockPolicy;
@@ -32,9 +26,8 @@ export interface CreatedPosProductResponse {
   sku: string;
   name: string;
   barcode: string | null;
-  category: ItemCategory;
   unit: ItemUnit;
-  costPrice: number;
+  trackStock: boolean;
   salePrice: number;
   headquarterId: number;
   posSaleCategoryId: number;
@@ -69,14 +62,14 @@ export interface PosSettingsRequest {
   stockless?: boolean;
 }
 
-/** GET/PUT /api/v1/headquarters/{id}/pos-catalog/{itemId} */
+/** GET/PUT /api/v1/headquarters/{id}/pos-catalog/{productId} */
 export interface HeadquarterPosCatalogItemResponse {
   id: number;
   headquarterId: number;
-  itemId: number;
-  itemName: string;
-  itemSku: string;
-  itemBarcode: string | null;
+  productId: number;
+  productName: string;
+  productSku: string;
+  productBarcode: string | null;
   saleCategory: string;
   salePrice: number;
   available: boolean;
@@ -95,7 +88,7 @@ export interface HeadquarterPosCatalogItemRequest {
   negativeStockLimit?: number | null;
 }
 
-export type PosCatalogCandidateResponse = ItemResponse;
+export type PosCatalogCandidateResponse = ProductResponse;
 
 /** GET /api/v1/pos/admin/devices */
 export interface PosDeviceAdminResponse {

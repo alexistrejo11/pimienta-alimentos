@@ -12,7 +12,7 @@ public class PosSaleCategoryRepositoryImpl implements PosSaleCategoryRepository 
   private final PosSaleCategorySpringDataRepository repository;
   public PosSaleCategoryRepositoryImpl(PosSaleCategorySpringDataRepository repository) { this.repository = repository; }
   public List<PosSaleCategory> findByHeadquarterId(long id, boolean includeInactive) {
-    var rows = includeInactive ? repository.findByHeadquarterIdAndDeletedAtIsNullOrderByDisplayOrderAscNameAsc(id) : repository.findByHeadquarterIdAndDeletedAtIsNullAndActiveTrueOrderByDisplayOrderAscNameAsc(id);
+    var rows = includeInactive ? repository.findByHeadquarterIdAndDeletedAtIsNullOrderByNameAsc(id) : repository.findByHeadquarterIdAndDeletedAtIsNullAndActiveTrueOrderByNameAsc(id);
     return rows.stream().map(PosSaleCategoryPersistenceMapper::toDomain).toList();
   }
   public Optional<PosSaleCategory> findById(long hq, long id) { return repository.findByIdAndHeadquarterIdAndDeletedAtIsNull(id, hq).map(PosSaleCategoryPersistenceMapper::toDomain); }

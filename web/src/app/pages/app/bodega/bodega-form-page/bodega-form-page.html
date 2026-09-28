@@ -1,0 +1,100 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <app-page-header
+    [title]="isEdit() ? 'Editar artículo de bodega' : 'Nuevo artículo de bodega'"
+    subtitle="Qué es el artículo. Costo, reorden y estado se configuran en el catálogo de stock."
+    backLink="/app/ops/bodega"
+    backLabel="Artículos de bodega"
+  />
+
+  @if (loadingExisting()) {
+    <p class="text-sm text-on-surface-variant">Cargando artículo…</p>
+  } @else if (linkedProductId(); as productId) {
+    <div class="flex max-w-2xl flex-col gap-3 rounded-xl ui-panel p-4 text-sm">
+      <p class="text-on-surface">
+        Este artículo pertenece a un producto. Su nombre, unidad y descripción se editan desde Productos.
+      </p>
+      <a
+        [routerLink]="['/app/ops/productos', productId, 'editar']"
+        class="inline-flex min-h-11 w-fit items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+      >
+        Ir al producto
+      </a>
+    </div>
+  } @else {
+    @if (apiError(); as err) {
+      <div
+        role="alert"
+        class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
+      >
+        {{ err.message }}
+      </div>
+    }
+
+    <form class="flex max-w-2xl flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium text-on-surface">Nombre</span>
+        <input
+          class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          formControlName="name"
+        />
+      </label>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium text-on-surface">Categoría</span>
+          <select
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            formControlName="category"
+          >
+            @for (c of categories; track c) {
+              <option [value]="c">{{ itemCategoryLabel(c) }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium text-on-surface">Unidad</span>
+          <select
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            formControlName="unit"
+          >
+            @for (u of units; track u) {
+              <option [value]="u">{{ itemUnitLabel(u) }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium text-on-surface">Marca</span>
+          <input
+            class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            formControlName="brand"
+          />
+        </label>
+      </div>
+
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium text-on-surface">Descripción</span>
+        <textarea
+          class="min-h-11 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          rows="2"
+          formControlName="description"
+        ></textarea>
+      </label>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button
+          type="submit"
+          class="min-h-11 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-60"
+          [disabled]="loading()"
+        >
+          {{ loading() ? 'Guardando…' : 'Guardar' }}
+        </button>
+        <a
+          routerLink="/app/ops/bodega"
+          class="inline-flex min-h-11 items-center rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold"
+        >
+          Cancelar
+        </a>
+      </div>
+    </form>
+  }
+</div>

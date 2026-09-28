@@ -69,7 +69,7 @@ app.get('/runtime-config.js', (_req, res) => {
     .send(
       `window.__PIMIENTA_CONFIG__=${JSON.stringify({
         apiBaseUrl,
-        release: process.env['WEB_RELEASE']?.trim() || '2.2.0',
+        release: process.env['WEB_RELEASE']?.trim() || '2.2.11',
       })};`,
     );
 });

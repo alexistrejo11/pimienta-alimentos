@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -11,9 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import jakarta.persistence.Version;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +20,7 @@ import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "pos_sales")
-public class PosSaleJpaEntity implements Persistable<UUID> {
+public class PosSaleJpaEntity extends BaseJpaEntity implements Persistable<UUID> {
 
   @Id
   @Column(name = "sale_id")
@@ -74,19 +73,6 @@ public class PosSaleJpaEntity implements Persistable<UUID> {
        cascade = {CascadeType.PERSIST, CascadeType.MERGE},
       fetch = FetchType.LAZY)
   private List<PosSalePaymentJpaEntity> payments = new ArrayList<>();
-
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Version
-  @Column(nullable = false)
-  private Long version;
 
   @Override
   public UUID getId() {
@@ -212,37 +198,5 @@ public class PosSaleJpaEntity implements Persistable<UUID> {
 
   public void setPayments(List<PosSalePaymentJpaEntity> payments) {
     this.payments = payments;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

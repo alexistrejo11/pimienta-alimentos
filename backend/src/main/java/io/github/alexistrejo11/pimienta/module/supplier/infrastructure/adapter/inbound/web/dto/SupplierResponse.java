@@ -6,8 +6,7 @@ import java.util.List;
 @Schema(name = "SupplierResponse")
 public record SupplierResponse(
     long id,
-    String name,
-    String contactName,
-    String phone,
-    String brand,
-    List<Long> headquarterIds) {}
+    @Schema(description = "Person who supplies the brand.", example = "Juan Pérez") String name,
+    @Schema(description = "Phone number.", example = "+528112345678") String phone,
+    @Schema(description = "Brand this person supplies.", example = "Marinela") String brand,
+    List<SupplierHeadquarterResponse> headquarters) {}

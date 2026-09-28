@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -312,6 +313,20 @@ public class GlobalExceptionHandler {
             ApiErrorResponse.of(
                 ErrorCode.FORBIDDEN,
                 clientErrorMessages.resolve(ErrorCode.FORBIDDEN),
+                traceId,
+                null));
+  }
+
+  @ExceptionHandler(OptimisticLockingFailureException.class)
+  public ResponseEntity<ApiErrorResponse> handleOptimisticLock(
+      OptimisticLockingFailureException ex, HttpServletRequest request) {
+    String traceId = traceId(request);
+    log.warn("Concurrent modification traceId={} message={}", traceId, ex.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(
+            ApiErrorResponse.of(
+                ErrorCode.CONFLICT,
+                clientErrorMessages.resolve(ErrorCode.CONFLICT),
                 traceId,
                 null));
   }

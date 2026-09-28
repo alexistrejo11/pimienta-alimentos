@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     [title]="isEdit ? 'Editar proveedor' : 'Nuevo proveedor'"
-    subtitle="Contacto de surtido y sedes que atiende"
+    subtitle="Persona que surte una marca en las sedes"
     backLink="/app/ops/proveedores"
     backLabel="Proveedores"
   />
@@ -19,7 +19,7 @@
             <label
               class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
               for="supplier-name"
-              >Negocio</label
+              >Nombre</label
             >
             <input
               id="supplier-name"
@@ -31,26 +31,6 @@
               <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
             }
             @if (apiFieldMessage('name'); as m) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
-            }
-          </div>
-
-          <div class="space-y-1.5">
-            <label
-              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
-              for="supplier-contact"
-              >Contacto</label
-            >
-            <input
-              id="supplier-contact"
-              formControlName="contactName"
-              type="text"
-              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-            />
-            @if (form.controls.contactName.touched && form.controls.contactName.hasError('required')) {
-              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
-            }
-            @if (apiFieldMessage('contactName'); as m) {
               <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
             }
           </div>
@@ -75,11 +55,11 @@
             }
           </div>
 
-          <div class="sm:col-span-2 space-y-1.5">
+          <div class="space-y-1.5">
             <label
               class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
               for="supplier-brand"
-              >Marca padre</label
+              >Marca</label
             >
             <input
               id="supplier-brand"
@@ -105,8 +85,27 @@
           [value]="headquarterIds()"
           (valueChange)="onHeadquartersChange($event)"
         />
-        @if (apiFieldMessage('headquarterIds'); as m) {
+        @if (apiFieldMessage('headquarters'); as m) {
           <p class="mt-2 text-xs text-[var(--color-error)]">{{ m }}</p>
+        }
+
+        @if (headquarters().length > 0) {
+          <ul class="mt-4 divide-y divide-outline-variant/15">
+            @for (row of headquarters(); track row.headquarterId) {
+              <li class="flex items-center justify-between gap-3 py-3">
+                <span class="text-sm font-medium text-on-surface">{{ headquarterLabel(row.headquarterId) }}</span>
+                <label class="inline-flex items-center gap-2 text-sm text-on-surface">
+                  <input
+                    type="checkbox"
+                    class="size-4 accent-primary"
+                    [checked]="row.active"
+                    (change)="setSupplyActive(row.headquarterId, $any($event.target).checked)"
+                  />
+                  Surte ahora
+                </label>
+              </li>
+            }
+          </ul>
         }
       </section>
 

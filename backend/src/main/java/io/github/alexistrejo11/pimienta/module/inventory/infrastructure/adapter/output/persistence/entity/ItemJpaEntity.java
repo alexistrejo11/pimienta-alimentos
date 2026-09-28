@@ -1,9 +1,9 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemStatus;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemUnit;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.CatalogRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,24 +14,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(
     name = "inventory_items",
     indexes = {
-      @Index(name = "idx_inventory_items_barcode", columnList = "barcode"),
       @Index(name = "idx_inventory_items_status", columnList = "status"),
       @Index(name = "idx_inventory_items_deleted_at", columnList = "deleted_at")
     })
-public class ItemJpaEntity {
+public class ItemJpaEntity extends BaseJpaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-
-  @Column(nullable = false, unique = true, length = 64)
-  private String sku;
 
   @Column(nullable = false, length = 300)
   private String name;
@@ -50,9 +46,6 @@ public class ItemJpaEntity {
   @Column(length = 120)
   private String brand;
 
-  @Column(length = 64)
-  private String barcode;
-
   @Column(name = "cost_price", nullable = false, precision = 19, scale = 6)
   private BigDecimal costPrice;
 
@@ -66,21 +59,13 @@ public class ItemJpaEntity {
   @Column(nullable = false, length = 32)
   private ItemStatus status;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "catalog_role", nullable = false, length = 32)
-  private CatalogRole catalogRole;
+  @Formula(
+      "(select p.id from products p where p.inventory_item_id = id and p.deleted_at is null)")
+  private Long productId;
 
-  @Column(name = "created_at", nullable = false)
-  private LocalDateTime createdAt;
-
-  @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
-  @Column(nullable = false)
-  private Long version;
+  @Formula(
+      "(select p.sku from products p where p.inventory_item_id = id and p.deleted_at is null)")
+  private String saleSku;
 
   public Long getId() {
     return id;
@@ -88,14 +73,6 @@ public class ItemJpaEntity {
 
   public void setId(Long id) {
     this.id = id;
-  }
-
-  public String getSku() {
-    return sku;
-  }
-
-  public void setSku(String sku) {
-    this.sku = sku;
   }
 
   public String getName() {
@@ -138,14 +115,6 @@ public class ItemJpaEntity {
     this.brand = brand;
   }
 
-  public String getBarcode() {
-    return barcode;
-  }
-
-  public void setBarcode(String barcode) {
-    this.barcode = barcode;
-  }
-
   public BigDecimal getCostPrice() {
     return costPrice;
   }
@@ -178,38 +147,11 @@ public class ItemJpaEntity {
     this.status = status;
   }
 
-  public CatalogRole getCatalogRole() { return catalogRole; }
-  public void setCatalogRole(CatalogRole catalogRole) { this.catalogRole = catalogRole; }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
+  public Long getProductId() {
+    return productId;
   }
 
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
+  public String getSaleSku() {
+    return saleSku;
   }
 }

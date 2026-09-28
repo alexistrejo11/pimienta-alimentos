@@ -91,7 +91,7 @@ public class SupplierController {
   public SupplierResponse create(
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @Valid @RequestBody UpsertSupplierRequest request) {
-    requireWriteHeadquarters(principal, request.headquarterIds());
+    requireWriteHeadquarters(principal, headquarterIds(request));
     return SupplierWebMapper.toResponse(
         supplierUseCases.create(SupplierWebMapper.toCommand(request)));
   }
@@ -105,7 +105,7 @@ public class SupplierController {
       @Valid @RequestBody UpsertSupplierRequest request) {
     Supplier existing = supplierUseCases.getById(id);
     requireSupplierAccess(principal, existing);
-    requireWriteHeadquarters(principal, request.headquarterIds());
+    requireWriteHeadquarters(principal, headquarterIds(request));
     return SupplierWebMapper.toResponse(
         supplierUseCases.update(id, SupplierWebMapper.toCommand(request)));
   }
@@ -134,6 +134,13 @@ public class SupplierController {
           Map.of("supplierId", supplier.getId()),
           "supplier access denied userId=" + principal.userId());
     }
+  }
+
+  private static List<Long> headquarterIds(UpsertSupplierRequest request) {
+    if (request.headquarters() == null) {
+      return List.of();
+    }
+    return request.headquarters().stream().map(row -> row.headquarterId()).toList();
   }
 
   private void requireWriteHeadquarters(JwtAuthenticationContext principal, List<Long> headquarterIds) {

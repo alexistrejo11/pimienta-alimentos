@@ -5,7 +5,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquart
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.out.persistence.jpa.HeadquarterItemJpaEntity;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.out.persistence.jpa.HeadquarterItemJpaRepository;
-import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.ItemJpaEntity;
+import io.github.alexistrejo11.pimienta.module.product.infrastructure.adapter.outbound.persistence.entity.ProductJpaEntity;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.PosChangeLogService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -38,9 +38,9 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
   }
 
   @Override
-  public Optional<HeadquarterItem> findByHeadquarterIdAndItemId(long headquarterId, long itemId) {
+  public Optional<HeadquarterItem> findByHeadquarterIdAndProductId(long headquarterId, long productId) {
     return jpaRepository
-        .findByHeadquarterIdAndItemIdAndDeletedAtIsNull(headquarterId, itemId)
+        .findByHeadquarterIdAndProductIdAndDeletedAtIsNull(headquarterId, productId)
         .map(HeadquarterItemPersistenceMapper::toDomain);
   }
 
@@ -65,10 +65,10 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
 
     CriteriaQuery<HeadquarterItemJpaEntity> cq = cb.createQuery(HeadquarterItemJpaEntity.class);
     Root<HeadquarterItemJpaEntity> catalog = cq.from(HeadquarterItemJpaEntity.class);
-    Root<ItemJpaEntity> item = cq.from(ItemJpaEntity.class);
+    Root<ProductJpaEntity> product = cq.from(ProductJpaEntity.class);
     cq.select(catalog)
-        .where(predicates(cb, catalog, item, headquarterId, searchTerm, category, available, stockPolicy))
-        .orderBy(cb.asc(cb.lower(item.get("name"))), cb.asc(catalog.get("id")));
+        .where(predicates(cb, catalog, product, headquarterId, searchTerm, category, available, stockPolicy))
+        .orderBy(cb.asc(cb.lower(product.get("name"))), cb.asc(catalog.get("id")));
     List<HeadquarterItemJpaEntity> rows =
         entityManager
             .createQuery(cq)
@@ -78,7 +78,7 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
 
     CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
     Root<HeadquarterItemJpaEntity> countCatalog = countQuery.from(HeadquarterItemJpaEntity.class);
-    Root<ItemJpaEntity> countItem = countQuery.from(ItemJpaEntity.class);
+    Root<ProductJpaEntity> countItem = countQuery.from(ProductJpaEntity.class);
     countQuery
         .select(cb.count(countCatalog))
         .where(
@@ -101,7 +101,7 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
   private static Predicate[] predicates(
       CriteriaBuilder cb,
       Root<HeadquarterItemJpaEntity> catalog,
-      Root<ItemJpaEntity> item,
+      Root<ProductJpaEntity> item,
       long headquarterId,
       String search,
       String saleCategory,
@@ -110,7 +110,7 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
     List<Predicate> parts = new ArrayList<>();
     parts.add(cb.equal(catalog.get("headquarterId"), headquarterId));
     parts.add(cb.isNull(catalog.get("deletedAt")));
-    parts.add(cb.equal(catalog.get("itemId"), item.get("id")));
+    parts.add(cb.equal(catalog.get("productId"), item.get("id")));
     if (search != null) {
       String term = "%" + search.toLowerCase() + "%";
       parts.add(
@@ -145,10 +145,16 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
   }
 
   @Override
-  public List<HeadquarterItem> findAllByItemId(long itemId) {
-    return jpaRepository.findByItemIdAndDeletedAtIsNull(itemId).stream()
+  public List<HeadquarterItem> findAllByProductId(long productId) {
+    return jpaRepository.findByProductIdAndDeletedAtIsNull(productId).stream()
         .map(HeadquarterItemPersistenceMapper::toDomain)
         .toList();
+  }
+
+  @Override
+  public boolean existsControlledByProductId(long productId) {
+    return jpaRepository.existsByProductIdAndStockPolicyAndDeletedAtIsNull(
+        productId, HeadquarterItem.StockPolicy.CONTROLLED);
   }
 
   @Override

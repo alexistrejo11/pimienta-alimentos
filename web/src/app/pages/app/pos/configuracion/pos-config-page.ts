@@ -38,6 +38,7 @@ export class PosConfigPageComponent implements OnInit {
   readonly error = signal<ParsedApiError | null>(null);
   readonly settings = signal<PosSettingsResponse | null>(null);
   readonly saleCategories = signal<PosSaleCategoryResponse[]>([]);
+  readonly isAdmin = this.session.isAdmin;
 
   readonly settingsForm = this.fb.nonNullable.group({
     currency: ['MXN', Validators.required],
@@ -54,10 +55,22 @@ export class PosConfigPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const id = Number(this.session.activeHeadquarterId() ?? 0);
-    this.headquarterId.set(id);
-    if (id > 0) this.cargar(id);
-    else this.loading.set(false);
+    void this.session.ensureLoaded().subscribe({
+      next: () => {
+        let id = Number(this.session.activeHeadquarterId() ?? 0);
+        if (id <= 0 && !this.session.isAdmin()) {
+          const assigned = this.session.assignedHeadquarterIds();
+          if (assigned.length > 0) {
+            id = assigned[0];
+            this.session.selectHeadquarter(id);
+          }
+        }
+        this.headquarterId.set(id);
+        if (id > 0) this.cargar(id);
+        else this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
   }
 
   onHeadquarterChange(value: number | number[] | null): void {
@@ -149,7 +162,7 @@ export class PosConfigPageComponent implements OnInit {
   }
 
   activeCategories(): PosSaleCategoryResponse[] {
-    return this.saleCategories().filter((category) => category.active).sort((a, b) => a.displayOrder - b.displayOrder);
+    return this.saleCategories().filter((category) => category.active).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
   }
 
   toggleCategory(name: string, event: Event): void {

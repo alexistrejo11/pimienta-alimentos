@@ -31,7 +31,6 @@ public class Employee extends BaseDomain<Long> {
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
     this.deletedAt = null;
-    this.version = 1L;
   }
 
   // ─── Status Transitions ───
@@ -127,7 +126,6 @@ public class Employee extends BaseDomain<Long> {
 
   public void touch() {
     this.updatedAt = LocalDateTime.now();
-    this.version = this.version != null ? this.version + 1 : 1L;
   }
 
   // Safe getters
@@ -243,7 +241,7 @@ public class Employee extends BaseDomain<Long> {
     }
 
     public SafeBuilder withVersion(Long version) {
-      this.version = version != null ? version : 1L;
+      this.version = version;
       return this;
     }
 

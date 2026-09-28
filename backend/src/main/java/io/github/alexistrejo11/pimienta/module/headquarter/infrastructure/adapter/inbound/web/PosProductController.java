@@ -11,23 +11,65 @@ import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapte
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import jakarta.validation.Valid;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(BASE + "/headquarters/{id}/pos-products")
 @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
 public class PosProductController {
+
   private final PosProductManagementUseCases useCases;
   private final HeadquarterAccessService access;
-  public PosProductController(PosProductManagementUseCases useCases, HeadquarterAccessService access) { this.useCases = useCases; this.access = access; }
+
+  public PosProductController(
+      PosProductManagementUseCases useCases, HeadquarterAccessService access) {
+    this.useCases = useCases;
+    this.access = access;
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  public CreatedPosProductResponse create(@AuthenticationPrincipal JwtAuthenticationContext p, @PathVariable Long id, @Valid @RequestBody CreatePosProductRequest r) {
-    access.requireHeadquarterAccess(p, id);
-    var result = useCases.create(id, new CreatePosProductCommand(r.name(), r.description(), r.costPrice(), r.salePrice(), r.category(), r.unit(), r.brand(), r.barcode(), r.reorderPoint(), r.reorderQuantity(), r.posSaleCategoryId(), r.available(), r.stockPolicy(), r.negativeStockLimit()));
-    var item = result.item(); var row = result.catalog();
-    return new CreatedPosProductResponse(item.getId(), item.getSku(), item.getName(), item.getBarcode(), item.getCategory(), item.getUnit(), item.getCostPrice(), row.getSalePrice(), row.getHeadquarterId(), row.getPosSaleCategoryId(), row.getSaleCategory(), row.isAvailable(), row.getStockPolicy());
+  public CreatedPosProductResponse create(
+      @AuthenticationPrincipal JwtAuthenticationContext principal,
+      @PathVariable Long id,
+      @Valid @RequestBody CreatePosProductRequest request) {
+    access.requireHeadquarterAccess(principal, id);
+
+    var result =
+        useCases.create(
+            id,
+            new CreatePosProductCommand(
+                request.name(),
+                request.description(),
+                request.barcode(),
+                request.unit(),
+                request.salePrice(),
+                request.posSaleCategoryId(),
+                request.available(),
+                request.stockPolicy(),
+                request.negativeStockLimit()));
+
+    var product = result.product();
+    var row = result.catalog();
+    return new CreatedPosProductResponse(
+        product.getId(),
+        product.getSku(),
+        product.getName(),
+        product.getBarcode(),
+        product.getUnit(),
+        product.isTrackStock(),
+        row.getSalePrice(),
+        row.getHeadquarterId(),
+        row.getPosSaleCategoryId(),
+        row.getSaleCategory(),
+        row.isAvailable(),
+        row.getStockPolicy());
   }
 }

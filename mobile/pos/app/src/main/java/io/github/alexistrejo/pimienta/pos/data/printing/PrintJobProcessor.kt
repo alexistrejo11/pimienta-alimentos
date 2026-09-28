@@ -12,35 +12,58 @@ import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
 import io.github.alexistrejo.pimienta.pos.hardware.spanishPaymentLabel
 import java.time.Instant
 
+// One step of a print drain. RetryLater stops the pass so a dead radio is not opened again immediately.
+enum class PrintDrain { IDLE, DONE, RETRY_LATER }
+
 // Processes one durable print job without changing the sale or payment records.
 class PrintJobProcessor(
     private val database: PosDatabase,
     private val printer: TicketPrinter,
     private val encoder: EscPosEncoder = EscPosEncoder(printer.profile),
 ) {
-    // Claims and processes the oldest pending job, returning whether work existed.
-    suspend fun processNext(now: Long = System.currentTimeMillis()): Boolean {
+    // Claims and processes the oldest retryable job. A link failure ends this drain; the next enqueue retries it once.
+    suspend fun processNext(now: Long = System.currentTimeMillis()): PrintDrain {
         val dao = database.operationsDao()
-        val job = dao.nextPrintJob() ?: return false
+        dao.reclaimStalePrintingJobs(now - STALE_PRINTING_MAX_AGE_MILLIS, "STALE_PRINTING")
+        val job = dao.nextPrintJob() ?: return PrintDrain.IDLE
 
         // Automatic print jobs older than 30 minutes (or from closed shifts) expire automatically to avoid wasting paper.
         if (shouldExpire(job, dao, now)) {
             dao.finishPrintJob(job.id, "EXPIRED", "EXPIRED_STALE_JOB")
-            return true
+            return PrintDrain.DONE
         }
 
-        if (dao.markPrintJobPrinting(job.id, now) == 0) return true
+        if (dao.markPrintJobPrinting(job.id, now) == 0) return PrintDrain.DONE
         val result = runCatching { print(job) }.getOrElse { PrintResult.Failed(PrintFailure.TRANSPORT_ERROR) }
-        when (result) {
-            PrintResult.Printed -> dao.finishPrintJob(job.id, "PRINTED", null)
-            is PrintResult.Failed -> dao.finishPrintJob(job.id, "FAILED", result.reason.name)
+        return when (result) {
+            PrintResult.Printed -> {
+                dao.finishPrintJob(job.id, "PRINTED", null)
+                PrintDrain.DONE
+            }
+            is PrintResult.Failed -> {
+                dao.finishPrintJob(job.id, "FAILED", result.reason.name)
+                // A bad document must not block later tickets. A dead link must not be retried in this same pass.
+                if (result.reason == PrintFailure.UNSUPPORTED) PrintDrain.DONE else PrintDrain.RETRY_LATER
+            }
         }
-        return true
     }
 
     companion object {
         // Automatic print jobs older than 30 minutes expire automatically to avoid paper waste when reconnecting.
         const val STALE_PRINT_JOB_MAX_AGE_MILLIS = 30 * 60 * 1000L // 30 minutes
+
+        // PRINTING jobs older than this are treated as crashed workers and returned to the retry queue.
+        const val STALE_PRINTING_MAX_AGE_MILLIS = 2 * 60 * 1000L // 2 minutes
+
+        // True when a PRINTING row was left behind by a killed process.
+        internal fun shouldReclaimPrinting(
+            lastAttemptAtEpochMillis: Long?,
+            now: Long,
+            maxAgeMillis: Long = STALE_PRINTING_MAX_AGE_MILLIS,
+        ): Boolean {
+            val attemptedAt = lastAttemptAtEpochMillis ?: return true
+            return now - attemptedAt > maxAgeMillis
+        }
 
         // Determines if an automatic ticket job is stale and should be expired without printing.
         internal fun shouldExpire(

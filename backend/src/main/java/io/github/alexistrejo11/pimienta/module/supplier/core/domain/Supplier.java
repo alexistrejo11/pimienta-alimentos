@@ -8,28 +8,21 @@ import java.util.List;
 public class Supplier extends BaseDomain<Long> {
 
   private String name;
-  private String contactName;
   private String phone;
   private String brand;
-  private List<Long> headquarterIds = new ArrayList<>();
+  private List<SupplierHeadquarterLink> headquarters = new ArrayList<>();
 
   private Supplier() {
     this.id = 0L;
     this.name = "";
-    this.contactName = "";
     this.phone = "";
     this.brand = "";
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public String getName() {
     return name != null ? name : "";
-  }
-
-  public String getContactName() {
-    return contactName != null ? contactName : "";
   }
 
   public String getPhone() {
@@ -40,16 +33,16 @@ public class Supplier extends BaseDomain<Long> {
     return brand != null ? brand : "";
   }
 
+  public List<SupplierHeadquarterLink> getHeadquarters() {
+    return headquarters != null ? List.copyOf(headquarters) : List.of();
+  }
+
   public List<Long> getHeadquarterIds() {
-    return headquarterIds != null ? List.copyOf(headquarterIds) : List.of();
+    return getHeadquarters().stream().map(SupplierHeadquarterLink::headquarterId).toList();
   }
 
   public void setName(String name) {
     this.name = name != null ? name.strip() : "";
-  }
-
-  public void setContactName(String contactName) {
-    this.contactName = contactName != null ? contactName.strip() : "";
   }
 
   public void setPhone(String phone) {
@@ -60,9 +53,9 @@ public class Supplier extends BaseDomain<Long> {
     this.brand = brand != null ? brand.strip() : "";
   }
 
-  public void setHeadquarterIds(List<Long> headquarterIds) {
-    this.headquarterIds =
-        headquarterIds != null ? new ArrayList<>(headquarterIds) : new ArrayList<>();
+  public void setHeadquarters(List<SupplierHeadquarterLink> headquarters) {
+    this.headquarters =
+        headquarters != null ? new ArrayList<>(headquarters) : new ArrayList<>();
   }
 
   public void touch() {
@@ -81,10 +74,9 @@ public class Supplier extends BaseDomain<Long> {
   public static final class SafeBuilder {
     private Long id;
     private String name;
-    private String contactName;
     private String phone;
     private String brand;
-    private List<Long> headquarterIds;
+    private List<SupplierHeadquarterLink> headquarters;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
@@ -100,11 +92,6 @@ public class Supplier extends BaseDomain<Long> {
       return this;
     }
 
-    public SafeBuilder withContactName(String contactName) {
-      this.contactName = contactName;
-      return this;
-    }
-
     public SafeBuilder withPhone(String phone) {
       this.phone = phone;
       return this;
@@ -115,8 +102,8 @@ public class Supplier extends BaseDomain<Long> {
       return this;
     }
 
-    public SafeBuilder withHeadquarterIds(List<Long> headquarterIds) {
-      this.headquarterIds = headquarterIds;
+    public SafeBuilder withHeadquarters(List<SupplierHeadquarterLink> headquarters) {
+      this.headquarters = headquarters;
       return this;
     }
 
@@ -143,14 +130,11 @@ public class Supplier extends BaseDomain<Long> {
     public Supplier register() {
       Supplier s = new Supplier();
       s.name = name != null ? name.strip() : "";
-      s.contactName = contactName != null ? contactName.strip() : "";
       s.phone = phone != null ? phone.strip() : "";
       s.brand = brand != null ? brand.strip() : "";
-      s.headquarterIds =
-          headquarterIds != null ? new ArrayList<>(headquarterIds) : new ArrayList<>();
+      s.headquarters = headquarters != null ? new ArrayList<>(headquarters) : new ArrayList<>();
       s.createdAt = LocalDateTime.now();
       s.updatedAt = s.createdAt;
-      s.version = 0L;
       return s;
     }
 
@@ -158,15 +142,13 @@ public class Supplier extends BaseDomain<Long> {
       Supplier s = new Supplier();
       s.id = id != null ? id : 0L;
       s.name = name;
-      s.contactName = contactName;
       s.phone = phone;
       s.brand = brand;
-      s.headquarterIds =
-          headquarterIds != null ? new ArrayList<>(headquarterIds) : new ArrayList<>();
+      s.headquarters = headquarters != null ? new ArrayList<>(headquarters) : new ArrayList<>();
       s.createdAt = createdAt;
       s.updatedAt = updatedAt;
       s.deletedAt = deletedAt;
-      s.version = version != null ? version : 0L;
+      s.version = version;
       return s;
     }
   }

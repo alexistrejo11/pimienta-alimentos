@@ -35,8 +35,6 @@ public class EmployeeWorkScheduleRepositoryImpl implements EmployeeWorkScheduleR
     EmployeeWorkScheduleJson json = EmployeeWorkSchedulePersistenceMapper.toJson(schedule);
     entity.setWorkSchedule(json);
     entity.setUpdatedAt(LocalDateTime.now());
-    Long version = entity.getVersion();
-    entity.setVersion(version != null ? version + 1L : 1L);
     jpaRepository.save(entity);
   }
 

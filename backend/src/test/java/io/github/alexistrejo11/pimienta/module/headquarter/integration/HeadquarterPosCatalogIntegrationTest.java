@@ -164,7 +164,7 @@ class HeadquarterPosCatalogIntegrationTest {
                 "/api/v1/headquarters/" + hqId + "/pos-catalog/" + itemId, token, catalogBody))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.headquarterId").value(hqId))
-        .andExpect(jsonPath("$.itemId").value(itemId))
+        .andExpect(jsonPath("$.productId").value(itemId))
         .andExpect(jsonPath("$.saleCategory").value("BEVERAGE"))
         .andExpect(jsonPath("$.salePrice").value(25.50))
         .andExpect(jsonPath("$.stockPolicy").value("CONTROLLED"));
@@ -182,7 +182,7 @@ class HeadquarterPosCatalogIntegrationTest {
                 "/api/v1/headquarters/" + hqId + "/pos-catalog?page=0&size=20", token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items", hasSize(1)))
-        .andExpect(jsonPath("$.items[0].itemId").value(itemId));
+        .andExpect(jsonPath("$.items[0].productId").value(itemId));
 
     mockMvc
         .perform(
@@ -190,15 +190,15 @@ class HeadquarterPosCatalogIntegrationTest {
                 "/api/v1/headquarters/" + hqId + "/pos-catalog?page=0&size=20&search=SKU", token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items", hasSize(1)))
-        .andExpect(jsonPath("$.items[0].itemId").value(itemId));
+        .andExpect(jsonPath("$.items[0].productId").value(itemId));
   }
 
   @Test
   void posCatalog_candidates_returnsOnlySellableUnassignedItems() throws Exception {
     String token = obtainAccessToken();
     long hqId = createHeadquarter(token, "CANDIDATE-HQ-" + UUID.randomUUID());
-    long candidateId = createItem(token, "SKU-CANDIDATE-" + UUID.randomUUID(), "Candidate", "POS_SELLABLE");
-    createItem(token, "SKU-INVENTORY-" + UUID.randomUUID(), "Inventory only");
+    long candidateId = createItem(token, "SKU-CANDIDATE-" + UUID.randomUUID(), "Candidate");
+    createWarehouseItem(token, "Plancha");
 
     mockMvc
         .perform(AccountTestRequests.getBearer(
@@ -206,7 +206,8 @@ class HeadquarterPosCatalogIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].id").value(candidateId))
-        .andExpect(jsonPath("$[0].catalogRole").value("POS_SELLABLE"));
+        .andExpect(jsonPath("$[0].name").value("Candidate"))
+        .andExpect(jsonPath("$[0].trackStock").value(true));
 
     String catalogBody = """
         {"saleCategory":"BEVERAGE","salePrice":25.50,"available":true,"stockPolicy":"CONTROLLED"}
@@ -223,24 +224,42 @@ class HeadquarterPosCatalogIntegrationTest {
   }
 
   @Test
-  void itemBarcode_duplicate_returns409() throws Exception {
+  void posCatalog_controlledWithoutStock_returns409() throws Exception {
+    String token = obtainAccessToken();
+    long hqId = createHeadquarter(token, "NO-STOCK-" + UUID.randomUUID());
+    long productId = createProduct(token, "Chapata", null, false);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-catalog/" + productId,
+                token,
+                """
+                {"saleCategory":"BEVERAGE","salePrice":18.00,"available":true,"stockPolicy":"CONTROLLED"}
+                """))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.errorCode").value("PRODUCT_STOCK_REQUIRED"));
+  }
+
+  @Test
+  void productBarcode_duplicate_returns409() throws Exception {
     String token = obtainAccessToken();
     String barcode = "BC-" + UUID.randomUUID();
 
     mockMvc
         .perform(
             AccountTestRequests.postJson(
-                    "/api/v1/inventory/items", itemJson("SKU-A-" + UUID.randomUUID(), "A", barcode))
+                    "/api/v1/products", productJson("A", barcode, false))
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isCreated());
 
     mockMvc
         .perform(
             AccountTestRequests.postJson(
-                    "/api/v1/inventory/items", itemJson("SKU-B-" + UUID.randomUUID(), "B", barcode))
+                    "/api/v1/products", productJson("B", barcode, false))
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.errorCode").value("ITEM_BARCODE_ALREADY_EXISTS"));
+        .andExpect(jsonPath("$.errorCode").value("PRODUCT_BARCODE_ALREADY_EXISTS"));
   }
 
   private long createHeadquarter(String token, String name) throws Exception {
@@ -260,42 +279,57 @@ class HeadquarterPosCatalogIntegrationTest {
   }
 
   private long createItem(String token, String sku, String name) throws Exception {
-    return createItem(token, sku, name, null);
+    return createProduct(token, name, sku, true);
   }
 
-  private long createItem(String token, String sku, String name, String catalogRole) throws Exception {
+  private long createProduct(String token, String name, String barcode, boolean trackStock)
+      throws Exception {
     MvcResult r =
         mockMvc
             .perform(
-                AccountTestRequests.postJson("/api/v1/inventory/items", itemJson(sku, name, null, catalogRole))
+                AccountTestRequests.postJson(
+                        "/api/v1/products", productJson(name, barcode, trackStock))
                     .header("Authorization", "Bearer " + token))
             .andExpect(status().isCreated())
             .andReturn();
     return extractLongId(r.getResponse().getContentAsString(), "$.id");
   }
 
-  private static String itemJson(String sku, String name, String barcode) {
-    return itemJson(sku, name, barcode, null);
-  }
-
-  private static String itemJson(String sku, String name, String barcode, String catalogRole) {
-    String barcodeField =
-        barcode == null ? "" : ", \"barcode\": \"%s\"".formatted(barcode.replace("\"", "\\\""));
-    String roleField = catalogRole == null ? "" : ", \"catalogRole\": \"%s\"".formatted(catalogRole);
-    return """
+  private long createWarehouseItem(String token, String name) throws Exception {
+    String body =
+        """
         {
-          "sku": "%s",
           "name": "%s",
-          "description": "IT",
           "costPrice": 10.00,
-          "category": "CONSUMABLE",
+          "category": "MACHINE",
           "unit": "PIECE",
           "reorderPoint": 0,
           "reorderQuantity": 0
-          %s%s
         }
         """
-        .formatted(sku, name, barcodeField, roleField);
+            .formatted(name);
+    MvcResult r =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson("/api/v1/inventory/items", body)
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    return extractLongId(r.getResponse().getContentAsString(), "$.id");
+  }
+
+  private static String productJson(String name, String barcode, boolean trackStock) {
+    String barcodeField =
+        barcode == null ? "" : ", \"barcode\": \"%s\"".formatted(barcode.replace("\"", "\\\""));
+    return """
+        {
+          "name": "%s",
+          "unit": "PIECE",
+          "trackStock": %s
+          %s
+        }
+        """
+        .formatted(name, trackStock, barcodeField);
   }
 
   private static long extractLongId(String json, String path) {

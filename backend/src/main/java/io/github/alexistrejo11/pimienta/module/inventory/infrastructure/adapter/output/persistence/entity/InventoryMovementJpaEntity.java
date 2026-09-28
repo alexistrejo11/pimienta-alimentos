@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity;
 
+import io.github.alexistrejo11.pimienta.shared.jpa.VersionedJpaEntity;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.InventoryMovementType;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.MovementDirection;
 import jakarta.persistence.Column;
@@ -27,7 +28,7 @@ import java.time.LocalDateTime;
           columnList = "destination_location_id"),
       @Index(name = "idx_inventory_movements_created_at", columnList = "created_at")
     })
-public class InventoryMovementJpaEntity {
+public class InventoryMovementJpaEntity extends VersionedJpaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -76,9 +77,6 @@ public class InventoryMovementJpaEntity {
 
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
-
-  @Column(nullable = false)
-  private Long version;
 
   public Long getId() {
     return id;
@@ -198,13 +196,5 @@ public class InventoryMovementJpaEntity {
 
   public void setUpdatedAt(LocalDateTime updatedAt) {
     this.updatedAt = updatedAt;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
   }
 }

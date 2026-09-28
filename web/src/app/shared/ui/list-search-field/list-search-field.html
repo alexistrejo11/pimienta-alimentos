@@ -1,0 +1,24 @@
+<label class="flex min-w-0 flex-1 flex-col gap-1 text-sm sm:flex-row sm:items-end sm:gap-2">
+  @if (label()) {
+    <span class="shrink-0 font-semibold text-on-surface-variant sm:pb-2">{{ label() }}</span>
+  }
+  <span class="flex min-w-0 flex-1 gap-2">
+    <input
+      class="min-w-0 flex-1 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+      type="search"
+      [placeholder]="placeholder()"
+      [disabled]="disabled()"
+      [(ngModel)]="draft"
+      (keydown.enter)="onEnter($event)"
+      [ngModelOptions]="{ standalone: true }"
+    />
+    <button
+      type="button"
+      class="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary disabled:opacity-60"
+      [disabled]="disabled()"
+      (click)="apply()"
+    >
+      {{ buttonLabel() }}
+    </button>
+  </span>
+</label>

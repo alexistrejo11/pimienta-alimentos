@@ -71,7 +71,6 @@ public class Project extends BaseDomain<Long> {
     this.type = ProjectType.OTHER;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {
@@ -85,8 +84,6 @@ public class Project extends BaseDomain<Long> {
   public void softDelete() {
     setDeletedAt(LocalDateTime.now());
     setUpdatedAt(LocalDateTime.now());
-    Long v = getVersion();
-    setVersion(v != null ? v + 1 : 1L);
   }
 
   public BigDecimal getGrossMargin() {
@@ -439,7 +436,7 @@ public class Project extends BaseDomain<Long> {
       project.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
       project.setUpdatedAt(updatedAt != null ? updatedAt : project.getCreatedAt());
       project.setDeletedAt(deletedAt);
-      project.setVersion(version != null ? version : 0L);
+      project.setVersion(version);
       project.clientId = clientId;
       project.originOpportunityId = originOpportunityId;
       project.projectCode = projectCode;
@@ -486,7 +483,7 @@ public class Project extends BaseDomain<Long> {
       project.setCreatedAt(now);
       project.setUpdatedAt(now);
       project.setDeletedAt(null);
-      project.setVersion(version != null ? version : 0L);
+      project.setVersion(version);
       return project;
     }
   }

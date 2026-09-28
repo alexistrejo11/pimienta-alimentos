@@ -107,14 +107,20 @@ class InventoryIntegrationTest {
   }
 
   @Test
-  void items_create_blankSku_generatesInternalSku() throws Exception {
+  void products_create_assignsSku() throws Exception {
     String token = obtainAccessToken();
     mockMvc
         .perform(
-            AccountTestRequests.postJson("/api/v1/inventory/items", minimalItemCreateJson("   ", "Name"))
+            AccountTestRequests.postJson(
+                    "/api/v1/products",
+                    """
+                    {"name":"Chapata","unit":"PIECE","trackStock":false}
+                    """)
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.sku").value(org.hamcrest.Matchers.startsWith("CAF-")));
+        .andExpect(jsonPath("$.sku").value(org.hamcrest.Matchers.startsWith("CAF-")))
+        .andExpect(jsonPath("$.trackStock").value(false))
+        .andExpect(jsonPath("$.inventoryItemId").value(org.hamcrest.Matchers.nullValue()));
   }
 
   @Test
@@ -149,33 +155,211 @@ class InventoryIntegrationTest {
   }
 
   @Test
-  void items_lookup_missingQueryParam_returns400() throws Exception {
+  void products_lookup_missingQueryParam_returns400() throws Exception {
     String token = obtainAccessToken();
     mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/lookup", token))
+        .perform(AccountTestRequests.getBearer("/api/v1/products/lookup", token))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("MISSING_PARAMETER"));
   }
 
   @Test
-  void items_duplicateSku_returns409() throws Exception {
+  void products_duplicateBarcode_returns409() throws Exception {
     String token = obtainAccessToken();
-    String suffix = UUID.randomUUID().toString().substring(0, 8);
-    String sku = "IT-DUP-" + suffix;
-    String body = minimalItemCreateJson(sku, "First " + suffix);
+    String barcode = "7500" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    String body =
+        """
+        {"name":"Boing","unit":"PIECE","barcode":"%s","trackStock":true}
+        """
+            .formatted(barcode);
 
     mockMvc
         .perform(
-            AccountTestRequests.postJson("/api/v1/inventory/items", body)
+            AccountTestRequests.postJson("/api/v1/products", body)
                 .header("Authorization", "Bearer " + token))
-        .andExpect(status().isCreated());
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.inventoryItemId").isNumber());
 
     mockMvc
         .perform(
-            AccountTestRequests.postJson("/api/v1/inventory/items", body)
+            AccountTestRequests.postJson("/api/v1/products", body)
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.errorCode").value("ITEM_SKU_ALREADY_EXISTS"));
+        .andExpect(jsonPath("$.errorCode").value("PRODUCT_BARCODE_ALREADY_EXISTS"));
+  }
+
+  @Test
+  void productItem_isReadOnlyIdentity_butAcceptsStockSettings() throws Exception {
+    String token = obtainAccessToken();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    MvcResult productRes =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/products",
+                        """
+                        {"name":"Boing %s","unit":"PIECE","trackStock":true}
+                        """
+                            .formatted(suffix))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String productJson = productRes.getResponse().getContentAsString();
+    long productId = extractLongId(productJson, "$.id");
+    long itemId = extractLongId(productJson, "$.inventoryItemId");
+    String sku = JsonPath.read(productJson, "$.sku");
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/" + itemId, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.kind").value("PRODUCT"))
+        .andExpect(jsonPath("$.productId").value(productId))
+        .andExpect(jsonPath("$.saleSku").value(sku));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/inventory/items/" + itemId,
+                token,
+                """
+                {"name":"Otro","category":"CONSUMABLE","unit":"PIECE"}
+                """))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.errorCode").value("ITEM_LINKED_TO_PRODUCT"));
+
+    mockMvc
+        .perform(AccountTestRequests.deleteBearer("/api/v1/inventory/items/" + itemId, token))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.errorCode").value("ITEM_LINKED_TO_PRODUCT"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/inventory/items/" + itemId + "/stock-settings",
+                token,
+                """
+                {"costPrice": 8.25, "reorderPoint": 6, "reorderQuantity": 24, "status": "ACTIVE"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Boing " + suffix))
+        .andExpect(jsonPath("$.costPrice").value(8.25))
+        .andExpect(jsonPath("$.reorderPoint").value(6))
+        .andExpect(jsonPath("$.kind").value("PRODUCT"));
+  }
+
+  @Test
+  void items_search_filtersByKind() throws Exception {
+    String token = obtainAccessToken();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String term = "Kind" + suffix;
+    long warehouseId = createItem(token, "SKU-" + suffix, term + " caja de pan");
+    MvcResult productRes =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/products",
+                        """
+                        {"name":"%s boing","unit":"PIECE","trackStock":true}
+                        """
+                            .formatted(term))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    long productItemId =
+        extractLongId(productRes.getResponse().getContentAsString(), "$.inventoryItemId");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/inventory/items?search=" + term + "&kind=WAREHOUSE", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(1))
+        .andExpect(jsonPath("$.items[0].id").value(warehouseId))
+        .andExpect(jsonPath("$.items[0].kind").value("WAREHOUSE"))
+        .andExpect(jsonPath("$.items[0].productId").value(org.hamcrest.Matchers.nullValue()));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/inventory/items?search=" + term + "&kind=PRODUCT", token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(1))
+        .andExpect(jsonPath("$.items[0].id").value(productItemId))
+        .andExpect(jsonPath("$.items[0].kind").value("PRODUCT"));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items?search=" + term, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(2));
+  }
+
+  @Test
+  void product_turnOffStock_archivesItem_andRejectsWhenStockOnHand() throws Exception {
+    String token = obtainAccessToken();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    long locId = createWarehouseLocation(token, "WH-UNL-" + suffix, "Unlink WH " + suffix);
+
+    long emptyProductId = createStockedProduct(token, "Vacio " + suffix);
+    long emptyItemId = productInventoryItemId(token, emptyProductId);
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/products/" + emptyProductId,
+                token,
+                productUpdateJson("Vacio " + suffix, false)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.trackStock").value(false));
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/" + emptyItemId, token))
+        .andExpect(status().isNotFound());
+
+    long stockedProductId = createStockedProduct(token, "Lleno " + suffix);
+    long stockedItemId = productInventoryItemId(token, stockedProductId);
+    createInitialStock(token, stockedItemId, locId, 3);
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/products/" + stockedProductId,
+                token,
+                productUpdateJson("Lleno " + suffix, false)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.errorCode").value("ITEM_HAS_STOCK"));
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/" + stockedItemId, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.kind").value("PRODUCT"));
+  }
+
+  private long createStockedProduct(String token, String name) throws Exception {
+    MvcResult res =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/products",
+                        """
+                        {"name":"%s","unit":"PIECE","trackStock":true}
+                        """
+                            .formatted(name))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andReturn();
+    return extractLongId(res.getResponse().getContentAsString(), "$.id");
+  }
+
+  private long productInventoryItemId(String token, long productId) throws Exception {
+    MvcResult res =
+        mockMvc
+            .perform(AccountTestRequests.getBearer("/api/v1/products/" + productId, token))
+            .andExpect(status().isOk())
+            .andReturn();
+    return extractLongId(res.getResponse().getContentAsString(), "$.inventoryItemId");
+  }
+
+  private static String productUpdateJson(String name, boolean trackStock) {
+    return """
+        {"name":"%s","unit":"PIECE","status":"ACTIVE","trackStock":%s}
+        """
+        .formatted(name, trackStock);
   }
 
   @Test
@@ -416,14 +600,13 @@ class InventoryIntegrationTest {
                 AccountTestRequests.postJson("/api/v1/inventory/items", itemBody)
                     .header("Authorization", "Bearer " + token))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.sku").value(sku))
+            .andExpect(jsonPath("$.name").value("Flow item " + suffix))
             .andReturn();
     long itemId = extractLongId(itemRes.getResponse().getContentAsString(), "$.id");
 
     mockMvc
-        .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/lookup?q=" + sku, token))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(itemId));
+        .perform(AccountTestRequests.getBearer("/api/v1/products/lookup?q=" + sku, token))
+        .andExpect(status().isNotFound());
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/inventory/items?search=Flow&page=0&size=20", token))
@@ -449,30 +632,38 @@ class InventoryIntegrationTest {
     String updateItem =
         """
             {
-              "sku": "%s",
               "name": "Flow item updated",
               "description": "d",
-              "costPrice": 11.50,
               "category": "RAW_MATERIAL",
-              "unit": "PIECE",
-              "reorderPoint": 2,
-              "reorderQuantity": 10,
-              "status": "ACTIVE",
-              "catalogRole": "POS_SELLABLE"
+              "unit": "PIECE"
             }
-            """
-            .formatted(sku);
+            """;
     mockMvc
         .perform(
             AccountTestRequests.putJsonBearer("/api/v1/inventory/items/" + itemId, token, updateItem))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("Flow item updated"))
-        .andExpect(jsonPath("$.catalogRole").value("POS_SELLABLE"));
+        .andExpect(jsonPath("$.category").value("RAW_MATERIAL"))
+        .andExpect(jsonPath("$.kind").value("WAREHOUSE"));
+
+    String stockSettings =
+        """
+            {"costPrice": 11.50, "reorderPoint": 2, "reorderQuantity": 10, "status": "ACTIVE"}
+            """;
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/inventory/items/" + itemId + "/stock-settings", token, stockSettings))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Flow item updated"))
+        .andExpect(jsonPath("$.costPrice").value(11.5))
+        .andExpect(jsonPath("$.reorderPoint").value(2))
+        .andExpect(jsonPath("$.reorderQuantity").value(10));
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/inventory/items/" + itemId, token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.catalogRole").value("POS_SELLABLE"));
+        .andExpect(jsonPath("$.category").value("RAW_MATERIAL"));
 
     String stockBody =
         "{\"itemId\": %d, \"locationId\": %d, \"initialQuantity\": 100}".formatted(itemId, locationId);
@@ -503,7 +694,7 @@ class InventoryIntegrationTest {
         .perform(AccountTestRequests.getBearer("/api/v1/inventory/stock/summary?search=Flow&page=0&size=10", token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items").isArray())
-        .andExpect(jsonPath("$.items[0].sku").value("SKU-FLOW-" + suffix))
+        .andExpect(jsonPath("$.items[0].name").value("Flow item updated"))
         .andExpect(jsonPath("$.items[0].availableQuantity").value(100))
         .andExpect(jsonPath("$.items[0].totalQuantity").value(100));
 
@@ -872,7 +1063,6 @@ class InventoryIntegrationTest {
   private static String minimalItemCreateJson(String sku, String name) {
     return """
         {
-          "sku": "%s",
           "name": "%s",
           "description": "IT",
           "costPrice": 10.00,
@@ -882,7 +1072,7 @@ class InventoryIntegrationTest {
           "reorderQuantity": 0
         }
         """
-        .formatted(sku.replace("\\", "\\\\").replace("\"", "\\\""), name.replace("\\", "\\\\").replace("\"", "\\\""));
+        .formatted(name.replace("\\", "\\\\").replace("\"", "\\\""));
   }
 
   private static long extractLongId(String json, String path) {

@@ -10,7 +10,9 @@ import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header'
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
 import { SedeCardComponent } from './components/sede-card/sede-card';
 
-/** Página de listado de sedes con estadísticas y grid de tarjetas. */
+/** Página de listado de sedes con estadísticas y grid de tarjetas.
+ *  Listado paginado y estadísticas: solo ADMIN (API GET /headquarters).
+ *  Staff OPS: una sede asignada vía GET /headquarters/{id}. */
 @Component({
   selector: 'app-sedes-page',
 

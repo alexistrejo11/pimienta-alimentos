@@ -26,7 +26,7 @@ public final class HeadquarterPersistenceMapper {
         .withCreatedAt(entity.getCreatedAt())
         .withUpdatedAt(entity.getUpdatedAt())
         .withDeletedAt(entity.getDeletedAt())
-        .withVersion(entity.getVersion() != null ? entity.getVersion() : 0L)
+        .withVersion(entity.getVersion())
         .reconstruct();
   }
 
@@ -43,7 +43,7 @@ public final class HeadquarterPersistenceMapper {
     entity.setCreatedAt(headquarter.getCreatedAt() != null ? headquarter.getCreatedAt() : now());
     entity.setUpdatedAt(headquarter.getUpdatedAt() != null ? headquarter.getUpdatedAt() : now());
     entity.setDeletedAt(headquarter.getDeletedAt());
-    entity.setVersion(headquarter.getVersion() != null ? headquarter.getVersion() : 0L);
+    entity.setVersion(headquarter.getVersion());
     return entity;
   }
 

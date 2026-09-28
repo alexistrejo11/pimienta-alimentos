@@ -1,0 +1,100 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header
+      title="Productos"
+      subtitle="Lo que se vende en el punto de venta. El SKU se asigna al guardar."
+    />
+    <a
+      routerLink="/app/ops/productos/nuevo"
+      class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+    >
+      <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
+      Nuevo producto
+    </a>
+  </div>
+
+  <div class="flex flex-col gap-3 rounded-xl ui-panel p-4 sm:flex-row sm:flex-wrap sm:items-end">
+    <app-list-search-field
+      class="min-w-0 flex-1 sm:min-w-64"
+      placeholder="Buscar por nombre, SKU o código"
+      [(draft)]="searchDraft"
+      (search)="applySearch($event)"
+    />
+    <select
+      class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+      [value]="status()"
+      (change)="cambiarEstado($any($event.target).value)"
+    >
+      <option value="">Todos los estados</option>
+      @for (value of statuses; track value) {
+        <option [value]="value">{{ itemStatusLabel(value) }}</option>
+      }
+    </select>
+  </div>
+
+  <app-data-state
+    [loading]="loading()"
+    [error]="error()"
+    [empty]="items().length === 0"
+    emptyMessage="No hay productos de venta."
+    (retry)="cargar()"
+  >
+    <div class="responsive-table rounded-xl border ui-panel">
+      <table class="w-full text-sm" aria-label="Productos">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">SKU</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Nombre</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Unidad</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Stock</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Estado</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/15">
+          @for (item of items(); track item.id) {
+            <tr>
+              <td class="px-4 py-3 font-mono text-xs">{{ item.sku }}</td>
+              <td class="px-4 py-3">{{ item.name }}</td>
+              <td class="px-4 py-3 text-on-surface-variant">{{ itemUnitLabel(item.unit) }}</td>
+              <td class="px-4 py-3">{{ item.trackStock ? 'Controlado' : 'Sin existencias' }}</td>
+              <td class="px-4 py-3">{{ itemStatusLabel(item.status) }}</td>
+              <td class="px-4 py-3 text-right">
+                <a
+                  [routerLink]="['/app/ops/productos', item.id, 'editar']"
+                  class="text-sm font-semibold text-primary hover:underline"
+                >
+                  Editar
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (metadata(); as pageInfo) {
+      <div class="flex items-center justify-between px-2 py-3 text-sm text-on-surface-variant">
+        <span>{{ pageInfo.totalElements }} productos</span>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+            [disabled]="!pageInfo.hasPrevious"
+            (click)="anterior()"
+          >
+            Anterior
+          </button>
+          <span class="px-2 py-1.5">Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span>
+          <button
+            type="button"
+            class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+            [disabled]="!pageInfo.hasNext"
+            (click)="siguiente()"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    }
+  </app-data-state>
+</div>

@@ -45,7 +45,14 @@ import java.lang.annotation.Target;
       name = "status",
       in = ParameterIn.QUERY,
       description = "Filtro por estado del artículo.",
-      schema = @Schema(implementation = Item.ItemStatus.class))
+      schema = @Schema(implementation = Item.ItemStatus.class)),
+  @Parameter(
+      name = "kind",
+      in = ParameterIn.QUERY,
+      description =
+          "`PRODUCT`: artículos que respaldan un producto con stock. `WAREHOUSE`: artículos de"
+              + " bodega sin producto.",
+      schema = @Schema(implementation = Item.ItemKind.class))
 })
 @Operation(
     summary = "Search inventory items",

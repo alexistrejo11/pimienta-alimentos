@@ -67,7 +67,7 @@ export class CountSessionDetailPageComponent implements OnInit {
           next: (items) => {
             const names: Record<number, string> = {};
             items.forEach((item) => {
-              names[item.id] = `${item.sku} · ${item.name}`;
+              names[item.id] = item.saleSku ? `${item.saleSku} · ${item.name}` : item.name;
             });
             this.itemNames.set(names);
           },

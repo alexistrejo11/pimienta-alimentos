@@ -24,7 +24,6 @@ public class PosOperator extends BaseDomain<Long> {
     this.active = true;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public Long getUserId() {
@@ -188,7 +187,7 @@ public class PosOperator extends BaseDomain<Long> {
       o.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       o.updatedAt = updatedAt != null ? updatedAt : LocalDateTime.now();
       o.deletedAt = deletedAt;
-      o.version = version != null ? version : 0L;
+      o.version = version;
       return o;
     }
 
@@ -197,7 +196,6 @@ public class PosOperator extends BaseDomain<Long> {
       o.id = 0L;
       o.createdAt = LocalDateTime.now();
       o.updatedAt = o.createdAt;
-      o.version = 0L;
       return o;
     }
   }

@@ -20,7 +20,6 @@ public class PayrollDebt extends BaseDomain<Long> {
     this.settled = false;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {
@@ -77,7 +76,7 @@ public class PayrollDebt extends BaseDomain<Long> {
       debt.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       debt.updatedAt = updatedAt != null ? updatedAt : debt.createdAt;
       debt.deletedAt = deletedAt;
-      debt.version = version != null ? version : 0L;
+      debt.version = version;
       return debt;
     }
 

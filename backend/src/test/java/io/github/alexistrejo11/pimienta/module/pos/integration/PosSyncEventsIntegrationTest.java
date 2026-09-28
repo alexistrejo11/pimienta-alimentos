@@ -17,6 +17,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosLocationUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSaleInventoryUseCases;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
+import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -42,6 +43,7 @@ class PosSyncEventsIntegrationTest {
   @Autowired private PosSaleInventoryUseCases posSaleInventoryUseCases;
   @Autowired private PosLocationUseCases posLocationUseCases;
   @Autowired private InventoryRepository inventoryRepository;
+  @Autowired private ProductRepository productRepository;
 
   @Test
   void saleConfirmed_acceptedThenDuplicate_stockAppliedOnce() throws Exception {
@@ -55,7 +57,7 @@ class PosSyncEventsIntegrationTest {
     EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja B4");
     posLocationUseCases.ensurePosLocation(hqId);
     posSaleInventoryUseCases.applySaleStock(
-        new ApplyPosSaleStockCommand(hqId, itemId, -10, "seed", null, null));
+        new ApplyPosSaleStockCommand(hqId, stockItemId(itemId), -10, "seed", null, null));
 
     UUID eventId = UUID.randomUUID();
     UUID saleId = UUID.randomUUID();
@@ -122,7 +124,7 @@ class PosSyncEventsIntegrationTest {
     EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja SL");
     posLocationUseCases.ensurePosLocation(hqId);
     posSaleInventoryUseCases.applySaleStock(
-        new ApplyPosSaleStockCommand(hqId, itemId, -10, "seed", null, null));
+        new ApplyPosSaleStockCommand(hqId, stockItemId(itemId), -10, "seed", null, null));
 
     UUID saleId = UUID.randomUUID();
     String body = saleEventJson(device, hqId, UUID.randomUUID(), saleId, itemId, operatorId, 1, 2500, false);
@@ -537,11 +539,20 @@ class PosSyncEventsIntegrationTest {
         .andExpect(jsonPath("$.results[0].message").value(org.hamcrest.Matchers.containsString("deviceSequence")));
   }
 
-  private Inventory stockAtPos(long hqId, long itemId) {
+  private Inventory stockAtPos(long hqId, long productId) {
     var loc = posLocationUseCases.findPosLocation(hqId).orElseThrow();
+    long itemId = stockItemId(productId);
     return inventoryRepository
         .findByItemIdAndLocationId(itemId, loc.getId())
         .orElseThrow();
+  }
+
+  private long stockItemId(long productId) {
+    Long inventoryItemId = productRepository.findById(productId).orElseThrow().getInventoryItemId();
+    if (inventoryItemId == null) {
+      throw new IllegalStateException("Product " + productId + " has no inventory item");
+    }
+    return inventoryItemId;
   }
 
   private record EnrolledDevice(UUID deviceId, String accessToken) {}
@@ -818,21 +829,18 @@ class PosSyncEventsIntegrationTest {
     String body =
         """
         {
-          "sku": "%s",
           "name": "%s",
           "description": "IT",
-          "costPrice": 10.00,
-          "category": "CONSUMABLE",
           "unit": "PIECE",
-          "reorderPoint": 0,
-          "reorderQuantity": 0
+          "barcode": "%s",
+          "trackStock": true
         }
         """
-            .formatted(sku, name);
+            .formatted(name, sku);
     MvcResult r =
         mockMvc
             .perform(
-                AccountTestRequests.postJson("/api/v1/inventory/items", body)
+                AccountTestRequests.postJson("/api/v1/products", body)
                     .header("Authorization", "Bearer " + token))
             .andExpect(status().isCreated())
             .andReturn();

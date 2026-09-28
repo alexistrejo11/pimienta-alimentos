@@ -16,7 +16,7 @@ public final class HeadquarterItemPersistenceMapper {
     return HeadquarterItem.builder()
         .withId(entity.getId())
         .withHeadquarterId(entity.getHeadquarterId())
-        .withItemId(entity.getItemId())
+        .withProductId(entity.getProductId())
         .withPosSaleCategoryId(entity.getPosSaleCategoryId())
         .withSaleCategory(entity.getSaleCategory())
         .withSalePrice(entity.getSalePrice())
@@ -36,7 +36,7 @@ public final class HeadquarterItemPersistenceMapper {
       e.setId(domain.getId());
     }
     e.setHeadquarterId(domain.getHeadquarterId());
-    e.setItemId(domain.getItemId());
+    e.setProductId(domain.getProductId());
     e.setPosSaleCategoryId(domain.getPosSaleCategoryId());
     e.setSaleCategory(
         domain.getSaleCategory() != null && !domain.getSaleCategory().isBlank()
@@ -49,7 +49,7 @@ public final class HeadquarterItemPersistenceMapper {
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     e.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt() : LocalDateTime.now());
     e.setDeletedAt(domain.getDeletedAt());
-    e.setVersion(domain.getVersion() != null ? domain.getVersion() : 0L);
+    e.setVersion(domain.getVersion());
     return e;
   }
 }

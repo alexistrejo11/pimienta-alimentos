@@ -15,7 +15,6 @@ public class Client extends BaseDomain<Long> {
     this.companyName = "";
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public String getName() {
@@ -92,7 +91,6 @@ public class Client extends BaseDomain<Long> {
       c.companyName = companyName != null ? companyName.strip() : "";
       c.createdAt = LocalDateTime.now();
       c.updatedAt = c.createdAt;
-      c.version = 0L;
       return c;
     }
 
@@ -104,7 +102,7 @@ public class Client extends BaseDomain<Long> {
       c.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       c.updatedAt = updatedAt != null ? updatedAt : c.createdAt;
       c.deletedAt = deletedAt;
-      c.version = version != null ? version : 0L;
+      c.version = version;
       return c;
     }
   }

@@ -7,48 +7,68 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.exception
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosSaleCategoryRepository;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.CatalogRole;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemBarcodeConflictException;
-import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
+import io.github.alexistrejo11.pimienta.module.product.core.application.command.CreateProductCommand;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product.Unit;
+import io.github.alexistrejo11.pimienta.module.product.core.port.input.ProductManagementUseCases;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PosProductManagementUseCasesImpl implements PosProductManagementUseCases {
+
   private final HeadquarterRepository headquarters;
-  private final ItemRepository items;
+  private final ProductManagementUseCases products;
   private final HeadquarterItemRepository catalog;
   private final PosSaleCategoryRepository categories;
 
-  public PosProductManagementUseCasesImpl(HeadquarterRepository headquarters, ItemRepository items,
-      HeadquarterItemRepository catalog, PosSaleCategoryRepository categories) {
-    this.headquarters = headquarters; this.items = items; this.catalog = catalog; this.categories = categories;
+  public PosProductManagementUseCasesImpl(
+      HeadquarterRepository headquarters,
+      ProductManagementUseCases products,
+      HeadquarterItemRepository catalog,
+      PosSaleCategoryRepository categories) {
+    this.headquarters = headquarters;
+    this.products = products;
+    this.catalog = catalog;
+    this.categories = categories;
   }
 
-  @Override @Transactional
-  public CreatedPosProduct create(long headquarterId, CreatePosProductCommand c) {
+  @Override
+  @Transactional
+  public CreatedPosProduct create(long headquarterId, CreatePosProductCommand command) {
     headquarters.findById(headquarterId).orElseThrow();
-    var category = categories.findById(headquarterId, c.posSaleCategoryId())
-        .filter(v -> v.isActive()).orElseThrow(() -> new PosSaleCategoryNotFoundException(c.posSaleCategoryId()));
-    String sku = items.nextInternalSku();
-    String barcode = blankToNull(c.barcode());
-    if (barcode != null && items.existsByBarcodeIgnoreCaseExcludingId(barcode, null)) {
-      throw new ItemBarcodeConflictException(barcode);
-    }
-    Item item = Item.create(sku, c.name(), c.description(), c.costPrice(),
-        c.category() != null ? c.category() : ItemCategory.FINISHED_GOOD, c.unit(), c.reorderPoint(), c.reorderQuantity());
-    item.setBrand(c.brand());
-    item.setBarcode(barcode);
-    item.setCatalogRole(CatalogRole.POS_SELLABLE);
-    Item saved = items.save(item);
-    HeadquarterItem row = HeadquarterItem.builder().withHeadquarterId(headquarterId).withItemId(saved.getId())
-        .withPosSaleCategoryId(category.getId()).withSaleCategory(category.getName())
-        .withSalePrice(c.salePrice()).withAvailable(c.available() == null || c.available()).withStockPolicy(c.stockPolicy() != null ? c.stockPolicy() : StockPolicy.CONTROLLED)
-        .withNegativeStockLimit(c.negativeStockLimit()).register();
+
+    var category =
+        categories
+            .findById(headquarterId, command.posSaleCategoryId())
+            .filter(row -> row.isActive())
+            .orElseThrow(() -> new PosSaleCategoryNotFoundException(command.posSaleCategoryId()));
+
+    StockPolicy policy =
+        command.stockPolicy() != null ? command.stockPolicy() : StockPolicy.NOT_CONTROLLED;
+    Unit unit = command.unit() != null ? command.unit() : Unit.PIECE;
+
+    Product saved =
+        products.create(
+            new CreateProductCommand(
+                command.name(),
+                command.description(),
+                unit,
+                command.barcode(),
+                policy == StockPolicy.CONTROLLED));
+
+    HeadquarterItem row =
+        HeadquarterItem.builder()
+            .withHeadquarterId(headquarterId)
+            .withProductId(saved.getId())
+            .withPosSaleCategoryId(category.getId())
+            .withSaleCategory(category.getName())
+            .withSalePrice(command.salePrice())
+            .withAvailable(command.available() == null || command.available())
+            .withStockPolicy(policy)
+            .withNegativeStockLimit(command.negativeStockLimit())
+            .register();
+
     return new CreatedPosProduct(saved, catalog.save(row));
   }
-
-  private static String blankToNull(String value) { return value == null || value.isBlank() ? null : value.strip(); }
 }

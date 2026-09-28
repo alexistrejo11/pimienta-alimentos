@@ -54,87 +54,104 @@
   <nav class="flex flex-grow flex-col space-y-1 overflow-y-auto" aria-label="Secciones">
     @for (section of navigation(); track section.id) {
       <section class="pt-3 first:pt-0">
-        <h2>
-          <button
-            type="button"
-            class="flex w-full items-center justify-between rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-70 hover:bg-surface-container"
-            [attr.aria-expanded]="isExpanded(section.id)"
-            [attr.aria-controls]="'workspace-section-' + section.id"
-            (click)="toggleSection(section.id)"
+        @if (sectionCollapsible(section)) {
+          <h2>
+            <button
+              type="button"
+              class="flex w-full items-center justify-between rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant opacity-70 hover:bg-surface-container"
+              [attr.aria-expanded]="isExpanded(section.id)"
+              [attr.aria-controls]="'workspace-section-' + section.id"
+              (click)="toggleSection(section.id)"
+            >
+              <span>{{ section.label }}</span>
+              <span class="material-symbols-outlined text-base" aria-hidden="true">{{
+                isExpanded(section.id) ? 'expand_less' : 'expand_more'
+              }}</span>
+            </button>
+          </h2>
+          <div
+            [id]="'workspace-section-' + section.id"
+            [hidden]="!isExpanded(section.id)"
+            class="space-y-1"
           >
-            <span>{{ section.label }}</span>
-            <span class="material-symbols-outlined text-base" aria-hidden="true">{{
-              isExpanded(section.id) ? 'expand_less' : 'expand_more'
-            }}</span>
-          </button>
-        </h2>
-        <div
-          [id]="'workspace-section-' + section.id"
-          [hidden]="!isExpanded(section.id)"
-          class="space-y-1"
-        >
+            @for (item of section.items; track item.label) {
+              @if (item.children) {
+                <button
+                  type="button"
+                  [class]="navLinkInactive + ' w-full text-left'"
+                  [attr.aria-expanded]="isItemExpanded(section.id, item)"
+                  [attr.aria-controls]="'workspace-item-' + section.id"
+                  (click)="toggleItem(section.id, item)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
+                  <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
+                  <span class="material-symbols-outlined ml-auto text-base" aria-hidden="true">{{
+                    isItemExpanded(section.id, item) ? 'expand_less' : 'expand_more'
+                  }}</span>
+                </button>
+                <div
+                  [id]="'workspace-item-' + section.id"
+                  [hidden]="!isItemExpanded(section.id, item)"
+                  class="ml-3 space-y-1 border-l border-outline-variant/20 pl-2"
+                >
+                  @for (child of item.children; track child.label) {
+                    <a
+                      [routerLink]="child.route"
+                      routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+                      [routerLinkActiveOptions]="{ exact: !!child.route && exactRoutes().has(child.route) }"
+                      [class]="navLinkInactive"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">{{
+                        child.icon
+                      }}</span>
+                      <span class="font-headline font-bold tracking-tight">{{ child.label }}</span>
+                    </a>
+                  }
+                </div>
+              } @else if (item.route) {
+                <a
+                  [routerLink]="item.route"
+                  routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
+                  [routerLinkActiveOptions]="{ exact: exactRoutes().has(item.route) }"
+                  [class]="navLinkInactive"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
+                  <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
+                </a>
+              } @else {
+                <button
+                  type="button"
+                  [class]="navLinkInactive + ' w-full text-left'"
+                  (click)="activate(item)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
+                  <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
+                  @if (item.action === 'attendance-today') {
+                    <span
+                      class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white"
+                      aria-hidden="true"
+                      >↗</span
+                    >
+                  }
+                </button>
+              }
+            }
+          </div>
+        } @else {
           @for (item of section.items; track item.label) {
-            @if (item.children) {
-              <button
-                type="button"
-                [class]="navLinkInactive + ' w-full text-left'"
-                [attr.aria-expanded]="isItemExpanded(section.id, item)"
-                [attr.aria-controls]="'workspace-item-' + section.id"
-                (click)="toggleItem(section.id, item)"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
-                <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
-                <span class="material-symbols-outlined ml-auto text-base" aria-hidden="true">{{
-                  isItemExpanded(section.id, item) ? 'expand_less' : 'expand_more'
-                }}</span>
-              </button>
-              <div
-                [id]="'workspace-item-' + section.id"
-                [hidden]="!isItemExpanded(section.id, item)"
-                class="ml-3 space-y-1 border-l border-outline-variant/20 pl-2"
-              >
-                @for (child of item.children; track child.label) {
-                  <a
-                    [routerLink]="child.route"
-                    routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
-                    [class]="navLinkInactive"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">{{
-                      child.icon
-                    }}</span>
-                    <span class="font-headline font-bold tracking-tight">{{ child.label }}</span>
-                  </a>
-                }
-              </div>
-            } @else if (item.route) {
+            @if (item.route) {
               <a
                 [routerLink]="item.route"
                 routerLinkActive="bg-primary-fixed font-semibold text-primary border-r-4 border-primary"
-                [routerLinkActiveOptions]="{ exact: item.route === opsHome || item.route === erpHome }"
+                [routerLinkActiveOptions]="{ exact: exactRoutes().has(item.route) }"
                 [class]="navLinkInactive"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
                 <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
               </a>
-            } @else {
-              <button
-                type="button"
-                [class]="navLinkInactive + ' w-full text-left'"
-                (click)="activate(item)"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
-                <span class="font-headline font-bold tracking-tight">{{ item.label }}</span>
-                @if (item.action === 'attendance-today') {
-                  <span
-                    class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white"
-                    aria-hidden="true"
-                    >↗</span
-                  >
-                }
-              </button>
             }
           }
-        </div>
+        }
       </section>
     }
   </nav>

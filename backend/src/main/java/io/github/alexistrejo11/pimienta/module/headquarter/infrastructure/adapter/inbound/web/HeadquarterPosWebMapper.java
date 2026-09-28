@@ -8,7 +8,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapte
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.HeadquarterPosCatalogItemResponse;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.PosSettingsRequest;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.PosSettingsResponse;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
+import io.github.alexistrejo11.pimienta.module.product.core.domain.Product;
 
 public final class HeadquarterPosWebMapper {
 
@@ -54,7 +54,7 @@ public final class HeadquarterPosWebMapper {
     return new HeadquarterPosCatalogItemResponse(
         item.getId(),
         item.getHeadquarterId(),
-        item.getItemId(),
+        item.getProductId(),
         "",
         "",
         null,
@@ -68,10 +68,21 @@ public final class HeadquarterPosWebMapper {
         item.getVersion());
   }
 
-  public static HeadquarterPosCatalogItemResponse toResponse(HeadquarterItem row, Item item) {
-    return new HeadquarterPosCatalogItemResponse(row.getId(), row.getHeadquarterId(), row.getItemId(),
-        item.getName(), item.getSku(), item.getBarcode(), row.getSaleCategory(), row.getSalePrice(),
-        row.isAvailable(), row.getStockPolicy(), row.getNegativeStockLimit(), row.getCreatedAt(),
-        row.getUpdatedAt(), row.getVersion());
+  public static HeadquarterPosCatalogItemResponse toResponse(HeadquarterItem row, Product product) {
+    return new HeadquarterPosCatalogItemResponse(
+        row.getId(),
+        row.getHeadquarterId(),
+        row.getProductId(),
+        product.getName(),
+        product.getSku(),
+        product.getBarcode(),
+        row.getSaleCategory(),
+        row.getSalePrice(),
+        row.isAvailable(),
+        row.getStockPolicy(),
+        row.getNegativeStockLimit(),
+        row.getCreatedAt(),
+        row.getUpdatedAt(),
+        row.getVersion());
   }
 }

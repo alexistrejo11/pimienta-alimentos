@@ -18,7 +18,6 @@ public class PayrollPeriod extends BaseDomain<Long> {
     this.status = "OPEN";
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {
@@ -123,7 +122,7 @@ public class PayrollPeriod extends BaseDomain<Long> {
       period.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       period.updatedAt = updatedAt != null ? updatedAt : period.createdAt;
       period.deletedAt = deletedAt;
-      period.version = version != null ? version : 0L;
+      period.version = version;
       return period;
     }
 

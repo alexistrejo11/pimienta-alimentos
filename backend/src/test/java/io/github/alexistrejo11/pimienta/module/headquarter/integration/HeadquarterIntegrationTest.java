@@ -16,6 +16,8 @@ import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Ro
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
 import io.github.alexistrejo11.pimienta.shared.spreadsheet.XlsxTestFiles;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -44,6 +46,9 @@ class HeadquarterIntegrationTest {
   @Autowired
   private UserJpaRepository userJpaRepository;
 
+  @PersistenceContext
+  private EntityManager entityManager;
+
   @Test
   void statistics_withoutToken_returns401() throws Exception {
     mockMvc.perform(get("/api/v1/headquarters/statistics")).andExpect(status().isUnauthorized());
@@ -66,6 +71,50 @@ class HeadquarterIntegrationTest {
             AccountTestRequests.postJson(
                     "/api/v1/headquarters", createBody("HQ-FORBIDDEN", "addr", "desc"))
                 .header("Authorization", "Bearer " + token))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
+  void listHeadquarters_nonAdmin_returns403() throws Exception {
+    String token = obtainAccessToken(Set.of(Role.MANAGER));
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters?page=0&size=20", token))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
+  void statistics_nonAdmin_returns403() throws Exception {
+    String token = obtainAccessToken(Set.of(Role.EMPLOYEE));
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/statistics", token))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+  }
+
+  @Test
+  void getById_managerAssignedHeadquarter_ok_unassignedForbidden() throws Exception {
+    String adminToken = obtainAdminToken();
+    long assignedId = createHeadquarter(adminToken, "IT-HQ-ASSIGN-" + UUID.randomUUID());
+    long otherId = createHeadquarter(adminToken, "IT-HQ-OTHER-" + UUID.randomUUID());
+
+    String email = "it-hq-mgr-" + UUID.randomUUID() + "@mail.com";
+    String managerToken = obtainAccessTokenForEmail(email, Set.of(Role.MANAGER));
+    long managerId =
+        userJpaRepository
+            .findByEmailAndDeletedAtIsNull(email)
+            .orElseThrow()
+            .getId();
+    assignHeadquarters(adminToken, managerId, assignedId);
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + assignedId, managerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value((int) assignedId));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + otherId, managerToken))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
   }
@@ -174,6 +223,36 @@ class HeadquarterIntegrationTest {
         .andExpect(jsonPath("$.total").exists())
         .andExpect(jsonPath("$.active").exists())
         .andExpect(jsonPath("$.softDeleted").exists());
+  }
+
+  @Test
+  void version_startsAtOneOnCreate_andIncrementsOnUpdate() throws Exception {
+    String token = obtainAdminToken();
+    String name = "IT-HQ-VER-" + UUID.randomUUID();
+    MvcResult created =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                        "/api/v1/headquarters", createBody(name, "Version Ave", "v1"))
+                    .header("Authorization", "Bearer " + token))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.version").value(1))
+            .andReturn();
+    long id = extractLongId(created.getResponse().getContentAsString(), "$.id");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + id, token, createBody(name, "Version Ave 2", "v2")))
+        .andExpect(status().isOk());
+    entityManager.flush();
+    entityManager.clear();
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + id, token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.address").value("Version Ave 2"))
+        .andExpect(jsonPath("$.version").value(2));
   }
 
   @Test
@@ -377,8 +456,36 @@ class HeadquarterIntegrationTest {
     return obtainAccessToken(Set.of(Role.ADMIN));
   }
 
+  private long createHeadquarter(String adminToken, String name) throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJsonBearer(
+                    "/api/v1/headquarters", adminToken, createBody(name, "Test address", "IT")))
+            .andExpect(status().isCreated())
+            .andReturn();
+    return extractLongId(result.getResponse().getContentAsString(), "$.id");
+  }
+
+  private void assignHeadquarters(String adminToken, long userId, long headquarterId)
+      throws Exception {
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/users/management/" + userId + "/headquarters",
+                adminToken,
+                """
+                {"headquarterIds":[%d]}
+                """
+                    .formatted(headquarterId)))
+        .andExpect(status().isOk());
+  }
+
   private String obtainAccessToken(Set<Role> roles) throws Exception {
-    String email = "it-hq-" + UUID.randomUUID() + "@mail.com";
+    return obtainAccessTokenForEmail("it-hq-" + UUID.randomUUID() + "@mail.com", roles);
+  }
+
+  private String obtainAccessTokenForEmail(String email, Set<Role> roles) throws Exception {
     String phone =
         "+52"
             + String.format(

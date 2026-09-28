@@ -32,7 +32,6 @@ public class PayrollPayment extends BaseDomain<Long> {
     this.status = PayrollRecordStatus.PENDING;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    this.version = 0L;
   }
 
   public static SafeBuilder builder() {
@@ -114,7 +113,7 @@ public class PayrollPayment extends BaseDomain<Long> {
       payment.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       payment.updatedAt = updatedAt != null ? updatedAt : payment.createdAt;
       payment.deletedAt = deletedAt;
-      payment.version = version != null ? version : 0L;
+      payment.version = version;
       return payment;
     }
 

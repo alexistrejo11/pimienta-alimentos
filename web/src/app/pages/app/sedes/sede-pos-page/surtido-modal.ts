@@ -7,19 +7,19 @@ import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import { PosCatalogService } from '../../../../core/headquarters/pos-catalog.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import { stockPolicyLabel } from '../../../../core/i18n/enum-labels';
-import type { ItemResponse } from '../../../../core/model/inventory/inventory.dto';
+import type { ProductResponse } from '../../../../core/model/product/product.dto';
 import type {
   HeadquarterPosCatalogItemResponse,
   PosSaleCategoryResponse,
 } from '../../../../core/model/pos/pos.dto';
 import type { StockPolicy } from '../../../../core/model/pos/pos.enums';
-import { ItemSelectComponent } from '../../../../shared/ui/item-select/item-select';
+import { ProductSelectComponent } from '../../../../shared/ui/product-select/product-select';
 
 type LookupState = 'idle' | 'checking' | 'in-catalog' | 'not-configured' | 'form';
 
 @Component({
   selector: 'app-surtido-modal',
-  imports: [ReactiveFormsModule, RouterLink, ItemSelectComponent],
+  imports: [ReactiveFormsModule, RouterLink, ProductSelectComponent],
   templateUrl: './surtido-modal.html',
 })
 export class SurtidoModalComponent implements OnInit {
@@ -38,7 +38,7 @@ export class SurtidoModalComponent implements OnInit {
   readonly checking = signal(false);
   readonly saving = signal(false);
   readonly error = signal<ParsedApiError | null>(null);
-  readonly picked = signal<ItemResponse | null>(null);
+  readonly picked = signal<ProductResponse | null>(null);
   readonly catalogRow = signal<HeadquarterPosCatalogItemResponse | null>(null);
   readonly formMode = signal<'add' | 'edit'>('add');
 
@@ -79,14 +79,14 @@ export class SurtidoModalComponent implements OnInit {
     this.lookup.set('idle');
   }
 
-  onItemPicked(item: ItemResponse | null): void {
-    if (!item) return;
-    this.picked.set(item);
+  onProductPicked(product: ProductResponse | null): void {
+    if (!product) return;
+    this.picked.set(product);
     this.error.set(null);
     this.lookup.set('checking');
     this.checking.set(true);
     this.posCatalog
-      .getCatalogItem(this.headquarterId(), item.id)
+      .getCatalogItem(this.headquarterId(), product.id)
       .pipe(finalize(() => this.checking.set(false)))
       .subscribe({
         next: (row) => {
@@ -107,14 +107,14 @@ export class SurtidoModalComponent implements OnInit {
   }
 
   startAdd(): void {
-    const item = this.picked();
-    if (!item) return;
+    const product = this.picked();
+    if (!product) return;
     this.formMode.set('add');
     this.catalogForm.reset({
       saleCategory: this.categories()[0]?.name ?? '',
       salePrice: 0,
       available: true,
-      stockPolicy: 'CONTROLLED',
+      stockPolicy: product.trackStock ? 'CONTROLLED' : 'NOT_CONTROLLED',
       negativeStockLimit: null,
     });
     markFormPristine(this.catalogForm);
@@ -132,13 +132,13 @@ export class SurtidoModalComponent implements OnInit {
       this.catalogForm.markAllAsTouched();
       return;
     }
-    const itemId = this.existing()?.itemId ?? this.catalogRow()?.itemId ?? this.picked()?.id;
-    if (itemId == null) return;
+    const productId = this.existing()?.productId ?? this.catalogRow()?.productId ?? this.picked()?.id;
+    if (productId == null) return;
     const v = this.catalogForm.getRawValue();
     this.saving.set(true);
     this.error.set(null);
     this.posCatalog
-      .upsertCatalogItem(this.headquarterId(), itemId, {
+      .upsertCatalogItem(this.headquarterId(), productId, {
         saleCategory: v.saleCategory,
         salePrice: v.salePrice,
         available: v.available,
@@ -157,9 +157,9 @@ export class SurtidoModalComponent implements OnInit {
 
   productLabel(): string {
     const row = this.existing() ?? this.catalogRow();
-    const item = this.picked();
-    if (row?.itemName) return `${row.itemSku ? row.itemSku + ' · ' : ''}${row.itemName}`;
-    if (item) return `${item.sku} · ${item.name}`;
+    const product = this.picked();
+    if (row?.productName) return `${row.productSku ? row.productSku + ' · ' : ''}${row.productName}`;
+    if (product) return `${product.sku} · ${product.name}`;
     return 'Producto';
   }
 

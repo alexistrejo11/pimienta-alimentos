@@ -6,13 +6,15 @@
     backLabel="Dashboard"
   />
 
-  <section class="ui-panel p-6">
-    <app-headquarter-select
-      label="Sede a configurar"
-      [value]="headquarterId()"
-      (valueChange)="onHeadquarterChange($event)"
-    />
-  </section>
+  @if (isAdmin()) {
+    <section class="ui-panel p-6">
+      <app-headquarter-select
+        label="Sede a configurar"
+        [value]="headquarterId()"
+        (valueChange)="onHeadquarterChange($event)"
+      />
+    </section>
+  }
 
   @if (!canAccess()) {
     <p class="text-sm text-red-700" role="alert">

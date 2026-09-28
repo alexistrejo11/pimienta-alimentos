@@ -21,6 +21,11 @@ All **user-visible** text is Spanish and human-readable: labels, buttons, empty 
 - Templates must **never** print raw enum codes. Use helpers in `src/app/core/i18n/enum-labels.ts` (e.g. `roleLabel`, `itemCategoryLabel`, `inventoryStatusLabel`).
 - When adding a new API enum to the UI, add its Spanish label to `enum-labels.ts` in the same change.
 
+### Búsqueda en listas vs typeahead
+
+- **Listas paginadas** (tablas que llaman la API con `search` en query): usar `app-list-search-field` con borrador local; la petición solo al pulsar **Enter** o **Buscar**. Los `<select>` y fechas pueden recargar al cambiar, usando el término ya aplicado.
+- **Autocompletado** (`app-item-select`, pickers con debounce): mantener debounce + `switchMap` en el control; no usar el patrón Enter/Buscar de listas.
+
 ## Skills
 
 - [angular-developer](.agents/skills/angular-developer/SKILL.md) — official Angular (signals, CLI, templates, DI)

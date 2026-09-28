@@ -1,0 +1,78 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header
+      title="Artículos de bodega"
+      subtitle="Insumos, refacciones, consumibles y equipo que no se venden. Costo y reorden se configuran en el catálogo de stock."
+    />
+    <a
+      routerLink="/app/ops/bodega/nuevo"
+      class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+    >
+      <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
+      Nuevo artículo
+    </a>
+  </div>
+
+  <div class="flex flex-col gap-3 rounded-xl ui-panel p-4 sm:flex-row sm:flex-wrap sm:items-end">
+    <app-list-search-field
+      class="min-w-0 flex-1 sm:min-w-64"
+      placeholder="Buscar por nombre"
+      [(draft)]="searchDraft"
+      (search)="applySearch($event)"
+    />
+    <select class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2" [value]="category()" (change)="cambiarCategoria($any($event.target).value)">
+      <option value="">Todas las categorías</option>
+      @for (value of categories; track value) { <option [value]="value">{{ itemCategoryLabel(value) }}</option> }
+    </select>
+  </div>
+
+  <app-data-state
+    [loading]="loading()"
+    [error]="error()"
+    [empty]="items().length === 0"
+    emptyMessage="No hay artículos de bodega."
+    (retry)="cargar()"
+  >
+    <div class="responsive-table rounded-xl border ui-panel">
+      <table class="w-full text-sm" aria-label="Artículos de bodega">
+        <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Nombre</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Marca</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Categoría</th>
+            <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Unidad</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/15">
+          @for (item of items(); track item.id) {
+            <tr>
+              <td class="px-4 py-3">{{ item.name }}</td>
+              <td class="px-4 py-3 text-on-surface-variant">{{ item.brand || '—' }}</td>
+              <td class="px-4 py-3 text-on-surface-variant">{{ itemCategoryLabel(item.category) }}</td>
+              <td class="px-4 py-3 text-on-surface-variant">{{ itemUnitLabel(item.unit) }}</td>
+              <td class="px-4 py-3 text-right">
+                <a
+                  [routerLink]="['/app/ops/bodega', item.id, 'editar']"
+                  class="text-sm font-semibold text-primary hover:underline"
+                >
+                  Editar
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (metadata(); as pageInfo) {
+      <div class="flex items-center justify-between px-2 py-3 text-sm text-on-surface-variant">
+        <span>{{ pageInfo.totalElements }} artículos</span>
+        <div class="flex gap-2">
+          <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="anterior()">Anterior</button>
+          <span class="px-2 py-1.5">Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span>
+          <button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="siguiente()">Siguiente</button>
+        </div>
+      </div>
+    }
+  </app-data-state>
+</div>

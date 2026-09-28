@@ -16,7 +16,7 @@ public class InventoryGlobalSummaryRepositoryImpl implements InventoryGlobalSumm
   private final InventoryJpaRepository repository;
   public InventoryGlobalSummaryRepositoryImpl(InventoryJpaRepository repository) { this.repository = repository; }
   public Page<InventoryGlobalSummary> search(String search, ItemCategory category, InventoryStatus status, java.math.BigDecimal minCost, java.math.BigDecimal maxCost, List<Long> hqs, Pageable pageable) {
-    return repository.searchGlobalSummary(blankToNull(search), category == null ? null : category.name(), status == null ? null : status.name(), minCost, maxCost, hqs, pageable).map(row -> new InventoryGlobalSummary(row.getItemId(), row.getSku(), row.getName(), ItemCategory.valueOf(row.getCategory()), row.getHeadquarterId(), row.getHeadquarterName(), row.getAvailableQuantity(), row.getReservedQuantity(), row.getInTransitQuantity(), row.getTotalQuantity(), row.getUnitCost(), row.getTotalValue(), InventoryStatus.valueOf(row.getStatus())));
+    return repository.searchGlobalSummary(blankToNull(search), category == null ? null : category.name(), status == null ? null : status.name(), minCost, maxCost, hqs == null, hqBinding(hqs), pageable).map(row -> new InventoryGlobalSummary(row.getItemId(), row.getSku(), row.getName(), ItemCategory.valueOf(row.getCategory()), row.getHeadquarterId(), row.getHeadquarterName(), row.getAvailableQuantity(), row.getReservedQuantity(), row.getInTransitQuantity(), row.getTotalQuantity(), row.getUnitCost(), row.getTotalValue(), InventoryStatus.valueOf(row.getStatus())));
   }
 
   @Override
@@ -24,7 +24,7 @@ public class InventoryGlobalSummaryRepositoryImpl implements InventoryGlobalSumm
     if (hqs != null && hqs.isEmpty()) {
       return InventoryDashboard.empty();
     }
-    InventoryDashboardProjection row = repository.dashboardKpis(hqs);
+    InventoryDashboardProjection row = repository.dashboardKpis(hqs == null, hqBinding(hqs));
     if (row == null) {
       return InventoryDashboard.empty();
     }
@@ -35,6 +35,14 @@ public class InventoryGlobalSummaryRepositoryImpl implements InventoryGlobalSumm
         0,
         nz(row.getTotalAvailableQuantity()),
         row.getTotalStockValue() == null ? BigDecimal.ZERO : row.getTotalStockValue());
+  }
+
+  /**
+   * {@code null} means every headquarter (admin). PostgreSQL cannot type a null list parameter, so
+   * the query receives an {@code allHeadquarters} flag plus a never-empty placeholder list.
+   */
+  private static List<Long> hqBinding(List<Long> hqs) {
+    return hqs == null || hqs.isEmpty() ? List.of(-1L) : hqs;
   }
 
   private static long nz(Long value) {

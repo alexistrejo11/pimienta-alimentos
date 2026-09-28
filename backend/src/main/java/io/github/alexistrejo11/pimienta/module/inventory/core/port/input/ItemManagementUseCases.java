@@ -1,5 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.inventory.core.port.input;
 
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.UpdateItemIdentityCommand;
+import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.UpdateItemStockSettingsCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.ItemSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 import org.springframework.data.domain.Page;
@@ -11,11 +13,11 @@ public interface ItemManagementUseCases {
 
   Item getById(Long id);
 
-  Item getBySkuOrBarcode(String skuOrBarcode);
-
   Item create(Item item);
 
-  Item update(Long id, Item updatedFields);
+  Item updateIdentity(Long id, UpdateItemIdentityCommand command);
+
+  Item updateStockSettings(Long id, UpdateItemStockSettingsCommand command);
 
   Item discontinue(Long id);
 

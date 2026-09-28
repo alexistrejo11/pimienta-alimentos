@@ -8,7 +8,7 @@ public final class PosSaleCategoryPersistenceMapper {
   private PosSaleCategoryPersistenceMapper() {}
 
   public static PosSaleCategory toDomain(PosSaleCategoryJpaEntity e) {
-    PosSaleCategory value = PosSaleCategory.create(e.getHeadquarterId(), e.getName(), e.getDisplayOrder());
+    PosSaleCategory value = PosSaleCategory.create(e.getHeadquarterId(), e.getName());
     value.setId(e.getId());
     value.setCreatedAt(e.getCreatedAt());
     value.setUpdatedAt(e.getUpdatedAt());
@@ -22,10 +22,10 @@ public final class PosSaleCategoryPersistenceMapper {
     PosSaleCategoryJpaEntity e = new PosSaleCategoryJpaEntity();
     if (d.getId() != null && d.getId() > 0) e.setId(d.getId());
     e.setHeadquarterId(d.getHeadquarterId()); e.setName(d.getName());
-    e.setDisplayOrder(d.getDisplayOrder()); e.setActive(d.isActive());
+    e.setActive(d.isActive());
     e.setCreatedAt(d.getCreatedAt() != null ? d.getCreatedAt() : LocalDateTime.now());
     e.setUpdatedAt(d.getUpdatedAt() != null ? d.getUpdatedAt() : LocalDateTime.now());
-    e.setDeletedAt(d.getDeletedAt()); e.setVersion(d.getVersion() != null ? d.getVersion() : 0L);
+    e.setDeletedAt(d.getDeletedAt()); e.setVersion(d.getVersion());
     return e;
   }
 }

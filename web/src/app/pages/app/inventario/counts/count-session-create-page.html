@@ -45,7 +45,7 @@
           @for (item of items(); track item.id) {
             <label class="flex cursor-pointer gap-2 rounded-lg bg-surface-container-low p-3">
               <input type="checkbox" [checked]="selected.has(item.id)" (change)="toggle(item.id)" />
-              <span>{{ item.name }} <small class="block text-on-surface-variant">{{ item.sku }}</small></span>
+              <span>{{ item.name }} @if (item.saleSku) { <small class="block text-on-surface-variant">{{ item.saleSku }}</small> }</span>
             </label>
           }
         </div>
