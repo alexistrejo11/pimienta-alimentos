@@ -25,10 +25,11 @@ class DeviceCredentials(context: Context) {
             }
             return (store.getEntry(keyAlias, null) as KeyStore.SecretKeyEntry).secretKey
         }
-    fun save(access: String, refresh: String) { prefs.edit().putString("access", encrypt(access)).putString("refresh", encrypt(refresh)).apply() }
+    // commit() so the next reload sees tokens before Room publishes the base URL.
+    fun save(access: String, refresh: String) { prefs.edit().putString("access", encrypt(access)).putString("refresh", encrypt(refresh)).commit() }
     fun access(): String? = prefs.getString("access", null)?.let(::decrypt)
     fun refresh(): String? = prefs.getString("refresh", null)?.let(::decrypt)
-    fun clear() { prefs.edit().clear().apply() }
+    fun clear() { prefs.edit().clear().commit() }
     private fun encrypt(value: String): String { val cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.ENCRYPT_MODE, key); return Base64.encodeToString(cipher.iv + cipher.doFinal(value.toByteArray(StandardCharsets.UTF_8)), Base64.NO_WRAP) }
     private fun decrypt(value: String): String { val raw = Base64.decode(value, Base64.NO_WRAP); val cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, raw.copyOfRange(0, 12))); return String(cipher.doFinal(raw.copyOfRange(12, raw.size)), StandardCharsets.UTF_8) }
 }

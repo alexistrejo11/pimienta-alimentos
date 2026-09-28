@@ -276,9 +276,7 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                     val hasUrl = !sync?.baseUrl.isNullOrBlank()
                     val hasAccess = deviceCredentials.access() != null
                     val hasRefresh = deviceCredentials.refresh() != null
-                    if (sync?.status == "REQUIRES_REENROLLMENT") {
-                        // Already flagged by sync worker; keep enrollment screen without wiping again.
-                    } else if (hasUrl && !hasAccess && !hasRefresh) {
+                    if (DeviceSessionPolicy.orphanAccessRequiresReset(sync?.status, hasUrl, hasAccess, hasRefresh)) {
                         ProvisioningRepository(context, app.databaseProvider).resetForReenrollment(
                             sync?.lastError ?: DeviceSessionPolicy.orphanAccessTokenMessage(),
                         )
@@ -412,14 +410,21 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         if (syncState?.baseUrl.isNullOrBlank() || syncState?.status == "REQUIRES_REENROLLMENT") return@LaunchedEffect
         if (productionCatalogSyncAttempted) return@LaunchedEffect
         if (users.isNotEmpty() && products.isNotEmpty()) return@LaunchedEffect
+        // URL can arrive before tokens; syncing then makes reload treat the session as orphan and undo enrollment.
+        val hasDeviceSession = withContext(Dispatchers.IO) { DeviceCredentials(context).access() != null }
+        if (!hasDeviceSession) return@LaunchedEffect
         productionCatalogSyncAttempted = true
         notice = "Sincronizando con el servidor…"
         notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
         reload()
     }
 
-    val isEnrolled = syncState?.status == "ENROLLED" && DeviceCredentials(context).access() != null
-    val showEnrollment = mode == RuntimeMode.PRODUCTION && !isEnrolled
+    // Bootstrap moves ENROLLED to ONLINE. Treating only ENROLLED as enrolled sends the tablet back to the form.
+    val showEnrollment = mode == RuntimeMode.PRODUCTION && DeviceSessionPolicy.showsEnrollmentForm(
+        syncState?.status,
+        !syncState?.baseUrl.isNullOrBlank(),
+        DeviceCredentials(context).access() != null,
+    )
 
     LaunchedEffect(scanner) {
         (scanner as? MultiplexBarcodeScanner)?.attach(this)
@@ -492,18 +497,18 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                                 SyncWorker.enqueue(context)
                                 reload()
                             } catch (e: Exception) {
-                                // Enroll may have saved tokens before bootstrap failed; leave enrollment UI so sync can retry.
-                                val alreadyConfigured = withContext(Dispatchers.IO) {
-                                    ProvisioningRepository(context, app.databaseProvider).baseUrl() != null &&
-                                        DeviceCredentials(context).access() != null
-                                }
                                 val userMessage = PosApiUserMessages.from(e)
-                                if (alreadyConfigured) {
+                                val stillNeedsEnrollment = withContext(Dispatchers.IO) {
+                                    ProvisioningRepository(context, app.databaseProvider).needsEnrollment()
+                                }
+                                if (stillNeedsEnrollment) {
+                                    // Code rejected or session wiped: stay on the form and say why.
+                                    enrollError = userMessage
+                                } else {
+                                    // Tokens are saved; bootstrap can retry off this screen and the message stays visible.
                                     notice = userMessage
                                     SyncWorker.enqueue(context)
                                     reload()
-                                } else {
-                                    enrollError = userMessage
                                 }
                             } finally { enrolling = false }
                         }

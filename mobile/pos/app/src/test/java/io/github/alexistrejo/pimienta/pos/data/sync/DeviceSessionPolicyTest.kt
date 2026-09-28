@@ -29,6 +29,16 @@ class DeviceSessionPolicyTest {
     }
 
     @Test
+    fun onlineSessionDoesNotReturnToEnrollment() {
+        assertFalse(DeviceSessionPolicy.showsEnrollmentForm("ONLINE", hasBaseUrl = true, hasAccessToken = true))
+        assertFalse(DeviceSessionPolicy.showsEnrollmentForm("ENROLLED", hasBaseUrl = true, hasAccessToken = true))
+        assertFalse(DeviceSessionPolicy.showsEnrollmentForm("RETRYING", hasBaseUrl = true, hasAccessToken = true))
+        assertTrue(DeviceSessionPolicy.showsEnrollmentForm("ONLINE", hasBaseUrl = true, hasAccessToken = false))
+        assertTrue(DeviceSessionPolicy.showsEnrollmentForm("REQUIRES_REENROLLMENT", hasBaseUrl = true, hasAccessToken = true))
+        assertTrue(DeviceSessionPolicy.showsEnrollmentForm("ONLINE", hasBaseUrl = false, hasAccessToken = true))
+    }
+
+    @Test
     fun only403OnSyncRequiresImmediateReenrollment() {
         assertTrue(DeviceSessionPolicy.httpResponseRequiresReenrollment(403))
         assertFalse(DeviceSessionPolicy.httpResponseRequiresReenrollment(401))

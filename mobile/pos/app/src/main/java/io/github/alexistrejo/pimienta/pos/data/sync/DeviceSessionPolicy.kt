@@ -24,6 +24,31 @@ object DeviceSessionPolicy {
         "Sesión del dispositivo inválida. Vuelve a enrolar."
 
     /**
+     * True when a base URL was saved and both device tokens are gone.
+     * A row already marked for re-enrollment must not be wiped again.
+     */
+    fun orphanAccessRequiresReset(
+        status: String?,
+        hasBaseUrl: Boolean,
+        hasAccess: Boolean,
+        hasRefresh: Boolean,
+    ): Boolean = hasBaseUrl && !hasAccess && !hasRefresh && status != "REQUIRES_REENROLLMENT"
+
+    /**
+     * Enrollment is only the intermediate status written before bootstrap.
+     * ONLINE and RETRYING still have a session; sending those back to the form
+     * makes the tablet re-submit a code the server already consumed.
+     */
+    fun showsEnrollmentForm(status: String?, hasBaseUrl: Boolean, hasAccessToken: Boolean): Boolean {
+        if (!hasBaseUrl || !hasAccessToken) return true
+        return status == "REQUIRES_REENROLLMENT"
+    }
+
+    /** False after reset cleared the URL, so a late sync cannot erase the reason shown on screen. */
+    fun syncMayUpdateSession(status: String?, baseUrl: String?): Boolean =
+        !baseUrl.isNullOrBlank() && status != "REQUIRES_REENROLLMENT"
+
+    /**
      * True when refresh failed because the server rejected device credentials.
      * Network, timeout, and 5xx must return false so bootstrap/catalog stay intact.
      */

@@ -75,12 +75,21 @@ class ProvisioningRepository(private val context: Context, private val provider:
     }
 
     fun configureUrl(url: String) {
-        require(url.startsWith("https://") || (BuildConfig.DEBUG && (url.startsWith("http://10.0.2.2") || url.startsWith("http://localhost")))) { "La URL debe usar HTTPS en release" }
+        requireAcceptableApiUrl(url)
         db.syncDao().saveState((db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()).copy(baseUrl = url, status = "CONFIGURED"))
     }
 
+    // Rejects cleartext production URLs before any network call or local write.
+    private fun requireAcceptableApiUrl(url: String) {
+        require(url.startsWith("https://") || (BuildConfig.DEBUG && (url.startsWith("http://10.0.2.2") || url.startsWith("http://localhost")))) {
+            "La URL debe usar HTTPS en release"
+        }
+    }
+
     suspend fun enroll(baseUrl: String, code: String, name: String): EnrollResponse {
-        configureUrl(baseUrl)
+        // Do not publish the URL until the server accepts the code. An early write lets reload
+        // see a base URL with no tokens and wipe the session that this call is about to save.
+        requireAcceptableApiUrl(baseUrl)
         val publicId = prefs.getString("publicId", null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("publicId", it).apply() }
         val api = retrofit(baseUrl, null)
         val result = api.enroll(EnrollRequest(code, publicId, name, BuildConfig.VERSION_NAME))
@@ -104,14 +113,15 @@ class ProvisioningRepository(private val context: Context, private val provider:
             db.siteDao().clear()
             db.siteDao().insert(SiteEntity(result.site.id, result.site.name, result.site.address, result.site.currency))
             db.operationsDao().insertDevice(device)
-            db.syncDao().saveState((db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()).copy(status = "ENROLLED"))
+            val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()
+            db.syncDao().saveState(current.copy(baseUrl = baseUrl, status = "ENROLLED", lastError = null))
         }
         // Catalog import can fail independently; tokens/device are already persisted for SyncWorker retry.
         try {
             applyBootstrap(retrofit(baseUrl, result.accessToken).bootstrap())
         } catch (e: Exception) {
             val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()
-            db.syncDao().saveState(current.copy(status = "RETRYING", lastError = e.message))
+            db.syncDao().saveState(current.copy(baseUrl = baseUrl, status = "RETRYING", lastError = e.message))
             throw e
         }
         return result

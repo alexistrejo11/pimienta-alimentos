@@ -713,7 +713,7 @@ internal fun CatalogPanel(
                 if (onToggleHideBarcoded != null) {
                     Spacer(Modifier.width(6.dp))
                     PosButton(
-                        label = if (hideBarcoded) "Sin código de barras" else "Todos",
+                        label = if (hideBarcoded) "Solo táctiles" else "Todos",
                         click = onToggleHideBarcoded,
                         selected = hideBarcoded,
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 12.dp),
