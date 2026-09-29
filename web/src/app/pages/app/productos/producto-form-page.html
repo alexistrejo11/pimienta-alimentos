@@ -1,9 +1,9 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
-    [title]="isEdit() ? 'Editar producto' : 'Nuevo producto'"
-    [subtitle]="isEdit() ? 'El SKU no se edita. El precio de venta vive en el surtido de cada sede.' : 'El SKU se asigna al guardar. El precio de venta se configura en el surtido de cada sede.'"
-    backLink="/app/ops/productos"
-    backLabel="Productos"
+    [title]="isEdit() ? 'Editar producto maestro' : 'Nuevo producto maestro'"
+    [subtitle]="isEdit() ? 'El SKU no se edita. El precio de venta se configura al agregar el producto a una sede.' : 'El SKU se asigna al guardar. Después agrégalo a una sede desde Productos → Agregar existente.'"
+    backLink="/app/ops/productos-maestros"
+    backLabel="Productos maestros"
   />
 
   @if (loadingExisting()) {
@@ -97,7 +97,7 @@
           {{ loading() ? 'Guardando…' : 'Guardar' }}
         </button>
         <a
-          routerLink="/app/ops/productos"
+          routerLink="/app/ops/productos-maestros"
           class="inline-flex min-h-11 items-center rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold"
         >
           Cancelar

@@ -54,6 +54,8 @@ object PosApiUserMessages {
                     "Este código ya fue usado. Pide uno nuevo en la Web Central."
                 "POS_DEVICE_ALREADY_ENROLLED" ->
                     "Esta tablet ya está enrolada."
+                "POS_ENROLLMENT_HEADQUARTER_MISMATCH" ->
+                    "Este código es de otra sede. Pide un código de la sede de esta tablet."
                 "POS_DEVICE_REVOKED" ->
                     "Este dispositivo fue revocado. Contacta a un administrador."
                 "POS_DEVICE_NOT_FOUND" ->

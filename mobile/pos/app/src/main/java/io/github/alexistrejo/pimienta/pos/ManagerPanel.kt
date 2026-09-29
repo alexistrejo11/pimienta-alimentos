@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -30,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -55,6 +57,7 @@ import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
+import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import io.github.alexistrejo.pimienta.pos.data.sync.planProductEdit
 import io.github.alexistrejo.pimienta.pos.data.sync.scanCode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
@@ -160,7 +163,7 @@ internal fun ManagerPanel(
         val landscape = maxWidth > maxHeight
         Column(Modifier.fillMaxSize()) {
             ManagerHeader(effectiveShift, manager, onReturnToSale) { webCentralMessage = "La URL de Web Central se configurará con el entorno de la sede; las operaciones locales siguen disponibles." }
-            webCentralMessage?.let { Text(it, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            webCentralMessage?.let { Text(it, Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (landscape) Row(Modifier.weight(1f).fillMaxWidth()) {
                 ManagerSideNav(section, { section = it }, availableSections, Modifier.width(188.dp).fillMaxHeight())
                 HorizontalDivider(modifier = Modifier.fillMaxHeight().width(1.dp))
@@ -180,36 +183,56 @@ private fun ManagerHeader(shift: ShiftEntity?, manager: LocalUserEntity, onRetur
         Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(12.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PosButton(if (shift != null) "Volver a caja" else "Volver", onReturn)
+        PosButton(
+            label = if (shift != null) "Volver a caja" else "Volver",
+            click = onReturn,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+        )
         Column(Modifier.weight(1f)) {
-            Text("Panel de control", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("Panel de control", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 if (shift != null) "Turno ${shift.id.take(4).uppercase()} · ${manager.displayName}"
                 else "Sin turno activo · ${manager.displayName}",
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        PosButton("Web Central", onOpenWebCentral)
+        PosButton(
+            label = "Web Central",
+            click = onOpenWebCentral,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+        )
     }
 }
 
 // Provides persistent landscape navigation.
 @Composable
-private fun ManagerSideNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, sections: List<ManagerSection>, modifier: Modifier) { Column(modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { sections.forEach { item -> PosButton(item.label, { choose(item) }, selected = selected == item, modifier = Modifier.fillMaxWidth()) } } }
+private fun ManagerSideNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, sections: List<ManagerSection>, modifier: Modifier) {
+    Column(modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        sections.forEach { item ->
+            PosButton(
+                label = item.label,
+                click = { choose(item) },
+                selected = selected == item,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
 
 // Uses a compact selector in portrait.
 @Composable
 private fun ManagerCompactNav(selected: ManagerSection, choose: (ManagerSection) -> Unit, sections: List<ManagerSection>) {
     var expanded by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-        PosButton("Sección: ${selected.label}", { expanded = true }, modifier = Modifier.fillMaxWidth())
+    Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+        PosButton("Sección: ${selected.label}", { expanded = true }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp))
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { sections.forEach { item -> DropdownMenuItem(text = { Text(item.label) }, onClick = { choose(item); expanded = false }) } }
     }
 }
@@ -232,19 +255,40 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
     var category by rememberSaveable { mutableStateOf("Todos") }
     var search by rememberSaveable { mutableStateOf("") }
     var editingProductId by rememberSaveable { mutableStateOf<String?>(null) }
-    val editing = remember(editingProductId, products) { products.firstOrNull { it.id == editingProductId } }
+
+    // Observes live catalog changes from Room so updates and creations reflect instantly without reloading the screen.
+    val liveProducts by remember(repository, products) {
+        repository.observeProducts()
+    }.collectAsState(initial = products)
+
+    // Listens to hardware barcode scanner reads to populate the search field automatically.
+    val scanner = remember { PosScannerRegistry.primary }
+    LaunchedEffect(scanner) {
+        scanner ?: return@LaunchedEffect
+        scanner.start()
+        scanner.events.collect { read ->
+            val code = read.rawValue.trim()
+            if (code.isNotBlank()) {
+                search = code
+            }
+        }
+    }
+
+    val editing = remember(editingProductId, liveProducts) { liveProducts.firstOrNull { it.id == editingProductId } }
     var creatingProduct by rememberSaveable { mutableStateOf(false) }
     var busy by rememberSaveable { mutableStateOf(false) }
     var createBusy by rememberSaveable { mutableStateOf(false) }
+    var syncBusy by remember { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     var createError by rememberSaveable { mutableStateOf<String?>(null) }
+    var syncMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sandbox = repository.mode() != RuntimeMode.PRODUCTION
     val (searchInteraction, forceSearchKeyboard) = rememberForceSoftKeyboardInteractionSource()
-    val categories = remember(products) { listOf("Todos") + sortedCategoryNames(products.map { it.saleCategory }) }
-    val filtered = remember(products, category, search) {
-        products.filter { product ->
+    val categories = remember(liveProducts) { listOf("Todos") + sortedCategoryNames(liveProducts.map { it.saleCategory }) }
+    val filtered = remember(liveProducts, category, search) {
+        liveProducts.filter { product ->
             val matchesCategory = category == "Todos" || product.saleCategory.equals(category, ignoreCase = true)
             val query = search.trim()
             val matchesSearch = query.isEmpty() ||
@@ -255,23 +299,57 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
         }
     }
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Productos", style = MaterialTheme.typography.headlineSmall)
-                PosButton(
-                    label = "Agregar producto",
-                    click = {
-                        createError = null
-                        creatingProduct = true
-                    },
-                    primary = true,
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Productos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "(${filtered.size}/${liveProducts.size})",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PosButton(
+                        label = if (syncBusy) "Sincronizando…" else "Sincronizar",
+                        click = {
+                            if (sandbox) {
+                                syncMessage = "Capacitación: catálogo local."
+                            } else {
+                                syncBusy = true
+                                syncMessage = "Sincronizando con servidor…"
+                                scope.launch {
+                                    val msg = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                                    syncBusy = false
+                                    syncMessage = if (msg == "Sincronización completada.") "✓ Sincronización completada." else msg
+                                }
+                            }
+                        },
+                        enabled = !syncBusy,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    )
+                    PosButton(
+                        label = "Agregar producto",
+                        click = {
+                            createError = null
+                            creatingProduct = true
+                        },
+                        primary = true,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    )
+                }
+            }
+            syncMessage?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (it.startsWith("✓")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text("Busca por nombre, SKU o código. Editar no quita el producto de la sede.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
@@ -280,17 +358,23 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                     .onFocusChanged { if (it.isFocused) forceSearchKeyboard() },
                 interactionSource = searchInteraction,
                 singleLine = true,
-                placeholder = { Text("Buscar producto") },
+                placeholder = { Text("Buscar por nombre, SKU o código…", style = MaterialTheme.typography.bodySmall) },
+                colors = catalogFieldColors(),
             )
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 categories.forEach { item ->
-                    PosButton(item, { category = item }, selected = category == item)
+                    PosButton(
+                        label = item,
+                        click = { category = item },
+                        selected = category == item,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    )
                 }
             }
             if (filtered.isEmpty()) {
-                Text("No hay productos con ese filtro.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("No hay productos con ese filtro.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 6.dp))
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(1.dp), modifier = Modifier.weight(1f)) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f).fillMaxWidth()) {
                     items(filtered, key = { it.id }) { product ->
                         ProductEditRow(product) {
                             error = null
@@ -302,8 +386,8 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
         }
     }
     if (creatingProduct) {
-        val createCategories = remember(products) {
-            val distinct = sortedCategoryNames(products.map { it.saleCategory })
+        val createCategories = remember(liveProducts) {
+            val distinct = sortedCategoryNames(liveProducts.map { it.saleCategory })
             if (distinct.isEmpty()) listOf("General") else distinct
         }
         CreatePosProductDialog(
@@ -354,9 +438,20 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
         )
     }
     editing?.let { product ->
+        // Include the stored name when it is missing from the other products' categories.
+        val editCategories = remember(liveProducts, product.saleCategory) {
+            val distinct = sortedCategoryNames(liveProducts.map { it.saleCategory })
+            val base = if (distinct.isEmpty()) listOf("General") else distinct
+            if (base.none { it.equals(product.saleCategory, ignoreCase = true) } && product.saleCategory.isNotBlank()) {
+                listOf(product.saleCategory) + base
+            } else {
+                base
+            }
+        }
         EditPosProductDialog(
             productName = product.name,
             sku = product.sku,
+            categories = editCategories,
             category = product.saleCategory,
             initialBarcode = scanCode(product.barcode, product.sku),
             initialPriceCentavos = Money.fromCatalog(product.price),
@@ -365,7 +460,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
             busy = busy,
             error = error,
             onDismiss = { if (!busy) editingProductId = null },
-            onSubmit = { name, cents, controlled, barcode ->
+            onSubmit = { name, category, cents, controlled, barcode ->
                 val plan = planProductEdit(
                     product.name,
                     Money.fromCatalog(product.price),
@@ -376,6 +471,8 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                     cents,
                     controlled,
                     barcode,
+                    product.saleCategory,
+                    category,
                 )
                 if (!plan.rename && !plan.offer) {
                     editingProductId = null
@@ -386,10 +483,10 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                 scope.launch {
                     val result = withContext(Dispatchers.IO) {
                         if (sandbox) {
-                            repository.updateTrainingProduct(product, name, cents, controlled, barcode)
+                            repository.updateTrainingProduct(product, name, cents, controlled, barcode, category)
                         } else {
                             val app = context.applicationContext as PosApplication
-                            ProvisioningRepository(context, app.databaseProvider).updateProduct(product, name, cents, controlled, barcode)
+                            ProvisioningRepository(context, app.databaseProvider).updateProduct(product, name, cents, controlled, barcode, category)
                         }
                     }
                     busy = false
@@ -407,7 +504,10 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
 @Composable
 private fun ProductEditRow(product: ProductEntity, onEdit: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 12.dp, vertical = 10.dp),
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.extraSmall)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -427,7 +527,7 @@ private fun ProductEditRow(product: ProductEntity, onEdit: () -> Unit) {
             )
         }
         Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.SemiBold)
-        PosButton("Editar", onEdit)
+        PosButton("Editar", onEdit, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp))
     }
 }
 
@@ -1147,13 +1247,20 @@ private fun StatusPanel(
                         if (mode == RuntimeMode.PRODUCTION) {
                             syncMessage = "Sincronizando…"
                             scope.launch {
-                                syncMessage = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                                val msg = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                                syncMessage = if (msg == "Sincronización completada.") "✓ Sincronización completada." else msg
                             }
                         } else {
                             syncMessage = "Sandbox no envía eventos al backend."
                         }
                     })
-                    syncMessage?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    syncMessage?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (it.startsWith("✓")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
             DevicesPanel(repository = repository, modifier = Modifier.fillMaxWidth(), showHeading = true)

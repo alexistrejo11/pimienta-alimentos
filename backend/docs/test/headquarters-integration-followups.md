@@ -49,3 +49,8 @@ Non-fatal behaviors, consistency gaps, and product decisions to revisit. **Resol
 - `version_startsAtOneOnCreate_andIncrementsOnUpdate` asserts create returns `version: 1` and a later GET returns `2`. Hibernate used to seed `@Version` at 0 on insert (the Flyway `DEFAULT 1` never applied); `VersionedJpaEntity` now seeds 1 in `@PrePersist`.
 - Under `@Transactional` tests the increment only shows after `EntityManager.flush()`; the PUT response itself still reports the pre-flush version. Clients that cache `version` from a PUT response should re-read if they start sending it back.
 - Tests run on H2 with Flyway disabled, so the Flyway `version DEFAULT 1` columns are not exercised by the suite.
+
+## POS product unified create (2026-09-28)
+
+- Staff `POST /headquarters/{id}/pos-products` now uses the same role matcher as `pos-catalog` (ADMIN, DIRECTOR, MANAGER, EMPLOYEE) plus `HeadquarterAccessService`. Before this, the route fell through to ADMIN-only `anyRequest`.
+- No extra follow-ups from this pass.

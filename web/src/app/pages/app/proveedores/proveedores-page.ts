@@ -47,7 +47,6 @@ export class ProveedoresPageComponent implements OnInit {
   searchDraft = '';
   searchApplied = '';
   page = 0;
-  private initialLoad = true;
 
   readonly effectiveHeadquarterId = computed(() => {
     if (this.session.isAdmin()) {
@@ -68,10 +67,8 @@ export class ProveedoresPageComponent implements OnInit {
             return;
           }
           this.selectedHeadquarterId = hq;
-          this.cargar();
-        } else {
-          this.loading.set(false);
         }
+        this.cargar();
       },
       error: () => this.loading.set(false),
     });
@@ -83,21 +80,16 @@ export class ProveedoresPageComponent implements OnInit {
 
   onHeadquarterChange(id: number | number[] | null): void {
     const hqId = Array.isArray(id) ? (id[0] ?? null) : id;
-    this.selectedHeadquarterId = hqId;
-    this.session.selectHeadquarter(hqId);
-    if (this.session.isAdmin() && hqId == null) {
-      this.page = 0;
-      this.cargar();
+    if (hqId === this.selectedHeadquarterId) {
       return;
     }
-    if (hqId == null) {
+    this.selectedHeadquarterId = hqId;
+    this.session.selectHeadquarter(hqId);
+    if (hqId == null && !this.session.isAdmin()) {
       this.items.set([]);
       this.metadata.set(null);
       this.loading.set(false);
       return;
-    }
-    if (this.initialLoad) {
-      this.initialLoad = false;
     }
     this.page = 0;
     this.cargar();

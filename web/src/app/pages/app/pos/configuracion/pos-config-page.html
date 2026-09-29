@@ -60,12 +60,12 @@
           <fieldset class="flex flex-col gap-3 text-sm sm:col-span-2">
             <legend class="font-medium">Categorías permitidas para monto abierto</legend>
             <p class="text-xs text-on-surface-variant">
-              Marca cuáles categorías de venta de esta sede puede usar el monto abierto. Para crearlas o renombrarlas, usa el catálogo POS.
+              Marca cuáles categorías de venta de esta sede puede usar el monto abierto. Para crearlas o renombrarlas, usa Productos.
             </p>
             @if (activeCategories().length === 0) {
               <p class="text-xs text-on-surface-variant">
                 No hay categorías de venta en esta sede.
-                <a routerLink="/app/ops/pos/catalogo" class="font-semibold text-primary">Crearlas en el catálogo</a>.
+                <a routerLink="/app/ops/pos/catalogo" class="font-semibold text-primary">Crearlas en Productos</a>.
               </p>
             } @else {
               <div class="flex flex-col gap-2">

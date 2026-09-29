@@ -128,7 +128,7 @@ internal fun Sale(
         }
     }
 
-    // Filters visible categories to hide empty ones when barcoded products are hidden.
+    // Drops products that have their own barcode so the grid keeps tap-only items.
     val visibleProductsForCategories = remember(products, hideBarcodedProducts, search) {
         if (!hideBarcodedProducts || search.isNotBlank()) products else products.filter { !it.hasDistinctBarcode() }
     }

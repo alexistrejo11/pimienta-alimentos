@@ -6,6 +6,8 @@ import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.PosProductManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.application.command.CreatePosProductCommand;
+import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosProductCreate;
+import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.doc.DocHeadquarterPosProducts;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.CreatePosProductRequest;
 import io.github.alexistrejo11.pimienta.module.headquarter.infrastructure.adapter.inbound.web.dto.CreatedPosProductResponse;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(BASE + "/headquarters/{id}/pos-products")
 @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+@DocHeadquarterPosProducts
 public class PosProductController {
 
   private final PosProductManagementUseCases useCases;
@@ -36,6 +39,7 @@ public class PosProductController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @DocHeadquarterPosProductCreate
   public CreatedPosProductResponse create(
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @PathVariable Long id,

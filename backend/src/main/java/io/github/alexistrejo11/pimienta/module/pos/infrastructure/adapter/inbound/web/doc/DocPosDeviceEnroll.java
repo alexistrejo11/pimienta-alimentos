@@ -21,7 +21,10 @@ import java.lang.annotation.Target;
 @DocPublicEndpoint
 @Operation(
     summary = "Enroll POS device",
-    description = "Consumes a one-time six-digit numeric enrollment code (TTL 15 min) and returns device tokens.")
+    description =
+        "Consumes a one-time six-digit numeric enrollment code (TTL 15 min) and returns device tokens. "
+            + "A valid code re-enrolls the same devicePublicId when it is already authorized or revoked, "
+            + "rotates the refresh token, and keeps the site. A code for another site is rejected.")
 @RequestBody(
     required = true,
     content =
@@ -44,7 +47,7 @@ import java.lang.annotation.Target;
             schema = @Schema(implementation = ApiErrorResponse.class)))
 @ApiResponse(
     responseCode = "409",
-    description = "Code already used or device already enrolled.",
+    description = "Code already used, or the code belongs to another site.",
     content =
         @Content(
             mediaType = "application/json",

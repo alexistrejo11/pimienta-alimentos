@@ -121,7 +121,9 @@ public class SecurityConfig {
                     BASE + "/headquarters/*/pos-catalog",
                     BASE + "/headquarters/*/pos-catalog/**",
                     BASE + "/headquarters/*/pos-categories",
-                    BASE + "/headquarters/*/pos-categories/**")
+                    BASE + "/headquarters/*/pos-categories/**",
+                    BASE + "/headquarters/*/pos-products",
+                    BASE + "/headquarters/*/pos-products/**")
                 .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .requestMatchers(HttpMethod.GET, BASE + "/headquarters/statistics")
                 .hasRole("ADMIN")

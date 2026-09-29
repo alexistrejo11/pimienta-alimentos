@@ -126,6 +126,10 @@ public class PosSyncController {
       @Valid @RequestBody DeviceUpdatePosProductOfferRequest request) {
     return PosWebMapper.toProductResponse(
         deviceCatalogUseCases.updateProductOffer(
-            device.deviceId(), itemId, request.salePriceCentavos(), request.stockPolicy()));
+            device.deviceId(),
+            itemId,
+            request.salePriceCentavos(),
+            request.stockPolicy(),
+            request.saleCategory()));
   }
 }

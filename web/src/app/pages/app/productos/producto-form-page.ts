@@ -103,7 +103,7 @@ export class ProductoFormPageComponent implements OnInit {
     request$.pipe(finalize(() => this.loading.set(false))).subscribe({
       next: () => {
         markFormPristine(this.form);
-        void this.router.navigate(['/app/ops/productos']);
+        void this.router.navigate(['/app/ops/productos-maestros']);
       },
       error: (err: unknown) => this.apiError.set(parseApiError(err)),
     });

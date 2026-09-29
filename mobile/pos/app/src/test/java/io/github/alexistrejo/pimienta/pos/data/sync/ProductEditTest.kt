@@ -22,6 +22,15 @@ class ProductEditTest {
     }
 
     @Test
+    fun categoryChangeSendsOffer() {
+        val plan = planProductEdit(
+            "Agua", 1500, false, null, "SKU-1", "Agua", 1500, false, "SKU-1", "Bebidas", "Snacks",
+        )
+        assertFalse(plan.rename)
+        assertTrue(plan.offer)
+    }
+
+    @Test
     fun priceOrStockSkipsRename() {
         val price = planProductEdit("Agua", 1500, false, "7501", "SKU-1", "Agua", 1800, false, "7501")
         assertFalse(price.rename)

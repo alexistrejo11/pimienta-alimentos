@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EMPTY, expand, finalize, forkJoin, reduce } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
@@ -30,6 +30,7 @@ import { SurtidoModalComponent } from './surtido-modal';
     HeadquarterSelectComponent,
     ListSearchFieldComponent,
     SurtidoModalComponent,
+    RouterLink,
   ],
   templateUrl: './sede-pos-page.html',
 })
@@ -57,6 +58,7 @@ export class SedePosPageComponent implements OnInit {
   readonly categorySaving = signal(false);
   readonly surtidoAbierto = signal(false);
   readonly surtidoEdit = signal<HeadquarterPosCatalogItemResponse | null>(null);
+  readonly surtidoIntent = signal<'create' | 'link'>('create');
   readonly notice = signal('');
   readonly catalogSearchDraft = signal('');
   readonly catalogSearchApplied = signal('');
@@ -69,6 +71,9 @@ export class SedePosPageComponent implements OnInit {
   readonly stockPolicies: StockPolicy[] = ['CONTROLLED', 'NOT_CONTROLLED'];
   readonly stockPolicyLabel = stockPolicyLabel;
   readonly canEditCatalog = computed(() => this.session.canOperateOps());
+  readonly canAddProduct = computed(
+    () => this.canEditCatalog() && this.activeCategories().length > 0,
+  );
   readonly isAdmin = this.session.isAdmin;
 
   readonly activeCategories = computed(() =>
@@ -189,11 +194,20 @@ export class SedePosPageComponent implements OnInit {
   abrirAgregar(): void {
     this.notice.set('');
     this.surtidoEdit.set(null);
+    this.surtidoIntent.set('create');
+    this.surtidoAbierto.set(true);
+  }
+
+  abrirLinkear(): void {
+    this.notice.set('');
+    this.surtidoEdit.set(null);
+    this.surtidoIntent.set('link');
     this.surtidoAbierto.set(true);
   }
 
   startEditCatalog(row: HeadquarterPosCatalogItemResponse): void {
     this.notice.set('');
+    this.surtidoIntent.set('create');
     this.surtidoEdit.set(row);
     this.surtidoAbierto.set(true);
   }
@@ -201,6 +215,7 @@ export class SedePosPageComponent implements OnInit {
   cerrarSurtido(): void {
     this.surtidoAbierto.set(false);
     this.surtidoEdit.set(null);
+    this.surtidoIntent.set('create');
   }
 
   onSurtidoGuardado(message: string): void {

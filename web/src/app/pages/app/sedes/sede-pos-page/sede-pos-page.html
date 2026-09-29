@@ -1,8 +1,8 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
     <app-page-header
-      [title]="globalMode() ? 'Catálogo POS por sede' : 'Catálogo POS — ' + (sedeName() || 'Sede')"
-      subtitle="Surtido, categorías de venta y precios por sede"
+      [title]="globalMode() ? 'Productos' : 'Productos — ' + (sedeName() || 'Sede')"
+      subtitle="Productos y precios del POS en esta sede"
       [backLink]="globalMode() ? '/app/ops/dashboard' : '/app/ops/sedes/' + headquarterId()"
       [backLabel]="globalMode() ? 'Dashboard' : 'Detalle de sede'"
     />
@@ -102,22 +102,44 @@
           <div>
             <h2 class="font-headline text-lg font-bold text-on-surface">Surtido</h2>
             <p class="mt-1 text-sm text-on-surface-variant">
-              Productos asignados a esta sede. Marcar como
-              <span class="font-medium text-on-surface">no disponible</span> los deja en el POS
-              (tarjeta gris).
-              <span class="font-medium text-on-surface">Quitar de la sede</span> los elimina del
+              Productos de esta sede, como en la tablet. Aquí se crean y se editan nombre, código,
+              precio y control de inventario.
+              <span class="font-medium text-on-surface">Quitar de la sede</span> los saca del
               catálogo; en el próximo sync desaparecen del dispositivo.
             </p>
+            @if (isAdmin()) {
+              <p class="mt-2 text-sm text-on-surface-variant">
+                Los maestros globales están en
+                <a routerLink="/app/ops/productos-maestros" class="font-semibold text-primary">Productos maestros</a>.
+                Usa <span class="font-medium text-on-surface">Agregar existente</span> para vincular uno a esta sede.
+              </p>
+            }
+            @if (canEditCatalog() && activeCategories().length === 0) {
+              <p class="mt-2 text-sm text-on-surface-variant">
+                Crea una categoría de venta antes de agregar productos.
+              </p>
+            }
           </div>
           <div class="flex flex-wrap gap-2">
             @if (canEditCatalog()) {
               <button
                 type="button"
-                class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+                class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary disabled:cursor-not-allowed disabled:opacity-60"
                 (click)="abrirAgregar()"
+                [disabled]="!canAddProduct()"
               >
                 <span class="material-symbols-outlined text-xl" aria-hidden="true">add</span>
-                Agregar al surtido
+                Agregar producto
+              </button>
+            }
+            @if (isAdmin() && canEditCatalog()) {
+              <button
+                type="button"
+                class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                (click)="abrirLinkear()"
+                [disabled]="!canAddProduct()"
+              >
+                Agregar existente
               </button>
             }
             <button
@@ -145,7 +167,7 @@
         <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <app-list-search-field
             class="sm:col-span-2 lg:col-span-2"
-            placeholder="Buscar nombre, SKU o código"
+            placeholder="Buscar nombre, SKU o código de barras"
             [(draft)]="catalogSearchDraft"
             (search)="applyCatalogSearch($event)"
           />
@@ -196,6 +218,7 @@
                 <tr>
                   <th class="px-3 py-2 text-left">Producto</th>
                   <th class="px-3 py-2 text-left">SKU</th>
+                  <th class="px-3 py-2 text-left">Código de barras</th>
                   <th class="px-3 py-2 text-left">Categoría</th>
                   <th class="px-3 py-2 text-left">Precio</th>
                   <th class="px-3 py-2 text-left">Stock</th>
@@ -208,6 +231,7 @@
                   <tr>
                     <td class="px-3 py-2">{{ row.productName || productName(row.productId) }}</td>
                     <td class="px-3 py-2 font-mono text-xs">{{ row.productSku || productSku(row.productId) }}</td>
+                    <td class="px-3 py-2 font-mono text-xs">{{ row.productBarcode || '—' }}</td>
                     <td class="px-3 py-2">{{ row.saleCategory }}</td>
                     <td class="px-3 py-2 tabular-nums">${{ row.salePrice }}</td>
                     <td class="px-3 py-2">{{ stockPolicyLabel(row.stockPolicy) }}</td>
@@ -271,6 +295,7 @@
         [headquarterId]="headquarterId()"
         [categories]="activeCategories()"
         [existing]="surtidoEdit()"
+        [intent]="surtidoIntent()"
         (cerrar)="cerrarSurtido()"
         (guardado)="onSurtidoGuardado($event)"
       />

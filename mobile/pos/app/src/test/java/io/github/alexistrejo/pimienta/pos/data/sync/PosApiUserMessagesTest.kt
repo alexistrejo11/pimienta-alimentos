@@ -27,6 +27,10 @@ class PosApiUserMessagesTest {
             PosApiUserMessages.messageFor("POS_ENROLLMENT_CODE_CONSUMED", 409),
         )
         assertEquals(
+            "Este código es de otra sede. Pide un código de la sede de esta tablet.",
+            PosApiUserMessages.messageFor("POS_ENROLLMENT_HEADQUARTER_MISMATCH", 409),
+        )
+        assertEquals(
             "Ya existe un producto con ese código de barras.",
             PosApiUserMessages.messageFor("ITEM_BARCODE_ALREADY_EXISTS", 409),
         )

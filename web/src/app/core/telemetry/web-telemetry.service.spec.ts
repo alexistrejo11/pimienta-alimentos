@@ -34,7 +34,7 @@ describe('WebTelemetryService', () => {
       level: 'ERROR',
       route: window.location.pathname,
       traceId: 'trace-1',
-      release: '2.2.11',
+      release: '2.2.14',
     });
     request.flush({ accepted: 1 });
   });

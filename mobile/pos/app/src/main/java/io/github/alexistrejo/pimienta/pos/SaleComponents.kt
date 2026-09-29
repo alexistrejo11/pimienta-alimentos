@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.core.content.ContextCompat
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
+import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -276,6 +277,18 @@ internal fun CreatePosProductDialog(
     val (nameInteraction, forceNameKeyboard) = rememberForceSoftKeyboardInteractionSource()
     val (barcodeInteraction, forceBarcodeKeyboard) = rememberForceSoftKeyboardInteractionSource()
 
+    val scanner = remember { PosScannerRegistry.primary }
+    LaunchedEffect(scanner, lockedBarcode) {
+        if (scanner == null || lockedBarcode != null) return@LaunchedEffect
+        scanner.start()
+        scanner.events.collect { read ->
+            val code = read.rawValue.trim()
+            if (code.isNotBlank()) {
+                barcode = code
+            }
+        }
+    }
+
     fun submit() {
         val cents = Money.fromInput(amount)
         when {
@@ -352,11 +365,12 @@ internal fun CreatePosProductDialog(
     }
 }
 
-// Edits name, price, and stock control. Category stays as stored on the site.
+// Edits name, category, price, and stock control for one site product.
 @Composable
 internal fun EditPosProductDialog(
     productName: String,
     sku: String,
+    categories: List<String>,
     category: String,
     initialBarcode: String,
     initialPriceCentavos: Long,
@@ -365,9 +379,10 @@ internal fun EditPosProductDialog(
     busy: Boolean,
     error: String?,
     onDismiss: () -> Unit,
-    onSubmit: (name: String, priceCentavos: Long, controlled: Boolean, barcode: String) -> Unit,
+    onSubmit: (name: String, category: String, priceCentavos: Long, controlled: Boolean, barcode: String) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf(productName) }
+    var selectedCategory by rememberSaveable { mutableStateOf(category) }
     var barcode by rememberSaveable { mutableStateOf(initialBarcode) }
     var amount by rememberSaveable { mutableStateOf(BigDecimal.valueOf(initialPriceCentavos, 2).toPlainString()) }
     var controlled by rememberSaveable { mutableStateOf(initialControlled) }
@@ -375,15 +390,28 @@ internal fun EditPosProductDialog(
     val (nameInteraction, forceNameKeyboard) = rememberForceSoftKeyboardInteractionSource()
     val (barcodeInteraction, forceBarcodeKeyboard) = rememberForceSoftKeyboardInteractionSource()
 
+    val scanner = remember { PosScannerRegistry.primary }
+    LaunchedEffect(scanner, busy) {
+        if (scanner == null || busy) return@LaunchedEffect
+        scanner.start()
+        scanner.events.collect { read ->
+            val code = read.rawValue.trim()
+            if (code.isNotBlank()) {
+                barcode = code
+            }
+        }
+    }
+
     fun submit() {
         if (busy) return
         val cents = Money.fromInput(amount)
         when {
             name.isBlank() -> localError = "Captura el nombre."
+            selectedCategory.isBlank() -> localError = "Elige una categoría de venta."
             cents == null || cents <= 0 -> localError = "Captura un precio válido."
             else -> {
                 localError = null
-                onSubmit(name.trim(), cents, controlled, barcode.trim())
+                onSubmit(name.trim(), selectedCategory, cents, controlled, barcode.trim())
             }
         }
     }
@@ -402,7 +430,7 @@ internal fun EditPosProductDialog(
                     if (sandbox) {
                         "Capacitación: el cambio queda en esta tablet y desaparece al salir o al reiniciar."
                     } else {
-                        "Solo se envía lo que cambies: el nombre por un lado, el precio y el inventario por otro."
+                        "Solo se envía lo que cambies: el nombre por un lado, la categoría, el precio y el inventario por otro."
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -434,7 +462,11 @@ internal fun EditPosProductDialog(
                     colors = catalogFieldColors(),
                 )
                 Text("Categoría", style = MaterialTheme.typography.labelLarge)
-                Text(category.ifBlank { "Sin categoría" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    categories.forEach { cat ->
+                        PosButton(cat, { if (!busy) selectedCategory = cat }, selected = selectedCategory == cat, enabled = !busy)
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Switch(checked = controlled, onCheckedChange = { controlled = it }, enabled = !busy)
                     Text("Controla inventario")
@@ -713,7 +745,7 @@ internal fun CatalogPanel(
                 if (onToggleHideBarcoded != null) {
                     Spacer(Modifier.width(6.dp))
                     PosButton(
-                        label = if (hideBarcoded) "Solo táctiles" else "Todos",
+                        label = if (hideBarcoded) "Sin código de barras" else "Todos",
                         click = onToggleHideBarcoded,
                         selected = hideBarcoded,
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 12.dp),

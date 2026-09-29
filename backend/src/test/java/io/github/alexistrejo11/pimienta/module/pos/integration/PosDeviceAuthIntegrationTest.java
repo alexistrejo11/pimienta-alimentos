@@ -125,6 +125,119 @@ class PosDeviceAuthIntegrationTest {
   }
 
   @Test
+  void enroll_authorizedDevice_rotatesSessionAndKeepsVisibleCode() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-RE-" + UUID.randomUUID());
+    UUID deviceId = UUID.randomUUID();
+    String code = createEnrollmentCode(staffToken, hqId);
+
+    MvcResult first =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll", enrollJson(code, deviceId, "Caja 1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibleCode").value("T1"))
+            .andReturn();
+    String oldRefresh = JsonPath.read(first.getResponse().getContentAsString(), "$.refreshToken");
+    String access = JsonPath.read(first.getResponse().getContentAsString(), "$.accessToken");
+
+    String eventBody =
+        """
+        {
+          "events": [
+            {
+              "eventId": "%s",
+              "eventType": "DEVICE_HEARTBEAT",
+              "schemaVersion": 1,
+              "deviceId": "%s",
+              "siteId": "%d",
+              "deviceSequence": 4,
+              "occurredAt": "2026-09-28T18:00:00Z",
+              "payload": {}
+            }
+          ]
+        }
+        """
+            .formatted(UUID.randomUUID(), deviceId, hqId);
+    mockMvc
+        .perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", access, eventBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    String code2 = createEnrollmentCode(staffToken, hqId);
+    MvcResult second =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll", enrollJson(code2, deviceId, "Caja recuperada")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.deviceId").value(deviceId.toString()))
+            .andExpect(jsonPath("$.status").value("AUTHORIZED"))
+            .andExpect(jsonPath("$.visibleCode").value("T1"))
+            .andExpect(jsonPath("$.site.id").value(String.valueOf(hqId)))
+            .andExpect(jsonPath("$.lastDeviceSequence", is(4)))
+            .andReturn();
+    String newAccess = JsonPath.read(second.getResponse().getContentAsString(), "$.accessToken");
+    String newRefresh = JsonPath.read(second.getResponse().getContentAsString(), "$.refreshToken");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                "/api/v1/pos/devices/refresh",
+                "{\"refreshToken\": \"%s\"}".formatted(oldRefresh)))
+        .andExpect(status().isUnauthorized());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                "/api/v1/pos/devices/refresh",
+                "{\"refreshToken\": \"%s\"}".formatted(newRefresh)))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/devices/me", newAccess))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.deviceName").value("Caja recuperada"))
+        .andExpect(jsonPath("$.visibleCode").value("T1"))
+        .andExpect(jsonPath("$.lastDeviceSequence", is(4)))
+        .andExpect(jsonPath("$.site.id").value(String.valueOf(hqId)));
+  }
+
+  @Test
+  void enroll_codeForOtherHeadquarter_returns409() throws Exception {
+    String staffToken = obtainAccessToken();
+    long homeHq = createHeadquarter(staffToken, "POS-HOME-" + UUID.randomUUID());
+    long otherHq = createHeadquarter(staffToken, "POS-OTHER-" + UUID.randomUUID());
+    UUID deviceId = UUID.randomUUID();
+    String homeCode = createEnrollmentCode(staffToken, homeHq);
+
+    MvcResult first =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll", enrollJson(homeCode, deviceId, "Caja casa")))
+            .andExpect(status().isOk())
+            .andReturn();
+    String refresh = JsonPath.read(first.getResponse().getContentAsString(), "$.refreshToken");
+
+    String otherCode = createEnrollmentCode(staffToken, otherHq);
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                "/api/v1/pos/devices/enroll", enrollJson(otherCode, deviceId, "Caja ajena")))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.errorCode").value("POS_ENROLLMENT_HEADQUARTER_MISMATCH"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                "/api/v1/pos/devices/refresh",
+                "{\"refreshToken\": \"%s\"}".formatted(refresh)))
+        .andExpect(status().isOk());
+  }
+
+  @Test
   void enroll_expiredCode_returns400() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-EXP-" + UUID.randomUUID());

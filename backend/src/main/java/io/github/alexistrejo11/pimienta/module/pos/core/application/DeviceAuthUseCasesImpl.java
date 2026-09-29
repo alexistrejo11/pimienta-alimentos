@@ -9,12 +9,12 @@ import io.github.alexistrejo11.pimienta.module.pos.core.application.command.Enro
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosEnrollmentCode;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosDeviceStatus;
-import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceAlreadyEnrolledException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceNotFoundException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosDeviceRevokedException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosEnrollmentCodeConsumedException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosEnrollmentCodeExpiredException;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosEnrollmentCodeInvalidException;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosEnrollmentHeadquarterMismatchException;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.DeviceAuthUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.DeviceTokenIssuer;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.DeviceTokenIssuer.DeviceIssuedTokens;
@@ -91,11 +91,18 @@ public class DeviceAuthUseCasesImpl implements DeviceAuthUseCases {
             .orElseThrow(() -> new HeadquarterNotFoundException(code.getHeadquarterId()));
 
     PosDevice existing = deviceRepository.findById(command.devicePublicId()).orElse(null);
-    if (existing != null && existing.isAuthorized()) {
-      throw new PosDeviceAlreadyEnrolledException(command.devicePublicId());
+    if (existing != null
+        && existing.getHeadquarterId() != null
+        && !existing.getHeadquarterId().equals(code.getHeadquarterId())) {
+      throw new PosEnrollmentHeadquarterMismatchException(
+          command.devicePublicId(), code.getHeadquarterId());
     }
 
-    String visibleCode = nextVisibleCode(code.getHeadquarterId());
+    // A live tablet keeps its folio code. Revoke still assigns the next code on the way back in.
+    boolean keepVisibleCode =
+        existing != null && existing.isAuthorized() && !existing.getVisibleCode().isBlank();
+    String visibleCode =
+        keepVisibleCode ? existing.getVisibleCode() : nextVisibleCode(code.getHeadquarterId());
     PosDevice device;
     if (existing != null) {
       existing.setDeviceName(command.deviceName());

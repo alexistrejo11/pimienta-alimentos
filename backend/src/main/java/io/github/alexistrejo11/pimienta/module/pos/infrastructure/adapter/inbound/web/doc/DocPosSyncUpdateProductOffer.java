@@ -19,10 +19,11 @@ import java.lang.annotation.Target;
 @Documented
 @DocJwtSecured
 @Operation(
-    summary = "Update price and stock policy for a POS product",
+    summary = "Update price, stock policy, and category for a POS product",
     description =
         "Device JWT only. Updates sale price and stock policy on the headquarter catalog row. "
-            + "Name, category, availability, and negative-stock limit stay as they are. "
+            + "saleCategory, when sent, must be an active category of the sede; omitted leaves the stored category. "
+            + "Name, availability, and negative-stock limit stay as they are. "
             + "Requires device JWT (typ=device, scope=pos:sync).")
 @ApiResponse(
     responseCode = "200",

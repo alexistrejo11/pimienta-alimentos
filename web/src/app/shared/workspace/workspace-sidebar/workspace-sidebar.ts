@@ -106,19 +106,16 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
     ],
   },
   {
-    id: 'products',
-    label: 'Productos',
+    id: 'product-masters',
+    label: 'Productos maestros',
     collapsible: false,
     items: [
-      { label: 'Productos', icon: 'restaurant', route: `${OPS_PATH}/productos`, roles: OPS },
-    ],
-  },
-  {
-    id: 'warehouse-items',
-    label: 'Artículos de bodega',
-    collapsible: false,
-    items: [
-      { label: 'Artículos de bodega', icon: 'inventory_2', route: `${OPS_PATH}/bodega`, roles: OPS },
+      {
+        label: 'Productos maestros',
+        icon: 'inventory',
+        route: `${OPS_PATH}/productos-maestros`,
+        roles: ADMIN_ONLY,
+      },
     ],
   },
   {
@@ -127,7 +124,7 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
     roles: OPS,
     collapsible: true,
     items: [
-      { label: 'Catálogo por sede', icon: 'storefront', route: `${OPS_PATH}/pos/catalogo`, roles: OPS },
+      { label: 'Productos', icon: 'restaurant', route: `${OPS_PATH}/pos/catalogo`, roles: OPS },
       { label: 'Ventas', icon: 'receipt_long', route: `${OPS_PATH}/pos/ventas`, roles: POS_FINANCIAL },
       { label: 'Turnos', icon: 'point_of_sale', route: `${OPS_PATH}/pos/turnos`, roles: OPS },
       {
@@ -156,6 +153,7 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
       // { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: OPS },
       // { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: OPS },
       { label: 'Catálogo de stock', icon: 'category', route: `${OPS_PATH}/catalogo`, roles: OPS },
+      { label: 'Artículos de bodega', icon: 'inventory_2', route: `${OPS_PATH}/bodega`, roles: OPS },
     ],
   },
 ];

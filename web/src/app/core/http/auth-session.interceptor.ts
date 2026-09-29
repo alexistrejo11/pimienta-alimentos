@@ -79,8 +79,9 @@ function shouldAttemptTokenRefresh(err: HttpErrorResponse): boolean {
  * {@code POST /auth/refresh}, then retries the original request once with the new access token.
  * The refresh token is not rotated — it stays valid until logout or JWT expiry.
  *
- * {@code 403} with {@code errorCode: FORBIDDEN} is RBAC and is not retried. If refresh fails or the
- * retried request still indicates an auth problem, clears session and sends the user to login.
+ * {@code 403} with {@code errorCode: FORBIDDEN} is RBAC and is not retried. If refresh fails, or the
+ * retried request is still an auth failure, clears session and sends the user to login. A permission
+ * denial on the retry leaves the session in place.
  */
 export const authSessionInterceptor: HttpInterceptorFn = (req, next) => {
   const platformId = inject(PLATFORM_ID);
@@ -117,7 +118,13 @@ export const authSessionInterceptor: HttpInterceptorFn = (req, next) => {
           });
           return next(retryReq);
         }),
-        catchError(() => clearSessionAndRedirect(router, err)),
+        catchError((retryErr: unknown) => {
+          // A real permission denial after a successful refresh must not end the session.
+          if (retryErr instanceof HttpErrorResponse && !shouldAttemptTokenRefresh(retryErr)) {
+            return throwError(() => retryErr);
+          }
+          return clearSessionAndRedirect(router, err);
+        }),
       );
     }),
   );

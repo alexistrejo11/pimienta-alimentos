@@ -215,6 +215,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
         salePriceCentavos: Long,
         controlledStock: Boolean,
         barcode: String?,
+        saleCategory: String,
     ): Result<ProductEntity> {
         val plan = planProductEdit(
             originalName = product.name,
@@ -226,6 +227,8 @@ class ProvisioningRepository(private val context: Context, private val provider:
             priceCentavos = salePriceCentavos,
             controlled = controlledStock,
             barcode = barcode,
+            originalCategory = product.saleCategory,
+            category = saleCategory,
         )
         if (!plan.rename && !plan.offer) return Result.success(product)
         var saved = product
@@ -244,6 +247,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
                             UpdatePosProductOfferRequest(
                                 salePriceCentavos,
                                 if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
+                                saleCategory.trim(),
                             ),
                         )
                     }.getOrThrow()

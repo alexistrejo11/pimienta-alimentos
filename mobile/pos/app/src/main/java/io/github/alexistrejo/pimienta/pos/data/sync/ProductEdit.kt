@@ -23,9 +23,13 @@ internal fun planProductEdit(
     priceCentavos: Long,
     controlled: Boolean,
     barcode: String?,
+    originalCategory: String = "",
+    category: String = "",
 ): ProductEditPlan = ProductEditPlan(
     rename = name.trim() != originalName.trim() || catalogBarcode(barcode, sku) != catalogBarcode(originalBarcode, sku),
-    offer = priceCentavos != originalPriceCentavos || controlled != originalControlled,
+    offer = priceCentavos != originalPriceCentavos ||
+        controlled != originalControlled ||
+        category.trim().isNotEmpty() && !category.trim().equals(originalCategory.trim(), ignoreCase = true),
 )
 
 // Runs the planned calls in order and persists each success before the next call.

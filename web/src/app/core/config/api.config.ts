@@ -42,5 +42,5 @@ function resolveRelease(): string {
   if (fromWindow) {
     return fromWindow;
   }
-  return '2.2.11';
+  return '2.2.14';
 }

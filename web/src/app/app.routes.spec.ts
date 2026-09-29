@@ -29,6 +29,11 @@ describe('POS routes and permissions', () => {
     expect(settings?.data?.['access']?.['roles']).toContain(AppRole.EMPLOYEE);
   });
 
+  it('limits product masters to admin', () => {
+    const masters = opsChildren.find((route) => route.path === 'productos-maestros');
+    expect(masters?.data?.['access']?.['roles']).toEqual([AppRole.ADMIN]);
+  });
+
   it('nests ERP under /app/erp for admins only', () => {
     const erp = children.find((route) => route.path === 'erp');
     expect(erp?.data?.['workspaceArea']).toBe('erp');

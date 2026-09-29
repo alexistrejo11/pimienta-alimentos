@@ -12,7 +12,7 @@ public interface PosDeviceCatalogUseCases {
   /** Renames the global item and optionally replaces its barcode. SKU stays as stored. */
   ProductRow renameProduct(UUID deviceId, long itemId, String name, String barcode);
 
-  /** Updates sale price and stock policy for this device's headquarter. Name stays on the item. */
+  /** Updates sale price, stock policy, and optionally the sale category for this device's headquarter. */
   ProductRow updateProductOffer(
-      UUID deviceId, long itemId, long salePriceCentavos, StockPolicy stockPolicy);
+      UUID deviceId, long itemId, long salePriceCentavos, StockPolicy stockPolicy, String saleCategory);
 }

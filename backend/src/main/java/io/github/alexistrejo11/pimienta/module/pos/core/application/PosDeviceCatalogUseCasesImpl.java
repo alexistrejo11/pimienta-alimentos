@@ -77,18 +77,30 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
   @Override
   @Transactional
   public ProductRow updateProductOffer(
-      UUID deviceId, long itemId, long salePriceCentavos, StockPolicy stockPolicy) {
+      UUID deviceId, long itemId, long salePriceCentavos, StockPolicy stockPolicy, String saleCategory) {
     long hqId = requireActiveDevice(deviceId).getHeadquarterId();
     headquarterPosCatalogUseCases.get(hqId, itemId);
     ensureControlledStock(itemId, stockPolicy);
+    String category = resolveOfferCategory(hqId, saleCategory);
 
     HeadquarterItem saved =
         headquarterPosCatalogUseCases.upsert(
             hqId,
             itemId,
             new UpsertHeadquarterItemCommand(
-                null, BigDecimal.valueOf(salePriceCentavos, 2), null, stockPolicy, null));
+                category, BigDecimal.valueOf(salePriceCentavos, 2), null, stockPolicy, null));
     return project(saved);
+  }
+
+  /** Blank keeps the stored category. A name must match an active sale category of the sede. */
+  private String resolveOfferCategory(long headquarterId, String saleCategory) {
+    if (saleCategory == null || saleCategory.isBlank()) {
+      return null;
+    }
+    return saleCategories
+        .findActiveByName(headquarterId, saleCategory.strip())
+        .orElseThrow(() -> new PosSaleCategoryNotFoundException(saleCategory.strip()))
+        .getName();
   }
 
   /**

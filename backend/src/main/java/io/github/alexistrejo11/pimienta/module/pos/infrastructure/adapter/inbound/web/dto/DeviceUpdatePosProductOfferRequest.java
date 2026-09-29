@@ -4,7 +4,10 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquart
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 @Schema(name = "DeviceUpdatePosProductOfferRequest")
 public record DeviceUpdatePosProductOfferRequest(
-    @NotNull @Min(1) Long salePriceCentavos, @NotNull StockPolicy stockPolicy) {}
+    @NotNull @Min(1) Long salePriceCentavos,
+    @NotNull StockPolicy stockPolicy,
+    @Size(max = 64) String saleCategory) {}

@@ -247,13 +247,14 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         return Result.success(product)
     }
 
-    // Updates name, barcode, price, and stock policy only inside the training scratch database.
+    // Updates name, barcode, price, category, and stock policy only inside the training scratch database.
     fun updateTrainingProduct(
         product: ProductEntity,
         name: String,
         salePriceCentavos: Long,
         controlledStock: Boolean,
         barcode: String?,
+        saleCategory: String,
     ): Result<ProductEntity> {
         if (mode != RuntimeMode.SANDBOX) {
             return Result.failure(IllegalStateException("Solo capacitación edita productos en local."))
@@ -265,13 +266,21 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                 return Result.failure(IllegalStateException("Ya existe un producto con ese código de barras."))
             }
         }
+        val nextCategory = saleCategory.trim().ifBlank { product.saleCategory }
         val updated = product.copy(
             name = name.trim(),
             barcode = nextBarcode,
+            saleCategory = nextCategory,
             price = BigDecimal.valueOf(salePriceCentavos, 2).toPlainString(),
             stockPolicy = if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
         )
-        database.productDao().insertAll(listOf(updated))
+        database.runInTransaction {
+            database.productDao().insertAll(listOf(updated))
+            val siteId = database.siteDao().current()?.id
+            if (siteId != null && nextCategory.isNotBlank()) {
+                database.syncProjectionDao().insertCategories(listOf(CatalogCategoryEntity(siteId, nextCategory)))
+            }
+        }
         return Result.success(updated)
     }
 

@@ -69,7 +69,7 @@ app.get('/runtime-config.js', (_req, res) => {
     .send(
       `window.__PIMIENTA_CONFIG__=${JSON.stringify({
         apiBaseUrl,
-        release: process.env['WEB_RELEASE']?.trim() || '2.2.11',
+        release: process.env['WEB_RELEASE']?.trim() || '2.2.14',
       })};`,
     );
 });
@@ -122,13 +122,22 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
   requireEnv('ALLOWED_HOSTS');
 
   const port = process.env['PORT'] || 4000;
-  app.listen(port, (error) => {
+  const server = app.listen(port, (error) => {
     if (error) {
       throw error;
     }
 
     logJson('INFO', 'ssr_listening', { port: Number(port) });
   });
+
+  /** As PID 1 in Docker, Node ignores SIGTERM unless a handler is registered. */
+  const shutdown = (signal: NodeJS.Signals) => {
+    logJson('INFO', 'ssr_shutdown', { signal });
+    server.close(() => process.exit(0));
+    server.closeAllConnections();
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
 /**

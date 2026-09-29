@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { SessionContextService } from '../../../core/auth/session-context.service';
 import { InventoryService } from '../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
 import { itemCategoryLabel, itemKindLabel, itemStatusLabel } from '../../../core/i18n/enum-labels';
@@ -20,6 +21,7 @@ import { StockSettingsModalComponent } from './stock-settings-modal';
 })
 export class CatalogoPageComponent implements OnInit {
   private readonly inventory = inject(InventoryService);
+  private readonly session = inject(SessionContextService);
 
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);
@@ -100,9 +102,13 @@ export class CatalogoPageComponent implements OnInit {
   }
 
   identityLink(item: ItemResponse): (string | number)[] {
-    return item.kind === 'PRODUCT' && item.productId != null
-      ? ['/app/ops/productos', item.productId, 'editar']
-      : ['/app/ops/bodega', item.id, 'editar'];
+    if (item.kind === 'PRODUCT' && item.productId != null && this.session.isAdmin()) {
+      return ['/app/ops/productos-maestros', item.productId, 'editar'];
+    }
+    if (item.kind === 'PRODUCT') {
+      return ['/app/ops/pos/catalogo'];
+    }
+    return ['/app/ops/bodega', item.id, 'editar'];
   }
 
   formatMoney(value: number): string {

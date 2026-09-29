@@ -8,17 +8,31 @@
 
   @if (loadingExisting()) {
     <p class="text-sm text-on-surface-variant">Cargando artículo…</p>
-  } @else if (linkedProductId(); as productId) {
+  } @else if (linkedProductId()) {
     <div class="flex max-w-2xl flex-col gap-3 rounded-xl ui-panel p-4 text-sm">
       <p class="text-on-surface">
-        Este artículo pertenece a un producto. Su nombre, unidad y descripción se editan desde Productos.
+        Este artículo pertenece a un producto.
+        @if (isAdmin()) {
+          Su nombre se edita en Productos maestros.
+        } @else {
+          Su nombre se edita en Productos.
+        }
       </p>
-      <a
-        [routerLink]="['/app/ops/productos', productId, 'editar']"
-        class="inline-flex min-h-11 w-fit items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
-      >
-        Ir al producto
-      </a>
+      @if (isAdmin()) {
+        <a
+          [routerLink]="['/app/ops/productos-maestros', linkedProductId(), 'editar']"
+          class="inline-flex min-h-11 w-fit items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+        >
+          Ir a Productos maestros
+        </a>
+      } @else {
+        <a
+          routerLink="/app/ops/pos/catalogo"
+          class="inline-flex min-h-11 w-fit items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary"
+        >
+          Ir a Productos
+        </a>
+      }
     </div>
   } @else {
     @if (apiError(); as err) {

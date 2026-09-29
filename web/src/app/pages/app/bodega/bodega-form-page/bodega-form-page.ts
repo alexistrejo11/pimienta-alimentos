@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 
 import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
+import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { itemCategoryLabel, itemUnitLabel } from '../../../../core/i18n/enum-labels';
 import type { ItemCategory, ItemUnit } from '../../../../core/model/inventory/inventory.enums';
@@ -34,13 +35,15 @@ export class BodegaFormPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly inventory = inject(InventoryService);
+  private readonly session = inject(SessionContextService);
 
   readonly loading = signal(false);
   readonly loadingExisting = signal(false);
   readonly apiError = signal<ParsedApiError | null>(null);
   readonly itemId = signal<number | null>(null);
-  /** Set when the item backs a product; its identity is edited from Productos. */
+  /** Set when the item backs a product; its name is edited from Productos maestros. */
   readonly linkedProductId = signal<number | null>(null);
+  readonly isAdmin = this.session.isAdmin;
 
   readonly categories = CATEGORIES;
   readonly units = UNITS;

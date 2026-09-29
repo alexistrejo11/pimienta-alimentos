@@ -178,6 +178,17 @@ class PosDeviceCatalogIntegrationTest {
         .andExpect(jsonPath("$.priceCentavos").value(1800))
         .andExpect(jsonPath("$.stockPolicy").value("CONTROLLED"))
         .andExpect(jsonPath("$.saleCategory").value("Bebidas"));
+
+    createSaleCategory(staffToken, hqId, "Snacks");
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/pos/sync/products/" + itemId + "/offer",
+                access,
+                "{\"salePriceCentavos\": 1800, \"stockPolicy\": \"CONTROLLED\", \"saleCategory\": \"Snacks\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.saleCategory").value("Snacks"))
+        .andExpect(jsonPath("$.priceCentavos").value(1800));
   }
 
   @Test

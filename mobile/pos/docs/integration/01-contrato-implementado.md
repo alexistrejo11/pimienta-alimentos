@@ -34,8 +34,12 @@ abiertos; ver [../implementation/00-estado-actual.md](../implementation/00-estad
 El access JWT representa al dispositivo (`typ=device`, `scope=pos:sync`), no
 al cajero. El PIN del operador no viaja. `createdByOperatorId` en el alta de
 producto es auditoría (cajero del turno). Revocación devuelve 401/403 al reconectar: se detiene sync y la app
-deja de usar esas credenciales. Reasignar una tablet significa revocarla y
-enrolarla de nuevo; no hay transferencia in-place.
+deja de usar esas credenciales. Revocar cierra la sesión; no banea el
+`devicePublicId`. Un código nuevo y vigente vuelve a enrolar ese id aunque
+siga `AUTHORIZED` o esté `REVOKED`: rota el refresh, conserva la sede y
+`lastDeviceSequence`. Si ya estaba autorizado, el código visible no cambia.
+Un código de otra sede responde **409** `POS_ENROLLMENT_HEADQUARTER_MISMATCH`
+y no mueve la tablet.
 
 ### Alta de producto desde caja
 

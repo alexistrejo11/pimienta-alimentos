@@ -74,3 +74,12 @@ No extra follow-ups from this pass.
 ## 2026-09-23 — Device product rename and offer
 
 No extra follow-ups from this pass. Name and offer are separate device PUTs so a tablet can skip the side that did not change. Staff item and catalog PUTs stay closed to the device JWT.
+
+## 2026-09-28 — Re-enroll an already authorized device
+
+- A fresh enrollment code re-issues tokens for the same `devicePublicId` while the device is still `AUTHORIZED`. The previous refresh is removed. The previous access JWT stays valid until its TTL (15 min); there is no access-token denylist.
+- `POS_DEVICE_ALREADY_ENROLLED` is no longer thrown by enroll. The code and exception remain for older clients.
+- A code for another headquarter returns 409 `POS_ENROLLMENT_HEADQUARTER_MISMATCH` and does not rotate the current refresh.
+- Revoke still re-authorizes with a new code and still assigns the next visible code. An authorized re-enroll keeps the existing visible code.
+
+No extra follow-ups from this pass.
