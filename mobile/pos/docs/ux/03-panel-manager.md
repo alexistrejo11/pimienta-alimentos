@@ -6,7 +6,7 @@ Permitir supervisar y operar una tablet durante el turno sin depender de interne
 
 El acceso requiere PIN de Manager o Superadmin. Entrar y salir del panel no cambia la identidad del cajero que mantiene el turno ni elimina un carrito en curso. El **conteo ciego** es la excepción: el cajero titular puede iniciarlo desde la acción `Cerrar turno` de la caja, pero la revisión, corrección y aprobación siguen requiriendo Manager/Superadmin.
 
-**Impresión y dispositivos** (elegir térmica Bluetooth, olvidar destino, probar ticket/cajón/lectura) no es exclusivo de Manager: cualquier cajero lo abre desde **Acciones → Dispositivos** o el banner sin turno. La sección Manager **Estado** reutiliza el mismo panel.
+**Impresión y dispositivos** (ver por dónde sale el ticket, elegir o quitar la térmica Bluetooth de respaldo, dar permiso USB, probar ticket/cajón/lectura) no es exclusivo de Manager: cualquier cajero lo abre desde **Acciones → Dispositivos** o el banner sin turno. La sección Manager **Estado** reutiliza el mismo panel.
 
 ## Alcance local
 
@@ -195,28 +195,76 @@ Cancelar está disponible solo para venta totalmente en efectivo, durante el tur
 
 ## Estado e impresión y dispositivos
 
-La configuración de periféricos vive en **Impresión y dispositivos**. No requiere PIN. Indicadores de presencia (rojo de marca) solo aparecen si el hardware está detectado; no son interruptores. La lista Bluetooth ofrece **Usar para imprimir** solo en térmicas; un lector emparejado se nombra como texto, no como destino.
+La configuración de periféricos vive en **Impresión y dispositivos**. No requiere PIN y la usa cualquier cajero, así que el panel responde una sola pregunta: **¿por dónde sale el siguiente ticket y qué hago si no sale?** No muestra direcciones MAC, nombres internos de error ni conceptos de cola.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
 │ IMPRESIÓN Y DISPOSITIVOS                                              │
-│ Conectados ahora: [Impresora USB] [Lector]                           │
+│ Revisa la impresora y el lector de esta caja                         │
 │                                                                      │
-│ Bluetooth y destino                                                  │
-│ [Permitir Bluetooth]                                                 │
-│ POS-5890A · en uso para tickets                                      │
-│ [Olvidar impresora Bluetooth]                                        │
+│ ● Impresora                                                          │
+│   Lista · por cable USB                                              │
+│   Si desconectas el cable, se imprimirá por Bluetooth (POS-5890A).   │
+│ ● Lector                                                             │
+│   Detectado                                                          │
 │                                                                      │
-│ Pruebas                                                              │
-│ [Imprimir prueba y abrir cajón] [Procesar cola] [Probar lectura]     │
+│ Impresora Bluetooth                                                  │
+│ Ahora se imprime por cable. La impresora elegida aquí se usa cuando  │
+│ desconectas el cable.                                                │
+│ POS-5890A · Elegida · en espera mientras haya cable                  │
+│ ZJ-5802                                           [Usar esta]        │
+│ Lector emparejado: Shawty BT.                                        │
+│ [Quitar impresora Bluetooth]                                         │
 │                                                                      │
-│ Las pruebas no alteran ventas ni eliminan eventos pendientes.         │
+│ Probar · Las pruebas no registran ventas.                            │
+│ [Imprimir prueba y abrir cajón] [Probar lectura]                     │
+│ Prueba enviada por cable USB. Revisa el ticket y el cajón.           │
+│                                                                      │
+│ [Avanzado]  → Tickets por imprimir: 2 · con error: 0                 │
+│               [Reintentar tickets pendientes]                        │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+### Filas de estado
+
+Cada equipo es una fila con punto de color, nombre del equipo, estado en palabras y, si hace falta, **un** botón para resolverlo. Las filas no son botones ni interruptores; por eso no usan el relleno rojo de marca, que queda reservado para acciones.
+
+| Punto | Significado |
+|-------|-------------|
+| Verde (acento) | Listo para usar. |
+| Gris | Se puede usar, pero hay algo que revisar (en espera, respaldo activo, entrenamiento). |
+| Rojo (error) | No va a imprimir o leer hasta que el cajero haga algo. |
+
+Estados de la impresora (la lógica vive en `printerStatusLine`):
+
+| Situación | Texto principal | Punto | Botón |
+|-----------|-----------------|-------|-------|
+| Cable USB con permiso | Lista · por cable USB | Verde | — |
+| Cable sin permiso, Bluetooth elegido y encendido | Imprimiendo por Bluetooth · POS-5890A | Gris | Dar permiso USB |
+| Cable sin permiso, sin Bluetooth usable | Cable conectado · falta permiso | Rojo | Dar permiso USB |
+| Sin cable, Bluetooth apagado | Bluetooth apagado | Rojo | Abrir ajustes de Bluetooth |
+| Sin cable, Bluetooth ya imprimió | Lista · por Bluetooth | Verde | — |
+| Sin cable, Bluetooth vinculado | Encontrada · por Bluetooth | Verde | — |
+| Sin cable, Bluetooth sin actividad aún | En espera · por Bluetooth | Gris | — (usar Imprimir prueba) |
+| Sin cable, Bluetooth falló | Bluetooth sin respuesta | Rojo | — |
+| Nada configurado | Sin impresora (· modo entrenamiento) | Rojo (gris en entrenamiento) | — |
+
+### Cable y Bluetooth
+
+- **El cable gana** siempre que la impresora USB tenga permiso. No hay que elegirlo: basta con conectarlo.
+- **Bluetooth es el respaldo.** La impresora elegida en la sección Bluetooth se usa cuando no hay cable. Mientras hay cable, la fila de esa impresora dice "Elegida · en espera mientras haya cable" para no contradecir la ruta real.
+- **Un permiso USB pendiente no bloquea la caja.** Si el cajero cancela el aviso de Android y hay una impresora Bluetooth elegida con el radio encendido, los tickets salen por Bluetooth y la fila ofrece **Dar permiso USB** para volver a pedirlo sin desconectar el cable. Sin Bluetooth usable, la fila queda en rojo con el mismo botón.
+- **Desconectar el cable** regresa a Bluetooth sin intervención. El indicador de impresora en la barra de venta ya cambia entre "Impresora USB en línea" e "Impresora Bluetooth en línea", así que el cambio queda visible sin avisos extra.
+
+### Pruebas y Avanzado
+
+Las pruebas (**Imprimir prueba y abrir cajón**, **Probar lectura**) muestran el resultado en español con la siguiente acción ("La impresora no tiene papel. Cambia el rollo y vuelve a probar."), nunca el código interno. Las pruebas no registran ventas.
+
+La cola de impresión (tickets por imprimir, con error, reintentar) queda plegada bajo **Avanzado**: es información de soporte, no algo que el cajero deba vigilar.
+
 Manager **Estado** añade versión de app, actualizaciones y sincronización encima de este mismo bloque.
 
-La acción combinada de prueba de impresión y apertura de cajón queda pendiente de validar con el modelo físico. USB gana cuando hay térmica en el hub; Bluetooth es el camino con la tablet cargando.
+La acción combinada de prueba de impresión y apertura de cajón queda pendiente de validar con el modelo físico. El cable ocupa el único USB-C de la tablet a través del hub; Bluetooth es el camino normal con la tablet cargando.
 
 ## Pendiente de diseño
 

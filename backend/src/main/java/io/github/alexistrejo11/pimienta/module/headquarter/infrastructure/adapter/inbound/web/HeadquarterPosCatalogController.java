@@ -67,6 +67,7 @@ public class HeadquarterPosCatalogController {
             filter.getSaleCategory(),
             filter.getAvailable(),
             filter.getStockPolicy(),
+            filter.getHasBarcode(),
             filter.toPageable());
     return PagedResponse.map(page, this::toResponse);
   }

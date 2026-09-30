@@ -65,6 +65,8 @@ export class SedePosPageComponent implements OnInit {
   readonly catalogCategory = signal('');
   readonly catalogAvailability = signal('');
   readonly catalogStockPolicy = signal('');
+  /** '' all, 'true' purchased (barcode set), 'false' in-house (barcode null or blank). */
+  readonly catalogHasBarcode = signal('');
   readonly printingLabels = signal(false);
   readonly printNotice = signal<string | null>(null);
 
@@ -150,6 +152,7 @@ export class SedePosPageComponent implements OnInit {
     saleCategory?: string;
     available?: boolean;
     stockPolicy?: string;
+    hasBarcode?: boolean;
   } {
     const applied = this.catalogSearchApplied().trim();
     return {
@@ -158,6 +161,8 @@ export class SedePosPageComponent implements OnInit {
       available:
         this.catalogAvailability() === '' ? undefined : this.catalogAvailability() === 'true',
       stockPolicy: this.catalogStockPolicy() || undefined,
+      hasBarcode:
+        this.catalogHasBarcode() === '' ? undefined : this.catalogHasBarcode() === 'true',
     };
   }
 

@@ -94,7 +94,8 @@ class PosDeviceAuthIntegrationTest {
             AccountTestRequests.postJson(
                 "/api/v1/pos/devices/refresh",
                 "{\"refreshToken\": \"%s\"}".formatted(refresh)))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.refreshToken").value(newRefresh));
 
     mockMvc
         .perform(
@@ -102,6 +103,13 @@ class PosDeviceAuthIntegrationTest {
                 "/api/v1/pos/devices/refresh",
                 "{\"refreshToken\": \"%s\"}".formatted(newRefresh)))
         .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                "/api/v1/pos/devices/refresh",
+                "{\"refreshToken\": \"%s\"}".formatted(refresh)))
+        .andExpect(status().isUnauthorized());
   }
 
   @Test

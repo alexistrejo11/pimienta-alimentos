@@ -58,6 +58,7 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
       String saleCategory,
       Boolean available,
       StockPolicy stockPolicy,
+      Boolean hasBarcode,
       Pageable pageable) {
     String searchTerm = blankToNull(search);
     String category = blankToNull(saleCategory);
@@ -67,7 +68,17 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
     Root<HeadquarterItemJpaEntity> catalog = cq.from(HeadquarterItemJpaEntity.class);
     Root<ProductJpaEntity> product = cq.from(ProductJpaEntity.class);
     cq.select(catalog)
-        .where(predicates(cb, catalog, product, headquarterId, searchTerm, category, available, stockPolicy))
+        .where(
+            predicates(
+                cb,
+                catalog,
+                product,
+                headquarterId,
+                searchTerm,
+                category,
+                available,
+                stockPolicy,
+                hasBarcode))
         .orderBy(cb.asc(cb.lower(product.get("name"))), cb.asc(catalog.get("id")));
     List<HeadquarterItemJpaEntity> rows =
         entityManager
@@ -90,7 +101,8 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
                 searchTerm,
                 category,
                 available,
-                stockPolicy));
+                stockPolicy,
+                hasBarcode));
     long total = entityManager.createQuery(countQuery).getSingleResult();
 
     List<HeadquarterItem> content =
@@ -106,7 +118,8 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
       String search,
       String saleCategory,
       Boolean available,
-      StockPolicy stockPolicy) {
+      StockPolicy stockPolicy,
+      Boolean hasBarcode) {
     List<Predicate> parts = new ArrayList<>();
     parts.add(cb.equal(catalog.get("headquarterId"), headquarterId));
     parts.add(cb.isNull(catalog.get("deletedAt")));
@@ -129,6 +142,12 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
     }
     if (stockPolicy != null) {
       parts.add(cb.equal(catalog.get("stockPolicy"), stockPolicy));
+    }
+    if (hasBarcode != null) {
+      var barcode = item.<String>get("barcode");
+      Predicate present =
+          cb.and(cb.isNotNull(barcode), cb.greaterThan(cb.length(cb.trim(barcode)), 0));
+      parts.add(hasBarcode ? present : cb.not(present));
     }
     return parts.toArray(Predicate[]::new);
   }

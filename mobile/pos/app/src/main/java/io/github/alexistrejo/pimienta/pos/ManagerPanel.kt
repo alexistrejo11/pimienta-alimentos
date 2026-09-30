@@ -80,7 +80,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 // Describes the local Manager workspace navigation.
-private enum class ManagerSection(val label: String) { DASHBOARD("Resumen del día"), Z_CLOSE("Caja y Corte de Caja"), HISTORY("Historial"), PRODUCTS("Productos"), STATUS("Estado") }
+private enum class ManagerSection(val label: String) {
+    DASHBOARD("Resumen del día"),
+    Z_CLOSE("Caja y Corte de Caja"),
+    HISTORY("Historial"),
+    PRODUCTS("Productos"),
+    CONFIG("Configuración"),
+    STATUS("Estado"),
+}
 // Tracks the blind-count workflow before a shift is sealed.
 private enum class CountStage { OPEN, COUNTING, VALIDATION, COMPLETED }
 
@@ -130,7 +137,7 @@ internal fun ManagerPanel(
         if (effectiveShift != null) {
             ManagerSection.entries
         } else {
-            listOf(ManagerSection.DASHBOARD, ManagerSection.PRODUCTS, ManagerSection.STATUS)
+            listOf(ManagerSection.DASHBOARD, ManagerSection.PRODUCTS, ManagerSection.CONFIG, ManagerSection.STATUS)
         }
     }
     var section by rememberSaveable { mutableStateOf(ManagerSection.DASHBOARD) }
@@ -245,7 +252,71 @@ private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity?, 
         ManagerSection.Z_CLOSE -> if (shift != null) ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
         ManagerSection.HISTORY -> if (shift != null) HistoryPanel(shift, manager, repository, refresh, modifier)
         ManagerSection.PRODUCTS -> ProductsPanel(products, repository, modifier)
+        ManagerSection.CONFIG -> ConfigPanel(repository, modifier)
         ManagerSection.STATUS -> StatusPanel(pendingEvents, repository, modifier)
+    }
+}
+
+// Local tablet toggles that do not come from server policy sync.
+@Composable
+private fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
+    var onlyBarcoded by remember { mutableStateOf(repository.autoPrintOnlyBarcodedSales()) }
+
+    Surface(modifier, color = MaterialTheme.colorScheme.background) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text("Configuración local", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Estos ajustes aplican solo a esta tablet. No se sincronizan con la web central.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Impresión de tickets", style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onlyBarcoded = !onlyBarcoded
+                                repository.setAutoPrintOnlyBarcodedSales(onlyBarcoded)
+                            },
+                    ) {
+                        Checkbox(
+                            checked = onlyBarcoded,
+                            onCheckedChange = { checked ->
+                                onlyBarcoded = checked
+                                repository.setAutoPrintOnlyBarcodedSales(checked)
+                            },
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Column {
+                            Text(
+                                "Imprimir ticket solo si la venta incluye producto con código de barras",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                "Útil cuando solo necesitas comprobante para preparación al momento. " +
+                                    "Las ventas solo con productos internos o monto abierto no imprimen automáticamente. " +
+                                    "Desactiva esta opción para volver a imprimir todo.",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Text(
+                        "La reimpresión desde Historial sigue disponible cuando haga falta un ticket.",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 

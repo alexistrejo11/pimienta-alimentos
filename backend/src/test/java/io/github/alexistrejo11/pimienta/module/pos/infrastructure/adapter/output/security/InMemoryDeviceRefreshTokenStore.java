@@ -15,6 +15,7 @@ public class InMemoryDeviceRefreshTokenStore implements DeviceRefreshTokenStore 
 
   private final ConcurrentHashMap<String, Entry> byHash = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, String> byDevice = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Rotation> rotations = new ConcurrentHashMap<>();
 
   @Override
   public void remember(String tokenHash, UUID deviceId, Duration ttl) {
@@ -38,6 +39,33 @@ public class InMemoryDeviceRefreshTokenStore implements DeviceRefreshTokenStore 
   }
 
   @Override
+  public Optional<UUID> consume(String tokenHash) {
+    Entry entry = byHash.remove(tokenHash);
+    if (entry == null) {
+      return Optional.empty();
+    }
+    byDevice.remove(entry.deviceId(), tokenHash);
+    if (Instant.now().isAfter(entry.expiresAt())) {
+      return Optional.empty();
+    }
+    return Optional.of(entry.deviceId());
+  }
+
+  @Override
+  public void rememberRotation(String previousTokenHash, String rotatedPayload, Duration grace) {
+    rotations.put(previousTokenHash, new Rotation(rotatedPayload, Instant.now().plus(grace)));
+  }
+
+  @Override
+  public Optional<String> findRotation(String previousTokenHash) {
+    Rotation rotation = rotations.get(previousTokenHash);
+    if (rotation == null || Instant.now().isAfter(rotation.expiresAt())) {
+      return Optional.empty();
+    }
+    return Optional.of(rotation.payload());
+  }
+
+  @Override
   public void remove(String tokenHash) {
     Entry entry = byHash.remove(tokenHash);
     if (entry != null) {
@@ -54,4 +82,6 @@ public class InMemoryDeviceRefreshTokenStore implements DeviceRefreshTokenStore 
   }
 
   private record Entry(UUID deviceId, Instant expiresAt) {}
+
+  private record Rotation(String payload, Instant expiresAt) {}
 }

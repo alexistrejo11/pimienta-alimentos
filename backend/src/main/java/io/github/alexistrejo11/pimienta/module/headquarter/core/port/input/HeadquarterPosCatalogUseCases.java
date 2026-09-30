@@ -18,6 +18,7 @@ public interface HeadquarterPosCatalogUseCases {
       String saleCategory,
       Boolean available,
       StockPolicy stockPolicy,
+      Boolean hasBarcode,
       Pageable pageable);
 
   HeadquarterItem get(long headquarterId, long productId);

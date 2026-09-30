@@ -25,7 +25,10 @@ import java.lang.annotation.Target;
     description = "Headquarter id.",
     example = "1",
     schema = @Schema(type = "integer", format = "int64"))
-@Operation(summary = "List POS catalog", description = "Paged effective POS catalog for the headquarter.")
+@Operation(
+    summary = "List POS catalog",
+    description =
+        "Paged effective POS catalog for the headquarter. Optional hasBarcode=true keeps products with a barcode; hasBarcode=false keeps null or blank barcodes.")
 @ApiResponse(responseCode = "200", description = "Paged catalog items.")
 @ApiResponse(
     responseCode = "404",

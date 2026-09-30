@@ -203,6 +203,17 @@
               <option [value]="policy">{{ stockPolicyLabel(policy) }}</option>
             }
           </select>
+          <select
+            class="min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm"
+            [ngModel]="catalogHasBarcode()"
+            (ngModelChange)="catalogHasBarcode.set($event); onCatalogFilterChange()"
+            [ngModelOptions]="{ standalone: true }"
+            aria-label="Código de barras"
+          >
+            <option value="">Cualquier código de barras</option>
+            <option value="false">Sin código (producción propia)</option>
+            <option value="true">Con código (comprado)</option>
+          </select>
         </div>
 
         <app-data-state

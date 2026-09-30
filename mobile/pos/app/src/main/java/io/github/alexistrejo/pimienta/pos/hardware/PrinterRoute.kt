@@ -6,10 +6,19 @@ enum class PrinterLink { USB, BLUETOOTH, NONE }
 enum class PrinterRoute { USB, USB_PERMISSION, BLUETOOTH, NONE }
 
 // Charging occupies the only USB-C port, so a saved Bluetooth printer is a normal path, not a degraded one.
-fun choosePrinterRoute(usb: PeripheralStatus, savedMac: String?): PrinterRoute = when (usb) {
-    PeripheralStatus.READY -> PrinterRoute.USB
-    PeripheralStatus.PERMISSION_REQUIRED -> PrinterRoute.USB_PERMISSION
-    else -> if (savedMac.isNullOrBlank()) PrinterRoute.NONE else PrinterRoute.BLUETOOTH
+// A USB printer still waiting for Android permission must not block a working Bluetooth printer.
+fun choosePrinterRoute(
+    usb: PeripheralStatus,
+    savedMac: String?,
+    bluetoothReady: Boolean = true,
+): PrinterRoute {
+    val hasBluetooth = !savedMac.isNullOrBlank()
+    return when (usb) {
+        PeripheralStatus.READY -> PrinterRoute.USB
+        PeripheralStatus.PERMISSION_REQUIRED ->
+            if (hasBluetooth && bluetoothReady) PrinterRoute.BLUETOOTH else PrinterRoute.USB_PERMISSION
+        else -> if (hasBluetooth) PrinterRoute.BLUETOOTH else PrinterRoute.NONE
+    }
 }
 
 fun printerLinkFor(route: PrinterRoute): PrinterLink = when (route) {

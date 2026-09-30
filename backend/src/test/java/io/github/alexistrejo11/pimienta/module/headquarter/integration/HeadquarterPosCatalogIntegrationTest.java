@@ -194,6 +194,50 @@ class HeadquarterPosCatalogIntegrationTest {
   }
 
   @Test
+  void posCatalog_hasBarcodeFilter() throws Exception {
+    String token = obtainAccessToken();
+    long hqId = createHeadquarter(token, "BC-FILTER-" + UUID.randomUUID());
+    String barcode = "750" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+    long withBarcode = createProduct(token, "Boing", barcode, true);
+    long withoutBarcode = createProduct(token, "Chilaquiles", null, true);
+    String catalogBody =
+        """
+        {"saleCategory":"BEVERAGE","salePrice":18.00,"available":true,"stockPolicy":"CONTROLLED"}
+        """;
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-catalog/" + withBarcode, token, catalogBody))
+        .andExpect(status().isOk());
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-catalog/" + withoutBarcode,
+                token,
+                catalogBody))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-catalog?page=0&size=20&hasBarcode=true",
+                token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].productId").value(withBarcode));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-catalog?page=0&size=20&hasBarcode=false",
+                token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].productId").value(withoutBarcode));
+  }
+
+  @Test
   void posCatalog_candidates_returnsOnlySellableUnassignedItems() throws Exception {
     String token = obtainAccessToken();
     long hqId = createHeadquarter(token, "CANDIDATE-HQ-" + UUID.randomUUID());

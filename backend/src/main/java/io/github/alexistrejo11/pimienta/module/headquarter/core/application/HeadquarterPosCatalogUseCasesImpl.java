@@ -53,10 +53,11 @@ public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogU
       String saleCategory,
       Boolean available,
       StockPolicy stockPolicy,
+      Boolean hasBarcode,
       Pageable pageable) {
     assertHeadquarterExists(headquarterId);
     return headquarterItemRepository.search(
-        headquarterId, search, saleCategory, available, stockPolicy, pageable);
+        headquarterId, search, saleCategory, available, stockPolicy, hasBarcode, pageable);
   }
 
   @Override

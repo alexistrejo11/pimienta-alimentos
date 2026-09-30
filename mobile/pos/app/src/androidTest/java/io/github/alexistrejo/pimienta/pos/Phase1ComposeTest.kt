@@ -4,6 +4,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import io.github.alexistrejo.pimienta.pos.hardware.DeviceFix
+import io.github.alexistrejo.pimienta.pos.hardware.DeviceStatusLine
+import io.github.alexistrejo.pimienta.pos.hardware.DeviceTone
 import io.github.alexistrejo.pimienta.pos.ui.theme.PosTheme
 import org.junit.Rule
 import org.junit.Test
@@ -66,12 +69,17 @@ class Phase1ComposeTest {
     }
 
     @Test
-    fun devicePresenceChipShowsBrandLabel() {
+    fun deviceStatusRowShowsStateAndFix() {
         composeRule.setContent {
             PosTheme(darkTheme = true) {
-                DevicePresenceChip("Impresora USB")
+                DeviceStatusRow(
+                    device = "Impresora",
+                    line = DeviceStatusLine("Cable conectado · falta permiso", "Toca Dar permiso USB.", DeviceTone.BLOCKED, DeviceFix.GRANT_USB),
+                    fixLabel = "Dar permiso USB",
+                )
             }
         }
-        composeRule.onNodeWithText("Impresora USB").assertIsDisplayed()
+        composeRule.onNodeWithText("Cable conectado · falta permiso").assertIsDisplayed()
+        composeRule.onNodeWithText("Dar permiso USB").assertIsDisplayed()
     }
 }

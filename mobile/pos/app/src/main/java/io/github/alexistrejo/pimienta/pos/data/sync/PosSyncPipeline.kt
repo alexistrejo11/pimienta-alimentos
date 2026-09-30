@@ -9,6 +9,10 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
 import io.github.alexistrejo.pimienta.pos.data.telemetry.PosTelemetryLogger
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -40,13 +44,22 @@ class PosSyncPipeline(private val context: Context) {
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
     private val telemetryLogger = PosTelemetryLogger(db)
 
+    // Access token this run started with, to detect that another run already refreshed it.
+    private var currentRunAccess: String? = null
+
+    // Process-wide so every pipeline instance (worker, foreground button) shares one refresh at a time.
+    private companion object {
+        val refreshMutex = Mutex()
+    }
+
     suspend fun run(refreshedOnce: Boolean = false): PosSyncNowOutcome {
         if (provider.modes.mode() != RuntimeMode.PRODUCTION) return PosSyncNowOutcome.SKIPPED
         val state = db.syncDao().state() ?: return PosSyncNowOutcome.SKIPPED
         val baseUrl = state.baseUrl?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
             ?: return PosSyncNowOutcome.SKIPPED
         val device = db.operationsDao().device() ?: return PosSyncNowOutcome.SKIPPED
-        if (credentials.access() == null) {
+        currentRunAccess = credentials.access()
+        if (currentRunAccess == null) {
             return refreshAccess(state, baseUrl, refreshedOnce)
         }
         val api = api(baseUrl)
@@ -159,15 +172,24 @@ class PosSyncPipeline(private val context: Context) {
 
     // Rotates access then continues this same run so the sync button can await a real pull.
     private suspend fun refreshAccess(state: SyncStateEntity, baseUrl: String, refreshedOnce: Boolean): PosSyncNowOutcome {
-        val refresh = credentials.refresh()
-        if (refresh == null) {
-            ProvisioningRepository(context, provider)
-                .resetForReenrollment(DeviceSessionPolicy.missingRefreshTokenMessage())
-            return PosSyncNowOutcome.FAILURE
-        }
+        val staleAccess = currentRunAccess
         return try {
-            val token = refreshApi(baseUrl).refresh(RefreshRequest(refresh))
-            credentials.save(token.accessToken, token.refreshToken)
+            // Worker and foreground sync can both hit 401; only one may rotate the refresh token.
+            val refreshed = refreshMutex.withLock {
+                if (credentials.access() != null && credentials.access() != staleAccess) return@withLock true
+                val refresh = credentials.refresh() ?: return@withLock false
+                // A cancelled job must still persist a pair the server already rotated.
+                withContext(NonCancellable) {
+                    val token = refreshApi(baseUrl).refresh(RefreshRequest(refresh))
+                    credentials.save(token.accessToken, token.refreshToken)
+                }
+                true
+            }
+            if (!refreshed) {
+                ProvisioningRepository(context, provider)
+                    .resetForReenrollment(DeviceSessionPolicy.missingRefreshTokenMessage())
+                return PosSyncNowOutcome.FAILURE
+            }
             if (refreshedOnce) PosSyncNowOutcome.RETRY else run(refreshedOnce = true)
         } catch (error: Exception) {
             if (DeviceSessionPolicy.refreshFailureRequiresReenrollment(error)) {

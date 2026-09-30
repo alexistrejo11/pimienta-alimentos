@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,8 @@ public class DeviceJwtTokenService implements DeviceTokenIssuer {
 
   public static final String TYP_DEVICE = "device";
   public static final String SCOPE_POS_SYNC = "pos:sync";
+  private static final int ROTATION_WAIT_ATTEMPTS = 10;
+  private static final long ROTATION_WAIT_MILLIS = 100;
 
   private final JwtProperties jwtProperties;
   private final DeviceJwtProperties deviceJwtProperties;
@@ -74,18 +77,65 @@ public class DeviceJwtTokenService implements DeviceTokenIssuer {
       throw invalidRefresh("Missing refresh token.");
     }
     String hash = sha256(refreshToken);
-    UUID deviceId =
-        refreshTokenStore
-            .findDeviceId(hash)
-            .orElseThrow(() -> invalidRefresh("Refresh token revoked or unknown."));
+    Optional<UUID> claimed = refreshTokenStore.consume(hash);
+    if (claimed.isEmpty()) {
+      return replayRotation(hash);
+    }
+    UUID deviceId = claimed.get();
     PosDevice device =
         deviceRepository.findById(deviceId).orElseThrow(() -> new PosDeviceNotFoundException(deviceId));
     if (device.isRevoked()) {
-      refreshTokenStore.remove(hash);
       throw new PosDeviceRevokedException(deviceId);
     }
-    refreshTokenStore.remove(hash);
-    return issuePair(device);
+    DeviceIssuedTokens issued = issuePair(device);
+    refreshTokenStore.rememberRotation(hash, encodeRotation(deviceId, issued), refreshReuseGrace());
+    return issued;
+  }
+
+  /**
+   * Returns the pair already issued for a token rotated moments ago. Covers tablets that fire two
+   * refreshes at once or lose the response to a timeout; outside the grace window it is a 401.
+   */
+  private DeviceIssuedTokens replayRotation(String hash) {
+    Optional<String> payload = refreshTokenStore.findRotation(hash);
+    for (int attempt = 0; payload.isEmpty() && attempt < ROTATION_WAIT_ATTEMPTS; attempt++) {
+      sleepQuietly();
+      payload = refreshTokenStore.findRotation(hash);
+    }
+    String[] parts =
+        payload.orElseThrow(() -> invalidRefresh("Refresh token revoked or unknown.")).split("\\|", -1);
+    UUID deviceId = UUID.fromString(parts[0]);
+    DeviceIssuedTokens issued =
+        new DeviceIssuedTokens(
+            parts[1], parts[2], Long.parseLong(parts[3]), Long.parseLong(parts[4]), Long.parseLong(parts[5]));
+    if (refreshTokenStore.findDeviceId(sha256(issued.refreshToken())).filter(deviceId::equals).isEmpty()) {
+      throw invalidRefresh("Refresh token revoked or unknown.");
+    }
+    PosDevice device =
+        deviceRepository.findById(deviceId).orElseThrow(() -> new PosDeviceNotFoundException(deviceId));
+    if (device.isRevoked()) {
+      throw new PosDeviceRevokedException(deviceId);
+    }
+    return issued;
+  }
+
+  private static String encodeRotation(UUID deviceId, DeviceIssuedTokens issued) {
+    return String.join(
+        "|",
+        deviceId.toString(),
+        issued.accessToken(),
+        issued.refreshToken(),
+        String.valueOf(issued.accessTokenExpiresInSeconds()),
+        String.valueOf(issued.refreshTokenExpiresInSeconds()),
+        String.valueOf(issued.refreshTokenMaxExpiresInSeconds()));
+  }
+
+  private static void sleepQuietly() {
+    try {
+      Thread.sleep(ROTATION_WAIT_MILLIS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   @Override
@@ -139,6 +189,10 @@ public class DeviceJwtTokenService implements DeviceTokenIssuer {
             deviceJwtProperties.getRefreshTokenTtlDays(),
             deviceJwtProperties.getRefreshTokenMaxTtlDays());
     return Duration.ofDays(days);
+  }
+
+  private Duration refreshReuseGrace() {
+    return Duration.ofSeconds(deviceJwtProperties.getRefreshReuseGraceSeconds());
   }
 
   private Duration maxRefreshTtl() {

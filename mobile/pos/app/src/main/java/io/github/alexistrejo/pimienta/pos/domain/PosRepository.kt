@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.domain
 
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
+import io.github.alexistrejo.pimienta.pos.data.local.PosLocalPreferences
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.local.dao.OperationsDao
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
@@ -119,7 +120,12 @@ object Money {
 // Holds the local rules and atomic persistence needed by the Phase 1 POS flow.
 class PosRepository(private val provider: PosDatabaseProvider, private val mode: RuntimeMode = provider.modes.mode()) {
     private val database get() = provider.database(mode)
+    private val localPreferences get() = PosLocalPreferences(provider.applicationContext)
     fun mode() = mode
+    fun autoPrintOnlyBarcodedSales(): Boolean = localPreferences.autoPrintOnlyBarcodedSales()
+    fun setAutoPrintOnlyBarcodedSales(enabled: Boolean) {
+        localPreferences.setAutoPrintOnlyBarcodedSales(enabled)
+    }
     // Local enrolled device row (name, visibleCode, minAppVersion) for diagnostics UI.
     fun device(): DeviceEntity? = database.operationsDao().device()
     fun syncState() = database.syncDao().state()
@@ -543,7 +549,9 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CONFIRMED", saleId,
                 OutboxPayloadBuilder.saleConfirmed(sale, saleLines, payment, discountEntity, products), confirmedAt, eventId
             )
-            operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, confirmedAt))
+            if (SaleTicketPolicy.shouldQueueAutomaticSaleTicket(localPreferences.autoPrintOnlyBarcodedSales(), lines, products)) {
+                operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, confirmedAt))
+            }
             operations.updateFolioNumber(liveShift.id, liveShift.nextFolioNumber + 1)
             sale
         }

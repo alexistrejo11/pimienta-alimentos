@@ -1,19 +1,25 @@
 package io.github.alexistrejo.pimienta.pos
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,25 +39,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
 import io.github.alexistrejo.pimienta.pos.hardware.BondedBluetoothDevice
 import io.github.alexistrejo.pimienta.pos.hardware.BondedBluetoothKind
+import io.github.alexistrejo.pimienta.pos.hardware.DeviceFix
+import io.github.alexistrejo.pimienta.pos.hardware.DeviceStatusLine
+import io.github.alexistrejo.pimienta.pos.hardware.DeviceTone
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
 import io.github.alexistrejo.pimienta.pos.hardware.OperationalDocument
 import io.github.alexistrejo.pimienta.pos.hardware.PeripheralStatus
 import io.github.alexistrejo.pimienta.pos.hardware.PosPrinterRegistry
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
-import io.github.alexistrejo.pimienta.pos.hardware.PrintResult
 import io.github.alexistrejo.pimienta.pos.hardware.PrintableLine
 import io.github.alexistrejo.pimienta.pos.hardware.PrinterFactory
 import io.github.alexistrejo.pimienta.pos.hardware.PrinterLink
+import io.github.alexistrejo.pimienta.pos.hardware.PrinterPanelInput
 import io.github.alexistrejo.pimienta.pos.hardware.PrinterPreferences
+import io.github.alexistrejo.pimienta.pos.hardware.UsbPrintTransport
 import io.github.alexistrejo.pimienta.pos.hardware.UsbTicketPrinter
 import io.github.alexistrejo.pimienta.pos.hardware.bluetoothRadioReady
 import io.github.alexistrejo.pimienta.pos.hardware.bondedBluetoothDevices
+import io.github.alexistrejo.pimienta.pos.hardware.printerStatusLine
 import io.github.alexistrejo.pimienta.pos.hardware.scannerLooksPresent
+import io.github.alexistrejo.pimienta.pos.hardware.scannerStatusLine
+import io.github.alexistrejo.pimienta.pos.hardware.testPrintMessage
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -84,7 +98,7 @@ internal fun DevicesScreen(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    "Configuración de la tablet · no cambia el cajero del turno",
+                    "Revisa la impresora y el lector de esta caja",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -104,7 +118,7 @@ internal fun DevicesScreen(
     }
 }
 
-// Presence chips, Bluetooth destination, and hardware tests shared by caja and Manager Estado.
+// Printer route, reader, Bluetooth backup, and hardware tests shared by caja and Manager Estado.
 @Composable
 internal fun DevicesPanel(
     repository: PosRepository,
@@ -114,13 +128,15 @@ internal fun DevicesPanel(
     val printJobs = remember { mutableStateOf(emptyList<PrintJobEntity>()) }
     var peripheralMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var awaitingScan by rememberSaveable { mutableStateOf(false) }
+    var showAdvanced by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val mode = repository.mode()
-    var printerAvailability by remember(mode) { mutableStateOf(PrinterFactory.availability(context, mode)) }
     var usbStatus by remember { mutableStateOf(UsbTicketPrinter.status(context)) }
     var savedMac by remember { mutableStateOf(PrinterPreferences(context).mac()) }
     var bonded by remember { mutableStateOf(emptyList<BondedBluetoothDevice>()) }
+    var radioReady by remember { mutableStateOf(bluetoothRadioReady(context)) }
+    var bluetoothStatus by remember { mutableStateOf(PosPrinterRegistry.bluetoothStatus()) }
     var bluetoothGranted by remember {
         mutableStateOf(
             Build.VERSION.SDK_INT < 31 ||
@@ -128,18 +144,18 @@ internal fun DevicesPanel(
                 PackageManager.PERMISSION_GRANTED,
         )
     }
-    val bluetoothPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        bluetoothGranted = granted
-        if (granted) bonded = bondedBluetoothDevices(context)
-        printerAvailability = PrinterFactory.availability(context, mode)
-        usbStatus = UsbTicketPrinter.status(context)
-    }
 
     fun refreshPrinter() {
-        printerAvailability = PrinterFactory.availability(context, mode)
         usbStatus = UsbTicketPrinter.status(context)
         savedMac = PrinterPreferences(context).mac()
+        radioReady = bluetoothRadioReady(context)
+        bluetoothStatus = PosPrinterRegistry.bluetoothStatus()
         if (bluetoothGranted) bonded = bondedBluetoothDevices(context)
+    }
+
+    val bluetoothPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        bluetoothGranted = granted
+        refreshPrinter()
     }
 
     LaunchedEffect(mode, bluetoothGranted) {
@@ -171,7 +187,7 @@ internal fun DevicesPanel(
         PosScannerRegistry.hid?.start()
         PosScannerRegistry.primary?.start()
         val armedAt = System.currentTimeMillis()
-        peripheralMessage = "Escanea un código con el lector…"
+        peripheralMessage = "Escanea cualquier código con el lector…"
         val value = withTimeoutOrNull(20_000) {
             while (true) {
                 val at = PosScannerRegistry.lastReadAtMillis
@@ -181,70 +197,78 @@ internal fun DevicesPanel(
             }
         }
         peripheralMessage = if (value != null) {
-            "Lectura: $value"
+            "El lector funciona. Leyó: $value"
         } else {
-            "No se recibió lectura. Vuelve a intentar."
+            "No llegó ninguna lectura. Revisa que el lector esté encendido y vuelve a probar."
         }
         awaitingScan = false
     }
 
     val printers = remember(bonded) { bonded.filter { it.kind == BondedBluetoothKind.PRINTER } }
     val scanners = remember(bonded) { bonded.filter { it.kind == BondedBluetoothKind.SCANNER } }
-    val others = remember(bonded) { bonded.filter { it.kind == BondedBluetoothKind.OTHER } }
-    val radioReady = bluetoothRadioReady(context)
-    val showUsbChip = usbStatus == PeripheralStatus.READY || usbStatus == PeripheralStatus.PERMISSION_REQUIRED
-    val showBtChip = savedMac != null && radioReady &&
-        printerAvailability.link == PrinterLink.BLUETOOTH &&
-        (printerAvailability.status == PeripheralStatus.READY ||
-            printerAvailability.status == PeripheralStatus.DISCOVERED)
-    val btConfiguredOffline = savedMac != null && !showBtChip
-    val showScannerChip = scannerLooksPresent(scanners)
+    val savedName = printers.firstOrNull { it.mac.equals(savedMac, ignoreCase = true) }?.name
+    val printerLine = printerStatusLine(
+        PrinterPanelInput(
+            usb = usbStatus,
+            savedMac = savedMac,
+            savedPrinterName = savedName,
+            bluetoothRadioReady = radioReady,
+            bluetoothStatus = bluetoothStatus,
+            training = mode == RuntimeMode.SANDBOX,
+        ),
+    )
+    val scannerLine = scannerStatusLine(scannerLooksPresent(scanners))
+    val usbActive = usbStatus == PeripheralStatus.READY
+
+    // Maps a row's suggested fix to the matching Android prompt or settings screen.
+    fun applyFix(fix: DeviceFix) {
+        when (fix) {
+            DeviceFix.GRANT_USB -> {
+                UsbPrintTransport.requestPermissionIfNeeded(context)
+                peripheralMessage = "Acepta el aviso de Android para usar la impresora por cable."
+            }
+            DeviceFix.OPEN_BLUETOOTH_SETTINGS -> openBluetoothSettings(context)
+        }
+    }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (showHeading) {
             Text("Impresión y dispositivos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
+
+        // Current state: one row per device with what to do when it is not ready.
         Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
-            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Conectados ahora", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Solo se muestran equipos detectados. No son interruptores.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                DeviceStatusRow(
+                    device = "Impresora",
+                    line = printerLine,
+                    fixLabel = printerLine.fix?.let(::fixLabel),
+                    onFix = { printerLine.fix?.let(::applyFix) },
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (showUsbChip) DevicePresenceChip("Impresora USB")
-                    if (showBtChip) DevicePresenceChip("Impresora Bluetooth")
-                    if (showScannerChip) DevicePresenceChip("Lector")
-                }
-                if (!showUsbChip && !showBtChip && !showScannerChip) {
-                    Text("Ningún periférico detectado ahora.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (usbStatus == PeripheralStatus.PERMISSION_REQUIRED) {
-                    Text("Impresora USB visible · falta permiso USB.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (btConfiguredOffline) {
-                    Text(
-                        "Impresora Bluetooth configurada, fuera de línea.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                DeviceStatusRow(device = "Lector", line = scannerLine)
             }
         }
+
+        // Bluetooth printer used whenever the cable is not plugged in.
         Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Bluetooth y destino de impresión", style = MaterialTheme.typography.titleMedium)
+                Text("Impresora Bluetooth", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Empareja la térmica en Ajustes de Android. USB se usa cuando hay impresora en el hub; Bluetooth es el camino con la tablet cargando.",
+                    if (usbActive) {
+                        "Ahora se imprime por cable. La impresora elegida aquí se usa cuando desconectas el cable."
+                    } else {
+                        "Se usa cuando la impresora no está conectada por cable."
+                    },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (!bluetoothGranted) {
                     PosButton("Permitir Bluetooth", { bluetoothPermission.launch(Manifest.permission.BLUETOOTH_CONNECT) })
                 } else if (printers.isEmpty()) {
-                    Text("No hay impresoras Bluetooth emparejadas.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "No hay impresoras emparejadas. Enciende la impresora y emparéjala en Ajustes de Android.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    PosButton("Abrir ajustes de Bluetooth", { openBluetoothSettings(context) })
                 } else {
                     printers.forEach { printer ->
                         val selected = printer.mac.equals(savedMac, ignoreCase = true)
@@ -255,23 +279,25 @@ internal fun DevicesPanel(
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(printer.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(
-                                    if (selected) "en uso para tickets" else printer.mac,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                if (selected) {
+                                    Text(
+                                        if (usbActive) "Elegida · en espera mientras haya cable" else "Elegida",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                             if (!selected) {
                                 PosButton(
-                                    "Usar para imprimir",
+                                    "Usar esta",
                                     {
                                         PrinterPreferences(context).saveMac(printer.mac)
                                         PosPrinterRegistry.bluetoothPrinter(context, printer.mac)
                                         refreshPrinter()
                                         PosPrinterRegistry.notifyChanged()
-                                        peripheralMessage = "Impresora Bluetooth: ${printer.name}."
+                                        peripheralMessage = "Listo: se imprimirá por Bluetooth en ${printer.name} cuando no haya cable."
                                     },
                                 )
                             }
@@ -280,83 +306,132 @@ internal fun DevicesPanel(
                 }
                 if (bluetoothGranted && scanners.isNotEmpty()) {
                     Text(
-                        "También emparejado: ${scanners.joinToString { it.name }}. No se usa para imprimir.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (bluetoothGranted && others.isNotEmpty()) {
-                    Text(
-                        "Otros Bluetooth: ${others.joinToString { it.name }}.",
+                        "Lector emparejado: ${scanners.joinToString { it.name }}.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (savedMac != null) {
-                    PosButton("Olvidar impresora Bluetooth", {
+                    PosButton("Quitar impresora Bluetooth", {
                         PrinterPreferences(context).clearMac()
                         PosPrinterRegistry.releaseBluetooth()
                         refreshPrinter()
                         PosPrinterRegistry.notifyChanged()
-                        peripheralMessage = "Ya no se usará esa impresora Bluetooth para tickets. Sigue emparejada en Android."
+                        peripheralMessage = "Ya no se imprimirá por Bluetooth. La impresora sigue emparejada en Android."
                     })
                 }
             }
         }
+
+        // Hardware checks. They never touch sales or pending events.
         Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Pruebas", style = MaterialTheme.typography.titleMedium)
-                val failed = printJobs.value.count { it.status == "FAILED" }
+                Text("Probar", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "${printJobs.value.size} trabajos pendientes · $failed fallidos",
+                    "Las pruebas no registran ventas.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    "Las pruebas no alteran ventas ni eliminan eventos pendientes.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    "Pulsa Probar lectura y escanea. El Enter del lector no sale de esta pantalla.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                PosButton("Imprimir prueba y abrir cajón", {
-                    scope.launch {
-                        val result = withContext(Dispatchers.IO) {
-                            val printer = PrinterFactory.create(context, mode)
-                            val encoder = EscPosEncoder(printer.profile)
-                            val document = OperationalDocument(
-                                title = "Prueba de impresión",
-                                folio = "TEST",
-                                occurredAt = Instant.now(),
-                                lines = listOf(PrintableLine("POS-5890A", "1", 0)),
-                                totalCentavos = 0,
-                            )
-                            printer.print(encoder.encode(document, openDrawer = true))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PosButton("Imprimir prueba y abrir cajón", {
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                val printer = PrinterFactory.create(context, mode)
+                                val encoder = EscPosEncoder(printer.profile)
+                                val document = OperationalDocument(
+                                    title = "Prueba de impresión",
+                                    folio = "TEST",
+                                    occurredAt = Instant.now(),
+                                    lines = listOf(PrintableLine("POS-5890A", "1", 0)),
+                                    totalCentavos = 0,
+                                )
+                                printer.print(encoder.encode(document, openDrawer = true))
+                            }
+                            val availability = PrinterFactory.availability(context, mode)
+                            val link = if (availability.status == PeripheralStatus.READY) availability.link else PrinterLink.NONE
+                            peripheralMessage = testPrintMessage(result, link)
+                            refreshPrinter()
                         }
-                        val link = PrinterFactory.availability(context, mode)
-                        peripheralMessage = when {
-                            result is PrintResult.Printed && link.link == PrinterLink.USB &&
-                                link.status == PeripheralStatus.READY ->
-                                "Prueba enviada por USB."
-                            result is PrintResult.Printed && link.link == PrinterLink.BLUETOOTH &&
-                                link.status == PeripheralStatus.READY ->
-                                "Prueba enviada por Bluetooth."
-                            result is PrintResult.Printed -> "Prueba simulada. No hay impresora USB ni Bluetooth."
-                            result is PrintResult.Failed -> "Impresión fallida: ${result.reason.name}"
-                            else -> "Impresión fallida."
-                        }
-                    }
-                }, primary = true)
-                PosButton("Procesar cola de impresión", {
-                    PrintWorker.enqueue(context)
-                    refreshPrintJobs()
-                    peripheralMessage = "Cola de impresión encolada."
-                })
-                PosButton(
-                    if (awaitingScan) "Esperando lectura…" else "Probar lectura",
-                    { awaitingScan = true },
-                    enabled = !awaitingScan,
-                )
-                peripheralMessage?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }, primary = true)
+                    PosButton(
+                        if (awaitingScan) "Esperando lectura…" else "Probar lectura",
+                        { awaitingScan = true },
+                        enabled = !awaitingScan,
+                    )
+                }
+                peripheralMessage?.let { Text(it, color = MaterialTheme.colorScheme.onSurface) }
             }
         }
+
+        // Print queue internals for support; collapsed so cashiers are not asked about jobs.
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PosButton(
+                    if (showAdvanced) "Ocultar avanzado" else "Avanzado",
+                    {
+                        showAdvanced = !showAdvanced
+                        if (showAdvanced) refreshPrintJobs()
+                    },
+                )
+                if (showAdvanced) {
+                    val failed = printJobs.value.count { it.status == "FAILED" }
+                    Text(
+                        "Tickets por imprimir: ${printJobs.value.size} · con error: $failed",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    PosButton("Reintentar tickets pendientes", {
+                        PrintWorker.enqueue(context)
+                        refreshPrintJobs()
+                        peripheralMessage = "Reintentando los tickets pendientes."
+                    })
+                }
+            }
+        }
+    }
+}
+
+// One device line: coloured dot, device name, plain-language state, and an optional fix button.
+@Composable
+internal fun DeviceStatusRow(
+    device: String,
+    line: DeviceStatusLine,
+    fixLabel: String? = null,
+    onFix: () -> Unit = {},
+) {
+    val dot = when (line.tone) {
+        DeviceTone.OK -> MaterialTheme.colorScheme.secondary
+        DeviceTone.WARNING -> MaterialTheme.colorScheme.tertiary
+        DeviceTone.BLOCKED -> MaterialTheme.colorScheme.error
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(12.dp).background(dot, CircleShape))
+        Column(Modifier.weight(1f)) {
+            Text(
+                device,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(line.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            line.detail?.let {
+                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (fixLabel != null) PosButton(fixLabel, onFix, primary = line.tone == DeviceTone.BLOCKED)
+    }
+}
+
+private fun fixLabel(fix: DeviceFix): String = when (fix) {
+    DeviceFix.GRANT_USB -> "Dar permiso USB"
+    DeviceFix.OPEN_BLUETOOTH_SETTINGS -> "Abrir ajustes de Bluetooth"
+}
+
+// Opens Android Bluetooth settings so the cashier can pair or turn the radio on.
+private fun openBluetoothSettings(context: Context) {
+    try {
+        context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: ActivityNotFoundException) {
+        context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

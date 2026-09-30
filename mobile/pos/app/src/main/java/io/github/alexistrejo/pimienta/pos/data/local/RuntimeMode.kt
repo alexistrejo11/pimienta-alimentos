@@ -20,6 +20,7 @@ class RuntimeModeStore(context: Context) {
 }
 
 class PosDatabaseProvider(private val context: Context) {
+    val applicationContext: Context get() = context.applicationContext
     val modes = RuntimeModeStore(context)
     private val lock = Any()
     private val migrationPrefs = context.getSharedPreferences("pos-database-migration", Context.MODE_PRIVATE)

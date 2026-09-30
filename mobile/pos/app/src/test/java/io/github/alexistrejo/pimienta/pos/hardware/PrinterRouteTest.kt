@@ -14,11 +14,20 @@ class PrinterRouteTest {
     }
 
     @Test
-    fun usbPermissionDoesNotFallThroughToBluetooth() {
+    fun pendingUsbPermissionFallsBackToAReadyBluetoothPrinter() {
+        assertEquals(
+            PrinterRoute.BLUETOOTH,
+            choosePrinterRoute(PeripheralStatus.PERMISSION_REQUIRED, "AA:BB:CC:DD:EE:FF", bluetoothReady = true),
+        )
+    }
+
+    @Test
+    fun pendingUsbPermissionBlocksWhenBluetoothCannotPrint() {
         assertEquals(
             PrinterRoute.USB_PERMISSION,
-            choosePrinterRoute(PeripheralStatus.PERMISSION_REQUIRED, "AA:BB:CC:DD:EE:FF"),
+            choosePrinterRoute(PeripheralStatus.PERMISSION_REQUIRED, "AA:BB:CC:DD:EE:FF", bluetoothReady = false),
         )
+        assertEquals(PrinterRoute.USB_PERMISSION, choosePrinterRoute(PeripheralStatus.PERMISSION_REQUIRED, null))
     }
 
     @Test

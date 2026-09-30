@@ -14,6 +14,7 @@ public class RedisDeviceRefreshTokenStore implements DeviceRefreshTokenStore {
 
   private static final String TOKEN_PREFIX = "pimienta:pos:rt:";
   private static final String DEVICE_PREFIX = "pimienta:pos:rt-device:";
+  private static final String ROTATED_PREFIX = "pimienta:pos:rt-rotated:";
 
   private final StringRedisTemplate redis;
 
@@ -39,6 +40,33 @@ public class RedisDeviceRefreshTokenStore implements DeviceRefreshTokenStore {
     } catch (IllegalArgumentException e) {
       return Optional.empty();
     }
+  }
+
+  @Override
+  public Optional<UUID> consume(String tokenHash) {
+    String v = redis.opsForValue().getAndDelete(TOKEN_PREFIX + tokenHash);
+    if (v == null || v.isBlank()) {
+      return Optional.empty();
+    }
+    String current = redis.opsForValue().get(DEVICE_PREFIX + v);
+    if (tokenHash.equals(current)) {
+      redis.delete(DEVICE_PREFIX + v);
+    }
+    try {
+      return Optional.of(UUID.fromString(v));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public void rememberRotation(String previousTokenHash, String rotatedPayload, Duration grace) {
+    redis.opsForValue().set(ROTATED_PREFIX + previousTokenHash, rotatedPayload, grace);
+  }
+
+  @Override
+  public Optional<String> findRotation(String previousTokenHash) {
+    return Optional.ofNullable(redis.opsForValue().get(ROTATED_PREFIX + previousTokenHash));
   }
 
   @Override

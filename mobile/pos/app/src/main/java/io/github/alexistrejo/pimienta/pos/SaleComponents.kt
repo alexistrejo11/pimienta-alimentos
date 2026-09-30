@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import io.github.alexistrejo.pimienta.pos.data.local.entity.*
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.domain.*
@@ -539,7 +540,7 @@ internal fun OpenAmountDialog(
     }
 }
 
-// Shows categories grouped in compact columns of up to 3 items so all sections fit without vertical scrolling.
+// Shows catalog categories in a responsive grid so all sections are visible without horizontal cutoffs.
 @Composable
 internal fun SectionsDialog(
     categories: List<String>,
@@ -547,45 +548,46 @@ internal fun SectionsDialog(
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit
 ) {
-    val chunks = remember(categories) { categories.chunked(3) }
-
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.widthIn(max = 840.dp)
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .widthIn(max = 760.dp)
+                .heightIn(max = 520.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(20.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text("Secciones del catálogo", style = MaterialTheme.typography.titleLarge)
-                Row(
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 135.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        .weight(1f, fill = false)
+                        .fillMaxWidth()
                 ) {
-                    chunks.forEach { columnCategories ->
-                        Column(
-                            modifier = Modifier.width(170.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            columnCategories.forEach { category ->
-                                PosButton(
-                                    label = category,
-                                    click = {
-                                        onSelect(category)
-                                        onDismiss()
-                                    },
-                                    selected = selected == category,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                )
-                            }
-                        }
+                    items(categories) { category ->
+                        PosButton(
+                            label = category,
+                            click = {
+                                onSelect(category)
+                                onDismiss()
+                            },
+                            selected = selected == category,
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                            maxLines = 2,
+                            textAlign = TextAlign.Center,
+                        )
                     }
                 }
                 PosButton("Cerrar", onDismiss, modifier = Modifier.fillMaxWidth())
@@ -655,21 +657,6 @@ internal fun CashWithdrawalAuthorization(
 }
 
 
-
-// Brand-red presence marker: hardware is here; it is not a toggle.
-@Composable
-internal fun DevicePresenceChip(label: String) {
-    Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(8.dp)) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
 
 // Displays one small operational status without presenting it as a dashboard card.
 @Composable
@@ -1423,6 +1410,8 @@ internal fun PosButton(
     primary: Boolean = false,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues? = null,
+    maxLines: Int = 1,
+    textAlign: TextAlign = TextAlign.Start,
 ) {
     val emphasized = primary || selected
     Button(
@@ -1441,6 +1430,12 @@ internal fun PosButton(
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
     ) {
-        Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            text = label,
+            modifier = if (textAlign != TextAlign.Start) Modifier.fillMaxWidth() else Modifier,
+            maxLines = maxLines,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = textAlign,
+        )
     }
 }

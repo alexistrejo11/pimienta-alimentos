@@ -8,6 +8,15 @@ public class DeviceJwtProperties {
   private int accessTokenTtlMinutes = 15;
   private int refreshTokenTtlDays = 180;
   private int refreshTokenMaxTtlDays = 365;
+  private int refreshReuseGraceSeconds = 120;
+
+  public int getRefreshReuseGraceSeconds() {
+    return refreshReuseGraceSeconds;
+  }
+
+  public void setRefreshReuseGraceSeconds(int refreshReuseGraceSeconds) {
+    this.refreshReuseGraceSeconds = refreshReuseGraceSeconds;
+  }
 
   public int getAccessTokenTtlMinutes() {
     return accessTokenTtlMinutes;

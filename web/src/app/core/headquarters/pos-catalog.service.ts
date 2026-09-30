@@ -34,12 +34,14 @@ export class PosCatalogService {
     saleCategory?: string;
     available?: boolean;
     stockPolicy?: string;
+    hasBarcode?: boolean;
   } = {}): Observable<PagedResponse<HeadquarterPosCatalogItemResponse>> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (filters.search?.trim()) params = params.set('search', filters.search.trim());
     if (filters.saleCategory) params = params.set('saleCategory', filters.saleCategory);
     if (filters.available != null) params = params.set('available', filters.available);
     if (filters.stockPolicy) params = params.set('stockPolicy', filters.stockPolicy);
+    if (filters.hasBarcode != null) params = params.set('hasBarcode', filters.hasBarcode);
     return this.http.get<PagedResponse<HeadquarterPosCatalogItemResponse>>(
       `${this.hqBase}/${headquarterId}/pos-catalog`,
       { params },

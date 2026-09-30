@@ -14,8 +14,14 @@ public interface HeadquarterItemRepository {
 
   Page<HeadquarterItem> findByHeadquarterId(long headquarterId, Pageable pageable);
 
-  Page<HeadquarterItem> search(long headquarterId, String search, String saleCategory,
-      Boolean available, StockPolicy stockPolicy, Pageable pageable);
+  Page<HeadquarterItem> search(
+      long headquarterId,
+      String search,
+      String saleCategory,
+      Boolean available,
+      StockPolicy stockPolicy,
+      Boolean hasBarcode,
+      Pageable pageable);
 
   List<HeadquarterItem> findAllByHeadquarterId(long headquarterId);
 

@@ -27,21 +27,20 @@ export class PosLabelPrintService {
       .join('');
 
     const styles = `
-@page{margin:8mm}
+@page{size:letter;margin:8mm}
 body{font-family:Arial,sans-serif;margin:0;color:#111}
 .sheet{display:flex;flex-wrap:wrap;gap:6mm;align-content:flex-start}
 .label{
   box-sizing:border-box;
-  width:calc(33.333% - 4mm);
+  width:calc(50% - 3mm);
   break-inside:avoid;
   page-break-inside:avoid;
   text-align:center;
-  padding:4mm 2mm;
+  padding:4mm 3mm;
   border:1px dashed #aaa;
-  min-height:32mm;
 }
 .label strong{display:block;font-size:12px;margin-bottom:2mm;line-height:1.2}
-.label svg{width:100%;height:17mm;display:block}
+.label svg{display:block;width:100%;height:auto}
 .label span{display:block;font-size:10px;margin-top:1mm}
 @media print{
   .label{border-color:#ddd}
@@ -61,8 +60,9 @@ body{font-family:Arial,sans-serif;margin:0;color:#111}
         JsBarcode(svg, label.sku, {
           format: 'CODE128',
           displayValue: false,
-          margin: 0,
-          height: 48,
+          margin: 10,
+          width: 2,
+          height: 72,
         });
       } catch {
         const fallback = popup.document.createElement('span');

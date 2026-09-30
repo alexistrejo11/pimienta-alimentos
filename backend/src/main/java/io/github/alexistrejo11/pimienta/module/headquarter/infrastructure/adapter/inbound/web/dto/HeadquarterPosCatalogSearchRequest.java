@@ -8,6 +8,8 @@ public class HeadquarterPosCatalogSearchRequest extends PageableRequest {
   private String saleCategory;
   private Boolean available;
   private StockPolicy stockPolicy;
+  /** True: product barcode present. False: null or blank (in-house, needs a printed label). */
+  private Boolean hasBarcode;
 
   public String getSearch() { return search; }
   public void setSearch(String search) { this.search = search; }
@@ -17,4 +19,6 @@ public class HeadquarterPosCatalogSearchRequest extends PageableRequest {
   public void setAvailable(Boolean available) { this.available = available; }
   public StockPolicy getStockPolicy() { return stockPolicy; }
   public void setStockPolicy(StockPolicy stockPolicy) { this.stockPolicy = stockPolicy; }
+  public Boolean getHasBarcode() { return hasBarcode; }
+  public void setHasBarcode(Boolean hasBarcode) { this.hasBarcode = hasBarcode; }
 }

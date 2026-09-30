@@ -12,7 +12,7 @@ data class PrinterAvailability(val status: PeripheralStatus, val link: PrinterLi
 object PrinterFactory {
     fun create(context: Context, mode: RuntimeMode): TicketPrinter {
         val mac = PrinterPreferences(context).mac()
-        return when (choosePrinterRoute(UsbTicketPrinter.status(context), mac)) {
+        return when (choosePrinterRoute(UsbTicketPrinter.status(context), mac, bluetoothRadioReady(context))) {
             PrinterRoute.USB -> UsbTicketPrinter.open(context) ?: UnavailableTicketPrinter
             PrinterRoute.USB_PERMISSION -> PermissionPendingTicketPrinter
             PrinterRoute.BLUETOOTH -> {
@@ -34,7 +34,7 @@ object PrinterFactory {
 
     fun availability(context: Context, @Suppress("UNUSED_PARAMETER") mode: RuntimeMode): PrinterAvailability {
         val mac = PrinterPreferences(context).mac()
-        return when (val route = choosePrinterRoute(UsbTicketPrinter.status(context), mac)) {
+        return when (choosePrinterRoute(UsbTicketPrinter.status(context), mac, bluetoothRadioReady(context))) {
             PrinterRoute.USB -> PrinterAvailability(PeripheralStatus.READY, PrinterLink.USB)
             PrinterRoute.USB_PERMISSION -> PrinterAvailability(PeripheralStatus.PERMISSION_REQUIRED, PrinterLink.USB)
             PrinterRoute.BLUETOOTH -> PrinterAvailability(
