@@ -6,48 +6,60 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SaleTicketPolicyTest {
-    private val barcoded = product(id = "p1", sku = "SKU-1", barcode = "750111")
-    private val internalOnly = product(id = "p2", sku = "INT-2", barcode = null)
+    private val packaged = product(id = "p1", sku = "SKU-1", barcode = "750111")
+    private val prepared = product(id = "p2", sku = "INT-2", barcode = null)
     private val skuAsBarcode = product(id = "p3", sku = "SAME", barcode = "SAME")
 
     @Test
-    fun printsAllSalesWhenPolicyDisabled() {
-        val lines = listOf(catalogLine(internalOnly.id))
+    fun printsAllSalesWhenFilterDisabled() {
+        val lines = listOf(catalogLine(prepared.id))
         assertTrue(
             SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
-                onlyWhenBarcoded = false,
+                kitchenTicketFilterEnabled = false,
                 lines = lines,
-                productsById = mapOf(internalOnly.id to internalOnly),
+                productsById = mapOf(prepared.id to prepared),
             ),
         )
     }
 
     @Test
-    fun skipsInternalCatalogWhenPolicyEnabled() {
-        val lines = listOf(catalogLine(internalOnly.id))
+    fun printsPreparedCatalogWhenFilterEnabled() {
+        val lines = listOf(catalogLine(prepared.id))
+        assertTrue(
+            SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
+                kitchenTicketFilterEnabled = true,
+                lines = lines,
+                productsById = mapOf(prepared.id to prepared),
+            ),
+        )
+    }
+
+    @Test
+    fun skipsPackagedOnlyCartWhenFilterEnabled() {
+        val lines = listOf(catalogLine(packaged.id))
         assertFalse(
             SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
-                onlyWhenBarcoded = true,
+                kitchenTicketFilterEnabled = true,
                 lines = lines,
-                productsById = mapOf(internalOnly.id to internalOnly),
+                productsById = mapOf(packaged.id to packaged),
             ),
         )
     }
 
     @Test
-    fun printsWhenCartIncludesDistinctBarcodeProduct() {
-        val lines = listOf(catalogLine(internalOnly.id), catalogLine(barcoded.id))
+    fun printsWhenCartMixesPackagedAndPrepared() {
+        val lines = listOf(catalogLine(prepared.id), catalogLine(packaged.id))
         assertTrue(
             SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
-                onlyWhenBarcoded = true,
+                kitchenTicketFilterEnabled = true,
                 lines = lines,
-                productsById = mapOf(internalOnly.id to internalOnly, barcoded.id to barcoded),
+                productsById = mapOf(prepared.id to prepared, packaged.id to packaged),
             ),
         )
     }
 
     @Test
-    fun pendingCatalogLineCountsAsBarcoded() {
+    fun pendingCatalogOnlyDoesNotQueueWhenFilterEnabled() {
         val lines = listOf(
             CartLine(
                 productId = null,
@@ -60,9 +72,9 @@ class SaleTicketPolicyTest {
                 sourceBarcode = "750999",
             ),
         )
-        assertTrue(
+        assertFalse(
             SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
-                onlyWhenBarcoded = true,
+                kitchenTicketFilterEnabled = true,
                 lines = lines,
                 productsById = emptyMap(),
             ),
@@ -70,13 +82,35 @@ class SaleTicketPolicyTest {
     }
 
     @Test
-    fun skuEqualBarcodeDoesNotQualify() {
+    fun skuEqualBarcodePrintsWhenFilterEnabled() {
         val lines = listOf(catalogLine(skuAsBarcode.id))
-        assertFalse(
+        assertTrue(
             SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
-                onlyWhenBarcoded = true,
+                kitchenTicketFilterEnabled = true,
                 lines = lines,
                 productsById = mapOf(skuAsBarcode.id to skuAsBarcode),
+            ),
+        )
+    }
+
+    @Test
+    fun openAmountPrintsWhenFilterEnabled() {
+        val lines = listOf(
+            CartLine(
+                productId = null,
+                name = "Producto abierto · Bebidas",
+                category = "Bebidas",
+                unitPriceCentavos = 1000,
+                stockPolicy = "NOT_CONTROLLED",
+                quantity = 1,
+                lineType = SaleLineType.OPEN_AMOUNT,
+            ),
+        )
+        assertTrue(
+            SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
+                kitchenTicketFilterEnabled = true,
+                lines = lines,
+                productsById = emptyMap(),
             ),
         )
     }

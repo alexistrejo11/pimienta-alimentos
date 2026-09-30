@@ -5,21 +5,22 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 // Decides whether a confirmed sale should enqueue an automatic ticket print job.
 object SaleTicketPolicy {
     fun shouldQueueAutomaticSaleTicket(
-        onlyWhenBarcoded: Boolean,
+        kitchenTicketFilterEnabled: Boolean,
         lines: List<CartLine>,
         productsById: Map<String, ProductEntity>,
     ): Boolean {
-        if (!onlyWhenBarcoded) return true
-        return lines.any { lineIncludesBarcodedProduct(it, productsById) }
+        if (!kitchenTicketFilterEnabled) return true
+        return lines.any { lineRequiresKitchenTicket(it, productsById) }
     }
 
-    internal fun lineIncludesBarcodedProduct(line: CartLine, productsById: Map<String, ProductEntity>): Boolean =
+    // Prepared / internal catalog lines and open amounts need a ticket; packaged goods with supplier barcode do not.
+    internal fun lineRequiresKitchenTicket(line: CartLine, productsById: Map<String, ProductEntity>): Boolean =
         when (line.lineType) {
-            SaleLineType.PENDING_CATALOG -> !line.sourceBarcode.isNullOrBlank()
-            SaleLineType.OPEN_AMOUNT -> false
+            SaleLineType.OPEN_AMOUNT -> true
+            SaleLineType.PENDING_CATALOG -> false
             SaleLineType.CATALOG -> {
                 val productId = line.productId ?: return false
-                productsById[productId]?.hasDistinctBarcode() == true
+                productsById[productId]?.hasDistinctBarcode() != true
             }
         }
 }

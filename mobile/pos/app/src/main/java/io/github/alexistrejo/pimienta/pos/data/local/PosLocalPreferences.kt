@@ -6,15 +6,15 @@ import android.content.Context
 class PosLocalPreferences(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    // When true, automatic sale tickets are queued only if the cart includes a barcoded catalog line.
-    fun autoPrintOnlyBarcodedSales(): Boolean = prefs.getBoolean(KEY_AUTO_PRINT_ONLY_BARCODED, false)
+    // When true, skip automatic tickets for carts that are only packaged products (distinct supplier barcode).
+    fun kitchenTicketPrintFilterEnabled(): Boolean = prefs.getBoolean(KEY_KITCHEN_TICKET_PRINT_FILTER, false)
 
-    fun setAutoPrintOnlyBarcodedSales(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_AUTO_PRINT_ONLY_BARCODED, enabled).apply()
+    fun setKitchenTicketPrintFilterEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_KITCHEN_TICKET_PRINT_FILTER, enabled).apply()
     }
 
     private companion object {
         const val PREFS = "pos-local-prefs"
-        const val KEY_AUTO_PRINT_ONLY_BARCODED = "auto_print_only_barcoded_sales"
+        const val KEY_KITCHEN_TICKET_PRINT_FILTER = "kitchen_ticket_print_filter"
     }
 }

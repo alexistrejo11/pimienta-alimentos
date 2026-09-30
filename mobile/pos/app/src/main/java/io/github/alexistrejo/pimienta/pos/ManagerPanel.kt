@@ -260,7 +260,7 @@ private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity?, 
 // Local tablet toggles that do not come from server policy sync.
 @Composable
 private fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
-    var onlyBarcoded by remember { mutableStateOf(repository.autoPrintOnlyBarcodedSales()) }
+    var kitchenTicketFilter by remember { mutableStateOf(repository.kitchenTicketPrintFilterEnabled()) }
 
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(
@@ -283,27 +283,28 @@ private fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                onlyBarcoded = !onlyBarcoded
-                                repository.setAutoPrintOnlyBarcodedSales(onlyBarcoded)
+                                kitchenTicketFilter = !kitchenTicketFilter
+                                repository.setKitchenTicketPrintFilterEnabled(kitchenTicketFilter)
                             },
                     ) {
                         Checkbox(
-                            checked = onlyBarcoded,
+                            checked = kitchenTicketFilter,
                             onCheckedChange = { checked ->
-                                onlyBarcoded = checked
-                                repository.setAutoPrintOnlyBarcodedSales(checked)
+                                kitchenTicketFilter = checked
+                                repository.setKitchenTicketPrintFilterEnabled(checked)
                             },
                         )
                         Spacer(Modifier.width(6.dp))
                         Column {
                             Text(
-                                "Imprimir ticket solo si la venta incluye producto con código de barras",
+                                "Imprimir ticket solo para preparación y productos sin código de proveedor",
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                             Text(
-                                "Útil cuando solo necesitas comprobante para preparación al momento. " +
-                                    "Las ventas solo con productos internos o monto abierto no imprimen automáticamente. " +
-                                    "Desactiva esta opción para volver a imprimir todo.",
+                                "Chilaquiles y platillos sin barcode de empaque sí imprimen (cocina y cliente). " +
+                                    "Un carrito solo de empaquetados con barcode (ej. Boing) no imprime ticket, " +
+                                    "pero en efectivo sí se abre el cajón. Si mezclas empaque y preparación, sí imprime. " +
+                                    "Desactiva para imprimir todas las ventas.",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

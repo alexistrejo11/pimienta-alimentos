@@ -6,7 +6,7 @@ with the central API.
 
 ## Status
 
-Version `1.0.1` with Android `versionCode` 2. The production delivery path is
+Version `1.0.4` with Android `versionCode` 5. The production delivery path is
 prepared: a signed release APK is published to S3 by GitHub Actions after a
 successful merge to `main`.
 

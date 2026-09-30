@@ -118,4 +118,15 @@ class EscPosEncoderTest {
         assertTrue(text.contains("-20.50"))
         assertFalse(text.contains(".-"))
     }
+
+    @Test
+    fun cash_drawer_kick_emits_pulse_without_ticket_body_or_cut() {
+        val profile = PrinterProfiles.pos5890A
+        val bytes = EscPosEncoder(profile).encodeCashDrawerKick()
+
+        assertTrue(bytes.size < 32)
+        assertTrue(bytes.toList().contains(0x70.toByte()))
+        assertFalse(bytes.toList().contains(0x1D.toByte()))
+        assertFalse(bytes.toString(Charset.forName("CP850")).contains("PIMIENTA"))
+    }
 }

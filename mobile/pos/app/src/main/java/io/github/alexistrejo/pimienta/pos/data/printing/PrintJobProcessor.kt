@@ -79,8 +79,8 @@ class PrintJobProcessor(
             val ageMillis = now - job.createdAtEpochMillis
             if (ageMillis > maxAgeMillis) return true
 
-            // Expire ticket print jobs if the shift in which the sale occurred is already CLOSED.
-            if (job.documentType == "SALE") {
+            // Expire sale-linked jobs if the shift in which the sale occurred is already CLOSED.
+            if (job.documentType == "SALE" || job.documentType == "DRAWER_KICK") {
                 val sale = dao.sale(job.saleId)
                 if (sale != null) {
                     val shift = dao.findShift(sale.shiftId)
@@ -95,6 +95,11 @@ class PrintJobProcessor(
     // Builds the current sale snapshot and sends it through the configured printer.
     private suspend fun print(job: PrintJobEntity): PrintResult {
         val dao = database.operationsDao()
+        if (job.documentType == "DRAWER_KICK") {
+            val sale = dao.sale(job.saleId) ?: return PrintResult.Failed(PrintFailure.UNSUPPORTED)
+            if (sale.paymentMethod != "CASH") return PrintResult.Failed(PrintFailure.UNSUPPORTED)
+            return printer.print(encoder.encodeCashDrawerKick())
+        }
         val openDrawer = when (job.documentType) {
             "SALE" -> dao.sale(job.saleId)?.paymentMethod == "CASH"
             else -> false

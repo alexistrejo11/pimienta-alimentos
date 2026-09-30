@@ -30,25 +30,25 @@ class BarcodedSalePrintPolicyInstrumentedTest {
     private lateinit var provider: PosDatabaseProvider
     private lateinit var repository: PosRepository
     private lateinit var shift: ShiftEntity
-    private lateinit var internalProduct: ProductEntity
-    private lateinit var barcodedProduct: ProductEntity
+    private lateinit var preparedProduct: ProductEntity
+    private lateinit var packagedProduct: ProductEntity
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        PosLocalPreferences(context).setAutoPrintOnlyBarcodedSales(false)
+        PosLocalPreferences(context).setKitchenTicketPrintFilterEnabled(false)
         provider = PosDatabaseProvider(context)
         provider.resetTrainingDatabase()
         TrainingBootstrapImporter(context).resetFromTemplate(provider.database(RuntimeMode.SANDBOX))
-        internalProduct = provider.database(RuntimeMode.SANDBOX).productDao().getAll().first()
-        barcodedProduct = ProductEntity(
-            id = "product-barcoded-test",
-            sku = "INT-PREP",
+        preparedProduct = provider.database(RuntimeMode.SANDBOX).productDao().getAll().first()
+        packagedProduct = ProductEntity(
+            id = "product-packaged-test",
+            sku = "BOING-SKU",
             barcode = "7501234567890",
-            name = "Preparado al momento",
-            saleCategory = "Deli",
+            name = "Boing",
+            saleCategory = "Bebidas",
             unit = "PIECE",
-            price = "40.00",
+            price = "15.00",
             cost = "0",
             available = true,
             stock = "0",
@@ -56,46 +56,74 @@ class BarcodedSalePrintPolicyInstrumentedTest {
             stockPolicy = "NOT_CONTROLLED",
             negativeStockLimit = null,
         )
-        provider.database(RuntimeMode.SANDBOX).productDao().insertAll(listOf(barcodedProduct))
+        provider.database(RuntimeMode.SANDBOX).productDao().insertAll(listOf(packagedProduct))
         repository = PosRepository(provider, RuntimeMode.SANDBOX)
         shift = repository.openShift("user-debug-cashier", 0L)!!
     }
 
     @After
     fun tearDown() {
-        PosLocalPreferences(context).setAutoPrintOnlyBarcodedSales(false)
+        PosLocalPreferences(context).setKitchenTicketPrintFilterEnabled(false)
         provider.close()
         context.deleteDatabase(PosDatabaseProvider.TRAINING_DB_NAME)
     }
 
     @Test
-    fun confirmSale_queuesAutomaticPrintJobWhenPolicyDisabled() {
-        repository.setAutoPrintOnlyBarcodedSales(false)
-        val sale = confirmSale(internalProduct)
+    fun confirmSale_queuesAutomaticPrintJobWhenFilterDisabled() {
+        repository.setKitchenTicketPrintFilterEnabled(false)
+        val sale = confirmSale(packagedProduct)
 
         assertEquals(1, automaticSalePrintJobs(sale.id).size)
     }
 
     @Test
-    fun confirmSale_skipsAutomaticPrintJobWhenPolicyEnabledAndOnlyInternalSku() {
-        repository.setAutoPrintOnlyBarcodedSales(true)
-        val sale = confirmSale(internalProduct)
+    fun confirmSale_queuesAutomaticPrintJobWhenFilterEnabledAndPreparedProduct() {
+        repository.setKitchenTicketPrintFilterEnabled(true)
+        val sale = confirmSale(preparedProduct)
+
+        assertEquals(1, automaticSalePrintJobs(sale.id).size)
+    }
+
+    @Test
+    fun confirmSale_skipsAutomaticPrintJobWhenFilterEnabledAndOnlyPackagedProduct() {
+        repository.setKitchenTicketPrintFilterEnabled(true)
+        val sale = confirmSale(packagedProduct, PaymentMethod.EXTERNAL_CARD_MP)
 
         assertTrue(automaticSalePrintJobs(sale.id).isEmpty())
     }
 
     @Test
-    fun confirmSale_queuesAutomaticPrintJobWhenPolicyEnabledAndDistinctBarcodeInCart() {
-        repository.setAutoPrintOnlyBarcodedSales(true)
-        val sale = confirmSale(barcodedProduct)
+    fun confirmSale_queuesDrawerKickWhenFilterEnabledPackagedOnlyAndCash() {
+        repository.setKitchenTicketPrintFilterEnabled(true)
+        val tendered = Money.fromCatalog(packagedProduct.price)
+        val sale = confirmSale(packagedProduct, PaymentMethod.CASH, tendered)
 
-        assertEquals(1, automaticSalePrintJobs(sale.id).size)
+        assertTrue(automaticSalePrintJobs(sale.id).isEmpty())
+        val drawerJobs = repository.pendingPrintJobs().filter {
+            it.saleId == sale.id && it.documentType == "DRAWER_KICK" && !it.duplicate
+        }
+        assertEquals(1, drawerJobs.size)
     }
 
     @Test
-    fun requestReprint_queuesJobEvenWhenAutomaticPolicyWouldSkip() {
-        repository.setAutoPrintOnlyBarcodedSales(true)
-        val sale = confirmSale(internalProduct)
+    fun printProcessor_opensDrawerWithoutTicketWhenDrawerKickJob() = runBlocking {
+        repository.setKitchenTicketPrintFilterEnabled(true)
+        val tendered = Money.fromCatalog(packagedProduct.price)
+        confirmSale(packagedProduct, PaymentMethod.CASH, tendered)
+
+        val printer = FakeTicketPrinter()
+        val processor = PrintJobProcessor(provider.database(RuntimeMode.SANDBOX), printer)
+
+        assertEquals(PrintDrain.DONE, processor.processNext())
+        val bytes = printer.printed.first()
+        assertTrue(bytes.contains(0x1B))
+        assertTrue(bytes.contains(0x70.toByte()))
+    }
+
+    @Test
+    fun requestReprint_queuesJobEvenWhenAutomaticFilterWouldSkip() {
+        repository.setKitchenTicketPrintFilterEnabled(true)
+        val sale = confirmSale(packagedProduct)
         assertTrue(automaticSalePrintJobs(sale.id).isEmpty())
 
         repository.requestReprint(sale.id)
@@ -106,8 +134,8 @@ class BarcodedSalePrintPolicyInstrumentedTest {
 
     @Test
     fun printProcessor_doesNotRunWhenNoJobWasQueued() = runBlocking {
-        repository.setAutoPrintOnlyBarcodedSales(true)
-        confirmSale(internalProduct)
+        repository.setKitchenTicketPrintFilterEnabled(true)
+        confirmSale(packagedProduct, PaymentMethod.EXTERNAL_CARD_MP)
 
         val printer = FakeTicketPrinter()
         val processor = PrintJobProcessor(provider.database(RuntimeMode.SANDBOX), printer)
@@ -117,8 +145,8 @@ class BarcodedSalePrintPolicyInstrumentedTest {
 
     @Test
     fun printProcessor_printsWhenConfirmSaleQueuedJob() = runBlocking {
-        repository.setAutoPrintOnlyBarcodedSales(false)
-        val sale = confirmSale(barcodedProduct)
+        repository.setKitchenTicketPrintFilterEnabled(true)
+        val sale = confirmSale(preparedProduct)
         assertEquals(1, automaticSalePrintJobs(sale.id).size)
 
         val printer = FakeTicketPrinter()
@@ -130,12 +158,16 @@ class BarcodedSalePrintPolicyInstrumentedTest {
         assertFalse(repository.pendingPrintJobs().any { it.saleId == sale.id && it.status == "PENDING" })
     }
 
-    private fun confirmSale(product: ProductEntity) =
+    private fun confirmSale(
+        product: ProductEntity,
+        method: PaymentMethod = PaymentMethod.EXTERNAL_CARD_MP,
+        tenderedCentavos: Long = 0,
+    ) =
         repository.confirmSale(
             shift,
             listOf(catalogLine(product)),
-            PaymentMethod.EXTERNAL_CARD_MP,
-            tenderedCentavos = 0,
+            method,
+            tenderedCentavos,
         ).getOrThrow()
 
     private fun catalogLine(product: ProductEntity) = CartLine(

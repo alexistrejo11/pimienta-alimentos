@@ -61,6 +61,18 @@ class EscPosEncoder(private val profile: PrinterProfile = PrinterProfiles.generi
         return output.toByteArray()
     }
 
+    // Opens the cash drawer with minimal paper feed and no ticket body or cut.
+    fun encodeCashDrawerKick(): ByteArray {
+        val output = ByteArrayOutputStream()
+        output.write(byteArrayOf(0x1B, 0x40))
+        output.write(byteArrayOf(0x1B, 0x64, 0x01))
+        if (profile.supportsCashDrawer) {
+            val pulse = profile.drawerPulse ?: DrawerPulse()
+            output.write(byteArrayOf(0x1B, 0x70, 0x00, pulse.onTime.toByte(), pulse.offTime.toByte()))
+        }
+        return output.toByteArray()
+    }
+
     private fun folio(document: PrintableDocument) = when (document) {
         is TicketDocument -> document.folio
         is OperationalDocument -> document.folio

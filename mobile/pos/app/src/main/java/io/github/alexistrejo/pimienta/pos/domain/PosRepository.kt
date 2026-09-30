@@ -122,9 +122,9 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     private val database get() = provider.database(mode)
     private val localPreferences get() = PosLocalPreferences(provider.applicationContext)
     fun mode() = mode
-    fun autoPrintOnlyBarcodedSales(): Boolean = localPreferences.autoPrintOnlyBarcodedSales()
-    fun setAutoPrintOnlyBarcodedSales(enabled: Boolean) {
-        localPreferences.setAutoPrintOnlyBarcodedSales(enabled)
+    fun kitchenTicketPrintFilterEnabled(): Boolean = localPreferences.kitchenTicketPrintFilterEnabled()
+    fun setKitchenTicketPrintFilterEnabled(enabled: Boolean) {
+        localPreferences.setKitchenTicketPrintFilterEnabled(enabled)
     }
     // Local enrolled device row (name, visibleCode, minAppVersion) for diagnostics UI.
     fun device(): DeviceEntity? = database.operationsDao().device()
@@ -549,8 +549,17 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                 operations, device, liveShift.siteId, liveShift.id, "SALE_CONFIRMED", saleId,
                 OutboxPayloadBuilder.saleConfirmed(sale, saleLines, payment, discountEntity, products), confirmedAt, eventId
             )
-            if (SaleTicketPolicy.shouldQueueAutomaticSaleTicket(localPreferences.autoPrintOnlyBarcodedSales(), lines, products)) {
-                operations.insertPrintJob(PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, confirmedAt))
+            when {
+                SaleTicketPolicy.shouldQueueAutomaticSaleTicket(
+                    localPreferences.kitchenTicketPrintFilterEnabled(),
+                    lines,
+                    products,
+                ) -> operations.insertPrintJob(
+                    PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, confirmedAt, documentType = "SALE"),
+                )
+                method == PaymentMethod.CASH -> operations.insertPrintJob(
+                    PrintJobEntity(UUID.randomUUID().toString(), saleId, "PENDING", false, confirmedAt, documentType = "DRAWER_KICK"),
+                )
             }
             operations.updateFolioNumber(liveShift.id, liveShift.nextFolioNumber + 1)
             sale
