@@ -317,7 +317,7 @@ internal fun CreatePosProductDialog(
                     if (sandbox) {
                         "Capacitación: se guarda en esta tablet y desaparece al salir o al reiniciar. No se envía al servidor."
                     } else {
-                        "El SKU lo asigna el servidor. Sin código queda como producto interno."
+                        "Sin código de barras queda como producto interno."
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -370,7 +370,6 @@ internal fun CreatePosProductDialog(
 @Composable
 internal fun EditPosProductDialog(
     productName: String,
-    sku: String,
     categories: List<String>,
     category: String,
     initialBarcode: String,
@@ -431,7 +430,7 @@ internal fun EditPosProductDialog(
                     if (sandbox) {
                         "Capacitación: el cambio queda en esta tablet y desaparece al salir o al reiniciar."
                     } else {
-                        "Solo se envía lo que cambies: el nombre por un lado, la categoría, el precio y el inventario por otro."
+                        "Nombre y código de barras se comparten. Categoría, precio e inventario son de esta sede."
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -447,8 +446,6 @@ internal fun EditPosProductDialog(
                     enabled = !busy,
                     colors = catalogFieldColors(),
                 )
-                Text("SKU", style = MaterialTheme.typography.labelLarge)
-                Text(sku.ifBlank { "Sin SKU" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
                     value = barcode,
                     onValueChange = { barcode = it },
@@ -457,7 +454,7 @@ internal fun EditPosProductDialog(
                         .onFocusChanged { if (it.isFocused) forceBarcodeKeyboard() },
                     interactionSource = barcodeInteraction,
                     label = { Text("Código de barras") },
-                    supportingText = { Text("Si lo dejas vacío o igual al SKU, el escáner usa el SKU.") },
+                    supportingText = { Text("Opcional. Vacío significa que no tiene código de empaque.") },
                     singleLine = true,
                     enabled = !busy,
                     colors = catalogFieldColors(),
@@ -610,21 +607,30 @@ internal fun CashWithdrawalAuthorization(
     var amount by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    // Blocks a second tap or keypad enter while the first withdrawal is still being saved.
+    var submitting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     // Records the same withdrawal from either keypad enter or the visible action.
     fun record() {
+        if (submitting) return
         val cents = Money.fromInput(amount)
         val user = selected
         if (cents == null || cents <= 0) error = "Captura un importe válido."
         else if (user == null) error = "Selecciona un autorizador."
-        else scope.launch {
-            val withdrawal = withContext(Dispatchers.IO) { repository.recordWithdrawal(shift, cents, user.id, pin) }
-            if (withdrawal == null) error = "No se pudo autorizar la sangría." else {
-                PrintWorker.enqueue(context)
-                SyncWorker.enqueue(context)
-                onRecorded(withdrawal)
+        else {
+            submitting = true
+            scope.launch {
+                val withdrawal = withContext(Dispatchers.IO) { repository.recordWithdrawal(shift, cents, user.id, pin) }
+                if (withdrawal == null) {
+                    error = "No se pudo autorizar la sangría."
+                    submitting = false
+                } else {
+                    PrintWorker.enqueue(context)
+                    SyncWorker.enqueue(context)
+                    onRecorded(withdrawal)
+                }
             }
         }
     }
@@ -649,7 +655,7 @@ internal fun CashWithdrawalAuthorization(
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                    PosButton("Confirmar e imprimir", ::record, primary = true, modifier = Modifier.weight(1f))
+                    PosButton("Confirmar e imprimir", ::record, enabled = !submitting, primary = true, modifier = Modifier.weight(1f))
                 }
             }
         }

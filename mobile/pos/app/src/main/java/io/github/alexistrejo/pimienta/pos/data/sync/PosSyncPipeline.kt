@@ -50,9 +50,13 @@ class PosSyncPipeline(private val context: Context) {
     // Process-wide so every pipeline instance (worker, foreground button) shares one refresh at a time.
     private companion object {
         val refreshMutex = Mutex()
+        // Two overlapping runs would requeue each other's in-flight events and race on their status.
+        val runMutex = Mutex()
     }
 
-    suspend fun run(refreshedOnce: Boolean = false): PosSyncNowOutcome {
+    suspend fun run(): PosSyncNowOutcome = runMutex.withLock { runLocked(refreshedOnce = false) }
+
+    private suspend fun runLocked(refreshedOnce: Boolean): PosSyncNowOutcome {
         if (provider.modes.mode() != RuntimeMode.PRODUCTION) return PosSyncNowOutcome.SKIPPED
         val state = db.syncDao().state() ?: return PosSyncNowOutcome.SKIPPED
         val baseUrl = state.baseUrl?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
@@ -81,21 +85,15 @@ class PosSyncPipeline(private val context: Context) {
                 }
                 try {
                     val response = api.events(EventsRequest(events.map { it.toEnvelope(device.id, siteId, json) }))
-                    val received = response.results.map { it.eventId }.toSet()
-                    acceptedResults = response.results.filter { it.status.uppercase() in setOf("ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW") }
-                    response.results.forEach { result ->
-                        when (result.status.uppercase()) {
-                            "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> Unit
-                            "REJECTED" -> db.syncDao().markRejected(result.eventId, result.message ?: "event rejected")
-                            else -> db.syncDao().markFailedRetryable(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
-                        }
-                    }
-                    events.filter { it.id !in received }.forEach {
-                        db.syncDao().markFailedRetryable(it.id, System.currentTimeMillis() + backoff(1), "server did not return a result")
-                    }
+                    acceptedResults = applyResults(events, response)
                 } catch (e: HttpException) {
-                    if (e.code() == 400 || e.code() == 422) {
-                        inFlightIds.forEach { db.syncDao().markRejected(it, "HTTP ${e.code()}: ${e.message()}") }
+                    if ((e.code() == 400 || e.code() == 422) && events.size > 1) {
+                        // One bad event must not reject the whole batch; isolate it by resending one at a time.
+                        val isolated = pushOneByOne(api, events, device.id, siteId)
+                        acceptedResults = isolated.first
+                        eventsError = isolated.second
+                    } else if (e.code() == 400 || e.code() == 422) {
+                        rejectAlone(events.single(), e)
                     } else {
                         inFlightIds.forEach { db.syncDao().markFailedRetryable(it, System.currentTimeMillis() + backoff(1), e.message()) }
                         eventsError = e
@@ -190,7 +188,7 @@ class PosSyncPipeline(private val context: Context) {
                     .resetForReenrollment(DeviceSessionPolicy.missingRefreshTokenMessage())
                 return PosSyncNowOutcome.FAILURE
             }
-            if (refreshedOnce) PosSyncNowOutcome.RETRY else run(refreshedOnce = true)
+            if (refreshedOnce) PosSyncNowOutcome.RETRY else runLocked(refreshedOnce = true)
         } catch (error: Exception) {
             if (DeviceSessionPolicy.refreshFailureRequiresReenrollment(error)) {
                 ProvisioningRepository(context, provider)
@@ -219,6 +217,59 @@ class PosSyncPipeline(private val context: Context) {
 
     private fun refreshApi(baseUrl: String): DeviceApi =
         Retrofit.Builder().baseUrl(baseUrl).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
+
+    // Marks each event by its server result and returns the ones the server kept.
+    private fun applyResults(events: List<OutboxEventEntity>, response: EventsResponse): List<EventResult> {
+        val received = response.results.map { it.eventId }.toSet()
+        response.results.forEach { result ->
+            when (result.status.uppercase()) {
+                "ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW" -> Unit
+                "REJECTED" -> db.syncDao().markRejected(result.eventId, result.message ?: "event rejected")
+                else -> db.syncDao().markFailedRetryable(result.eventId, System.currentTimeMillis() + backoff(1), result.message ?: "unknown result")
+            }
+        }
+        events.filter { it.id !in received }.forEach {
+            db.syncDao().markFailedRetryable(it.id, System.currentTimeMillis() + backoff(1), "server did not return a result")
+        }
+        return response.results.filter { it.status.uppercase() in setOf("ACCEPTED", "DUPLICATE", "REQUIRES_REVIEW") }
+    }
+
+    // Sends events in sequence order; on a non-validation failure the rest stay queued for the next run.
+    private suspend fun pushOneByOne(
+        api: DeviceApi,
+        events: List<OutboxEventEntity>,
+        deviceId: String,
+        siteId: String,
+    ): Pair<List<EventResult>, Exception?> {
+        val accepted = mutableListOf<EventResult>()
+        val ordered = events.sortedBy { it.sequence }
+        ordered.forEachIndexed { index, event ->
+            try {
+                val response = api.events(EventsRequest(listOf(event.toEnvelope(deviceId, siteId, json))))
+                accepted += applyResults(listOf(event), response)
+            } catch (e: HttpException) {
+                if (e.code() == 400 || e.code() == 422) {
+                    rejectAlone(event, e)
+                } else {
+                    retryRemaining(ordered.drop(index), e.message())
+                    return accepted to e
+                }
+            } catch (e: Exception) {
+                retryRemaining(ordered.drop(index), e.message ?: "events push failed")
+                return accepted to e
+            }
+        }
+        return accepted to null
+    }
+
+    private fun rejectAlone(event: OutboxEventEntity, e: HttpException) {
+        db.syncDao().markRejected(event.id, "HTTP ${e.code()}: ${e.message()}")
+        recordDiagnostic("ERROR", "sync_event_rejected", "POS event ${event.type} seq=${event.sequence} id=${event.id} rejected with HTTP ${e.code()}")
+    }
+
+    private fun retryRemaining(events: List<OutboxEventEntity>, message: String) {
+        events.forEach { db.syncDao().markFailedRetryable(it.id, System.currentTimeMillis() + backoff(1), message) }
+    }
 
     private fun recordDiagnostic(level: String, type: String, message: String) {
         runCatching { telemetryLogger.record(level, type, message) }

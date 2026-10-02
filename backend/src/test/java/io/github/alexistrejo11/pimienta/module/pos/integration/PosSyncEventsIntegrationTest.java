@@ -322,6 +322,134 @@ class PosSyncEventsIntegrationTest {
   }
 
   @Test
+  void shiftClosed_withNegativeExpectedCash_isAccepted() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-SHIFT-NEG-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long operatorId = createOperator(staffToken, hqId, "Cajera Neg Close");
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Neg Close");
+    UUID shiftId = UUID.randomUUID();
+
+    postShiftEvent(device, hqId, shiftId, 1L, "SHIFT_OPENED", shiftId, openingPayload(shiftId, operatorId));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                shiftLifecycleEventJson(
+                    device, hqId, shiftId, UUID.randomUUID(), 2L, "SHIFT_CLOSED", UUID.randomUUID(),
+                    closingPayload(-85700, 1029700, operatorId))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/pos/admin/shifts?headquarterId=%d&status=CLOSED&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+                    .formatted(hqId),
+                staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].expectedCashCentavos").value(-85700))
+        .andExpect(jsonPath("$.items[0].differenceCentavos").value(1115400));
+  }
+
+  @Test
+  void shiftOpened_autoClosesStaleShiftOfSameDevice_andLateCloseFillsIt() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-SHIFT-STALE-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long operatorId = createOperator(staffToken, hqId, "Cajera Stale");
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Stale");
+    UUID staleShiftId = UUID.randomUUID();
+    UUID newShiftId = UUID.randomUUID();
+
+    postShiftEvent(
+        device, hqId, staleShiftId, 1L, "SHIFT_OPENED", staleShiftId, openingPayload(staleShiftId, operatorId));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                shiftLifecycleEventJson(
+                    device, hqId, newShiftId, UUID.randomUUID(), 3L, "SHIFT_OPENED", newShiftId,
+                    openingPayload(newShiftId, operatorId))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/pos/admin/shifts?headquarterId=%d&status=OPEN".formatted(hqId), staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].shiftId").value(newShiftId.toString()));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                shiftLifecycleEventJson(
+                    device, hqId, staleShiftId, UUID.randomUUID(), 2L, "SHIFT_CLOSED", UUID.randomUUID(),
+                    closingPayload(50000, 50000, operatorId))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer(
+                "/api/v1/pos/admin/shifts?headquarterId=%d&status=CLOSED&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+                    .formatted(hqId),
+                staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].shiftId").value(staleShiftId.toString()))
+        .andExpect(jsonPath("$.items[0].expectedCashCentavos").value(50000));
+  }
+
+  private void postShiftEvent(
+      EnrolledDevice device,
+      long hqId,
+      UUID shiftId,
+      long deviceSequence,
+      String eventType,
+      UUID aggregateId,
+      String payload)
+      throws Exception {
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/sync/events",
+                device.accessToken(),
+                shiftLifecycleEventJson(
+                    device, hqId, shiftId, UUID.randomUUID(), deviceSequence, eventType, aggregateId, payload)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"));
+  }
+
+  private static String openingPayload(UUID shiftId, long operatorId) {
+    return """
+        {"shiftId": "%s", "cashierOperatorId": %d, "openingCashCentavos": 50000}
+        """
+        .formatted(shiftId, operatorId);
+  }
+
+  private static String closingPayload(long expected, long counted, long operatorId) {
+    return """
+        {
+          "cashExpectedCentavos": %d,
+          "countedCashCentavos": %d,
+          "differenceCentavos": %d,
+          "approvedByUserId": "%d"
+        }
+        """
+        .formatted(expected, counted, counted - expected, operatorId);
+  }
+
+  @Test
   void shiftReconciliation_aggregatesAcceptedSalesAndWithdrawal() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-RECON-" + UUID.randomUUID());

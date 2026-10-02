@@ -212,8 +212,9 @@ internal fun Sale(
         val operatorId = shift.cashierId.toLongOrNull()
         val app = context.applicationContext as PosApplication
         val training = repository.mode() != io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode.PRODUCTION
+        if (createProductBusy) return
+        createProductBusy = true
         scope.launch {
-            createProductBusy = true
             createProductError = null
             val result = withContext(Dispatchers.IO) {
                 if (training) {
@@ -310,8 +311,9 @@ internal fun Sale(
     }
 
     fun confirm(method: PaymentMethod, tendered: Long) {
+        if (busy) return
+        busy = true
         scope.launch {
-            busy = true
             val result = withContext(Dispatchers.IO) { repository.confirmSale(shift, cart, method, tendered, discount) }
             busy = false
             result.fold(

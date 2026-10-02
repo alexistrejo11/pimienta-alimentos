@@ -118,6 +118,9 @@ object Money {
 }
 
 // Holds the local rules and atomic persistence needed by the Phase 1 POS flow.
+// Window in which an identical withdrawal on the same shift is treated as a repeated tap.
+private const val DUPLICATE_WITHDRAWAL_WINDOW_MS = 10_000L
+
 class PosRepository(private val provider: PosDatabaseProvider, private val mode: RuntimeMode = provider.modes.mode()) {
     private val database get() = provider.database(mode)
     private val localPreferences get() = PosLocalPreferences(provider.applicationContext)
@@ -311,10 +314,16 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val operations = database.operationsDao()
             val liveShift = operations.activeShift() ?: return@runInTransaction null
             if (liveShift.id != shift.id) return@runInTransaction null
+            val now = System.currentTimeMillis()
+            // An identical withdrawal seconds apart is a repeated tap, not a second withdrawal.
+            val latest = operations.withdrawals(liveShift.id).firstOrNull()
+            if (latest != null && latest.amountCentavos == amountCentavos && latest.authorizedByUserId == authorizer.id &&
+                now - latest.createdAtEpochMillis < DUPLICATE_WITHDRAWAL_WINDOW_MS
+            ) return@runInTransaction null
             val device = operations.device() ?: return@runInTransaction null
             val id = UUID.randomUUID().toString()
             val folio = "SG-${device.visibleCode}-${liveShift.id.take(4).uppercase()}-${device.nextEventSequence.toString().padStart(4, '0')}"
-            val withdrawal = CashWithdrawalEntity(id, folio, liveShift.id, liveShift.cashierId, amountCentavos, "RESGUARDO_EFECTIVO", authorizer.id, authorizer.role, System.currentTimeMillis())
+            val withdrawal = CashWithdrawalEntity(id, folio, liveShift.id, liveShift.cashierId, amountCentavos, "RESGUARDO_EFECTIVO", authorizer.id, authorizer.role, now)
             operations.insertWithdrawal(withdrawal)
             enqueueOutbox(
                 operations, device, liveShift.siteId, liveShift.id, "CASH_WITHDRAWAL_RECORDED", id,
@@ -426,6 +435,8 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val operations = database.operationsDao()
             val liveShift = operations.activeShift() ?: return@runInTransaction false
             if (liveShift.id != sale.shiftId) return@runInTransaction false
+            // The caller's sale may be stale; a repeated confirmation must not cancel twice.
+            if (operations.sale(sale.id)?.status == "CANCELLED") return@runInTransaction false
             val lines = operations.linesForSale(sale.id)
             val device = operations.device() ?: return@runInTransaction false
             val cancelledAt = System.currentTimeMillis()

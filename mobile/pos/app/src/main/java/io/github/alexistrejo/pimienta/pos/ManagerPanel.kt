@@ -59,7 +59,6 @@ import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import io.github.alexistrejo.pimienta.pos.data.sync.planProductEdit
-import io.github.alexistrejo.pimienta.pos.data.sync.scanCode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
@@ -430,7 +429,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                     .onFocusChanged { if (it.isFocused) forceSearchKeyboard() },
                 interactionSource = searchInteraction,
                 singleLine = true,
-                placeholder = { Text("Buscar por nombre, SKU o código…", style = MaterialTheme.typography.bodySmall) },
+                placeholder = { Text("Buscar por nombre o código…", style = MaterialTheme.typography.bodySmall) },
                 colors = catalogFieldColors(),
             )
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -522,10 +521,9 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
         }
         EditPosProductDialog(
             productName = product.name,
-            sku = product.sku,
             categories = editCategories,
             category = product.saleCategory,
-            initialBarcode = scanCode(product.barcode, product.sku),
+            initialBarcode = product.barcode?.trim().orEmpty(),
             initialPriceCentavos = Money.fromCatalog(product.price),
             initialControlled = product.stockPolicy == "CONTROLLED",
             sandbox = sandbox,
@@ -590,7 +588,7 @@ private fun ProductEditRow(product: ProductEntity, onEdit: () -> Unit) {
                     append(product.saleCategory.ifBlank { "Sin categoría" })
                     append(" · ")
                     append(if (product.stockPolicy == "CONTROLLED") "Con inventario" else "Sin inventario")
-                    product.sku.takeIf { it.isNotBlank() }?.let { append(" · "); append(it) }
+                    product.barcode?.trim()?.takeIf { it.isNotEmpty() }?.let { append(" · "); append(it) }
                 },
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -822,6 +820,8 @@ private fun ZCloseDialog(
     var printSummaryTicket by rememberSaveable { mutableStateOf(true) }
     var liveClose by remember(shift.id) { mutableStateOf(close) }
     var autoExitSeconds by rememberSaveable(shift.id) { mutableIntStateOf(5) }
+    // Blocks repeated taps on count submission and close approval while one is still saving.
+    var working by remember(shift.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(shift.id, stage, attemptId) {
@@ -846,18 +846,23 @@ private fun ZCloseDialog(
     }
 
     fun submit() {
+        if (working) return
         val amount = Money.fromInput(count)
         if (amount == null || amount < 0) {
             message = "Captura un conteo válido."
-        } else scope.launch {
-            val result = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
-            if (result == null) {
-                message = "No se pudo guardar el conteo local."
-            } else {
-                attempt = result
-                attemptId = result.id
-                SyncWorker.enqueue(context)
-                stage = CountStage.VALIDATION
+        } else {
+            working = true
+            scope.launch {
+                val result = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
+                working = false
+                if (result == null) {
+                    message = "No se pudo guardar el conteo local."
+                } else {
+                    attempt = result
+                    attemptId = result.id
+                    SyncWorker.enqueue(context)
+                    stage = CountStage.VALIDATION
+                }
             }
         }
     }
@@ -882,7 +887,7 @@ private fun ZCloseDialog(
                         message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                            PosButton("Enviar a validación", ::submit, primary = true, modifier = Modifier.weight(1f))
+                            PosButton("Enviar a validación", ::submit, enabled = !working, primary = true, modifier = Modifier.weight(1f))
                         }
                     }
                     CountStage.VALIDATION -> {
@@ -1009,8 +1014,11 @@ private fun ZCloseDialog(
             repository = repository,
             onDismiss = { pinRequested = false },
         ) { signingManager, pin ->
+            if (working) return@ManagerPinDialog
+            working = true
             scope.launch {
                 val result = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, currentAttempt, signingManager, pin, printSummaryTicket) }
+                working = false
                 pinRequested = false
                 result.onSuccess {
                     PrintWorker.enqueue(context)
@@ -1135,6 +1143,8 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
     val (reasonInteraction, forceReasonKeyboard) = rememberForceSoftKeyboardInteractionSource()
     var pin by rememberSaveable { mutableStateOf("") }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
+    // Blocks a second confirmation while the first cancellation is still being saved.
+    var working by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
@@ -1165,22 +1175,30 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cerrar", onDismiss, modifier = Modifier.weight(1f))
                     PosButton("Confirmar cancelación", {
+                        if (working) return@PosButton
                         if (reason.isBlank() || pin.length < 4) {
                             message = "Captura motivo y PIN de cuatro dígitos."
-                        } else scope.launch {
-                            val validPin = withContext(Dispatchers.IO) { repository.authenticate(manager.id, pin) }
-                            if (!validPin) {
-                                message = "PIN de ${manager.displayName} incorrecto."
-                                pin = ""
-                                return@launch
+                        } else {
+                            working = true
+                            scope.launch {
+                                val validPin = withContext(Dispatchers.IO) { repository.authenticate(manager.id, pin) }
+                                if (!validPin) {
+                                    message = "PIN de ${manager.displayName} incorrecto."
+                                    pin = ""
+                                    working = false
+                                    return@launch
+                                }
+                                val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }
+                                if (ok) {
+                                    SyncWorker.enqueue(context)
+                                    onDone("Venta ${sale.folio} cancelada y auditada.")
+                                } else {
+                                    message = "No se pudo cancelar la venta."
+                                    working = false
+                                }
                             }
-                            val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }
-                            if (ok) {
-                                SyncWorker.enqueue(context)
-                                onDone("Venta ${sale.folio} cancelada y auditada.")
-                            } else message = "No se pudo cancelar la venta."
                         }
-                    }, primary = true, modifier = Modifier.weight(1f))
+                    }, enabled = !working, primary = true, modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -1195,6 +1213,7 @@ private fun StatusPanel(
     modifier: Modifier,
 ) {
     var syncMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var syncing by remember { mutableStateOf(false) }
     var device by remember { mutableStateOf<DeviceEntity?>(null) }
     var updateMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var updateBusy by rememberSaveable { mutableStateOf(false) }
@@ -1315,17 +1334,20 @@ private fun StatusPanel(
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Sincronización", style = MaterialTheme.typography.titleMedium)
                     Text("Offline-first · los eventos permanecen en Room hasta sincronizar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    PosButton("Intentar sincronizar ahora", {
+                    PosButton(if (syncing) "Sincronizando…" else "Intentar sincronizar ahora", {
+                        if (syncing) return@PosButton
                         if (mode == RuntimeMode.PRODUCTION) {
                             syncMessage = "Sincronizando…"
+                            syncing = true
                             scope.launch {
                                 val msg = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                                syncing = false
                                 syncMessage = if (msg == "Sincronización completada.") "✓ Sincronización completada." else msg
                             }
                         } else {
                             syncMessage = "Sandbox no envía eventos al backend."
                         }
-                    })
+                    }, enabled = !syncing)
                     syncMessage?.let {
                         Text(
                             it,

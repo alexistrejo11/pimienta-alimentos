@@ -167,7 +167,7 @@
         <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <app-list-search-field
             class="sm:col-span-2 lg:col-span-2"
-            placeholder="Buscar nombre, SKU o código de barras"
+            placeholder="Buscar nombre o código de barras"
             [(draft)]="catalogSearchDraft"
             (search)="applyCatalogSearch($event)"
           />
@@ -228,7 +228,6 @@
               <thead class="border-b border-outline-variant/20 bg-surface-container-low">
                 <tr>
                   <th class="px-3 py-2 text-left">Producto</th>
-                  <th class="px-3 py-2 text-left">SKU</th>
                   <th class="px-3 py-2 text-left">Código de barras</th>
                   <th class="px-3 py-2 text-left">Categoría</th>
                   <th class="px-3 py-2 text-left">Precio</th>
@@ -241,7 +240,6 @@
                 @for (row of catalog(); track row.id) {
                   <tr>
                     <td class="px-3 py-2">{{ row.productName || productName(row.productId) }}</td>
-                    <td class="px-3 py-2 font-mono text-xs">{{ row.productSku || productSku(row.productId) }}</td>
                     <td class="px-3 py-2 font-mono text-xs">{{ row.productBarcode || '—' }}</td>
                     <td class="px-3 py-2">{{ row.saleCategory }}</td>
                     <td class="px-3 py-2 tabular-nums">${{ row.salePrice }}</td>

@@ -31,7 +31,7 @@
           } @else if (formMode() === 'link') {
             Elige un maestro que aún no esté en esta sede.
           } @else {
-            Se crea el producto y queda en el surtido de esta sede. El SKU se asigna al guardar.
+            Se crea el producto y queda en el surtido de esta sede.
           }
         </p>
       </div>
@@ -142,14 +142,7 @@
             <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="name" maxlength="300" />
           </label>
 
-          @if (formMode() === 'edit') {
-            <p class="flex flex-col gap-1 text-sm">
-              <span class="font-semibold">SKU</span>
-              <span class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5 font-mono text-xs leading-8">{{ displaySku() || '—' }}</span>
-            </p>
-          }
-
-          <label class="flex flex-col gap-1 text-sm" [class.sm:col-span-2]="formMode() === 'add'">
+          <label class="flex flex-col gap-1 text-sm sm:col-span-2">
             <span class="font-semibold">Código de barras (opcional)</span>
             <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="barcode" maxlength="64" />
           </label>

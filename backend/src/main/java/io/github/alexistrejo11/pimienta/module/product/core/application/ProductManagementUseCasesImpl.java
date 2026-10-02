@@ -16,9 +16,11 @@ import io.github.alexistrejo11.pimienta.module.product.core.domain.exception.Pro
 import io.github.alexistrejo11.pimienta.module.product.core.domain.exception.ProductStockRequiredException;
 import io.github.alexistrejo11.pimienta.module.product.core.port.input.ProductManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductCatalogPolicy;
+import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductIdentityChangePort;
 import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,16 +33,19 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
   private final ItemRepository itemRepository;
   private final InventoryRepository inventoryRepository;
   private final ProductCatalogPolicy catalogPolicy;
+  private final ProductIdentityChangePort productIdentityChangePort;
 
   public ProductManagementUseCasesImpl(
       ProductRepository productRepository,
       ItemRepository itemRepository,
       InventoryRepository inventoryRepository,
-      ProductCatalogPolicy catalogPolicy) {
+      ProductCatalogPolicy catalogPolicy,
+      ProductIdentityChangePort productIdentityChangePort) {
     this.productRepository = productRepository;
     this.itemRepository = itemRepository;
     this.inventoryRepository = inventoryRepository;
     this.catalogPolicy = catalogPolicy;
+    this.productIdentityChangePort = productIdentityChangePort;
   }
 
   @Override
@@ -90,6 +95,9 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
   public Product update(long id, UpdateProductCommand command) {
     Product existing = getById(id);
     String barcode = blankToNull(command.barcode());
+    String nextName = command.name() == null ? "" : command.name().strip();
+    boolean identityChanged =
+        !existing.getName().equals(nextName) || !Objects.equals(existing.getBarcode(), barcode);
     assertBarcodeUnique(barcode, id);
 
     Long inventoryItemId = existing.getInventoryItemId();
@@ -105,7 +113,7 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
       inventoryItemId = null;
     }
 
-    existing.setName(command.name());
+    existing.setName(nextName);
     existing.setDescription(command.description() != null ? command.description() : "");
     existing.setUnit(command.unit());
     existing.setBarcode(barcode);
@@ -116,7 +124,11 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
     if (inventoryItemId != null) {
       syncLinkedItem(inventoryItemId, existing);
     }
-    return productRepository.save(existing);
+    Product saved = productRepository.save(existing);
+    if (identityChanged) {
+      productIdentityChangePort.publish(saved.getId());
+    }
+    return saved;
   }
 
   @Override
