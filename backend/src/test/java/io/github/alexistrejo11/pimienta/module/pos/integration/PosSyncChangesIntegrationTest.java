@@ -76,6 +76,60 @@ class PosSyncChangesIntegrationTest {
   }
 
   @Test
+  void changes_productNameOrBarcode_emitsUpsertForTablets() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-B5-NAME-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    String barcode = "750" + ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L);
+    long productId = createItem(staffToken, barcode, "CUERNITOS");
+    putCatalog(staffToken, hqId, productId, "Pan", "12.00");
+
+    String access = enrollDevice(staffToken, hqId, "Caja nombre");
+    String cursor = bootstrapCursor(access);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/pos/sync/products/" + productId,
+                access,
+                "{\"name\": \"Cuernito\", \"barcode\": \"%s\"}".formatted(barcode)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Cuernito"));
+
+    MvcResult renamed =
+        mockMvc
+            .perform(AccountTestRequests.getBearer(changesUrl(cursor), access))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.operations[?(@.entity=='product' && @.op=='upsert')]", hasSize(1)))
+            .andExpect(jsonPath("$.operations[?(@.entity=='product')].data.name").value("Cuernito"))
+            .andExpect(jsonPath("$.operations[?(@.entity=='product')].data.barcode").value(barcode))
+            .andReturn();
+    String afterRename =
+        JsonPath.read(renamed.getResponse().getContentAsString(), "$.nextCursor");
+
+    String replacement = "750" + ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L);
+    updateProduct(staffToken, productId, "Cuernito", replacement, "");
+
+    MvcResult recoded =
+        mockMvc
+            .perform(AccountTestRequests.getBearer(changesUrl(afterRename), access))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.operations[?(@.entity=='product' && @.op=='upsert')]", hasSize(1)))
+            .andExpect(jsonPath("$.operations[?(@.entity=='product')].data.name").value("Cuernito"))
+            .andExpect(jsonPath("$.operations[?(@.entity=='product')].data.barcode").value(replacement))
+            .andReturn();
+    String afterBarcode =
+        JsonPath.read(recoded.getResponse().getContentAsString(), "$.nextCursor");
+
+    updateProduct(staffToken, productId, "Cuernito", replacement, "solo descripcion");
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer(changesUrl(afterBarcode), access))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.operations", hasSize(0)));
+  }
+
+  @Test
   void changes_softDeletedProduct_emitsDeactivate() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-B5-DEL-" + UUID.randomUUID());
@@ -303,6 +357,28 @@ class PosSyncChangesIntegrationTest {
             AccountTestRequests.putJsonBearer(
                 "/api/v1/headquarters/" + hqId + "/pos-catalog/" + itemId, token, body))
         .andExpect(status().isOk());
+  }
+
+  private void updateProduct(
+      String token, long productId, String name, String barcode, String description) throws Exception {
+    String body =
+        """
+        {
+          "name": "%s",
+          "description": "%s",
+          "unit": "PIECE",
+          "barcode": "%s",
+          "status": "ACTIVE",
+          "trackStock": true
+        }
+        """
+            .formatted(name, description, barcode);
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer("/api/v1/products/" + productId, token, body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value(name))
+        .andExpect(jsonPath("$.barcode").value(barcode));
   }
 
   private long createItem(String token, String sku, String name) throws Exception {

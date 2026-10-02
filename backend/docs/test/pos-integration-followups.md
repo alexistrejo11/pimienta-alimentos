@@ -83,3 +83,9 @@ No extra follow-ups from this pass. Name and offer are separate device PUTs so a
 - Revoke still re-authorizes with a new code and still assigns the next visible code. An authorized re-enroll keeps the existing visible code.
 
 No extra follow-ups from this pass.
+
+## 2026-10-02 — Product name and barcode in POS changes
+
+A name or barcode save publishes one catalog upsert per sede that sells the product. Description-only saves do not. Tablets already apply `data.name` and `data.barcode` on product upsert, so no APK change is required.
+
+No extra follow-ups from this pass.
