@@ -59,7 +59,6 @@ import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import io.github.alexistrejo.pimienta.pos.data.sync.planProductEdit
-import io.github.alexistrejo.pimienta.pos.data.sync.scanCode
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
@@ -430,7 +429,7 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
                     .onFocusChanged { if (it.isFocused) forceSearchKeyboard() },
                 interactionSource = searchInteraction,
                 singleLine = true,
-                placeholder = { Text("Buscar por nombre, SKU o código…", style = MaterialTheme.typography.bodySmall) },
+                placeholder = { Text("Buscar por nombre o código…", style = MaterialTheme.typography.bodySmall) },
                 colors = catalogFieldColors(),
             )
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -522,10 +521,9 @@ private fun ProductsPanel(products: List<ProductEntity>, repository: PosReposito
         }
         EditPosProductDialog(
             productName = product.name,
-            sku = product.sku,
             categories = editCategories,
             category = product.saleCategory,
-            initialBarcode = scanCode(product.barcode, product.sku),
+            initialBarcode = product.barcode?.trim().orEmpty(),
             initialPriceCentavos = Money.fromCatalog(product.price),
             initialControlled = product.stockPolicy == "CONTROLLED",
             sandbox = sandbox,
@@ -590,7 +588,7 @@ private fun ProductEditRow(product: ProductEntity, onEdit: () -> Unit) {
                     append(product.saleCategory.ifBlank { "Sin categoría" })
                     append(" · ")
                     append(if (product.stockPolicy == "CONTROLLED") "Con inventario" else "Sin inventario")
-                    product.sku.takeIf { it.isNotBlank() }?.let { append(" · "); append(it) }
+                    product.barcode?.trim()?.takeIf { it.isNotEmpty() }?.let { append(" · "); append(it) }
                 },
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

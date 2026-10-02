@@ -179,10 +179,6 @@ export class SurtidoModalComponent implements OnInit {
     return rows;
   }
 
-  displaySku(): string {
-    return this.existing()?.productSku ?? this.catalogRow()?.productSku ?? '';
-  }
-
   productLabel(): string {
     const row = this.existing() ?? this.catalogRow();
     const product = this.picked();
