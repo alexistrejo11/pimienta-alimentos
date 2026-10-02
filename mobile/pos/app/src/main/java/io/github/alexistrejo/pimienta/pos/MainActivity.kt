@@ -939,6 +939,7 @@ internal fun Access(
                         PosButton(
                             label = if (busy) "Abriendo turno…" else "Confirmar y abrir turno",
                             click = {
+                                if (busy) return@PosButton
                                 val cash = Money.fromInput(opening) ?: -1
                                 val assignee = selectedAssignee
                                 if (cash < 0) {
@@ -949,8 +950,8 @@ internal fun Access(
                                     localError = "Selecciona la persona a la que se asignará el turno."
                                     return@PosButton
                                 }
+                                busy = true
                                 scope.launch {
-                                    busy = true
                                     localError = null
                                     val result = withContext(Dispatchers.IO) {
                                         repository.openShift(assignee.id, cash)?.let { Result.success(it) }

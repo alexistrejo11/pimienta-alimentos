@@ -310,8 +310,9 @@ internal fun Sale(
     }
 
     fun confirm(method: PaymentMethod, tendered: Long) {
+        if (busy) return
+        busy = true
         scope.launch {
-            busy = true
             val result = withContext(Dispatchers.IO) { repository.confirmSale(shift, cart, method, tendered, discount) }
             busy = false
             result.fold(

@@ -28,5 +28,7 @@ public class PosShiftJpaEntity extends VersionedJpaEntity {
   protected PosShiftJpaEntity() {}
   public PosShiftJpaEntity(UUID id,long hq,UUID device,Long cashier,long opening,Instant opened,UUID event){shiftId=id;headquarterId=hq;deviceId=device;cashierOperatorId=cashier;openingCashCentavos=opening;openedAt=opened;status="OPEN";openedEventId=event;createdAt=Instant.now();updatedAt=createdAt;}
   public UUID getShiftId(){return shiftId;} public long getHeadquarterId(){return headquarterId;} public UUID getDeviceId(){return deviceId;} public Long getCashierOperatorId(){return cashierOperatorId;} public long getOpeningCashCentavos(){return openingCashCentavos;} public Instant getOpenedAt(){return openedAt;} public Instant getClosedAt(){return closedAt;} public String getStatus(){return status;} public Long getExpectedCashCentavos(){return expectedCashCentavos;} public Long getCountedCashCentavos(){return countedCashCentavos; } public Long getDifferenceCentavos(){return differenceCentavos;}
+  public UUID getClosedEventId(){return closedEventId;}
+  public void autoClose(Instant at){closedAt=at;status="CLOSED";updatedAt=Instant.now();}
   public void close(Instant at,long expected,long counted,long difference,UUID event){closedAt=at;status="CLOSED";expectedCashCentavos=expected;countedCashCentavos=counted;differenceCentavos=difference;closedEventId=event;updatedAt=Instant.now();}
 }

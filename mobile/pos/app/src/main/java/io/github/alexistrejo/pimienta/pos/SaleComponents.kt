@@ -607,21 +607,30 @@ internal fun CashWithdrawalAuthorization(
     var amount by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    // Blocks a second tap or keypad enter while the first withdrawal is still being saved.
+    var submitting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     // Records the same withdrawal from either keypad enter or the visible action.
     fun record() {
+        if (submitting) return
         val cents = Money.fromInput(amount)
         val user = selected
         if (cents == null || cents <= 0) error = "Captura un importe válido."
         else if (user == null) error = "Selecciona un autorizador."
-        else scope.launch {
-            val withdrawal = withContext(Dispatchers.IO) { repository.recordWithdrawal(shift, cents, user.id, pin) }
-            if (withdrawal == null) error = "No se pudo autorizar la sangría." else {
-                PrintWorker.enqueue(context)
-                SyncWorker.enqueue(context)
-                onRecorded(withdrawal)
+        else {
+            submitting = true
+            scope.launch {
+                val withdrawal = withContext(Dispatchers.IO) { repository.recordWithdrawal(shift, cents, user.id, pin) }
+                if (withdrawal == null) {
+                    error = "No se pudo autorizar la sangría."
+                    submitting = false
+                } else {
+                    PrintWorker.enqueue(context)
+                    SyncWorker.enqueue(context)
+                    onRecorded(withdrawal)
+                }
             }
         }
     }
@@ -646,7 +655,7 @@ internal fun CashWithdrawalAuthorization(
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                    PosButton("Confirmar e imprimir", ::record, primary = true, modifier = Modifier.weight(1f))
+                    PosButton("Confirmar e imprimir", ::record, enabled = !submitting, primary = true, modifier = Modifier.weight(1f))
                 }
             }
         }

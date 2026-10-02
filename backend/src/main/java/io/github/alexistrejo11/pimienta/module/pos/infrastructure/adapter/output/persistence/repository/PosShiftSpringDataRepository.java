@@ -17,4 +17,6 @@ public interface PosShiftSpringDataRepository extends JpaRepository<PosShiftJpaE
   Page<PosShiftJpaEntity> findAllByOrderByOpenedAtDesc(Pageable pageable);
 
   Optional<PosShiftJpaEntity> findByShiftIdAndHeadquarterId(UUID shiftId, long headquarterId);
+
+  Optional<PosShiftJpaEntity> findFirstByDeviceIdAndStatus(UUID deviceId, String status);
 }

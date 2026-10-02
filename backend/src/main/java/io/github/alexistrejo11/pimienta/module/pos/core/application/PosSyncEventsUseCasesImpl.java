@@ -111,14 +111,16 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
                 transactionTemplate.execute(status -> processOne(device, item)));
       } catch (DataIntegrityViolationException ex) {
         // Concurrent insert raced past the pre-check; classify without leaving a 500.
-        result = resolveIntegrityConflict(device.getId(), item);
+        result = resolveIntegrityConflict(device, item, ex);
       }
       results.add(result);
     }
     return List.copyOf(results);
   }
 
-  private EventIngestResult resolveIntegrityConflict(UUID deviceId, IngestPosEventItem item) {
+  private EventIngestResult resolveIntegrityConflict(
+      PosDevice device, IngestPosEventItem item, DataIntegrityViolationException cause) {
+    UUID deviceId = device.getId();
     Optional<PosSyncEvent> byEventId = syncEventRepository.findByEventId(item.eventId());
     if (byEventId.isPresent()) {
       PosSyncEvent prior = byEventId.get();
@@ -144,9 +146,53 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
               + prior.getId()
               + "; continue from a higher sequence after re-enrollment");
     }
-    throw new IllegalStateException(
-        "POS sync integrity conflict without matching eventId or deviceSequence for eventId="
-            + item.eventId());
+    log.warn(
+        "POS sync integrity conflict eventId={} eventType={} deviceSequence={} cause={}",
+        item.eventId(),
+        item.eventType(),
+        item.deviceSequence(),
+        cause.getMostSpecificCause().getMessage());
+    return persistIntegrityRejection(device, item);
+  }
+
+  // A rejected row keeps the event visible for review instead of failing the whole batch.
+  private EventIngestResult persistIntegrityRejection(PosDevice device, IngestPosEventItem item) {
+    String message = "El evento entra en conflicto con datos existentes del servidor y no se aplicó";
+    try {
+      return Objects.requireNonNull(
+          transactionTemplate.execute(
+              status -> {
+                PosSyncEvent saved =
+                    syncEventRepository.save(
+                        PosSyncEvent.builder()
+                            .withId(item.eventId())
+                            .withEventType(item.eventType())
+                            .withSchemaVersion(item.schemaVersion())
+                            .withDeviceId(device.getId())
+                            .withHeadquarterId(device.getHeadquarterId())
+                            .withDeviceSequence(item.deviceSequence())
+                            .withAggregateId(item.aggregateId())
+                            .withShiftId(item.shiftId())
+                            .withOccurredAt(
+                                item.occurredAt() != null ? item.occurredAt() : Instant.now())
+                            .withPayloadJson(item.payloadJson() != null ? item.payloadJson() : "{}")
+                            .withStatus(PosEventResultStatus.REJECTED)
+                            .withMessage(message)
+                            .register());
+                bumpDeviceSequence(device, item.deviceSequence());
+                return new EventIngestResult(
+                    saved.getId(),
+                    PosEventResultStatus.REJECTED,
+                    saved.getServerReceivedAt(),
+                    null,
+                    message);
+              }));
+    } catch (RuntimeException persistFailure) {
+      log.error(
+          "POS sync could not persist integrity rejection eventId={}", item.eventId(), persistFailure);
+      return new EventIngestResult(
+          item.eventId(), PosEventResultStatus.REJECTED, Instant.now(), null, message);
+    }
   }
 
   private EventIngestResult processOne(PosDevice device, IngestPosEventItem item) {

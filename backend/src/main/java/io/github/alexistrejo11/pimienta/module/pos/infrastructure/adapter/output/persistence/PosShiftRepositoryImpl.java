@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +35,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class PosShiftRepositoryImpl implements PosShiftRepository {
+  private static final Logger log = LoggerFactory.getLogger(PosShiftRepositoryImpl.class);
   private static final ObjectMapper JSON = new ObjectMapper();
   private final PosShiftSpringDataRepository shifts;
   private final PosCashMovementSpringDataRepository movements;
@@ -68,6 +71,20 @@ public class PosShiftRepositoryImpl implements PosShiftRepository {
         if (shifts.existsById(shiftId)) {
           return;
         }
+        // A tablet runs one shift at a time, so a new opening proves the previous one ended.
+        shifts
+            .findFirstByDeviceIdAndStatus(event.getDeviceId(), "OPEN")
+            .ifPresent(
+                stale -> {
+                  log.warn(
+                      "Auto-closing stale POS shift shiftId={} deviceId={} on SHIFT_OPENED shiftId={}",
+                      stale.getShiftId(),
+                      event.getDeviceId(),
+                      shiftId);
+                  stale.autoClose(event.getOccurredAt());
+                  // Flush before the insert: Hibernate orders inserts ahead of updates.
+                  shifts.saveAndFlush(stale);
+                });
         shifts.save(
             new PosShiftJpaEntity(
                 shiftId,
@@ -111,10 +128,10 @@ public class PosShiftRepositoryImpl implements PosShiftRepository {
         }
       }
       case "SHIFT_CLOSED" -> {
-        PosShiftJpaEntity s = requiredOpenShift(shiftId, event);
+        PosShiftJpaEntity s = requiredOpenShift(shiftId, event, true);
         s.close(
             event.getOccurredAt(),
-            nonNegativeLong(p, "cashExpectedCentavos"),
+            requiredLong(p, "cashExpectedCentavos"),
             nonNegativeLong(p, "countedCashCentavos"),
             requiredLong(p, "differenceCentavos"),
             event.getId());
@@ -243,6 +260,11 @@ public class PosShiftRepositoryImpl implements PosShiftRepository {
   }
 
   private PosShiftJpaEntity requiredOpenShift(UUID id, PosSyncEvent event) {
+    return requiredOpenShift(id, event, false);
+  }
+
+  // allowAutoClosed lets a late SHIFT_CLOSED fill in a shift closed by a newer SHIFT_OPENED.
+  private PosShiftJpaEntity requiredOpenShift(UUID id, PosSyncEvent event, boolean allowAutoClosed) {
     PosShiftJpaEntity s =
         shifts
             .findById(id)
@@ -254,7 +276,8 @@ public class PosShiftRepositoryImpl implements PosShiftRepository {
                         null));
     if (s.getHeadquarterId() != event.getHeadquarterId()
         || !s.getDeviceId().equals(event.getDeviceId())
-        || "CLOSED".equals(s.getStatus())) {
+        || ("CLOSED".equals(s.getStatus())
+            && !(allowAutoClosed && s.getClosedEventId() == null))) {
       throw invalid(
           "El evento no corresponde a un turno abierto", "Shift scope or status mismatch", null);
     }

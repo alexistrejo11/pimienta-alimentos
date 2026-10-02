@@ -820,6 +820,8 @@ private fun ZCloseDialog(
     var printSummaryTicket by rememberSaveable { mutableStateOf(true) }
     var liveClose by remember(shift.id) { mutableStateOf(close) }
     var autoExitSeconds by rememberSaveable(shift.id) { mutableIntStateOf(5) }
+    // Blocks repeated taps on count submission and close approval while one is still saving.
+    var working by remember(shift.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(shift.id, stage, attemptId) {
@@ -844,18 +846,23 @@ private fun ZCloseDialog(
     }
 
     fun submit() {
+        if (working) return
         val amount = Money.fromInput(count)
         if (amount == null || amount < 0) {
             message = "Captura un conteo válido."
-        } else scope.launch {
-            val result = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
-            if (result == null) {
-                message = "No se pudo guardar el conteo local."
-            } else {
-                attempt = result
-                attemptId = result.id
-                SyncWorker.enqueue(context)
-                stage = CountStage.VALIDATION
+        } else {
+            working = true
+            scope.launch {
+                val result = withContext(Dispatchers.IO) { repository.submitCashCount(shift, amount, "total=$amount") }
+                working = false
+                if (result == null) {
+                    message = "No se pudo guardar el conteo local."
+                } else {
+                    attempt = result
+                    attemptId = result.id
+                    SyncWorker.enqueue(context)
+                    stage = CountStage.VALIDATION
+                }
             }
         }
     }
@@ -880,7 +887,7 @@ private fun ZCloseDialog(
                         message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                            PosButton("Enviar a validación", ::submit, primary = true, modifier = Modifier.weight(1f))
+                            PosButton("Enviar a validación", ::submit, enabled = !working, primary = true, modifier = Modifier.weight(1f))
                         }
                     }
                     CountStage.VALIDATION -> {
@@ -1007,8 +1014,11 @@ private fun ZCloseDialog(
             repository = repository,
             onDismiss = { pinRequested = false },
         ) { signingManager, pin ->
+            if (working) return@ManagerPinDialog
+            working = true
             scope.launch {
                 val result = withContext(Dispatchers.IO) { repository.approveShiftClose(shift, currentAttempt, signingManager, pin, printSummaryTicket) }
+                working = false
                 pinRequested = false
                 result.onSuccess {
                     PrintWorker.enqueue(context)
@@ -1133,6 +1143,8 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
     val (reasonInteraction, forceReasonKeyboard) = rememberForceSoftKeyboardInteractionSource()
     var pin by rememberSaveable { mutableStateOf("") }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
+    // Blocks a second confirmation while the first cancellation is still being saved.
+    var working by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
@@ -1163,22 +1175,30 @@ private fun CancellationDialog(sale: SaleEntity, manager: LocalUserEntity, repos
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cerrar", onDismiss, modifier = Modifier.weight(1f))
                     PosButton("Confirmar cancelación", {
+                        if (working) return@PosButton
                         if (reason.isBlank() || pin.length < 4) {
                             message = "Captura motivo y PIN de cuatro dígitos."
-                        } else scope.launch {
-                            val validPin = withContext(Dispatchers.IO) { repository.authenticate(manager.id, pin) }
-                            if (!validPin) {
-                                message = "PIN de ${manager.displayName} incorrecto."
-                                pin = ""
-                                return@launch
+                        } else {
+                            working = true
+                            scope.launch {
+                                val validPin = withContext(Dispatchers.IO) { repository.authenticate(manager.id, pin) }
+                                if (!validPin) {
+                                    message = "PIN de ${manager.displayName} incorrecto."
+                                    pin = ""
+                                    working = false
+                                    return@launch
+                                }
+                                val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }
+                                if (ok) {
+                                    SyncWorker.enqueue(context)
+                                    onDone("Venta ${sale.folio} cancelada y auditada.")
+                                } else {
+                                    message = "No se pudo cancelar la venta."
+                                    working = false
+                                }
                             }
-                            val ok = withContext(Dispatchers.IO) { repository.cancelCashSale(sale, manager, pin, reason) }
-                            if (ok) {
-                                SyncWorker.enqueue(context)
-                                onDone("Venta ${sale.folio} cancelada y auditada.")
-                            } else message = "No se pudo cancelar la venta."
                         }
-                    }, primary = true, modifier = Modifier.weight(1f))
+                    }, enabled = !working, primary = true, modifier = Modifier.weight(1f))
                 }
             }
         }
