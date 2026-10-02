@@ -488,8 +488,9 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                             busy = enrolling,
                             error = enrollError ?: syncState?.lastError,
                         ) { code, name ->
+                        if (enrolling) return@EnrollmentScreen
+                        enrolling = true
                         scope.launch {
-                            enrolling = true
                             enrollError = null
                             try {
                                 withContext(Dispatchers.IO) { ProvisioningRepository(context, app.databaseProvider).enroll(PRODUCTION_API_URL, code, name) }

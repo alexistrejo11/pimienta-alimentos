@@ -50,9 +50,13 @@ class PosSyncPipeline(private val context: Context) {
     // Process-wide so every pipeline instance (worker, foreground button) shares one refresh at a time.
     private companion object {
         val refreshMutex = Mutex()
+        // Two overlapping runs would requeue each other's in-flight events and race on their status.
+        val runMutex = Mutex()
     }
 
-    suspend fun run(refreshedOnce: Boolean = false): PosSyncNowOutcome {
+    suspend fun run(): PosSyncNowOutcome = runMutex.withLock { runLocked(refreshedOnce = false) }
+
+    private suspend fun runLocked(refreshedOnce: Boolean): PosSyncNowOutcome {
         if (provider.modes.mode() != RuntimeMode.PRODUCTION) return PosSyncNowOutcome.SKIPPED
         val state = db.syncDao().state() ?: return PosSyncNowOutcome.SKIPPED
         val baseUrl = state.baseUrl?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
@@ -184,7 +188,7 @@ class PosSyncPipeline(private val context: Context) {
                     .resetForReenrollment(DeviceSessionPolicy.missingRefreshTokenMessage())
                 return PosSyncNowOutcome.FAILURE
             }
-            if (refreshedOnce) PosSyncNowOutcome.RETRY else run(refreshedOnce = true)
+            if (refreshedOnce) PosSyncNowOutcome.RETRY else runLocked(refreshedOnce = true)
         } catch (error: Exception) {
             if (DeviceSessionPolicy.refreshFailureRequiresReenrollment(error)) {
                 ProvisioningRepository(context, provider)

@@ -212,8 +212,9 @@ internal fun Sale(
         val operatorId = shift.cashierId.toLongOrNull()
         val app = context.applicationContext as PosApplication
         val training = repository.mode() != io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode.PRODUCTION
+        if (createProductBusy) return
+        createProductBusy = true
         scope.launch {
-            createProductBusy = true
             createProductError = null
             val result = withContext(Dispatchers.IO) {
                 if (training) {

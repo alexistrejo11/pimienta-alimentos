@@ -1213,6 +1213,7 @@ private fun StatusPanel(
     modifier: Modifier,
 ) {
     var syncMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var syncing by remember { mutableStateOf(false) }
     var device by remember { mutableStateOf<DeviceEntity?>(null) }
     var updateMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var updateBusy by rememberSaveable { mutableStateOf(false) }
@@ -1333,17 +1334,20 @@ private fun StatusPanel(
                 Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Sincronización", style = MaterialTheme.typography.titleMedium)
                     Text("Offline-first · los eventos permanecen en Room hasta sincronizar.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    PosButton("Intentar sincronizar ahora", {
+                    PosButton(if (syncing) "Sincronizando…" else "Intentar sincronizar ahora", {
+                        if (syncing) return@PosButton
                         if (mode == RuntimeMode.PRODUCTION) {
                             syncMessage = "Sincronizando…"
+                            syncing = true
                             scope.launch {
                                 val msg = withContext(Dispatchers.IO) { runForegroundSync(context) }
+                                syncing = false
                                 syncMessage = if (msg == "Sincronización completada.") "✓ Sincronización completada." else msg
                             }
                         } else {
                             syncMessage = "Sandbox no envía eventos al backend."
                         }
-                    })
+                    }, enabled = !syncing)
                     syncMessage?.let {
                         Text(
                             it,
