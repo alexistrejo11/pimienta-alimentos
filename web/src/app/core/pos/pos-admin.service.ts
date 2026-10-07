@@ -44,6 +44,13 @@ export class PosAdminService {
     return this.http.post<PosDeviceAdminResponse>(`${this.base}/devices/${id}/revoke`, {});
   }
 
+  updateDeviceFunction(
+    id: string,
+    fn: 'CASH_REGISTER' | 'PREPARATION',
+  ): Observable<PosDeviceAdminResponse> {
+    return this.http.patch<PosDeviceAdminResponse>(`${this.base}/devices/${id}`, { function: fn });
+  }
+
   // ── Enrolamiento ──────────────────────────────────────────────────────────
 
   createEnrollmentCode(body: CreateEnrollmentCodeRequest): Observable<EnrollmentCodeResponse> {
@@ -156,6 +163,7 @@ export class PosAdminService {
     if (params.eventType) p = p.set('eventType', params.eventType);
     if (params.lineType) p = p.set('lineType', params.lineType);
     if (params.openProductsOnly) p = p.set('openProductsOnly', 'true');
+    if (params.salesOrder) p = p.set('salesOrder', params.salesOrder);
     return p;
   }
 }

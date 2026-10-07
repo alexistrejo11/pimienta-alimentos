@@ -24,6 +24,9 @@ import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -69,11 +72,23 @@ public class PosAdminReportController {
        @RequestParam(required = false) Long productId,
        @RequestParam(required = false) PosSaleLineType lineType,
        @RequestParam(defaultValue = "false") boolean openProductsOnly,
+       @RequestParam(defaultValue = "recent") String salesOrder,
        @ModelAttribute PageableRequest pageable) {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
-         reportUseCases.sales(filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly), pageable.toPageable()),
+         reportUseCases.sales(
+             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly),
+             salesPageable(pageable, salesOrder)),
         row -> PosWebMapper.toSaleReportResponse(row.sale(), row.syncStatus()));
+  }
+
+  /** {@code recent} = newest first; {@code oldest} = oldest first. */
+  private static Pageable salesPageable(PageableRequest pageable, String salesOrder) {
+    Sort.Direction direction =
+        "oldest".equalsIgnoreCase(salesOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
+    Sort sort =
+        Sort.by(direction, "occurredAt").and(Sort.by(direction, "saleId"));
+    return PageRequest.of(pageable.getPage(), pageable.getSize(), sort);
   }
 
   @GetMapping("/products")
