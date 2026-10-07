@@ -300,6 +300,10 @@ export interface PosReportFilterParams {
   productId?: number;
   lineType?: 'CATALOG' | 'OPEN_AMOUNT' | 'PENDING_CATALOG';
   openProductsOnly?: boolean;
+  /** Coincidencia parcial sobre el nombre vendido. */
+  productName?: string;
+  /** Solo tickets cobrados como cortesía. */
+  courtesyOnly?: boolean;
   /** Reporte de ventas: `recent` (default) u `oldest`. */
   salesOrder?: 'recent' | 'oldest';
   eventType?: string;

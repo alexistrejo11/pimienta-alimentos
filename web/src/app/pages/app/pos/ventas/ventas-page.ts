@@ -50,12 +50,14 @@ export class VentasPageComponent implements OnInit {
   readonly formatCentavos = formatCentavos;
 
   readonly productRows = signal<PosProductReportResponse[]>([]);
+  /** El último Consultar usó un producto del catálogo, montos abiertos, sin catalogar o cortesías. */
+  readonly narrowed = signal(false);
   /** Borrador del buscador del resumen (Enter / Filtrar aplican). */
   productSummaryDraft = '';
-  /** Término aplicado al resumen (búsqueda por nombre, estilo contiene). */
+  /** Nombre aplicado solo al resumen, coincidencia por contiene. */
   readonly productSummaryQuery = signal('');
 
-  readonly filteredProductRows = computed(() => {
+  readonly productRowsView = computed(() => {
     const q = this.productSummaryQuery().trim().toLocaleLowerCase('es');
     const rows = this.productRows();
     const matched = q
@@ -64,8 +66,8 @@ export class VentasPageComponent implements OnInit {
     return [...matched].sort((a, b) => b.quantitySum - a.quantitySum);
   });
 
-  readonly filteredProductTotals = computed(() => {
-    const rows = this.filteredProductRows();
+  readonly productTotals = computed(() => {
+    const rows = this.productRowsView();
     return {
       quantity: rows.reduce((sum, r) => sum + r.quantitySum, 0),
       subtotalCentavos: rows.reduce((sum, r) => sum + r.subtotalCentavosSum, 0),
@@ -76,9 +78,10 @@ export class VentasPageComponent implements OnInit {
   /** Valores `datetime-local` (hora local del navegador). */
   dateTimeFrom = '';
   dateTimeTo = '';
-  openProductsOnly = false;
-  /** Solo filtra la tabla de tickets (un producto del catálogo). */
+  /** Un producto del catálogo. Acota tickets y resumen al pulsar Consultar. */
   filterProductId: number | null = null;
+  /** `all` muestra todo. Las otras opciones se excluyen entre sí. */
+  includeKind: 'all' | 'open' | 'pending' | 'courtesy' = 'all';
   /** `true` = más recientes primero (API `recent`). */
   readonly salesNewestFirst = signal(true);
   readonly expandedSaleId = signal<string | null>(null);
@@ -135,6 +138,7 @@ export class VentasPageComponent implements OnInit {
     this.error.set(null);
     this.page.set(0);
     this.loading.set(true);
+    const narrowing = this.isNarrowed();
     const from = localDateTimeToInstant(this.dateTimeFrom);
     const to = localDateTimeToExclusiveEndInstant(this.dateTimeTo);
 
@@ -157,6 +161,7 @@ export class VentasPageComponent implements OnInit {
           this.sales.set(sales.items);
           this.metadata.set(sales.metadata);
           this.productRows.set(products);
+          this.narrowed.set(narrowing);
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),
       });
@@ -190,6 +195,10 @@ export class VentasPageComponent implements OnInit {
     });
   }
 
+  private isNarrowed(): boolean {
+    return this.filterProductId != null || this.includeKind !== 'all';
+  }
+
   private salesQueryParams(
     headquarterId: number,
     from: string,
@@ -197,11 +206,7 @@ export class VentasPageComponent implements OnInit {
     page: number,
   ): PosReportFilterParams {
     return {
-      headquarterId,
-      from,
-      to,
-      openProductsOnly: this.openProductsOnly,
-      productId: this.filterProductId ?? undefined,
+      ...this.reportBaseParams(headquarterId, from, to),
       salesOrder: this.salesNewestFirst() ? 'recent' : 'oldest',
       page,
       size: 20,
@@ -213,7 +218,10 @@ export class VentasPageComponent implements OnInit {
       headquarterId,
       from,
       to,
-      openProductsOnly: this.openProductsOnly,
+      productId: this.filterProductId ?? undefined,
+      openProductsOnly: this.includeKind === 'open',
+      lineType: this.includeKind === 'pending' ? 'PENDING_CATALOG' : undefined,
+      courtesyOnly: this.includeKind === 'courtesy',
     };
   }
 

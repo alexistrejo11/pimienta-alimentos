@@ -1,10 +1,11 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header title="Ventas POS" subtitle="Tickets sincronizados por sede y periodo" />
 
-  <section
-    class="flex flex-col gap-4 rounded-xl ui-panel p-4 sm:p-5"
-    aria-label="Filtros de ventas"
-  >
+  <section class="flex flex-col gap-3 rounded-xl ui-panel p-4" aria-label="Filtros de ventas">
+    <p class="text-sm text-on-surface-variant">
+      Sede, horario y producto del catálogo aplican a los tickets y al resumen.
+    </p>
+
     <app-headquarter-select
       class="w-full min-w-0 sm:max-w-md"
       label="Sede"
@@ -12,7 +13,7 @@
       (valueChange)="onHeadquarterChange($event)"
     />
 
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label class="flex min-w-0 flex-col gap-1 text-sm">
         <span class="font-medium">Desde</span>
         <input
@@ -31,45 +32,46 @@
           [(ngModel)]="dateTimeTo"
         />
       </label>
+      <app-product-select
+        class="min-w-0"
+        label="Producto del catálogo"
+        placeholder="Opcional: elige un producto"
+        [value]="filterProductId"
+        (valueChange)="filterProductId = $event"
+      />
+      <label class="flex min-w-0 flex-col gap-1 text-sm">
+        <span class="font-medium">Qué incluir</span>
+        <select
+          class="min-h-11 w-full min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          [(ngModel)]="includeKind"
+        >
+          <option value="all">Todas las ventas</option>
+          <option value="open">Solo montos abiertos</option>
+          <option value="pending">Solo sin catalogar</option>
+          <option value="courtesy">Solo cortesías</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-xs text-on-surface-variant">
+        Hora local. Se incluye el minuto elegido en «Hasta».
+      </p>
       <button
         type="button"
-        class="min-h-11 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary sm:w-auto lg:min-w-[9rem]"
+        class="min-h-11 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary sm:w-auto sm:min-w-[9rem]"
         (click)="cargar()"
       >
         Consultar
       </button>
     </div>
-
-    <p class="text-xs text-on-surface-variant sm:text-sm">
-      Hora local. Se incluye el minuto elegido en «Hasta».
-    </p>
-
-    <div class="border-t border-outline-variant/15 pt-4">
-      <app-product-select
-        class="min-w-0"
-        label="Filtrar tickets por producto"
-        placeholder="Opcional: un producto del catálogo"
-        [value]="filterProductId"
-        (valueChange)="filterProductId = $event"
-      />
-      <p class="mt-1 text-xs text-on-surface-variant">
-        Solo acota los tickets. El resumen de abajo lista todos los productos del periodo.
-      </p>
-    </div>
-
-    <label
-      class="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-on-surface sm:min-h-0"
-    >
-      <input type="checkbox" class="size-4 shrink-0 accent-primary" [(ngModel)]="openProductsOnly" />
-      Solo montos abiertos
-    </label>
   </section>
 
   <app-data-state
     [loading]="loading()"
     [error]="error()"
     [empty]="sales().length === 0"
-    emptyMessage="Sin ventas en el periodo."
+    [emptyMessage]="narrowed() ? 'Sin tickets con este filtro.' : 'Sin ventas en el periodo.'"
     (retry)="cargar()"
   >
     <div class="mb-3 flex justify-stretch sm:justify-end">
@@ -166,7 +168,7 @@
     <div>
       <h2 class="font-headline text-lg font-bold text-on-surface">Resumen por producto</h2>
       <p class="text-sm text-on-surface-variant">
-        Cantidades vendidas en el mismo periodo y sede. Busca por texto (por ejemplo «hamburguesa»).
+        Totales del mismo periodo. Aquí el nombre busca por contiene, solo en esta tabla.
       </p>
     </div>
 
@@ -174,23 +176,25 @@
       <app-list-search-field
         class="min-w-0 w-full max-w-md"
         label="Buscar en el resumen"
-        placeholder="Nombre del producto…"
+        placeholder="Por ejemplo, hamburguesa"
         buttonLabel="Filtrar"
         [(draft)]="productSummaryDraft"
         (search)="onProductSummarySearch($event)"
       />
 
       @if (productRows().length === 0) {
-        <p class="text-sm text-on-surface-variant">Sin ventas de productos en el periodo.</p>
-      } @else if (filteredProductRows().length === 0) {
+        <p class="text-sm text-on-surface-variant">
+          {{ narrowed() ? 'Sin productos con este filtro.' : 'Sin ventas de productos en el periodo.' }}
+        </p>
+      } @else if (productRowsView().length === 0) {
         <p class="text-sm text-on-surface-variant">Ningún producto coincide con la búsqueda.</p>
       } @else {
         @if (productSummaryQuery()) {
           <p class="text-sm font-medium text-on-surface">
             Total filtrado:
-            <span class="tabular-nums">{{ filteredProductTotals().quantity }}</span>
+            <span class="tabular-nums">{{ productTotals().quantity }}</span>
             piezas ·
-            <span class="tabular-nums">{{ formatCentavos(filteredProductTotals().subtotalCentavos) }}</span>
+            <span class="tabular-nums">{{ formatCentavos(productTotals().subtotalCentavos) }}</span>
           </p>
         }
         <div class="responsive-table rounded-xl border ui-panel">
@@ -204,7 +208,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant/15">
-              @for (row of filteredProductRows(); track row.productId ?? row.productName) {
+              @for (row of productRowsView(); track row.productId ?? row.productName) {
                 <tr>
                   <td class="px-4 py-3">{{ row.productName }}</td>
                   <td class="px-4 py-3 text-right tabular-nums">{{ row.quantitySum }}</td>

@@ -40,6 +40,15 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                   SELECT 1 FROM PosSaleLineJpaEntity l
                   WHERE l.sale = s AND l.lineType = 'OPEN_AMOUNT' AND l.deletedAt IS NULL
                 ))
+            AND (:productNamePattern IS NULL OR EXISTS (
+                  SELECT 1 FROM PosSaleLineJpaEntity l
+                  WHERE l.sale = s AND l.deletedAt IS NULL
+                    AND LOWER(l.productName) LIKE :productNamePattern
+                ))
+            AND (:courtesyOnly = false OR EXISTS (
+                  SELECT 1 FROM PosSalePaymentJpaEntity p
+                  WHERE p.sale = s AND p.deletedAt IS NULL AND p.method = 'CORTESIA'
+                ))
             AND EXISTS (
                   SELECT 1 FROM PosSyncEventJpaEntity e
                   WHERE e.eventId = s.eventId
@@ -59,6 +68,23 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                   SELECT 1 FROM PosSaleLineJpaEntity l
                   WHERE l.sale = s AND l.productId = :productId AND l.deletedAt IS NULL
                 ))
+            AND (:lineType IS NULL OR EXISTS (
+                  SELECT 1 FROM PosSaleLineJpaEntity l
+                  WHERE l.sale = s AND l.lineType = :lineType AND l.deletedAt IS NULL
+                ))
+            AND (:openProductsOnly = false OR EXISTS (
+                  SELECT 1 FROM PosSaleLineJpaEntity l
+                  WHERE l.sale = s AND l.lineType = 'OPEN_AMOUNT' AND l.deletedAt IS NULL
+                ))
+            AND (:productNamePattern IS NULL OR EXISTS (
+                  SELECT 1 FROM PosSaleLineJpaEntity l
+                  WHERE l.sale = s AND l.deletedAt IS NULL
+                    AND LOWER(l.productName) LIKE :productNamePattern
+                ))
+            AND (:courtesyOnly = false OR EXISTS (
+                  SELECT 1 FROM PosSalePaymentJpaEntity p
+                  WHERE p.sale = s AND p.deletedAt IS NULL AND p.method = 'CORTESIA'
+                ))
             AND EXISTS (
                   SELECT 1 FROM PosSyncEventJpaEntity e
                   WHERE e.eventId = s.eventId
@@ -74,6 +100,8 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       @Param("productId") Long productId,
       @Param("lineType") io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType lineType,
       @Param("openProductsOnly") boolean openProductsOnly,
+      @Param("productNamePattern") String productNamePattern,
+      @Param("courtesyOnly") boolean courtesyOnly,
       @Param("syncStatuses") java.util.Collection<PosEventResultStatus> syncStatuses,
       Pageable pageable);
 
@@ -97,6 +125,11 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
             AND (:productId IS NULL OR l.productId = :productId)
             AND (:lineType IS NULL OR l.lineType = :lineType)
             AND (:openProductsOnly = false OR l.lineType = 'OPEN_AMOUNT')
+            AND (:productNamePattern IS NULL OR LOWER(l.productName) LIKE :productNamePattern)
+            AND (:courtesyOnly = false OR EXISTS (
+                  SELECT 1 FROM PosSalePaymentJpaEntity p
+                  WHERE p.sale = s AND p.deletedAt IS NULL AND p.method = 'CORTESIA'
+                ))
         AND EXISTS (
               SELECT 1 FROM PosSyncEventJpaEntity e
               WHERE e.eventId = s.eventId
@@ -114,6 +147,8 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       @Param("productId") Long productId,
       @Param("lineType") io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType lineType,
       @Param("openProductsOnly") boolean openProductsOnly,
+      @Param("productNamePattern") String productNamePattern,
+      @Param("courtesyOnly") boolean courtesyOnly,
       @Param("accepted") PosEventResultStatus accepted);
 
   @Query(

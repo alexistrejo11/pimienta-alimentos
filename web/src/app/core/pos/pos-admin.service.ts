@@ -163,6 +163,8 @@ export class PosAdminService {
     if (params.eventType) p = p.set('eventType', params.eventType);
     if (params.lineType) p = p.set('lineType', params.lineType);
     if (params.openProductsOnly) p = p.set('openProductsOnly', 'true');
+    if (params.productName?.trim()) p = p.set('productName', params.productName.trim());
+    if (params.courtesyOnly) p = p.set('courtesyOnly', 'true');
     if (params.salesOrder) p = p.set('salesOrder', params.salesOrder);
     return p;
   }
