@@ -1,41 +1,69 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header title="Ventas POS" subtitle="Tickets sincronizados por sede y periodo" />
 
-  <div class="flex flex-wrap gap-3">
+  <section
+    class="flex flex-col gap-4 rounded-xl ui-panel p-4 sm:p-5"
+    aria-label="Filtros de ventas"
+  >
     <app-headquarter-select
-      class="w-full sm:min-w-[12rem] sm:w-auto"
+      class="w-full min-w-0 sm:max-w-md"
       label="Sede"
       [value]="selectedHeadquarterId"
       (valueChange)="onHeadquarterChange($event)"
     />
-    <label class="flex flex-col gap-1 text-sm">
-      <span class="font-medium">Desde</span>
-      <input
-        type="date"
-        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-        [(ngModel)]="dateFrom"
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+      <label class="flex min-w-0 flex-col gap-1 text-sm">
+        <span class="font-medium">Desde</span>
+        <input
+          type="datetime-local"
+          step="60"
+          class="min-h-11 w-full min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          [(ngModel)]="dateTimeFrom"
+        />
+      </label>
+      <label class="flex min-w-0 flex-col gap-1 text-sm">
+        <span class="font-medium">Hasta</span>
+        <input
+          type="datetime-local"
+          step="60"
+          class="min-h-11 w-full min-w-0 rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          [(ngModel)]="dateTimeTo"
+        />
+      </label>
+      <button
+        type="button"
+        class="min-h-11 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary sm:w-auto lg:min-w-[9rem]"
+        (click)="cargar()"
+      >
+        Consultar
+      </button>
+    </div>
+
+    <p class="text-xs text-on-surface-variant sm:text-sm">
+      Hora local. Se incluye el minuto elegido en «Hasta».
+    </p>
+
+    <div class="border-t border-outline-variant/15 pt-4">
+      <app-product-select
+        class="min-w-0"
+        label="Filtrar tickets por producto"
+        placeholder="Opcional: un producto del catálogo"
+        [value]="filterProductId"
+        (valueChange)="filterProductId = $event"
       />
-    </label>
-    <label class="flex items-center gap-2 self-end pb-2 text-sm">
-      <input type="checkbox" class="size-4 accent-primary" [(ngModel)]="openProductsOnly" />
+      <p class="mt-1 text-xs text-on-surface-variant">
+        Solo acota los tickets. El resumen de abajo lista todos los productos del periodo.
+      </p>
+    </div>
+
+    <label
+      class="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-on-surface sm:min-h-0"
+    >
+      <input type="checkbox" class="size-4 shrink-0 accent-primary" [(ngModel)]="openProductsOnly" />
       Solo montos abiertos
     </label>
-    <label class="flex flex-col gap-1 text-sm">
-      <span class="font-medium">Hasta</span>
-      <input
-        type="date"
-        class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
-        [(ngModel)]="dateTo"
-      />
-    </label>
-    <button
-      type="button"
-      class="self-end rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary"
-      (click)="cargar()"
-    >
-      Consultar
-    </button>
-  </div>
+  </section>
 
   <app-data-state
     [loading]="loading()"
@@ -44,6 +72,22 @@
     emptyMessage="Sin ventas en el periodo."
     (retry)="cargar()"
   >
+    <div class="mb-3 flex justify-stretch sm:justify-end">
+      <button
+        type="button"
+        class="min-h-11 w-full rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2 text-sm font-medium text-on-surface sm:w-auto"
+        (click)="toggleSalesOrder()"
+        [attr.aria-pressed]="salesNewestFirst()"
+      >
+        @if (salesNewestFirst()) {
+          <span class="sm:hidden">Más recientes primero</span>
+          <span class="hidden sm:inline">Orden: más recientes primero</span>
+        } @else {
+          <span class="sm:hidden">Más antiguas primero</span>
+          <span class="hidden sm:inline">Orden: más antiguas primero</span>
+        }
+      </button>
+    </div>
     <div class="responsive-table rounded-xl border ui-panel">
       <table class="w-full text-sm">
         <thead class="border-b border-outline-variant/20 bg-surface-container-low">
@@ -51,29 +95,130 @@
             <th class="px-4 py-3 text-left">Folio</th>
             <th class="px-4 py-3 text-left">Fecha</th>
             <th class="px-4 py-3 text-left">Cajero</th>
-            <th class="px-4 py-3 text-left">Total</th>
-            <th class="px-4 py-3 text-left">Ticket</th>
-            <th class="px-4 py-3 text-left">Sincronización</th>
-            <th class="px-4 py-3 text-left">Auditoría</th>
+            <th class="px-4 py-3 text-right">Total</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant/15">
           @for (s of sales(); track s.saleId) {
             <tr>
-              <td class="px-4 py-3 font-mono"><button type="button" class="font-semibold text-primary" (click)="toggleDetails(s.saleId)">{{ s.folio }}</button>
-                @if (expandedSaleId() === s.saleId) { <div class="mt-2 space-y-1 font-sans text-xs text-on-surface-variant">@for (line of s.lines ?? []; track line.lineId) { <div><span class="font-medium text-on-surface">{{ line.productName }}</span> · {{ line.saleCategory ?? 'Sin categoría' }} · {{ formatCentavos(line.subtotalCentavos) }} @if (line.lineType === 'OPEN_AMOUNT') { <span class="ui-badge-warning">Abierto</span> } @if (line.lineType === 'PENDING_CATALOG') { <span class="ui-badge-warning">Sin catalogar</span> }</div> }</div> }
+              <td class="px-4 py-3 font-mono">
+                <button
+                  type="button"
+                  class="font-semibold text-primary"
+                  (click)="toggleDetails(s.saleId)"
+                >
+                  {{ s.folio }}
+                </button>
+                @if (expandedSaleId() === s.saleId) {
+                  <div class="mt-2 space-y-1 font-sans text-xs text-on-surface-variant">
+                    @for (line of s.lines ?? []; track line.lineId) {
+                      <div>
+                        <span class="font-medium text-on-surface">{{ line.productName }}</span>
+                        · {{ formatCentavos(line.subtotalCentavos) }}
+                        @if (line.lineType === 'OPEN_AMOUNT') {
+                          <span class="ui-badge-warning">Abierto</span>
+                        }
+                        @if (line.lineType === 'PENDING_CATALOG') {
+                          <span class="ui-badge-warning">Sin catalogar</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
               </td>
               <td class="px-4 py-3">{{ s.occurredAt | date: 'short' }}</td>
               <td class="px-4 py-3">{{ operatorLabel(s.cashierOperatorId) }}</td>
-              <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.totalCentavos) }}</td>
-              <td class="px-4 py-3">{{ ticketStatusLabel(s.status) }}</td>
-              <td class="px-4 py-3">{{ syncStatusLabel(s.syncStatus) }}</td>
-              <td class="px-4 py-3">@if (s.containsOpenProduct) { <span class="ui-badge-warning">Monto abierto</span> } @else { <span class="text-on-surface-variant">Catálogo</span> }</td>
+              <td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(s.totalCentavos) }}</td>
             </tr>
           }
         </tbody>
       </table>
     </div>
   </app-data-state>
-  @if (metadata(); as pageInfo) { <div class="flex items-center justify-between px-2 py-3 text-sm text-on-surface-variant"><span>{{ pageInfo.totalElements }} ventas</span><div class="flex gap-2"><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasPrevious" (click)="anterior()">Anterior</button><span class="px-2 py-1.5">Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span><button type="button" class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40" [disabled]="!pageInfo.hasNext" (click)="siguiente()">Siguiente</button></div></div> }
+  @if (metadata(); as pageInfo) {
+    <div
+      class="flex flex-col gap-3 px-2 py-3 text-sm text-on-surface-variant sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span>{{ pageInfo.totalElements }} ventas</span>
+      <div class="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+        <button
+          type="button"
+          class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+          [disabled]="!pageInfo.hasPrevious"
+          (click)="anterior()"
+        >
+          Anterior</button
+        ><span class="px-2 py-1.5"
+          >Página {{ pageInfo.pageNumber + 1 }} de {{ pageInfo.totalPages }}</span
+        ><button
+          type="button"
+          class="rounded-lg bg-surface-container px-3 py-1.5 disabled:opacity-40"
+          [disabled]="!pageInfo.hasNext"
+          (click)="siguiente()"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
+  }
+
+  <section class="flex flex-col gap-4">
+    <div>
+      <h2 class="font-headline text-lg font-bold text-on-surface">Resumen por producto</h2>
+      <p class="text-sm text-on-surface-variant">
+        Cantidades vendidas en el mismo periodo y sede. Busca por texto (por ejemplo «hamburguesa»).
+      </p>
+    </div>
+
+    @if (!loading() && !error() && selectedHeadquarterId != null) {
+      <app-list-search-field
+        class="min-w-0 w-full max-w-md"
+        label="Buscar en el resumen"
+        placeholder="Nombre del producto…"
+        buttonLabel="Filtrar"
+        [(draft)]="productSummaryDraft"
+        (search)="onProductSummarySearch($event)"
+      />
+
+      @if (productRows().length === 0) {
+        <p class="text-sm text-on-surface-variant">Sin ventas de productos en el periodo.</p>
+      } @else if (filteredProductRows().length === 0) {
+        <p class="text-sm text-on-surface-variant">Ningún producto coincide con la búsqueda.</p>
+      } @else {
+        @if (productSummaryQuery()) {
+          <p class="text-sm font-medium text-on-surface">
+            Total filtrado:
+            <span class="tabular-nums">{{ filteredProductTotals().quantity }}</span>
+            piezas ·
+            <span class="tabular-nums">{{ formatCentavos(filteredProductTotals().subtotalCentavos) }}</span>
+          </p>
+        }
+        <div class="responsive-table rounded-xl border ui-panel">
+          <table class="w-full text-sm" aria-label="Resumen por producto">
+            <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+              <tr>
+                <th class="px-4 py-3 text-left">Producto</th>
+                <th class="px-4 py-3 text-right">Cantidad</th>
+                <th class="px-4 py-3 text-right">Importe</th>
+                <th class="px-4 py-3 text-right">Tickets</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant/15">
+              @for (row of filteredProductRows(); track row.productId ?? row.productName) {
+                <tr>
+                  <td class="px-4 py-3">{{ row.productName }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ row.quantitySum }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">
+                    {{ formatCentavos(row.subtotalCentavosSum) }}
+                  </td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ row.saleCount }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-on-surface-variant">{{ productRows().length }} productos en el periodo</p>
+      }
+    }
+  </section>
 </div>

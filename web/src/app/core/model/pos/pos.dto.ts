@@ -98,6 +98,7 @@ export interface PosDeviceAdminResponse {
   deviceName: string;
   appVersion: string;
   status: PosDeviceStatus;
+  function: 'CASH_REGISTER' | 'PREPARATION';
   minAppVersion: string;
 }
 
@@ -182,12 +183,14 @@ export interface PosActivityItem {
 /** POST /api/v1/pos/admin/enrollment-codes */
 export interface CreateEnrollmentCodeRequest {
   headquarterId: number;
+  function?: 'CASH_REGISTER' | 'PREPARATION';
 }
 
 export interface EnrollmentCodeResponse {
   id: number;
   code: string;
   headquarterId: number;
+  function: 'CASH_REGISTER' | 'PREPARATION';
   expiresAt: string;
   createdAt: string;
 }
@@ -297,6 +300,8 @@ export interface PosReportFilterParams {
   productId?: number;
   lineType?: 'CATALOG' | 'OPEN_AMOUNT' | 'PENDING_CATALOG';
   openProductsOnly?: boolean;
+  /** Reporte de ventas: `recent` (default) u `oldest`. */
+  salesOrder?: 'recent' | 'oldest';
   eventType?: string;
   page?: number;
   size?: number;
