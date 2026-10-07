@@ -18,7 +18,10 @@ import java.lang.annotation.Target;
 @DocJwtSecured
 @Operation(
     summary = "POS sales report",
-    description = "Paged ACCEPTED sales for a headquarter and date range (centavos).")
+    description =
+        "Paged ACCEPTED sales for a headquarter and date range (centavos). "
+            + "Optional productName is a case-insensitive contains match on a line. "
+            + "courtesyOnly keeps sales with a CORTESIA payment.")
 @ApiResponse(
     responseCode = "200",
     description = "Page of sales.",
