@@ -167,36 +167,15 @@
   <section class="flex flex-col gap-4">
     <div>
       <h2 class="font-headline text-lg font-bold text-on-surface">Resumen por producto</h2>
-      <p class="text-sm text-on-surface-variant">
-        Totales del mismo periodo. Aquí el nombre busca por contiene, solo en esta tabla.
-      </p>
+      <p class="text-sm text-on-surface-variant">Cantidades e importes del mismo filtro.</p>
     </div>
 
     @if (!loading() && !error() && selectedHeadquarterId != null) {
-      <app-list-search-field
-        class="min-w-0 w-full max-w-md"
-        label="Buscar en el resumen"
-        placeholder="Por ejemplo, hamburguesa"
-        buttonLabel="Filtrar"
-        [(draft)]="productSummaryDraft"
-        (search)="onProductSummarySearch($event)"
-      />
-
-      @if (productRows().length === 0) {
+      @if (productRowsView().length === 0) {
         <p class="text-sm text-on-surface-variant">
           {{ narrowed() ? 'Sin productos con este filtro.' : 'Sin ventas de productos en el periodo.' }}
         </p>
-      } @else if (productRowsView().length === 0) {
-        <p class="text-sm text-on-surface-variant">Ningún producto coincide con la búsqueda.</p>
       } @else {
-        @if (productSummaryQuery()) {
-          <p class="text-sm font-medium text-on-surface">
-            Total filtrado:
-            <span class="tabular-nums">{{ productTotals().quantity }}</span>
-            piezas ·
-            <span class="tabular-nums">{{ formatCentavos(productTotals().subtotalCentavos) }}</span>
-          </p>
-        }
         <div class="responsive-table rounded-xl border ui-panel">
           <table class="w-full text-sm" aria-label="Resumen por producto">
             <thead class="border-b border-outline-variant/20 bg-surface-container-low">
@@ -221,7 +200,7 @@
             </tbody>
           </table>
         </div>
-        <p class="text-xs text-on-surface-variant">{{ productRows().length }} productos en el periodo</p>
+        <p class="text-xs text-on-surface-variant">{{ productRowsView().length }} productos</p>
       }
     }
   </section>

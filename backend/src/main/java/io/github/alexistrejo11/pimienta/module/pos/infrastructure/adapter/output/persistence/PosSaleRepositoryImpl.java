@@ -13,7 +13,6 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosSaleSpringDataRepository;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.Set;
@@ -59,7 +58,6 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
             filter.productId(),
             filter.lineType(),
             filter.openProductsOnly(),
-            productNameLikePattern(filter.productName()),
             filter.courtesyOnly(),
             Set.of(PosEventResultStatus.ACCEPTED, PosEventResultStatus.REQUIRES_REVIEW),
             pageable)
@@ -78,7 +76,6 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
             filter.productId(),
             filter.lineType(),
             filter.openProductsOnly(),
-            productNameLikePattern(filter.productName()),
             filter.courtesyOnly(),
             PosEventResultStatus.ACCEPTED);
     int start = (int) Math.min(pageable.getOffset(), all.size());
@@ -120,18 +117,6 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
       }
     }
     return new PosShiftSalesSummary(ticketCount, cash, card, courtesy);
-  }
-
-  /** Patrón {@code LIKE} ya en minúsculas, o {@code null} si no hay texto. */
-  static String productNameLikePattern(String raw) {
-    if (raw == null || raw.isBlank()) {
-      return null;
-    }
-    String cleaned = raw.strip().replace("%", "").replace("_", "").replace("\\", "");
-    if (cleaned.isEmpty()) {
-      return null;
-    }
-    return "%" + cleaned.toLowerCase(Locale.ROOT) + "%";
   }
 
   private static Object[] firstAggregateRow(List<Object[]> rows, int columns) {
