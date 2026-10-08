@@ -13,7 +13,5 @@ public record PosReportFilterQuery(
     String eventType,
     PosSaleLineType lineType,
     boolean openProductsOnly,
-    /** Nombre de producto, coincidencia parcial. Vacío si no aplica. */
-    String productName,
     /** Solo ventas con un pago de cortesía. */
     boolean courtesyOnly) {}

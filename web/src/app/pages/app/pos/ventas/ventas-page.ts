@@ -20,7 +20,6 @@ import type {
 } from '../../../../core/model/pos/pos.dto';
 import type { PageMetadata } from '../../../../core/model/common/pagination';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
-import { ListSearchFieldComponent } from '../../../../shared/ui/list-search-field/list-search-field';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { ProductSelectComponent } from '../../../../shared/ui/product-select/product-select';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
@@ -34,7 +33,6 @@ import { DataStateComponent } from '../../../../shared/ui/data-state/data-state'
     DatePipe,
     HeadquarterSelectComponent,
     ProductSelectComponent,
-    ListSearchFieldComponent,
   ],
   templateUrl: './ventas-page.html',
 })
@@ -52,27 +50,10 @@ export class VentasPageComponent implements OnInit {
   readonly productRows = signal<PosProductReportResponse[]>([]);
   /** El último Consultar usó un producto del catálogo, montos abiertos, sin catalogar o cortesías. */
   readonly narrowed = signal(false);
-  /** Borrador del buscador del resumen (Enter / Filtrar aplican). */
-  productSummaryDraft = '';
-  /** Nombre aplicado solo al resumen, coincidencia por contiene. */
-  readonly productSummaryQuery = signal('');
 
-  readonly productRowsView = computed(() => {
-    const q = this.productSummaryQuery().trim().toLocaleLowerCase('es');
-    const rows = this.productRows();
-    const matched = q
-      ? rows.filter((r) => r.productName.toLocaleLowerCase('es').includes(q))
-      : rows;
-    return [...matched].sort((a, b) => b.quantitySum - a.quantitySum);
-  });
-
-  readonly productTotals = computed(() => {
-    const rows = this.productRowsView();
-    return {
-      quantity: rows.reduce((sum, r) => sum + r.quantitySum, 0),
-      subtotalCentavos: rows.reduce((sum, r) => sum + r.subtotalCentavosSum, 0),
-    };
-  });
+  readonly productRowsView = computed(() =>
+    [...this.productRows()].sort((a, b) => b.quantitySum - a.quantitySum),
+  );
 
   selectedHeadquarterId: number | null = null;
   /** Valores `datetime-local` (hora local del navegador). */
@@ -93,10 +74,6 @@ export class VentasPageComponent implements OnInit {
   toggleSalesOrder(): void {
     this.salesNewestFirst.update((current) => !current);
     this.cargar();
-  }
-
-  onProductSummarySearch(term: string): void {
-    this.productSummaryQuery.set(term);
   }
 
   private initialLoad = true;
