@@ -24,6 +24,9 @@ import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -69,11 +72,24 @@ public class PosAdminReportController {
        @RequestParam(required = false) Long productId,
        @RequestParam(required = false) PosSaleLineType lineType,
        @RequestParam(defaultValue = "false") boolean openProductsOnly,
+       @RequestParam(defaultValue = "false") boolean courtesyOnly,
+       @RequestParam(defaultValue = "recent") String salesOrder,
        @ModelAttribute PageableRequest pageable) {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
-         reportUseCases.sales(filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly), pageable.toPageable()),
+         reportUseCases.sales(
+             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly, courtesyOnly),
+             salesPageable(pageable, salesOrder)),
         row -> PosWebMapper.toSaleReportResponse(row.sale(), row.syncStatus()));
+  }
+
+  /** {@code recent} = newest first; {@code oldest} = oldest first. */
+  private static Pageable salesPageable(PageableRequest pageable, String salesOrder) {
+    Sort.Direction direction =
+        "oldest".equalsIgnoreCase(salesOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
+    Sort sort =
+        Sort.by(direction, "occurredAt").and(Sort.by(direction, "saleId"));
+    return PageRequest.of(pageable.getPage(), pageable.getSize(), sort);
   }
 
   @GetMapping("/products")
@@ -88,11 +104,13 @@ public class PosAdminReportController {
        @RequestParam(required = false) Long productId,
        @RequestParam(required = false) PosSaleLineType lineType,
        @RequestParam(defaultValue = "false") boolean openProductsOnly,
+       @RequestParam(defaultValue = "false") boolean courtesyOnly,
        @ModelAttribute PageableRequest pageable) {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.products(
-             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly), pageable.toPageable()),
+             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly, courtesyOnly),
+             pageable.toPageable()),
         PosWebMapper::toProductReportResponse);
   }
 
@@ -110,7 +128,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.wasteCancellations(
-             filter(hq, from, to, shiftId, null, eventType, null, false), pageable.toPageable()),
+             filter(hq, from, to, shiftId, null, eventType, null, false, false), pageable.toPageable()),
         PosWebMapper::toLedgerEventReportResponse);
   }
 
@@ -127,7 +145,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.shiftCloses(
-             filter(hq, from, to, shiftId, null, null, null, false), pageable.toPageable()),
+             filter(hq, from, to, shiftId, null, null, null, false, false), pageable.toPageable()),
         PosWebMapper::toLedgerEventReportResponse);
   }
 
@@ -139,7 +157,9 @@ public class PosAdminReportController {
       Long productId,
       String eventType,
       PosSaleLineType lineType,
-      boolean openProductsOnly) {
-    return new PosReportFilterQuery(headquarterId, from, to, shiftId, productId, eventType, lineType, openProductsOnly);
+      boolean openProductsOnly,
+      boolean courtesyOnly) {
+    return new PosReportFilterQuery(
+        headquarterId, from, to, shiftId, productId, eventType, lineType, openProductsOnly, courtesyOnly);
   }
 }

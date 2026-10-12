@@ -12,4 +12,6 @@ public record PosReportFilterQuery(
     Long productId,
     String eventType,
     PosSaleLineType lineType,
-    boolean openProductsOnly) {}
+    boolean openProductsOnly,
+    /** Solo ventas con un pago de cortesía. */
+    boolean courtesyOnly) {}

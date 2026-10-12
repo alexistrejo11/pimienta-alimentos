@@ -58,6 +58,7 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
             filter.productId(),
             filter.lineType(),
             filter.openProductsOnly(),
+            filter.courtesyOnly(),
             Set.of(PosEventResultStatus.ACCEPTED, PosEventResultStatus.REQUIRES_REVIEW),
             pageable)
         .map(PosSalePersistenceMapper::toDomain);
@@ -75,6 +76,7 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
             filter.productId(),
             filter.lineType(),
             filter.openProductsOnly(),
+            filter.courtesyOnly(),
             PosEventResultStatus.ACCEPTED);
     int start = (int) Math.min(pageable.getOffset(), all.size());
     int end = Math.min(start + pageable.getPageSize(), all.size());
