@@ -290,6 +290,8 @@ class ProvisioningRepository(private val context: Context, private val provider:
         staleCatalogBlockHours = staleCatalogBlockHours,
         openAmountCategoriesJson = json.encodeToString(openAmountCategories.filter(String::isNotBlank).distinct()),
         stockless = stockless,
+        highSaleWarningCentavos = highSaleWarningCentavos,
+        highChangeWarningCentavos = highChangeWarningCentavos,
     )
 
     fun applyBootstrap(snapshot: BootstrapResponse, syncedEvents: List<EventResult> = emptyList()) {

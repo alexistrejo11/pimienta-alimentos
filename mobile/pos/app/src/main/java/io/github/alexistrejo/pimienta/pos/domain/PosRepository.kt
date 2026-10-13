@@ -131,6 +131,14 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun setKitchenTicketPrintFilterEnabled(enabled: Boolean) {
         localPreferences.setKitchenTicketPrintFilterEnabled(enabled)
     }
+    fun salesCardNamesUppercase(): Boolean = localPreferences.salesCardNamesUppercase()
+    fun setSalesCardNamesUppercase(enabled: Boolean) {
+        localPreferences.setSalesCardNamesUppercase(enabled)
+    }
+    // Effective site high-sale threshold from the cached policy; null when the site disabled it.
+    fun highSaleWarningCentavos(): Long? = HighSaleWarning.thresholdCentavos(database.syncProjectionDao().policy())
+    // Effective site high-change threshold from the cached policy; null when the site disabled it.
+    fun highChangeWarningCentavos(): Long? = UnusualChangeWarning.thresholdCentavos(database.syncProjectionDao().policy())
     // Local enrolled device row (name, visibleCode, minAppVersion) for diagnostics UI.
     fun device(): DeviceEntity? = database.operationsDao().device()
     fun syncState() = database.syncDao().state()

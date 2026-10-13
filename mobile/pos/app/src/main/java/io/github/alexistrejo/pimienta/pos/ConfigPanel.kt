@@ -82,7 +82,21 @@ import kotlinx.coroutines.withContext
 @Composable
 internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
     var kitchenTicketFilter by remember { mutableStateOf(repository.kitchenTicketPrintFilterEnabled()) }
+    var uppercaseNames by remember { mutableStateOf(repository.salesCardNamesUppercase()) }
+    var highSaleThreshold by remember { mutableStateOf<Long?>(null) }
+    var highChangeThreshold by remember { mutableStateOf<Long?>(null) }
+    var policyLoaded by remember { mutableStateOf(false) }
     var devicesOpen by rememberSaveable { mutableStateOf(false) }
+
+    // Reads the cached site policy off the main thread (Room).
+    LaunchedEffect(repository) {
+        val (sale, change) = withContext(Dispatchers.IO) {
+            repository.highSaleWarningCentavos() to repository.highChangeWarningCentavos()
+        }
+        highSaleThreshold = sale
+        highChangeThreshold = change
+        policyLoaded = true
+    }
 
     // Reuses the cashier's full-screen device panel; cashiers still open it without PIN from the sale bar.
     if (devicesOpen) {
@@ -104,9 +118,9 @@ internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Configuración local", style = MaterialTheme.typography.headlineSmall)
+            Text("Configuración", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Estos ajustes aplican solo a esta tablet. No se sincronizan con la web central.",
+                "Cada ajuste indica si aplica solo a esta tablet o si es una política de la sede que se cambia en la web.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SettingsBlock("Tickets e impresión") {
@@ -156,7 +170,59 @@ internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                 )
                 PosButton("Administrar dispositivos", { devicesOpen = true }, modifier = Modifier.fillMaxWidth())
             }
+            SettingsBlock("Ventas") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            uppercaseNames = !uppercaseNames
+                            repository.setSalesCardNamesUppercase(uppercaseNames)
+                        },
+                ) {
+                    Checkbox(
+                        checked = uppercaseNames,
+                        onCheckedChange = { checked ->
+                            uppercaseNames = checked
+                            repository.setSalesCardNamesUppercase(checked)
+                        },
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Column {
+                        Text("Mostrar nombres en MAYÚSCULAS en el catálogo", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Solo esta tablet",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                SitePolicyThreshold("Advertencia de venta alta", highSaleThreshold, policyLoaded)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                SitePolicyThreshold("Advertencia de cambio alto", highChangeThreshold, policyLoaded)
+            }
         }
+    }
+}
+
+// Read-only site policy threshold; null threshold means the site disabled the warning.
+@Composable
+private fun SitePolicyThreshold(title: String, thresholdCentavos: Long?, loaded: Boolean) {
+    Column(Modifier.fillMaxWidth().padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = MaterialTheme.typography.bodyMedium)
+        if (loaded) {
+            Text(
+                thresholdCentavos?.let { "Desde ${Money.format(it)}" } ?: "Desactivada",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Text(
+            "Política de la sede · Se cambia en Web",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

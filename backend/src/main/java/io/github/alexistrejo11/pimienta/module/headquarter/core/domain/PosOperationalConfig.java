@@ -8,6 +8,12 @@ import java.util.List;
 /** POS operational settings for a headquarter (1:1). */
 public class PosOperationalConfig extends BaseDomain<Long> {
 
+  /** Must match the POS tablet default used when the policy omits the threshold. */
+  public static final long DEFAULT_HIGH_SALE_WARNING_CENTAVOS = 1_000_000L;
+
+  /** Must match the POS tablet default used when the policy omits the threshold. */
+  public static final long DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS = 100_000L;
+
   private Long headquarterId;
   private String currency;
   private int catalogStaleWarnHours;
@@ -16,6 +22,8 @@ public class PosOperationalConfig extends BaseDomain<Long> {
   private boolean allowOpenProducts;
   private Integer defaultNegativeStockLimit;
   private boolean stockless;
+  private long highSaleWarningCentavos;
+  private long highChangeWarningCentavos;
 
   private PosOperationalConfig() {
     this.id = 0L;
@@ -26,6 +34,8 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     this.openAmountCategories = new ArrayList<>();
     this.allowOpenProducts = false;
     this.stockless = false;
+    this.highSaleWarningCentavos = DEFAULT_HIGH_SALE_WARNING_CENTAVOS;
+    this.highChangeWarningCentavos = DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
   }
@@ -62,6 +72,14 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     return stockless;
   }
 
+  public long getHighSaleWarningCentavos() {
+    return highSaleWarningCentavos;
+  }
+
+  public long getHighChangeWarningCentavos() {
+    return highChangeWarningCentavos;
+  }
+
   public void touch() {
     this.updatedAt = LocalDateTime.now();
   }
@@ -80,6 +98,8 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     private Boolean allowOpenProducts;
     private Integer defaultNegativeStockLimit;
     private Boolean stockless;
+    private Long highSaleWarningCentavos;
+    private Long highChangeWarningCentavos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
@@ -130,6 +150,16 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       return this;
     }
 
+    public SafeBuilder withHighSaleWarningCentavos(Long centavos) {
+      this.highSaleWarningCentavos = centavos;
+      return this;
+    }
+
+    public SafeBuilder withHighChangeWarningCentavos(Long centavos) {
+      this.highChangeWarningCentavos = centavos;
+      return this;
+    }
+
     public SafeBuilder withCreatedAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -162,6 +192,14 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       c.allowOpenProducts = allowOpenProducts != null && allowOpenProducts;
       c.defaultNegativeStockLimit = defaultNegativeStockLimit;
       c.stockless = stockless != null && stockless;
+      c.highSaleWarningCentavos =
+          highSaleWarningCentavos != null && highSaleWarningCentavos >= 0
+              ? highSaleWarningCentavos
+              : DEFAULT_HIGH_SALE_WARNING_CENTAVOS;
+      c.highChangeWarningCentavos =
+          highChangeWarningCentavos != null && highChangeWarningCentavos >= 0
+              ? highChangeWarningCentavos
+              : DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS;
       c.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       c.updatedAt = updatedAt != null ? updatedAt : c.createdAt;
       c.deletedAt = deletedAt;

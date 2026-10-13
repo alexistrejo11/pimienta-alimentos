@@ -31,7 +31,11 @@ import java.lang.annotation.Target;
 @Operation(
     summary = "Upsert POS settings",
     description =
-        "Creates or updates POS settings and ensures the canonical POS storage location exists.")
+        "Creates or updates POS settings and ensures the canonical POS storage location exists. "
+            + "Null fields keep the current value. highSaleWarningCentavos is a soft POS warning "
+            + "threshold (default 1000000, 0 disables it) and highChangeWarningCentavos asks to "
+            + "confirm the cash tendered when change reaches it (default 100000, 0 disables it); "
+            + "neither rejects sales.")
 @RequestBody(
     required = true,
     content =

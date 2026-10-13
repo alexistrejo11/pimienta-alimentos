@@ -47,6 +47,10 @@ export interface PosSettingsResponse {
   allowOpenProducts: boolean;
   defaultNegativeStockLimit: number | null;
   stockless: boolean;
+  /** Soft POS warning threshold on the net sale total; 0 disables it. */
+  highSaleWarningCentavos: number;
+  /** Soft POS warning threshold on cash change; 0 disables it. */
+  highChangeWarningCentavos: number;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -60,6 +64,8 @@ export interface PosSettingsRequest {
   allowOpenProducts?: boolean;
   defaultNegativeStockLimit?: number | null;
   stockless?: boolean;
+  highSaleWarningCentavos?: number;
+  highChangeWarningCentavos?: number;
 }
 
 /** GET/PUT /api/v1/headquarters/{id}/pos-catalog/{productId} */

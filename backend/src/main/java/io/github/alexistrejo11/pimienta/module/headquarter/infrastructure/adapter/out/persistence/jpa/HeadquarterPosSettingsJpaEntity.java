@@ -50,6 +50,12 @@ public class HeadquarterPosSettingsJpaEntity extends BaseJpaEntity {
   @Column(name = "stockless", nullable = false)
   private boolean stockless;
 
+  @Column(name = "high_sale_warning_centavos", nullable = false)
+  private long highSaleWarningCentavos;
+
+  @Column(name = "high_change_warning_centavos", nullable = false)
+  private long highChangeWarningCentavos;
+
   public Long getId() {
     return id;
   }
@@ -121,5 +127,21 @@ public class HeadquarterPosSettingsJpaEntity extends BaseJpaEntity {
 
   public void setStockless(boolean stockless) {
     this.stockless = stockless;
+  }
+
+  public long getHighSaleWarningCentavos() {
+    return highSaleWarningCentavos;
+  }
+
+  public void setHighSaleWarningCentavos(long highSaleWarningCentavos) {
+    this.highSaleWarningCentavos = highSaleWarningCentavos;
+  }
+
+  public long getHighChangeWarningCentavos() {
+    return highChangeWarningCentavos;
+  }
+
+  public void setHighChangeWarningCentavos(long highChangeWarningCentavos) {
+    this.highChangeWarningCentavos = highChangeWarningCentavos;
   }
 }

@@ -110,7 +110,9 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
               policies.staleCatalogWarnHours(),
               policies.staleCatalogBlockHours(),
               config.getOpenAmountCategories(),
-              policies.stockless()));
+              policies.stockless(),
+              policies.highSaleWarningCentavos(),
+              policies.highChangeWarningCentavos()));
     }
     long itemId = Long.parseLong(entry.entityId());
     if (deactivate) return ChangeOperation.deactivate("product", entry.entityId());

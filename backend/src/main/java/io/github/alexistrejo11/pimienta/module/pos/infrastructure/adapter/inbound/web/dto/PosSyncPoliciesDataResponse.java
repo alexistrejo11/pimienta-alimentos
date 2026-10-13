@@ -13,4 +13,8 @@ public record PosSyncPoliciesDataResponse(
     int staleCatalogWarnHours,
     int staleCatalogBlockHours,
     List<String> openAmountCategories,
-    boolean stockless) {}
+    boolean stockless,
+    @Schema(example = "1000000", description = "Soft high-sale warning threshold in centavos; 0 disables it.")
+        long highSaleWarningCentavos,
+    @Schema(example = "100000", description = "Soft high-change (cash tendered) warning threshold in centavos; 0 disables it.")
+        long highChangeWarningCentavos) {}

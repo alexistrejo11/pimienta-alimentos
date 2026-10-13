@@ -70,6 +70,8 @@ internal fun Sale(
     var managerAccessRequested by rememberSaveable { mutableStateOf(false) }
     var managerId by rememberSaveable { mutableStateOf<String?>(null) }
     val manager = remember(managerId, users) { users.firstOrNull { it.id == managerId } }
+    // Re-read after leaving the manager panel, where Configuración can change it.
+    val uppercaseNames = remember(managerId) { repository.salesCardNamesUppercase() }
     var discountAmountCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
     var discountReason by rememberSaveable { mutableStateOf("") }
     var discountAuthorizedById by rememberSaveable { mutableStateOf<String?>(null) }
@@ -90,6 +92,11 @@ internal fun Sale(
         }
     }
     var discountRequested by rememberSaveable { mutableStateOf(false) }
+    // Net total shown in the high-sale modal, and the last total the cashier already accepted.
+    var highSaleWarningNet by rememberSaveable { mutableStateOf<Long?>(null) }
+    var acknowledgedHighSaleNet by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Cash tendered awaiting confirmation because the resulting change looks like a typo.
+    var unusualChangeTendered by rememberSaveable { mutableStateOf<Long?>(null) }
     var withdrawalRequested by rememberSaveable { mutableStateOf(false) }
     var pendingCatalogBarcode by rememberSaveable { mutableStateOf<String?>(null) }
     var createProductRequested by rememberSaveable { mutableStateOf(false) }
@@ -118,6 +125,9 @@ internal fun Sale(
 
     LaunchedEffect(repository) {
         repository.observePendingEvents().collect { pending = it }
+    }
+    LaunchedEffect(cart.isEmpty()) {
+        if (cart.isEmpty()) acknowledgedHighSaleNet = null
     }
     LaunchedEffect(repository) {
         deviceVisibleCode = withContext(Dispatchers.IO) { repository.device()?.visibleCode }
@@ -310,6 +320,16 @@ internal fun Sale(
         }
     }
 
+    // Single entry to checkout for both layouts; asks once per total when it reaches the site threshold.
+    fun requestCheckout() {
+        val net = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0)
+        if (HighSaleWarning.shouldWarn(net, HighSaleWarning.thresholdCentavos(policy), acknowledgedHighSaleNet)) {
+            highSaleWarningNet = net
+        } else {
+            checkout = true
+        }
+    }
+
     fun confirm(method: PaymentMethod, tendered: Long) {
         if (busy) return
         busy = true
@@ -324,6 +344,7 @@ internal fun Sale(
                     paymentMethodDraft = PaymentMethod.CASH
                     tenderedDraft = ""
                     updateDiscount(null)
+                    acknowledgedHighSaleNet = null
                     completedFolio = sale.folio
                     pending = withContext(Dispatchers.IO) { repository.pendingEvents() }
                     PrintWorker.enqueue(context)
@@ -333,6 +354,17 @@ internal fun Sale(
                     feedbackHost.showSnackbar(error.message ?: "No se pudo confirmar la venta. El carrito se conservó.")
                 },
             )
+        }
+    }
+
+    // Single confirm entry for both checkout layouts; asks before saving a cash sale with unusually high change.
+    fun requestConfirm(method: PaymentMethod, tendered: Long) {
+        if (busy) return
+        val net = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0)
+        if (UnusualChangeWarning.shouldWarn(method, tendered, net, UnusualChangeWarning.thresholdCentavos(policy))) {
+            unusualChangeTendered = tendered
+        } else {
+            confirm(method, tendered)
         }
     }
 
@@ -449,6 +481,34 @@ internal fun Sale(
                 )
             }
 
+            highSaleWarningNet?.let { net ->
+                AmountWarningDialog(
+                    title = "Total inusualmente alto",
+                    amountCentavos = net,
+                    reviewLabel = "Revisar venta",
+                    onReview = { highSaleWarningNet = null },
+                    onContinue = {
+                        acknowledgedHighSaleNet = net
+                        highSaleWarningNet = null
+                        checkout = true
+                    },
+                )
+            }
+
+            unusualChangeTendered?.let { tendered ->
+                val net = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0)
+                AmountWarningDialog(
+                    title = "Cambio inusualmente alto",
+                    amountCentavos = SaleCalculator.changeCentavos(tendered, net),
+                    reviewLabel = "Corregir",
+                    onReview = { unusualChangeTendered = null },
+                    onContinue = {
+                        unusualChangeTendered = null
+                        confirm(PaymentMethod.CASH, tendered)
+                    },
+                )
+            }
+
             if (sectionsRequested) {
                 SectionsDialog(
                     categories = categories,
@@ -486,6 +546,7 @@ internal fun Sale(
                                 onOpenSections = { sectionsRequested = true },
                                 hideBarcoded = hideBarcodedProducts,
                                 onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
+                                uppercaseNames = uppercaseNames,
                             )
 
                             CatalogSplitDivider(
@@ -509,7 +570,7 @@ internal fun Sale(
                                     tendered = tenderedDraft,
                                     onTenderedChanged = { tenderedDraft = it },
                                     back = { checkout = false },
-                                    confirm = ::confirm,
+                                    confirm = ::requestConfirm,
                                 )
                             } else {
                                 CartPanel(
@@ -519,7 +580,7 @@ internal fun Sale(
                                     onChange = { cart = it; updateDiscount(null) },
                                     applyDiscount = { discountRequested = true },
                                     onShowCatalog = if (!isCatalogVisible) { { catalogSplitWeight = 0.6f } } else null,
-                                    checkout = { checkout = true },
+                                    checkout = ::requestCheckout,
                                 )
                             }
                         }
@@ -536,7 +597,7 @@ internal fun Sale(
                     tendered = tenderedDraft,
                     onTenderedChanged = { tenderedDraft = it },
                     back = { checkout = false },
-                    confirm = ::confirm,
+                    confirm = ::requestConfirm,
                 )
             } else {
                 PortraitTabs(portraitPanel, cart.sumOf { it.quantity }) { portraitPanel = it }
@@ -560,9 +621,10 @@ internal fun Sale(
                         onOpenSections = { sectionsRequested = true },
                         hideBarcoded = hideBarcodedProducts,
                         onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
+                        uppercaseNames = uppercaseNames,
                     )
                 } else {
-                    CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }) { checkout = true }
+                    CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }, checkout = ::requestCheckout)
                 }
             }
         }

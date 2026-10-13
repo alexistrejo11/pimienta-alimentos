@@ -9,4 +9,6 @@ public record UpsertPosSettingsCommand(
     List<String> openAmountCategories,
     Boolean allowOpenProducts,
     Integer defaultNegativeStockLimit,
-    Boolean stockless) {}
+    Boolean stockless,
+    Long highSaleWarningCentavos,
+    Long highChangeWarningCentavos) {}

@@ -87,6 +87,7 @@ internal fun CatalogPanel(
     onOpenSections: () -> Unit = {},
     hideBarcoded: Boolean = false,
     onToggleHideBarcoded: (() -> Unit)? = null,
+    uppercaseNames: Boolean = false,
 ) {
     val categoryListState = rememberLazyListState()
     val selectedIndex = remember(categories, selectedCategory) {
@@ -174,10 +175,10 @@ internal fun CatalogPanel(
                 ) {
                     if (selectedCategory == "Monto Abierto") {
                         items(openCategoriesFiltered) { cat ->
-                            OpenProductTile(cat) { onOpenAmountCategory(cat) }
+                            OpenProductTile(cat, uppercaseNames) { onOpenAmountCategory(cat) }
                         }
                     } else {
-                        items(products, key = { it.id }) { ProductTile(it) { onProduct(it) } }
+                        items(products, key = { it.id }) { ProductTile(it, uppercaseNames) { onProduct(it) } }
                     }
                 }
             }
@@ -186,9 +187,13 @@ internal fun CatalogPanel(
 }
 
 
+// Display-only casing for catalog tiles; the stored catalog name is never modified.
+internal fun tileName(name: String, uppercase: Boolean): String =
+    if (uppercase) name.uppercase(java.util.Locale.ROOT) else name
+
 // Shows a virtual product tile for open amount categories.
 @Composable
-internal fun OpenProductTile(category: String, onClick: () -> Unit) {
+internal fun OpenProductTile(category: String, uppercaseNames: Boolean = false, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().heightIn(min = 104.dp),
@@ -200,7 +205,7 @@ internal fun OpenProductTile(category: String, onClick: () -> Unit) {
         contentPadding = PaddingValues(12.dp),
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Text("$category (Abierto)", style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(tileName("$category (Abierto)", uppercaseNames), style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Column {
                 Text("Capturar precio", fontWeight = FontWeight.Bold)
             }
@@ -211,7 +216,7 @@ internal fun OpenProductTile(category: String, onClick: () -> Unit) {
 
 // Shows product price in one compact, high-target catalog tile.
 @Composable
-internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
+internal fun ProductTile(product: ProductEntity, uppercaseNames: Boolean = false, onClick: () -> Unit) {
     val unavailable = !product.available
 
     Button(
@@ -228,7 +233,7 @@ internal fun ProductTile(product: ProductEntity, onClick: () -> Unit) {
         contentPadding = PaddingValues(12.dp),
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Text(product.name, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(tileName(product.name, uppercaseNames), style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Column {
                 Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.Bold)
                 if (unavailable) {

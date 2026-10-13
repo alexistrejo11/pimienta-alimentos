@@ -53,7 +53,9 @@ public interface PosSyncBootstrapUseCases {
       Integer defaultNegativeStockLimit,
       int staleCatalogWarnHours,
       int staleCatalogBlockHours,
-      boolean stockless) {}
+      boolean stockless,
+      long highSaleWarningCentavos,
+      long highChangeWarningCentavos) {}
 
   record Cursors(String changes) {}
 }

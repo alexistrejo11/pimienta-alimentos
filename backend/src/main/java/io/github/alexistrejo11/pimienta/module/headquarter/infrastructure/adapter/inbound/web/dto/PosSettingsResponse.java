@@ -15,6 +15,8 @@ public record PosSettingsResponse(
     boolean allowOpenProducts,
     Integer defaultNegativeStockLimit,
     boolean stockless,
+    long highSaleWarningCentavos,
+    long highChangeWarningCentavos,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     Long version) {}

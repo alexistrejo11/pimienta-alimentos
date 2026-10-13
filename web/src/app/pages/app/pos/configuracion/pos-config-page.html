@@ -57,6 +57,32 @@
               formControlName="catalogStaleBlockHours"
             />
           </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium">Advertir ventas desde ($)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="highSaleWarningPesos"
+            />
+            <span class="text-xs text-on-surface-variant"
+              >La caja pide confirmar el cobro cuando el total llega a este monto. 0 = sin advertencia.</span
+            >
+          </label>
+          <label class="flex flex-col gap-1 text-sm">
+            <span class="font-medium">Advertir cambio desde ($)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+              formControlName="highChangeWarningPesos"
+            />
+            <span class="text-xs text-on-surface-variant"
+              >La caja pide confirmar el efectivo recibido cuando el cambio llega a este monto. 0 = sin advertencia.</span
+            >
+          </label>
           <fieldset class="flex flex-col gap-3 text-sm sm:col-span-2">
             <legend class="font-medium">Categorías permitidas para monto abierto</legend>
             <p class="text-xs text-on-surface-variant">

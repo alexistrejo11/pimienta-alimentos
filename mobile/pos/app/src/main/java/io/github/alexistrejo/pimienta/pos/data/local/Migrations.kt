@@ -259,4 +259,12 @@ object Migrations {
             database.execSQL("ALTER TABLE `product_new` RENAME TO `product`")
         }
     }
+
+    // Adds the site high-sale warning threshold; existing rows stay NULL so the tablet default applies.
+    val V18_TO_V19 = object : Migration(18, 19) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `pos_policy` ADD COLUMN `highSaleWarningCentavos` INTEGER")
+            database.execSQL("ALTER TABLE `pos_policy` ADD COLUMN `highChangeWarningCentavos` INTEGER")
+        }
+    }
 }

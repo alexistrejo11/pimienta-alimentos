@@ -85,7 +85,55 @@ class HeadquarterPosCatalogIntegrationTest {
         .andExpect(jsonPath("$.openAmountCategories[1]").value("SERVICE"))
         .andExpect(jsonPath("$.allowOpenProducts").value(true))
         .andExpect(jsonPath("$.defaultNegativeStockLimit").value(10))
-        .andExpect(jsonPath("$.stockless").value(false));
+        .andExpect(jsonPath("$.stockless").value(false))
+        .andExpect(jsonPath("$.highSaleWarningCentavos").value(1000000))
+        .andExpect(jsonPath("$.highChangeWarningCentavos").value(100000));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"highSaleWarningCentavos\":500000,\"highChangeWarningCentavos\":50000}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.highSaleWarningCentavos").value(500000))
+        .andExpect(jsonPath("$.highChangeWarningCentavos").value(50000));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"currency\":\"MXN\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.highSaleWarningCentavos").value(500000))
+        .andExpect(jsonPath("$.highChangeWarningCentavos").value(50000));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"highSaleWarningCentavos\":0,\"highChangeWarningCentavos\":0}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.highSaleWarningCentavos").value(0))
+        .andExpect(jsonPath("$.highChangeWarningCentavos").value(0));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"highSaleWarningCentavos\":-1}"))
+        .andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                token,
+                "{\"highChangeWarningCentavos\":-1}"))
+        .andExpect(status().isBadRequest());
 
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/headquarters/" + hqId + "/pos-settings", token))

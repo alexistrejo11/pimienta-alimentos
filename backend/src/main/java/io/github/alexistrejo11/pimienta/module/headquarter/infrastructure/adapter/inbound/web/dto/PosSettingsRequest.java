@@ -13,4 +13,14 @@ public record PosSettingsRequest(
     @Schema(example = "[\"MISC\", \"SERVICE\"]") List<String> openAmountCategories,
     @Schema(example = "true") Boolean allowOpenProducts,
     @Schema(example = "10") Integer defaultNegativeStockLimit,
-    @Schema(example = "false") Boolean stockless) {}
+    @Schema(example = "false") Boolean stockless,
+    @Min(0)
+        @Schema(
+            example = "1000000",
+            description = "Net sale total in centavos that triggers a soft POS warning; 0 disables it.")
+        Long highSaleWarningCentavos,
+    @Min(0)
+        @Schema(
+            example = "100000",
+            description = "Cash change in centavos that asks the POS cashier to confirm the tendered amount; 0 disables it.")
+        Long highChangeWarningCentavos) {}

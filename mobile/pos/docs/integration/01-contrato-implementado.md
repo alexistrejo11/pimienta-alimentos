@@ -98,6 +98,38 @@ siguientes ventas CONTROLLED descuentan desde el saldo POS actual; no hay
 backfill. El tablet no escribe `inventory_movement` local ni bloquea por
 existencias cuando `policies.stockless` es verdadero.
 
+### Aviso de venta alta (`highSaleWarningCentavos`)
+
+`PUT /api/v1/headquarters/{id}/pos-settings` acepta `highSaleWarningCentavos`
+(entero ≥ 0, en centavos). El bootstrap y las operaciones `policies` de los
+deltas lo incluyen siempre. Reglas:
+
+- Valor > 0: la tablet muestra un modal de confirmación al pulsar "Cobrar"
+  cuando el total neto (después del descuento) es mayor o igual al umbral.
+- `0`: aviso desactivado.
+- Campo ausente o nulo (servidor anterior, política aún no sincronizada o
+  borrada): la tablet usa el valor por defecto `1000000` ($10,000.00).
+- El valor por defecto del servidor y de la tablet **debe ser el mismo**. Por
+  eso no hace falta backfill del change log al agregar la columna.
+
+Es solo un aviso de interfaz: no bloquea la venta, no pide autorización y el
+servidor no valida montos de venta contra este umbral.
+
+### Aviso de cambio alto (`highChangeWarningCentavos`)
+
+Mismo transporte y mismas reglas de compatibilidad que `highSaleWarningCentavos`.
+Detecta un "Efectivo recibido" mal capturado:
+
+- Valor > 0: al pulsar "Confirmar cobro" en efectivo, si el cambio
+  (recibido − total neto) es mayor o igual al umbral, la tablet muestra un modal
+  con "Corregir" y "Continuar". Tarjeta y cortesía no avisan.
+- `0`: aviso desactivado.
+- Campo ausente o nulo: la tablet usa el valor por defecto `100000` ($1,000.00),
+  igual al del servidor.
+
+Tampoco bloquea la venta: `confirmSale` sigue aceptando cualquier efectivo
+mayor o igual al total.
+
 Una línea manual de monto abierto se envía dentro de `SALE_CONFIRMED` con esta
 forma:
 

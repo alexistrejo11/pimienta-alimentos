@@ -24,4 +24,8 @@ data class PosPolicyEntity(
     val openAmountCategoriesJson: String,
     // When true, sales do not write local inventory movements.
     val stockless: Boolean = false,
+    // Site soft-warning threshold for the net sale total; null means "use the default", 0 disables it.
+    val highSaleWarningCentavos: Long? = null,
+    // Site soft-warning threshold for cash change; null means "use the default", 0 disables it.
+    val highChangeWarningCentavos: Long? = null,
 )

@@ -76,6 +76,36 @@ class PosSyncChangesIntegrationTest {
   }
 
   @Test
+  void changes_highSaleWarningUpdate_emitsPolicyUpsertWithThreshold() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-HSW-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+
+    String access = enrollDevice(staffToken, hqId, "Caja HSW");
+    String cursor = bootstrapCursor(access);
+
+    Thread.sleep(15);
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId + "/pos-settings",
+                staffToken,
+                "{\"highSaleWarningCentavos\":500000,\"highChangeWarningCentavos\":50000}"))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer(changesUrl(cursor), access))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.operations[?(@.entity=='policies' && @.op=='upsert')]", hasSize(1)))
+        .andExpect(
+            jsonPath("$.operations[?(@.entity=='policies')].data.highSaleWarningCentavos")
+                .value(500000))
+        .andExpect(
+            jsonPath("$.operations[?(@.entity=='policies')].data.highChangeWarningCentavos")
+                .value(50000));
+  }
+
+  @Test
   void changes_productNameOrBarcode_emitsUpsertForTablets() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-B5-NAME-" + UUID.randomUUID());

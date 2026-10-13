@@ -78,6 +78,14 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                     : existing.getDefaultNegativeStockLimit())
                             .withStockless(
                                 resolveBoolean(command.stockless(), existing.isStockless()))
+                            .withHighSaleWarningCentavos(
+                                resolveLong(
+                                    command.highSaleWarningCentavos(),
+                                    existing.getHighSaleWarningCentavos()))
+                            .withHighChangeWarningCentavos(
+                                resolveLong(
+                                    command.highChangeWarningCentavos(),
+                                    existing.getHighChangeWarningCentavos()))
                             .revise(existing)))
             .orElseGet(
                 () ->
@@ -97,6 +105,14 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                     resolveBoolean(command.allowOpenProducts(), false)))
                             .withDefaultNegativeStockLimit(command.defaultNegativeStockLimit())
                             .withStockless(resolveBoolean(command.stockless(), false))
+                            .withHighSaleWarningCentavos(
+                                resolveLong(
+                                    command.highSaleWarningCentavos(),
+                                    PosOperationalConfig.DEFAULT_HIGH_SALE_WARNING_CENTAVOS))
+                            .withHighChangeWarningCentavos(
+                                resolveLong(
+                                    command.highChangeWarningCentavos(),
+                                    PosOperationalConfig.DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS))
                             .register()));
 
     posLocationUseCases.ensurePosLocation(headquarterId);
@@ -107,6 +123,8 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
     policyProjection.put("catalogStaleBlockHours", saved.getCatalogStaleBlockHours());
     policyProjection.put("defaultNegativeStockLimit", saved.getDefaultNegativeStockLimit());
     policyProjection.put("stockless", saved.isStockless());
+    policyProjection.put("highSaleWarningCentavos", saved.getHighSaleWarningCentavos());
+    policyProjection.put("highChangeWarningCentavos", saved.getHighChangeWarningCentavos());
     posChangeLogService.appendPolicy(headquarterId, policyProjection);
     return saved;
   }
@@ -125,6 +143,10 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
   }
 
   private static int resolveInt(Integer incoming, int fallback) {
+    return incoming != null ? incoming : fallback;
+  }
+
+  private static long resolveLong(Long incoming, long fallback) {
     return incoming != null ? incoming : fallback;
   }
 
