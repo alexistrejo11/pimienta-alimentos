@@ -60,6 +60,9 @@ import kotlinx.coroutines.flow.Flow
     @Query("SELECT * FROM sale_line WHERE saleId IN (SELECT id FROM sale WHERE confirmedAtEpochMillis BETWEEN :from AND :to AND status != 'CANCELLED') ORDER BY subtotalCentavos DESC") fun linesBetween(from: Long, to: Long): List<SaleLineEntity>
     @Query("SELECT * FROM cash_withdrawal WHERE createdAtEpochMillis BETWEEN :from AND :to ORDER BY createdAtEpochMillis DESC") fun withdrawalsBetween(from: Long, to: Long): List<CashWithdrawalEntity>
     @Query("SELECT * FROM cash_count_attempt WHERE shiftId = :shiftId ORDER BY createdAtEpochMillis DESC") fun cashCounts(shiftId: String): List<CashCountAttemptEntity>
+    // Read-only status lookups so history screens can show print/sync state without touching the queues.
+    @Query("SELECT status FROM print_job WHERE saleId = :documentId AND documentType = :documentType ORDER BY createdAtEpochMillis DESC LIMIT 1") fun latestPrintJobStatus(documentId: String, documentType: String): String?
+    @Query("SELECT status FROM outbox_event WHERE aggregateId = :aggregateId AND type = :type ORDER BY sequence DESC LIMIT 1") fun outboxEventStatus(aggregateId: String, type: String): String?
     @Query("SELECT * FROM print_job WHERE status IN ('PENDING', 'FAILED') ORDER BY createdAtEpochMillis DESC") fun pendingPrintJobs(): List<PrintJobEntity>
     @Query("SELECT * FROM print_job WHERE status = 'PENDING' OR (status = 'FAILED' AND IFNULL(lastError, '') != 'UNSUPPORTED') ORDER BY createdAtEpochMillis ASC LIMIT 1") fun nextPrintJob(): PrintJobEntity?
     @Query("UPDATE print_job SET status = 'PRINTING', attemptCount = attemptCount + 1, lastAttemptAtEpochMillis = :attemptedAt, lastError = NULL WHERE id = :id AND status IN ('PENDING', 'FAILED')") fun markPrintJobPrinting(id: String, attemptedAt: Long): Int

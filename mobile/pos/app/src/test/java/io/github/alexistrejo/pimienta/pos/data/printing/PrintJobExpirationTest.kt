@@ -132,6 +132,8 @@ private open class FakeOperationsDao : OperationsDao {
     override fun linesBetween(from: Long, to: Long): List<io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity> = emptyList()
     override fun withdrawalsBetween(from: Long, to: Long): List<io.github.alexistrejo.pimienta.pos.data.local.entity.CashWithdrawalEntity> = emptyList()
     override fun cashCounts(shiftId: String): List<io.github.alexistrejo.pimienta.pos.data.local.entity.CashCountAttemptEntity> = emptyList()
+    override fun latestPrintJobStatus(documentId: String, documentType: String): String? = null
+    override fun outboxEventStatus(aggregateId: String, type: String): String? = null
     override fun pendingPrintJobs(): List<PrintJobEntity> = emptyList()
     override fun nextPrintJob(): PrintJobEntity? = null
     override fun markPrintJobPrinting(id: String, attemptedAt: Long): Int = 0

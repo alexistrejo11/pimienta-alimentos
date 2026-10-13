@@ -161,6 +161,19 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun stockless(): Boolean = database.syncProjectionDao().policy()?.stockless == true
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }
     fun withdrawals(shiftId: String) = database.operationsDao().withdrawals(shiftId)
+    // Joins each withdrawal with local users and its existing print/outbox rows for the history panel.
+    fun withdrawalDetails(shiftId: String): List<WithdrawalDetail> {
+        val dao = database.operationsDao()
+        return dao.withdrawals(shiftId).map { withdrawal ->
+            WithdrawalDetail(
+                withdrawal = withdrawal,
+                cashier = dao.findUser(withdrawal.cashierId),
+                authorizer = dao.findUser(withdrawal.authorizedByUserId),
+                printStatus = dao.latestPrintJobStatus(withdrawal.id, "CASH_WITHDRAWAL"),
+                syncStatus = dao.outboxEventStatus(withdrawal.id, "CASH_WITHDRAWAL_RECORDED"),
+            )
+        }
+    }
     fun withdrawalTotal(shiftId: String) = database.operationsDao().withdrawalsForShift(shiftId)
     // Builds the Corte Z snapshot used by Manager UI, print, and the sealed close row.
     fun shiftCloseBreakdown(shift: ShiftEntity): ShiftCloseBreakdown {

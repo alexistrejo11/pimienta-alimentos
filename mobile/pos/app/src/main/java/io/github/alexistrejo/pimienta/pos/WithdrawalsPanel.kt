@@ -72,6 +72,8 @@ import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
 import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseBreakdown
 import io.github.alexistrejo.pimienta.pos.domain.ShiftCloseCalculator
+import io.github.alexistrejo.pimienta.pos.domain.WithdrawalDetail
+import io.github.alexistrejo.pimienta.pos.domain.WithdrawalLabels
 import io.github.alexistrejo.pimienta.pos.domain.sortedCategoryNames
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -80,9 +82,34 @@ import kotlinx.coroutines.withContext
 // Shows immutable safeguard withdrawals in a compact read-only list.
 @Composable
 internal fun WithdrawalsPanel(shift: ShiftEntity, repository: PosRepository, modifier: Modifier) {
-    var withdrawals by remember(shift.id) { mutableStateOf<List<CashWithdrawalEntity>>(emptyList()) }
-    LaunchedEffect(shift.id) { withdrawals = withContext(Dispatchers.IO) { repository.withdrawals(shift.id) } }
-    val total = withdrawals.sumOf { it.amountCentavos }
-    Surface(modifier, color = MaterialTheme.colorScheme.background) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("Sangrías de resguardo", style = MaterialTheme.typography.headlineSmall); Text("Consulta de solo lectura · se registran desde la barra de caja.", color = MaterialTheme.colorScheme.onSurfaceVariant); MetricTile("Total retirado · ${withdrawals.size} registros", Money.format(total)); if (withdrawals.isEmpty()) EmptySurface("No hay sangrías en este turno.") else withdrawals.forEach { withdrawal -> Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) { Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) { Text("${withdrawal.folio} · ${Money.format(withdrawal.amountCentavos)}", style = MaterialTheme.typography.titleMedium); Text("Cajero ${withdrawal.cashierId} · Autorizó ${withdrawal.authorizedByUserId}", color = MaterialTheme.colorScheme.onSurfaceVariant); Text("Comprobante pendiente de hardware", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } } } } }
+    var details by remember(shift.id) { mutableStateOf<List<WithdrawalDetail>>(emptyList()) }
+    LaunchedEffect(shift.id) { details = withContext(Dispatchers.IO) { repository.withdrawalDetails(shift.id) } }
+    val total = details.sumOf { it.withdrawal.amountCentavos }
+    Surface(modifier, color = MaterialTheme.colorScheme.background) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("Sangrías de resguardo", style = MaterialTheme.typography.headlineSmall); Text("Consulta de solo lectura · se registran desde la barra de caja.", color = MaterialTheme.colorScheme.onSurfaceVariant); MetricTile("Total retirado · ${details.size} registros", Money.format(total)); if (details.isEmpty()) EmptySurface("No hay sangrías en este turno.") else details.forEach { WithdrawalRow(it) } } }
+}
+
+// One audit row: amount, folio, time, reason, the shift cashier, the signing authorizer, and queue states.
+@Composable
+private fun WithdrawalRow(detail: WithdrawalDetail) {
+    val withdrawal = detail.withdrawal
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("${withdrawal.folio} · ${Money.format(withdrawal.amountCentavos)}", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "${WithdrawalLabels.timestamp(withdrawal.createdAtEpochMillis)} · ${WithdrawalLabels.reason(withdrawal.reason)}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text("Cajero del turno: ${WithdrawalLabels.operator(withdrawal.cashierId, detail.cashier)}")
+            Text(
+                "Autorizada por: ${WithdrawalLabels.operator(withdrawal.authorizedByUserId, detail.authorizer)} · " +
+                    WithdrawalLabels.role(withdrawal.authorizedByRole),
+            )
+            Text(
+                "Comprobante: ${WithdrawalLabels.printStatus(detail.printStatus)} · Sincronización: ${WithdrawalLabels.syncStatus(detail.syncStatus)}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
