@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -81,6 +82,19 @@ import kotlinx.coroutines.withContext
 @Composable
 internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
     var kitchenTicketFilter by remember { mutableStateOf(repository.kitchenTicketPrintFilterEnabled()) }
+    var devicesOpen by rememberSaveable { mutableStateOf(false) }
+
+    // Reuses the cashier's full-screen device panel; cashiers still open it without PIN from the sale bar.
+    if (devicesOpen) {
+        Box(modifier) {
+            DevicesScreen(
+                repository = repository,
+                onReturn = { devicesOpen = false },
+                returnLabel = "Volver a Configuración",
+            )
+        }
+        return
+    }
 
     Surface(modifier, color = MaterialTheme.colorScheme.background) {
         Column(
@@ -95,48 +109,64 @@ internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                 "Estos ajustes aplican solo a esta tablet. No se sincronizan con la web central.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
-                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Impresión de tickets", style = MaterialTheme.typography.titleMedium)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                kitchenTicketFilter = !kitchenTicketFilter
-                                repository.setKitchenTicketPrintFilterEnabled(kitchenTicketFilter)
-                            },
-                    ) {
-                        Checkbox(
-                            checked = kitchenTicketFilter,
-                            onCheckedChange = { checked ->
-                                kitchenTicketFilter = checked
-                                repository.setKitchenTicketPrintFilterEnabled(checked)
-                            },
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Column {
-                            Text(
-                                "Imprimir ticket solo para preparación y productos sin código de proveedor",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            Text(
-                                "Chilaquiles y platillos sin barcode de empaque sí imprimen (cocina y cliente). " +
-                                    "Un carrito solo de empaquetados con barcode (ej. Boing) no imprime ticket, " +
-                                    "pero en efectivo sí se abre el cajón. Si mezclas empaque y preparación, sí imprime. " +
-                                    "Desactiva para imprimir todas las ventas.",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    Text(
-                        "La reimpresión desde Historial sigue disponible cuando haga falta un ticket.",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            SettingsBlock("Tickets e impresión") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            kitchenTicketFilter = !kitchenTicketFilter
+                            repository.setKitchenTicketPrintFilterEnabled(kitchenTicketFilter)
+                        },
+                ) {
+                    Checkbox(
+                        checked = kitchenTicketFilter,
+                        onCheckedChange = { checked ->
+                            kitchenTicketFilter = checked
+                            repository.setKitchenTicketPrintFilterEnabled(checked)
+                        },
                     )
+                    Spacer(Modifier.width(6.dp))
+                    Column {
+                        Text(
+                            "Imprimir ticket solo para preparación y productos sin código de proveedor",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            "Chilaquiles y platillos sin barcode de empaque sí imprimen (cocina y cliente). " +
+                                "Un carrito solo de empaquetados con barcode (ej. Boing) no imprime ticket, " +
+                                "pero en efectivo sí se abre el cajón. Si mezclas empaque y preparación, sí imprime. " +
+                                "Desactiva para imprimir todas las ventas.",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
+                Text(
+                    "La reimpresión desde Historial sigue disponible cuando haga falta un ticket.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+            SettingsBlock("Dispositivos") {
+                Text(
+                    "Impresora, lector y pruebas de esta tablet. Los cajeros también lo abren sin PIN desde Acciones → Dispositivos.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                PosButton("Administrar dispositivos", { devicesOpen = true }, modifier = Modifier.fillMaxWidth())
+            }
+        }
+    }
+}
+
+// Titled surface that groups related local settings inside Configuración.
+@Composable
+private fun SettingsBlock(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.extraSmall) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            content()
         }
     }
 }
