@@ -12,7 +12,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 // Encrypts device refresh tokens with an Android Keystore AES key.
-class DeviceCredentials(context: Context) {
+class DeviceCredentials(context: Context) : DeviceTokenStore {
     private val prefs = context.getSharedPreferences("pos-device-credentials", Context.MODE_PRIVATE)
     private val keyAlias = "pimienta-pos-device"
     private val key: SecretKey
@@ -26,10 +26,10 @@ class DeviceCredentials(context: Context) {
             return (store.getEntry(keyAlias, null) as KeyStore.SecretKeyEntry).secretKey
         }
     // commit() so the next reload sees tokens before Room publishes the base URL.
-    fun save(access: String, refresh: String) { prefs.edit().putString("access", encrypt(access)).putString("refresh", encrypt(refresh)).commit() }
-    fun access(): String? = prefs.getString("access", null)?.let(::decrypt)
-    fun refresh(): String? = prefs.getString("refresh", null)?.let(::decrypt)
-    fun clear() { prefs.edit().clear().commit() }
+    override fun save(access: String, refresh: String) { prefs.edit().putString("access", encrypt(access)).putString("refresh", encrypt(refresh)).commit() }
+    override fun access(): String? = prefs.getString("access", null)?.let(::decrypt)
+    override fun refresh(): String? = prefs.getString("refresh", null)?.let(::decrypt)
+    override fun clear() { prefs.edit().clear().commit() }
     private fun encrypt(value: String): String { val cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.ENCRYPT_MODE, key); return Base64.encodeToString(cipher.iv + cipher.doFinal(value.toByteArray(StandardCharsets.UTF_8)), Base64.NO_WRAP) }
     private fun decrypt(value: String): String { val raw = Base64.decode(value, Base64.NO_WRAP); val cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, raw.copyOfRange(0, 12))); return String(cipher.doFinal(raw.copyOfRange(12, raw.size)), StandardCharsets.UTF_8) }
 }

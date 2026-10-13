@@ -93,7 +93,13 @@ public class PosSyncCatalogProjector {
         defaultNegative,
         warnHours,
         blockHours,
-        config != null && config.isStockless());
+        config != null && config.isStockless(),
+        config != null
+            ? config.getHighSaleWarningCentavos()
+            : PosOperationalConfig.DEFAULT_HIGH_SALE_WARNING_CENTAVOS,
+        config != null
+            ? config.getHighChangeWarningCentavos()
+            : PosOperationalConfig.DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS);
   }
 
   public int stockQuantity(long headquarterId, long itemId) {

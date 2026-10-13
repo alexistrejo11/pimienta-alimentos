@@ -96,11 +96,13 @@ object Money {
         }.getOrNull()
     }
 
-    // Ticket-safe amount without a currency symbol, including shortages such as -20.50.
+    // Ticket-safe amount without a currency symbol, grouped by thousands (1,000.00) and including shortages such as -20.50.
+    // Display only: fromInput reads commas as decimal marks, so this output must never be parsed back.
     fun formatAmount(centavos: Long): String {
         val sign = if (centavos < 0) "-" else ""
         val absolute = if (centavos == Long.MIN_VALUE) Long.MAX_VALUE else if (centavos < 0) -centavos else centavos
-        return "$sign${absolute / 100}.${(absolute % 100).toString().padStart(2, '0')}"
+        val pesos = (absolute / 100).toString().reversed().chunked(3).joinToString(",").reversed()
+        return "$sign$pesos.${(absolute % 100).toString().padStart(2, '0')}"
     }
 
     fun format(centavos: Long): String {
@@ -129,6 +131,14 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun setKitchenTicketPrintFilterEnabled(enabled: Boolean) {
         localPreferences.setKitchenTicketPrintFilterEnabled(enabled)
     }
+    fun salesCardNamesUppercase(): Boolean = localPreferences.salesCardNamesUppercase()
+    fun setSalesCardNamesUppercase(enabled: Boolean) {
+        localPreferences.setSalesCardNamesUppercase(enabled)
+    }
+    // Effective site high-sale threshold from the cached policy; null when the site disabled it.
+    fun highSaleWarningCentavos(): Long? = HighSaleWarning.thresholdCentavos(database.syncProjectionDao().policy())
+    // Effective site high-change threshold from the cached policy; null when the site disabled it.
+    fun highChangeWarningCentavos(): Long? = UnusualChangeWarning.thresholdCentavos(database.syncProjectionDao().policy())
     // Local enrolled device row (name, visibleCode, minAppVersion) for diagnostics UI.
     fun device(): DeviceEntity? = database.operationsDao().device()
     fun syncState() = database.syncDao().state()
@@ -159,6 +169,19 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun stockless(): Boolean = database.syncProjectionDao().policy()?.stockless == true
     fun shiftTotals(shiftId: String): ShiftTotals = database.operationsDao().let { dao -> ShiftTotals(dao.grossForShift(shiftId), dao.discountsForShift(shiftId), dao.netForShift(shiftId), dao.courtesyForShift(shiftId), dao.ticketCountForShift(shiftId), dao.cancelledCountForShift(shiftId)) }
     fun withdrawals(shiftId: String) = database.operationsDao().withdrawals(shiftId)
+    // Joins each withdrawal with local users and its existing print/outbox rows for the history panel.
+    fun withdrawalDetails(shiftId: String): List<WithdrawalDetail> {
+        val dao = database.operationsDao()
+        return dao.withdrawals(shiftId).map { withdrawal ->
+            WithdrawalDetail(
+                withdrawal = withdrawal,
+                cashier = dao.findUser(withdrawal.cashierId),
+                authorizer = dao.findUser(withdrawal.authorizedByUserId),
+                printStatus = dao.latestPrintJobStatus(withdrawal.id, "CASH_WITHDRAWAL"),
+                syncStatus = dao.outboxEventStatus(withdrawal.id, "CASH_WITHDRAWAL_RECORDED"),
+            )
+        }
+    }
     fun withdrawalTotal(shiftId: String) = database.operationsDao().withdrawalsForShift(shiftId)
     // Builds the Corte Z snapshot used by Manager UI, print, and the sealed close row.
     fun shiftCloseBreakdown(shift: ShiftEntity): ShiftCloseBreakdown {

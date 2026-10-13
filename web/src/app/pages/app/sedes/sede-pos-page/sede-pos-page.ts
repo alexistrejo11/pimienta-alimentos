@@ -433,6 +433,8 @@ export class SedePosPageComponent implements OnInit {
             allowOpenProducts: settings.allowOpenProducts,
             defaultNegativeStockLimit: settings.defaultNegativeStockLimit,
             stockless: settings.stockless,
+            highSaleWarningCentavos: settings.highSaleWarningCentavos,
+            highChangeWarningCentavos: settings.highChangeWarningCentavos,
           })
           .subscribe({ error: () => {} });
       },

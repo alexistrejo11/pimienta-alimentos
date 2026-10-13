@@ -2,6 +2,7 @@ package io.github.alexistrejo.pimienta.pos.data.sync
 
 import android.content.Context
 import io.github.alexistrejo.pimienta.pos.BuildConfig
+import io.github.alexistrejo.pimienta.pos.app.deviceSession
 import io.github.alexistrejo.pimienta.pos.app.posDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.local.entity.OutboxEventEntity
@@ -9,20 +10,13 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
 import io.github.alexistrejo.pimienta.pos.data.telemetry.PosTelemetryLogger
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import retrofit2.HttpException
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 /** Outcome of a foreground or worker POS sync attempt. */
 enum class PosSyncNowOutcome {
@@ -40,16 +34,18 @@ class PosSyncPipeline(private val context: Context) {
     // Shared process provider so catalog writes invalidate the Flows the sale screen collects.
     private val provider = context.posDatabaseProvider()
     private val db get() = provider.database(RuntimeMode.PRODUCTION)
-    private val credentials = DeviceCredentials(context)
-    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+    private val session = context.deviceSession()
+    // One repository per run for bootstrap/delta application and reenrollment resets.
+    private val provisioning by lazy { ProvisioningRepository(context, provider) }
+    // Shared JSON instance (configured identically in DeviceApiFactory) so outbox envelope
+    // encoding stays byte-for-byte identical to the pre-Phase-2 inline Json configuration.
+    private val json: Json = DeviceApiFactory.json()
     private val telemetryLogger = PosTelemetryLogger(db)
 
     // Access token this run started with, to detect that another run already refreshed it.
     private var currentRunAccess: String? = null
 
-    // Process-wide so every pipeline instance (worker, foreground button) shares one refresh at a time.
     private companion object {
-        val refreshMutex = Mutex()
         // Two overlapping runs would requeue each other's in-flight events and race on their status.
         val runMutex = Mutex()
     }
@@ -62,11 +58,11 @@ class PosSyncPipeline(private val context: Context) {
         val baseUrl = state.baseUrl?.trim()?.let { if (it.endsWith("/")) it else "$it/" }
             ?: return PosSyncNowOutcome.SKIPPED
         val device = db.operationsDao().device() ?: return PosSyncNowOutcome.SKIPPED
-        currentRunAccess = credentials.access()
+        currentRunAccess = session.access()
         if (currentRunAccess == null) {
             return refreshAccess(state, baseUrl, refreshedOnce)
         }
-        val api = api(baseUrl)
+        val api = session.authenticatedApi(baseUrl)
         var inFlightIds = emptyList<String>()
         var acceptedResults = emptyList<EventResult>()
         var eventsError: Exception? = null
@@ -111,7 +107,6 @@ class PosSyncPipeline(private val context: Context) {
         return try {
             val current = db.syncDao().state() ?: state
             val localIncomplete = db.productDao().count() == 0 || db.userDao().count() == 0
-            val provisioning = ProvisioningRepository(context, provider)
             if (current.changesCursor == null || localIncomplete) {
                 provisioning.applyBootstrap(api.bootstrap(), acceptedResults)
             } else {
@@ -136,13 +131,12 @@ class PosSyncPipeline(private val context: Context) {
             when {
                 e.code() == 401 -> refreshAccess(state, baseUrl, refreshedOnce)
                 e.code() == 403 -> {
-                    ProvisioningRepository(context, provider)
-                        .resetForReenrollment(DeviceSessionPolicy.revokedDeviceMessage())
+                    provisioning.resetForReenrollment(DeviceSessionPolicy.revokedDeviceMessage())
                     PosSyncNowOutcome.FAILURE
                 }
                 PosSyncErrorPolicy.requiresBootstrap(e) -> {
                     try {
-                        ProvisioningRepository(context, provider).applyBootstrap(api(baseUrl).bootstrap(), acceptedResults)
+                        provisioning.applyBootstrap(session.authenticatedApi(baseUrl).bootstrap(), acceptedResults)
                         val latestState = db.syncDao().state() ?: state
                         db.syncDao().saveState(latestState.copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
                         PosSyncNowOutcome.SUCCESS
@@ -169,54 +163,32 @@ class PosSyncPipeline(private val context: Context) {
     }
 
     // Rotates access then continues this same run so the sync button can await a real pull.
+    // Mutex/NonCancellable/already-rotated detection live inside DeviceSession.rotateAccessToken.
+    // This method keeps the sync-specific side effects: reenrollment reset and SyncState writes.
     private suspend fun refreshAccess(state: SyncStateEntity, baseUrl: String, refreshedOnce: Boolean): PosSyncNowOutcome {
-        val staleAccess = currentRunAccess
-        return try {
-            // Worker and foreground sync can both hit 401; only one may rotate the refresh token.
-            val refreshed = refreshMutex.withLock {
-                if (credentials.access() != null && credentials.access() != staleAccess) return@withLock true
-                val refresh = credentials.refresh() ?: return@withLock false
-                // A cancelled job must still persist a pair the server already rotated.
-                withContext(NonCancellable) {
-                    val token = refreshApi(baseUrl).refresh(RefreshRequest(refresh))
-                    credentials.save(token.accessToken, token.refreshToken)
-                }
-                true
-            }
-            if (!refreshed) {
-                ProvisioningRepository(context, provider)
-                    .resetForReenrollment(DeviceSessionPolicy.missingRefreshTokenMessage())
-                return PosSyncNowOutcome.FAILURE
-            }
-            if (refreshedOnce) PosSyncNowOutcome.RETRY else runLocked(refreshedOnce = true)
-        } catch (error: Exception) {
-            if (DeviceSessionPolicy.refreshFailureRequiresReenrollment(error)) {
-                ProvisioningRepository(context, provider)
-                    .resetForReenrollment(DeviceSessionPolicy.invalidRefreshTokenMessage())
+        return when (val outcome = session.rotateAccessToken(baseUrl, currentRunAccess)) {
+            TokenRotationOutcome.Rotated,
+            TokenRotationOutcome.AlreadyFresh ->
+                if (refreshedOnce) PosSyncNowOutcome.RETRY else runLocked(refreshedOnce = true)
+            TokenRotationOutcome.MissingRefresh -> {
+                provisioning.resetForReenrollment(DeviceSessionPolicy.missingRefreshTokenMessage())
                 PosSyncNowOutcome.FAILURE
-            } else {
+            }
+            is TokenRotationOutcome.ReenrollmentRequired -> {
+                provisioning.resetForReenrollment(DeviceSessionPolicy.invalidRefreshTokenMessage())
+                PosSyncNowOutcome.FAILURE
+            }
+            is TokenRotationOutcome.Transient -> {
                 db.syncDao().saveState(
                     (db.syncDao().state() ?: state).copy(
                         status = "RETRYING",
-                        lastError = DeviceSessionPolicy.syncRetryMessage(error),
+                        lastError = DeviceSessionPolicy.syncRetryMessage(outcome.error),
                     ),
                 )
                 PosSyncNowOutcome.RETRY
             }
         }
     }
-
-    private fun api(baseUrl: String): DeviceApi {
-        val client = OkHttpClient.Builder().addInterceptor(Interceptor { chain ->
-            val token = credentials.access()
-            val request = chain.request().newBuilder().apply { if (token != null) header("Authorization", "Bearer $token") }.build()
-            chain.proceed(request)
-        }).build()
-        return Retrofit.Builder().baseUrl(baseUrl).client(client).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
-    }
-
-    private fun refreshApi(baseUrl: String): DeviceApi =
-        Retrofit.Builder().baseUrl(baseUrl).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
 
     // Marks each event by its server result and returns the ones the server kept.
     private fun applyResults(events: List<OutboxEventEntity>, response: EventsResponse): List<EventResult> {

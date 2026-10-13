@@ -111,6 +111,8 @@ class PosSyncBootstrapIntegrationTest {
         .andExpect(jsonPath("$.policies.defaultNegativeStockLimit").value(10))
         .andExpect(jsonPath("$.policies.staleCatalogWarnHours").value(24))
         .andExpect(jsonPath("$.policies.stockless").value(false))
+        .andExpect(jsonPath("$.policies.highSaleWarningCentavos").value(1000000))
+        .andExpect(jsonPath("$.policies.highChangeWarningCentavos").value(100000))
         .andExpect(
             jsonPath("$.cursors.changes")
                 .value(org.hamcrest.Matchers.matchesPattern("cursor-hq-" + hqA + "-s\\d+")));

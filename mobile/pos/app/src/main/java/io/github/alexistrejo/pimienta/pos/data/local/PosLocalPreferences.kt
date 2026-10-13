@@ -13,8 +13,16 @@ class PosLocalPreferences(context: Context) {
         prefs.edit().putBoolean(KEY_KITCHEN_TICKET_PRINT_FILTER, enabled).apply()
     }
 
+    // When true, catalog tiles show names in uppercase; stored catalog names are never changed.
+    fun salesCardNamesUppercase(): Boolean = prefs.getBoolean(KEY_SALES_CARD_NAMES_UPPERCASE, false)
+
+    fun setSalesCardNamesUppercase(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SALES_CARD_NAMES_UPPERCASE, enabled).apply()
+    }
+
     private companion object {
         const val PREFS = "pos-local-prefs"
         const val KEY_KITCHEN_TICKET_PRINT_FILTER = "kitchen_ticket_print_filter"
+        const val KEY_SALES_CARD_NAMES_UPPERCASE = "sales_card_names_uppercase"
     }
 }

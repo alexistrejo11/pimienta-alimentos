@@ -25,6 +25,17 @@ class DeviceApiMockWebServerTest {
   Assert.assertEquals(24, result.policies.staleCatalogWarnHours)
   Assert.assertEquals(72, result.policies.staleCatalogBlockHours)
   Assert.assertFalse(result.policies.stockless)
+  Assert.assertNull(result.policies.highSaleWarningCentavos)
+  Assert.assertNull(result.policies.highChangeWarningCentavos)
+ }
+
+ @Test fun bootstrapPoliciesWithHighSaleWarning()=runBlocking{
+   server.enqueue(MockResponse().setResponseCode(200).setBody("""{"schemaVersion":1,"kind":"FULL","snapshotId":"s","generatedAt":"2026-01-01T00:00:00Z","site":{"id":"1","name":"Centro","address":"","currency":"MXN"},"device":{"id":"d","name":"POS","visibleCode":"T1","status":"ACTIVE"},"operators":[],"products":[],"openAmountCategories":[],"policies":{"allowNegativeStock":true,"allowOpenProducts":false,"staleCatalogWarnHours":24,"staleCatalogBlockHours":72,"stockless":false,"highSaleWarningCentavos":500000,"highChangeWarningCentavos":50000},"cursors":{"changes":"cursor-hq-1-s1"}}""").addHeader("Content-Type","application/json"))
+  val policies = api.bootstrap().policies
+  Assert.assertEquals(500000L, policies.highSaleWarningCentavos)
+  Assert.assertEquals(50000L, policies.highChangeWarningCentavos)
+  server.enqueue(MockResponse().setResponseCode(200).setBody("""{"schemaVersion":1,"kind":"FULL","snapshotId":"s","generatedAt":"2026-01-01T00:00:00Z","site":{"id":"1","name":"Centro","address":"","currency":"MXN"},"device":{"id":"d","name":"POS","visibleCode":"T1","status":"ACTIVE"},"operators":[],"products":[],"openAmountCategories":[],"policies":{"allowNegativeStock":true,"allowOpenProducts":false,"staleCatalogWarnHours":24,"staleCatalogBlockHours":72,"highSaleWarningCentavos":0},"cursors":{"changes":"cursor-hq-1-s1"}}""").addHeader("Content-Type","application/json"))
+  Assert.assertEquals(0L, api.bootstrap().policies.highSaleWarningCentavos)
  }
 
  @Test fun changesUsesSequenceCursorInQuery()=runBlocking{

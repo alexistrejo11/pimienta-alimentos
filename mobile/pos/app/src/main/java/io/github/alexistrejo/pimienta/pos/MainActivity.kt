@@ -16,7 +16,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,30 +49,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import io.github.alexistrejo.pimienta.pos.app.AndroidSessionEnvironment
 import io.github.alexistrejo.pimienta.pos.app.PosApplication
+import io.github.alexistrejo.pimienta.pos.app.SessionCoordinator
+import io.github.alexistrejo.pimienta.pos.app.SessionDestination
 import io.github.alexistrejo.pimienta.pos.data.local.entity.LocalUserEntity
-import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
-import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.ShiftEntity
 import io.github.alexistrejo.pimienta.pos.domain.Money
 import io.github.alexistrejo.pimienta.pos.domain.PosRepository
-import io.github.alexistrejo.pimienta.pos.domain.TrainingModePolicy
 import io.github.alexistrejo.pimienta.pos.ui.theme.PosTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.content.edit
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
-import io.github.alexistrejo.pimienta.pos.data.sync.DeviceCredentials
-import io.github.alexistrejo.pimienta.pos.data.sync.DeviceSessionPolicy
-import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
-import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
-import io.github.alexistrejo.pimienta.pos.data.sync.PRODUCTION_API_URL
-import io.github.alexistrejo.pimienta.pos.data.sync.runForegroundSync
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
-import io.github.alexistrejo.pimienta.pos.data.update.PosAppUpdater
-import io.github.alexistrejo.pimienta.pos.data.update.ReleaseCheckOutcome
 import io.github.alexistrejo.pimienta.pos.hardware.BarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.FakeBarcodeScanner
 import io.github.alexistrejo.pimienta.pos.hardware.HidKeyboardBarcodeScanner
@@ -233,167 +225,26 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Selects the active data space and keeps sandbox isolated from backend services.
+// Renders the root screen for the current session state and forwards user events to the coordinator.
 @Composable
 private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val app = context.applicationContext as PosApplication
+    val coordinator = remember { SessionCoordinator(scope, AndroidSessionEnvironment(app)) }
+    val state by coordinator.state.collectAsState()
     // Recreated after mode switches so queries hit the newly selected database.
-    var repository by remember { mutableStateOf(PosRepository(app.databaseProvider)) }
-    val mode = repository.mode()
-    var users by remember { mutableStateOf<List<LocalUserEntity>>(emptyList()) }
-    var products by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
-    var policy by remember { mutableStateOf<PosPolicyEntity?>(null) }
-    var shift by remember { mutableStateOf<ShiftEntity?>(null) }
-    var notice by remember { mutableStateOf<String?>(null) }
-    var enrolling by remember { mutableStateOf(false) }
-    var enrollError by remember { mutableStateOf<String?>(null) }
-    var syncState by remember { mutableStateOf<SyncStateEntity?>(null) }
-    var initialized by remember { mutableStateOf(false) }
-    var enrolled by remember { mutableStateOf(false) }
-    var loadGeneration by remember { mutableStateOf(0) }
-    var productionCatalogSyncAttempted by remember { mutableStateOf(false) }
-    var availableUpdateVersionName by remember { mutableStateOf<String?>(null) }
+    val repository = remember(state.mode) { PosRepository(app.databaseProvider, state.mode) }
     var standaloneManagerId by rememberSaveable { mutableStateOf<String?>(null) }
-    val standaloneManager = remember(standaloneManagerId, users) { users.firstOrNull { it.id == standaloneManagerId } }
+    val standaloneManager = remember(standaloneManagerId, state.users) { state.users.firstOrNull { it.id == standaloneManagerId } }
     var managerAccessOpen by rememberSaveable { mutableStateOf(false) }
     var devicesOpen by rememberSaveable { mutableStateOf(false) }
-    var pendingEventsCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    val updater = remember(context) { PosAppUpdater(context) }
 
-    fun reload() {
-        val generation = loadGeneration + 1
-        loadGeneration = generation
-        val repo = repository
-        scope.launch {
-            val state = withContext(Dispatchers.IO) {
-                app.awaitActiveDatabaseReady()
-                // Only force re-enrollment when explicitly revoked or no credentials remain.
-                if (mode == RuntimeMode.PRODUCTION) {
-                    val deviceCredentials = DeviceCredentials(context)
-                    val sync = repo.syncState()
-                    val hasUrl = !sync?.baseUrl.isNullOrBlank()
-                    val hasAccess = deviceCredentials.access() != null
-                    val hasRefresh = deviceCredentials.refresh() != null
-                    if (DeviceSessionPolicy.orphanAccessRequiresReset(sync?.status, hasUrl, hasAccess, hasRefresh)) {
-                        ProvisioningRepository(context, app.databaseProvider).resetForReenrollment(
-                            sync?.lastError ?: DeviceSessionPolicy.orphanAccessTokenMessage(),
-                        )
-                    } else if (hasUrl && !hasAccess && hasRefresh) {
-                        SyncWorker.enqueue(context)
-                    }
-                }
-                Quadruple(repo.syncState(), repo.users(), repo.products(), repo.activeShift())
-            }
-            if (generation != loadGeneration) return@launch
-            syncState = state.first
-            users = state.second
-            products = state.third
-            shift = state.fourth
-            initialized = true
-        }
-    }
-
-    // Enrollment check must stay off the composition/main thread (Room rule).
-    LaunchedEffect(Unit) {
-        if (!BuildConfig.DEBUG) {
-            enrolled = withContext(Dispatchers.IO) { TrainingModePolicy.isEnrolled(app.databaseProvider) }
-        }
-    }
-    // Throttled silent release check for the mode-banner notice (no auto-install).
-    LaunchedEffect(Unit) {
-        availableUpdateVersionName = updater.cachedUpdateVersionName()
-        when (val outcome = withContext(Dispatchers.IO) { updater.check(force = false) }) {
-            is ReleaseCheckOutcome.UpdateAvailable ->
-                availableUpdateVersionName = outcome.remote.versionName
-            is ReleaseCheckOutcome.UpToDate -> availableUpdateVersionName = null
-            is ReleaseCheckOutcome.Failed -> Unit
-        }
-    }
-    val requiresPinForSwitch = TrainingModePolicy.requiresPinForModeSwitch(isEnrolled = enrolled)
-    var switchAuthorizers by remember { mutableStateOf<List<LocalUserEntity>>(emptyList()) }
-
-    // Fetch active managers across DBs for mode switch authorization.
-    LaunchedEffect(users, mode, requiresPinForSwitch) {
-        if (requiresPinForSwitch) {
-            switchAuthorizers = withContext(Dispatchers.IO) {
-                val prodUsers = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION).users()
-                val activeUsers = PosRepository(app.databaseProvider).users()
-                (prodUsers + activeUsers)
-                    .filter { it.active && it.isManagerOrAdmin }
-                    .distinctBy { it.id }
-            }
-        } else {
-            switchAuthorizers = emptyList()
-        }
-    }
-
-    suspend fun switchMode(target: RuntimeMode, authorizer: LocalUserEntity?, pin: String?): Boolean {
-        if (shift != null) {
-            notice = "Cierra el turno antes de cambiar de modo"
-            return false
-        }
-        if (requiresPinForSwitch) {
-            if (authorizer == null || pin.isNullOrBlank()) {
-                notice = "Selecciona un perfil de Gerente o Administrador"
-                return false
-            }
-            val productionRepository = PosRepository(app.databaseProvider, RuntimeMode.PRODUCTION)
-            val activeRepo = PosRepository(app.databaseProvider)
-            val valid = withContext(Dispatchers.IO) {
-                productionRepository.authenticate(authorizer.id, pin) || activeRepo.authenticate(authorizer.id, pin)
-            }
-            if (!valid) {
-                return false
-            }
-        }
-        initialized = false
-        withContext(Dispatchers.IO) {
-            if (target == RuntimeMode.SANDBOX) app.enterTrainingMode() else app.exitTrainingMode()
-        }
-        repository = PosRepository(app.databaseProvider)
-        shift = null
-        notice = null
-        reload()
-        return true
-    }
-
-    fun resetTrainingDemo() {
-        scope.launch {
-            if (shift != null) {
-                notice = "Cierra el turno antes de reiniciar los datos demo"
-                return@launch
-            }
-            initialized = false
-            try {
-                withContext(Dispatchers.IO) { app.resetTrainingPlayground() }
-                notice = "✓ Datos de capacitación reiniciados correctamente"
-            } catch (_: Exception) {
-                notice = "No se pudieron reiniciar los datos de capacitación"
-            } finally {
-                shift = null
-                reload()
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) { reload() }
-
-    // Room flows keep catalog and policy state live after every committed sync transaction.
-    LaunchedEffect(repository) {
-        launch { repository.observeProducts().collect { products = it } }
-        launch { repository.observeUsers().collect { users = it } }
-        launch { repository.observePolicy().collect { policy = it } }
-        launch { repository.observeSyncState().collect { syncState = it } }
-        launch { repository.observePendingEvents().collect { pendingEventsCount = it } }
-        // Sale vs Access follows Room: a CLOSED shift must not keep the register on screen.
-        launch { repository.observeActiveShift().collect { shift = it } }
-    }
+    LaunchedEffect(coordinator) { coordinator.start() }
 
     if (managerAccessOpen) {
         ManagerAccess(
-            users = users,
+            users = state.users,
             repository = repository,
             onDismiss = { managerAccessOpen = false },
             onAuthorized = { authed ->
@@ -403,56 +254,31 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
         )
     }
 
-    // When production is enrolled but catalog/operators are empty, pull bootstrap once.
-    LaunchedEffect(initialized, mode, syncState?.baseUrl, syncState?.status) {
-        if (!initialized) return@LaunchedEffect
-        if (mode != RuntimeMode.PRODUCTION) return@LaunchedEffect
-        if (syncState?.baseUrl.isNullOrBlank() || syncState?.status == "REQUIRES_REENROLLMENT") return@LaunchedEffect
-        if (productionCatalogSyncAttempted) return@LaunchedEffect
-        if (users.isNotEmpty() && products.isNotEmpty()) return@LaunchedEffect
-        // URL can arrive before tokens; syncing then makes reload treat the session as orphan and undo enrollment.
-        val hasDeviceSession = withContext(Dispatchers.IO) { DeviceCredentials(context).access() != null }
-        if (!hasDeviceSession) return@LaunchedEffect
-        productionCatalogSyncAttempted = true
-        notice = "Sincronizando con el servidor…"
-        notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
-        reload()
-    }
-
-    // Bootstrap moves ENROLLED to ONLINE. Treating only ENROLLED as enrolled sends the tablet back to the form.
-    val showEnrollment = mode == RuntimeMode.PRODUCTION && DeviceSessionPolicy.showsEnrollmentForm(
-        syncState?.status,
-        !syncState?.baseUrl.isNullOrBlank(),
-        DeviceCredentials(context).access() != null,
-    )
-
     LaunchedEffect(scanner) {
         (scanner as? MultiplexBarcodeScanner)?.attach(this)
     }
     // HID wedge must not swallow on-screen digits while the enrollment form is visible.
-    LaunchedEffect(scanner, initialized, showEnrollment) {
-        if (initialized && !showEnrollment) scanner.start() else scanner.stop()
+    LaunchedEffect(scanner, state.initialized, state.showEnrollment) {
+        if (state.initialized && !state.showEnrollment) scanner.start() else scanner.stop()
     }
 
     // Insets once at the root so Sale (and siblings) do not add a second black status-bar gap under the banner.
     Column(Modifier.fillMaxSize().systemBarsPadding()) {
-        if (shift == null) {
+        if (state.shift == null) {
             RuntimeModeBanner(
-                mode = mode,
+                mode = state.mode,
                 dark = dark,
                 onTheme = onTheme,
-                requiresPinForSwitch = requiresPinForSwitch,
-                authorizers = switchAuthorizers,
-                onSwitchRequested = ::switchMode,
-                onResetDemo = if (BuildConfig.DEBUG && mode == RuntimeMode.SANDBOX) ::resetTrainingDemo else null,
-                availableUpdateVersionName = availableUpdateVersionName,
-                onForceSync = {
-                    scope.launch {
-                        notice = "Sincronizando con el servidor…"
-                        notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
-                        reload()
-                    }
+                requiresPinForSwitch = state.requiresPinForSwitch,
+                authorizers = state.switchAuthorizers,
+                onSwitchRequested = coordinator::switchMode,
+                onResetDemo = if (state.canResetTrainingDemo) {
+                    { coordinator.resetTrainingDemo() }
+                } else {
+                    null
                 },
+                availableUpdateVersionName = state.availableUpdateVersionName,
+                onForceSync = { coordinator.syncNow() },
                 onOpenManager = { managerAccessOpen = true },
                 onOpenDevices = { devicesOpen = true },
             )
@@ -461,15 +287,15 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
             val activeStandaloneManager = standaloneManager
             if (activeStandaloneManager != null) {
                 ManagerPanel(
-                    shift = shift,
+                    shift = state.shift,
                     manager = activeStandaloneManager,
-                    users = users,
-                    products = products,
-                    pendingEvents = pendingEventsCount,
+                    users = state.users,
+                    products = state.products,
+                    pendingEvents = state.pendingEventsCount,
                     repository = repository,
                     onReturnToSale = { standaloneManagerId = null },
                     onShiftClosed = {
-                        shift = null
+                        coordinator.onShiftClosed()
                         standaloneManagerId = null
                     },
                 )
@@ -477,128 +303,50 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                 DevicesScreen(
                     repository = repository,
                     onReturn = { devicesOpen = false },
-                    returnLabel = if (shift != null) "Volver a caja" else "Volver",
+                    returnLabel = if (state.shift != null) "Volver a caja" else "Volver",
                 )
-            } else if (!initialized) {
-                Loading(loadingMessage(mode, null), ::reload)
             } else {
-                when {
-                    showEnrollment ->
+                when (val destination = state.destination) {
+                    is SessionDestination.Loading -> Loading(destination.message, { coordinator.reload() })
+                    SessionDestination.Enrollment ->
                         EnrollmentScreen(
-                            busy = enrolling,
-                            error = enrollError ?: syncState?.lastError,
-                        ) { code, name ->
-                        if (enrolling) return@EnrollmentScreen
-                        enrolling = true
-                        scope.launch {
-                            enrollError = null
-                            try {
-                                withContext(Dispatchers.IO) { ProvisioningRepository(context, app.databaseProvider).enroll(PRODUCTION_API_URL, code, name) }
-                                productionCatalogSyncAttempted = false
-                                SyncWorker.enqueue(context)
-                                reload()
-                            } catch (e: Exception) {
-                                val userMessage = PosApiUserMessages.from(e)
-                                val stillNeedsEnrollment = withContext(Dispatchers.IO) {
-                                    ProvisioningRepository(context, app.databaseProvider).needsEnrollment()
-                                }
-                                if (stillNeedsEnrollment) {
-                                    // Code rejected or session wiped: stay on the form and say why.
-                                    enrollError = userMessage
-                                } else {
-                                    // Tokens are saved; bootstrap can retry off this screen and the message stays visible.
-                                    notice = userMessage
-                                    SyncWorker.enqueue(context)
-                                    reload()
-                                }
-                            } finally { enrolling = false }
-                        }
-                    }
-                    users.isEmpty() || products.isEmpty() -> {
-                        val waitingMessage = when {
-                            !notice.isNullOrBlank() -> notice
-                            !syncState?.lastError.isNullOrBlank() -> syncState?.lastError
-                            users.isEmpty() && products.isNotEmpty() ->
-                                "Catálogo recibido (${products.size} producto(s)), pero falta: operadores POS con PIN en esta sede."
-                            users.isNotEmpty() && products.isEmpty() ->
-                                "Operadores recibidos (${users.size}), pero falta: productos en el catálogo POS de la sede (o hay que resincronizar bootstrap)."
-                            else -> loadingMessage(mode, null)
-                        }
-                        Loading(
-                            message = waitingMessage,
-                            reload = {
-                                scope.launch {
-                                    productionCatalogSyncAttempted = true
-                                    notice = "Sincronizando con el servidor…"
-                                    notice = withContext(Dispatchers.IO) { runForegroundSync(context) }
-                                    reload()
-                                }
-                            },
-                            onResetEnrollment = if (mode == RuntimeMode.PRODUCTION) {
-                                {
-                                    scope.launch {
-                                        withContext(Dispatchers.IO) {
-                                            ProvisioningRepository(context, app.databaseProvider)
-                                                .resetForReenrollment("Reenrolamiento solicitado desde la tablet.")
-                                        }
-                                        enrollError = null
-                                        notice = null
-                                        productionCatalogSyncAttempted = false
-                                        reload()
-                                    }
-                                }
-                            } else {
-                                null
-                            },
-                        )
-                    }
-                    shift == null -> Access(
-                        users = users,
-                        repository = repository,
-                        notice = notice,
-                        mode = mode,
-                        opened = { shift = it },
-                        message = { notice = it },
-                    )
-                    else -> {
-                        val activeShift = shift
-                        if (activeShift != null) {
-                            Sale(
-                                repository = repository,
-                                shift = activeShift,
-                                cashier = users.firstOrNull { it.id == activeShift.cashierId }?.displayName ?: "Cajero",
-                                users = users,
-                                products = products,
-                                policy = policy,
-                                syncState = syncState,
-                                dark = dark,
-                                onTheme = onTheme,
-                                onShiftClosed = { shift = null },
-                                scanner = scanner,
-                            )
+                            busy = state.enrolling,
+                            error = state.enrollmentErrorMessage,
+                        ) { code, name -> coordinator.enroll(code, name) }
+                    is SessionDestination.WaitingForCatalog -> Loading(
+                        message = destination.message,
+                        reload = { coordinator.syncNow(markCatalogSyncAttempted = true) },
+                        onResetEnrollment = if (destination.canResetEnrollment) {
+                            { coordinator.requestReenrollment() }
                         } else {
-                            Access(
-                                users = users,
-                                repository = repository,
-                                notice = notice,
-                                mode = mode,
-                                opened = { shift = it },
-                                message = { notice = it },
-                            )
-                        }
-                    }
+                            null
+                        },
+                    )
+                    SessionDestination.Access -> Access(
+                        users = state.users,
+                        repository = repository,
+                        notice = state.notice,
+                        mode = state.mode,
+                        opened = coordinator::onShiftOpened,
+                        message = coordinator::showNotice,
+                    )
+                    is SessionDestination.Sale -> Sale(
+                        repository = repository,
+                        shift = destination.shift,
+                        cashier = state.users.firstOrNull { it.id == destination.shift.cashierId }?.displayName ?: "Cajero",
+                        users = state.users,
+                        products = state.products,
+                        policy = state.policy,
+                        syncState = state.syncState,
+                        dark = dark,
+                        onTheme = onTheme,
+                        onShiftClosed = { coordinator.onShiftClosed() },
+                        scanner = scanner,
+                    )
                 }
             }
         }
     }
-}
-
-// Small immutable tuple used to load the active database state together.
-private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
-
-private fun loadingMessage(mode: RuntimeMode, notice: String?): String = notice ?: when (mode) {
-    RuntimeMode.SANDBOX -> "Preparando entorno de capacitación…"
-    RuntimeMode.PRODUCTION -> "Cargando datos de venta…"
 }
 
 // Waits for the training template import without blocking the Compose UI thread.

@@ -22,6 +22,18 @@ export function openAmountSettingsValidator(control: AbstractControl): Validatio
   return Object.keys(errors).length > 0 ? errors : null;
 }
 
+/** Same defaults as the backend and the POS tablet ($10,000.00 total, $1,000.00 change). */
+const DEFAULT_HIGH_SALE_WARNING_CENTAVOS = 1_000_000;
+const DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS = 100_000;
+
+function centavosToPesos(centavos: number | null | undefined, fallback: number): number {
+  return (centavos ?? fallback) / 100;
+}
+
+function pesosToCentavos(pesos: number): number {
+  return Math.round(pesos * 100);
+}
+
 @Component({
   selector: 'app-pos-config-page',
   imports: [PageHeaderComponent, DataStateComponent, ReactiveFormsModule, HeadquarterSelectComponent, RouterLink],
@@ -48,6 +60,14 @@ export class PosConfigPageComponent implements OnInit {
     allowOpenProducts: [false],
     defaultNegativeStockLimit: [null as number | null],
     stockless: [false],
+    highSaleWarningPesos: [
+      centavosToPesos(null, DEFAULT_HIGH_SALE_WARNING_CENTAVOS),
+      [Validators.required, Validators.min(0)],
+    ],
+    highChangeWarningPesos: [
+      centavosToPesos(null, DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS),
+      [Validators.required, Validators.min(0)],
+    ],
   });
 
   constructor() {
@@ -97,6 +117,8 @@ export class PosConfigPageComponent implements OnInit {
             allowOpenProducts: s.allowOpenProducts,
             defaultNegativeStockLimit: s.defaultNegativeStockLimit,
             stockless: s.stockless,
+            highSaleWarningPesos: centavosToPesos(s.highSaleWarningCentavos, DEFAULT_HIGH_SALE_WARNING_CENTAVOS),
+            highChangeWarningPesos: centavosToPesos(s.highChangeWarningCentavos, DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS),
           });
         },
         error: (err: unknown) => {
@@ -111,6 +133,8 @@ export class PosConfigPageComponent implements OnInit {
               allowOpenProducts: false,
               defaultNegativeStockLimit: null,
               stockless: false,
+              highSaleWarningPesos: centavosToPesos(null, DEFAULT_HIGH_SALE_WARNING_CENTAVOS),
+              highChangeWarningPesos: centavosToPesos(null, DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS),
             });
             return;
           }
@@ -135,6 +159,8 @@ export class PosConfigPageComponent implements OnInit {
         allowOpenProducts: v.allowOpenProducts,
         defaultNegativeStockLimit: v.defaultNegativeStockLimit,
         stockless: v.stockless,
+        highSaleWarningCentavos: pesosToCentavos(v.highSaleWarningPesos),
+        highChangeWarningCentavos: pesosToCentavos(v.highChangeWarningPesos),
       })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
@@ -148,6 +174,8 @@ export class PosConfigPageComponent implements OnInit {
             allowOpenProducts: s.allowOpenProducts,
             defaultNegativeStockLimit: s.defaultNegativeStockLimit,
             stockless: s.stockless,
+            highSaleWarningPesos: centavosToPesos(s.highSaleWarningCentavos, DEFAULT_HIGH_SALE_WARNING_CENTAVOS),
+            highChangeWarningPesos: centavosToPesos(s.highChangeWarningCentavos, DEFAULT_HIGH_CHANGE_WARNING_CENTAVOS),
           });
         },
         error: (err: unknown) => this.error.set(parseApiError(err)),

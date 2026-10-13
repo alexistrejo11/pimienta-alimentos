@@ -27,6 +27,8 @@ public final class PosOperationalConfigPersistenceMapper {
         .withAllowOpenProducts(entity.isAllowOpenProducts())
         .withDefaultNegativeStockLimit(entity.getDefaultNegativeStockLimit())
         .withStockless(entity.isStockless())
+        .withHighSaleWarningCentavos(entity.getHighSaleWarningCentavos())
+        .withHighChangeWarningCentavos(entity.getHighChangeWarningCentavos())
         .withCreatedAt(entity.getCreatedAt())
         .withUpdatedAt(entity.getUpdatedAt())
         .withDeletedAt(entity.getDeletedAt())
@@ -47,6 +49,8 @@ public final class PosOperationalConfigPersistenceMapper {
     e.setAllowOpenProducts(domain.isAllowOpenProducts());
     e.setDefaultNegativeStockLimit(domain.getDefaultNegativeStockLimit());
     e.setStockless(domain.isStockless());
+    e.setHighSaleWarningCentavos(domain.getHighSaleWarningCentavos());
+    e.setHighChangeWarningCentavos(domain.getHighChangeWarningCentavos());
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     e.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt() : LocalDateTime.now());
     e.setDeletedAt(domain.getDeletedAt());

@@ -6,6 +6,8 @@ import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.seed.TrainingBootstrapImporter
+import io.github.alexistrejo.pimienta.pos.data.sync.DeviceCredentials
+import io.github.alexistrejo.pimienta.pos.data.sync.DeviceSession
 import io.github.alexistrejo.pimienta.pos.data.sync.SyncWorker
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
 import kotlinx.coroutines.CompletableDeferred
@@ -18,6 +20,9 @@ class PosApplication : Application() {
 
     val database: PosDatabase
         get() = databaseProvider.database()
+
+    // One device API session per process, shared by the UI, the sync pipeline, and workers.
+    val deviceSession: DeviceSession by lazy { DeviceSession(DeviceCredentials(this)) }
 
     // Signals when a cold-start training wipe/import has finished (or is not needed).
     private val trainingReady = CompletableDeferred<Unit>()
@@ -108,4 +113,13 @@ fun Context.posDatabaseProvider(): PosDatabaseProvider =
     (applicationContext as? PosApplication)?.databaseProvider
         ?: synchronized(fallbackLock) {
             fallbackProvider ?: PosDatabaseProvider(applicationContext).also { fallbackProvider = it }
+        }
+
+private var fallbackSession: DeviceSession? = null
+
+/** Returns the process-wide device session; callers must not construct their own. */
+fun Context.deviceSession(): DeviceSession =
+    (applicationContext as? PosApplication)?.deviceSession
+        ?: synchronized(fallbackLock) {
+            fallbackSession ?: DeviceSession(DeviceCredentials(applicationContext)).also { fallbackSession = it }
         }

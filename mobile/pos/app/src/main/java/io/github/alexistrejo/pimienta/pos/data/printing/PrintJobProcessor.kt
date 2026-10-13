@@ -2,6 +2,7 @@ package io.github.alexistrejo.pimienta.pos.data.printing
 
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
+import io.github.alexistrejo.pimienta.pos.domain.WithdrawalLabels
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
 import io.github.alexistrejo.pimienta.pos.hardware.PrintFailure
 import io.github.alexistrejo.pimienta.pos.hardware.PrintResult
@@ -126,7 +127,15 @@ class PrintJobProcessor(
             }
             "CASH_WITHDRAWAL" -> {
                 val withdrawal = dao.withdrawal(job.saleId) ?: return PrintResult.Failed(PrintFailure.UNSUPPORTED)
-                OperationalDocument("Retiro de efectivo", withdrawal.folio, Instant.ofEpochMilli(withdrawal.createdAtEpochMillis), listOf(PrintableLine(withdrawal.reason, "1", withdrawal.amountCentavos)), withdrawal.amountCentavos)
+                val cashier = WithdrawalLabels.operator(withdrawal.cashierId, dao.findUser(withdrawal.cashierId))
+                val authorizer = WithdrawalLabels.operator(withdrawal.authorizedByUserId, dao.findUser(withdrawal.authorizedByUserId))
+                val lines = listOf(
+                    PrintableLine("Cajero: $cashier"),
+                    PrintableLine("Autorizo: $authorizer (${WithdrawalLabels.role(withdrawal.authorizedByRole)})"),
+                    PrintableLine("Motivo: ${WithdrawalLabels.reason(withdrawal.reason)}"),
+                    PrintableLine("Importe retirado", "", withdrawal.amountCentavos),
+                )
+                OperationalDocument("Retiro de efectivo", withdrawal.folio, Instant.ofEpochMilli(withdrawal.createdAtEpochMillis), lines, withdrawal.amountCentavos)
             }
             "SHIFT_CLOSE" -> {
                 val close = dao.shiftClose(job.saleId) ?: return PrintResult.Failed(PrintFailure.UNSUPPORTED)

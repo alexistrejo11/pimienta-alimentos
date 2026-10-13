@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.data.sync
 
 import io.github.alexistrejo.pimienta.pos.BuildConfig
+import io.github.alexistrejo.pimienta.pos.app.deviceSession
 
 import android.content.Context
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabaseProvider
@@ -15,32 +16,15 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.CatalogCategoryEntit
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PosPolicyEntity
 import java.math.BigDecimal
 import java.util.UUID
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import okhttp3.MediaType.Companion.toMediaType
-import retrofit2.HttpException
 
 const val PRODUCTION_API_URL = "https://api.pimienta-alimentos.com"
 
-/** Result of pulling catalog from the API, including what the sede still lacks for caja. */
-data class CatalogSyncReport(
-    val productCount: Int,
-    val operatorCount: Int,
-    val missing: List<String>,
-) {
-    val isReady: Boolean get() = missing.isEmpty()
-
-    fun userMessage(): String? =
-        if (missing.isEmpty()) {
-            null
-        } else {
-            "Para operar en caja aún falta: ${missing.joinToString("; ")}."
-        }
-}
-
 class ProvisioningRepository(private val context: Context, private val provider: PosDatabaseProvider) {
     private val db get() = provider.database(RuntimeMode.PRODUCTION)
-    private val credentials = DeviceCredentials(context)
-    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+    // All HTTP + token handling is delegated to DeviceSession. The repository keeps the catalog,
+    // enrollment, and bootstrap/delta responsibilities; it never builds a Retrofit client itself.
+    private val session = context.deviceSession()
+    private val json = DeviceApiFactory.json()
     private val prefs = context.getSharedPreferences("pos-device-config", Context.MODE_PRIVATE)
 
     fun baseUrl(): String? = db.syncDao().state()?.baseUrl
@@ -55,7 +39,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
      * Keeps the stable device publicId so the server can re-authorize the same tablet.
      */
     fun resetForReenrollment(reason: String) {
-        credentials.clear()
+        session.clearTokens()
         db.runInTransaction {
             db.productDao().clear()
             db.userDao().clear()
@@ -91,9 +75,9 @@ class ProvisioningRepository(private val context: Context, private val provider:
         // see a base URL with no tokens and wipe the session that this call is about to save.
         requireAcceptableApiUrl(baseUrl)
         val publicId = prefs.getString("publicId", null) ?: UUID.randomUUID().toString().also { prefs.edit().putString("publicId", it).apply() }
-        val api = retrofit(baseUrl, null)
+        val api = session.unauthenticatedApi(baseUrl)
         val result = api.enroll(EnrollRequest(code, publicId, name, BuildConfig.VERSION_NAME))
-        credentials.save(result.accessToken, result.refreshToken)
+        session.saveTokens(result.accessToken, result.refreshToken)
         // Same tablet keeps its causal clock: never restart at 1 after revoke/re-enroll.
         val nextSequence = DeviceSequenceClock.next(
             localNext = db.operationsDao().device()?.nextEventSequence,
@@ -118,45 +102,13 @@ class ProvisioningRepository(private val context: Context, private val provider:
         }
         // Catalog import can fail independently; tokens/device are already persisted for SyncWorker retry.
         try {
-            applyBootstrap(retrofit(baseUrl, result.accessToken).bootstrap())
+            applyBootstrap(session.authenticatedApi(baseUrl).bootstrap())
         } catch (e: Exception) {
             val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()
             db.syncDao().saveState(current.copy(baseUrl = baseUrl, status = "RETRYING", lastError = e.message))
             throw e
         }
         return result
-    }
-
-    /**
-     * Pulls catalog from the API right now.
-     * If local operators/products are incomplete, always re-runs full bootstrap
-     * (deltas alone cannot rebuild an empty tablet).
-     */
-    suspend fun syncCatalogNow(): Result<CatalogSyncReport> {
-        val state = db.syncDao().state()
-        val baseUrl = state?.baseUrl?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return Result.failure(IllegalStateException("Dispositivo no enrolado."))
-        val access = credentials.access()
-            ?: return Result.failure(IllegalStateException("Sesión del dispositivo inválida. Vuelve a enrolar."))
-        return try {
-            val api = retrofit(baseUrl, access)
-            pullCatalog(api, state)
-        } catch (e: HttpException) {
-            if (e.code() == 401) {
-                return refreshAccessAndPullCatalog(baseUrl, state)
-            } else if (e.code() == 403) {
-                resetForReenrollment(DeviceSessionPolicy.revokedDeviceMessage())
-                Result.failure(e)
-            } else {
-                val current = db.syncDao().state() ?: state
-                db.syncDao().saveState(current.copy(status = "RETRYING", lastError = e.message()))
-                Result.failure(e)
-            }
-        } catch (e: Exception) {
-            val current = db.syncDao().state() ?: state
-            db.syncDao().saveState(current.copy(status = "RETRYING", lastError = e.message))
-            Result.failure(e)
-        }
     }
 
     /**
@@ -171,11 +123,6 @@ class ProvisioningRepository(private val context: Context, private val provider:
         createdByOperatorId: Long?,
         controlledStock: Boolean,
     ): Result<ProductEntity> {
-        val state = db.syncDao().state()
-        val baseUrl = state?.baseUrl?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return Result.failure(IllegalStateException("Dispositivo no enrolado."))
-        val access = credentials.access()
-            ?: return Result.failure(IllegalStateException("Sesión del dispositivo inválida. Vuelve a enrolar."))
         val request = CreatePosProductRequest(
             name = name.trim(),
             salePriceCentavos = salePriceCentavos,
@@ -184,25 +131,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
             createdByOperatorId = createdByOperatorId,
             stockPolicy = if (controlledStock) "CONTROLLED" else "NOT_CONTROLLED",
         )
-        return try {
-            Result.success(persistCreatedProduct(retrofit(baseUrl, access).createProduct(request)))
-        } catch (e: HttpException) {
-            if (e.code() == 401) {
-                val refresh = credentials.refresh()
-                    ?: return Result.failure(IllegalStateException(DeviceSessionPolicy.missingRefreshTokenMessage()))
-                try {
-                    val tokens = retrofit(baseUrl, null).refresh(RefreshRequest(refresh))
-                    credentials.save(tokens.accessToken, tokens.refreshToken)
-                    Result.success(persistCreatedProduct(retrofit(baseUrl, tokens.accessToken).createProduct(request)))
-                } catch (refreshError: Exception) {
-                    Result.failure(refreshError)
-                }
-            } else {
-                Result.failure(e)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return callDevice { api -> persistCreatedProduct(api.createProduct(request)) }
     }
 
     /**
@@ -261,27 +190,20 @@ class ProvisioningRepository(private val context: Context, private val provider:
     }
 
     // One device call, refreshing the access token once on 401.
+    // Error messages preserved verbatim so existing UI copy and tests do not shift.
+    // A refresh failure here does NOT trigger a reenrollment reset; only the sync pipeline wipes the session.
     private suspend fun <T> callDevice(block: suspend (DeviceApi) -> T): Result<T> {
         val state = db.syncDao().state()
         val baseUrl = state?.baseUrl?.trim()?.takeIf { it.isNotEmpty() }
             ?: return Result.failure(IllegalStateException("Dispositivo no enrolado."))
-        val access = credentials.access()
-            ?: return Result.failure(IllegalStateException("Sesión del dispositivo inválida. Vuelve a enrolar."))
-        return try {
-            Result.success(block(retrofit(baseUrl, access)))
-        } catch (e: HttpException) {
-            if (e.code() != 401) return Result.failure(e)
-            val refresh = credentials.refresh()
-                ?: return Result.failure(IllegalStateException(DeviceSessionPolicy.missingRefreshTokenMessage()))
-            try {
-                val tokens = retrofit(baseUrl, null).refresh(RefreshRequest(refresh))
-                credentials.save(tokens.accessToken, tokens.refreshToken)
-                Result.success(block(retrofit(baseUrl, tokens.accessToken)))
-            } catch (refreshError: Exception) {
-                Result.failure(refreshError)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+        return when (val outcome = session.withAuth(baseUrl) { api -> block(api) }) {
+            is AuthenticatedCallOutcome.Success -> Result.success(outcome.value)
+            AuthenticatedCallOutcome.MissingAccess ->
+                Result.failure(IllegalStateException("Sesión del dispositivo inválida. Vuelve a enrolar."))
+            AuthenticatedCallOutcome.MissingRefresh ->
+                Result.failure(IllegalStateException(DeviceSessionPolicy.missingRefreshTokenMessage()))
+            is AuthenticatedCallOutcome.CallFailed -> Result.failure(outcome.error)
+            is AuthenticatedCallOutcome.RefreshFailed -> Result.failure(outcome.error)
         }
     }
 
@@ -295,72 +217,6 @@ class ProvisioningRepository(private val context: Context, private val provider:
             }
         }
         return product
-    }
-
-    private suspend fun refreshAccessAndPullCatalog(
-        baseUrl: String,
-        state: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity,
-    ): Result<CatalogSyncReport> {
-        val refresh = credentials.refresh()
-            ?: return Result.failure(IllegalStateException(DeviceSessionPolicy.missingRefreshTokenMessage()))
-        return try {
-            val tokens = retrofit(baseUrl, null).refresh(RefreshRequest(refresh))
-            credentials.save(tokens.accessToken, tokens.refreshToken)
-            pullCatalog(retrofit(baseUrl, tokens.accessToken), db.syncDao().state() ?: state)
-        } catch (refreshError: Exception) {
-            if (DeviceSessionPolicy.refreshFailureRequiresReenrollment(refreshError)) {
-                resetForReenrollment(DeviceSessionPolicy.invalidRefreshTokenMessage())
-            } else {
-                val current = db.syncDao().state() ?: state
-                db.syncDao().saveState(
-                    current.copy(
-                        status = "RETRYING",
-                        lastError = DeviceSessionPolicy.syncRetryMessage(refreshError),
-                    ),
-                )
-            }
-            Result.failure(refreshError)
-        }
-    }
-
-    private suspend fun pullCatalog(
-        api: DeviceApi,
-        state: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity,
-    ): Result<CatalogSyncReport> {
-        val localIncomplete = db.productDao().count() == 0 || db.userDao().count() == 0
-        val cursor = state.changesCursor
-        val report =
-            if (localIncomplete || cursor.isNullOrBlank()) {
-                val snapshot = api.bootstrap()
-                applyBootstrap(snapshot)
-                reportFromBootstrap(snapshot)
-            } else {
-                applyChanges(api.changes(cursor))
-                reportFromLocal()
-            }
-        return Result.success(report)
-    }
-
-    private fun reportFromBootstrap(snapshot: BootstrapResponse): CatalogSyncReport {
-        val missing = buildList {
-            if (snapshot.operators.isEmpty()) {
-                add("operadores POS con PIN en esta sede")
-            }
-            if (snapshot.products.isEmpty()) {
-                add("productos publicados en el catálogo POS de la sede")
-            }
-        }
-        return CatalogSyncReport(snapshot.products.size, snapshot.operators.size, missing)
-    }
-
-    private fun reportFromLocal(): CatalogSyncReport {
-        val products = db.productDao().count()
-        val operators = db.userDao().count()
-        val missing = buildList {
-            if (operators == 0) add("operadores POS con PIN en esta sede")
-            if (products == 0) add("productos publicados en el catálogo POS de la sede")
-        }
-        return CatalogSyncReport(products, operators, missing)
     }
 
     // Applies catalog/operator delta operations atomically and advances the cursor after commit.
@@ -434,13 +290,9 @@ class ProvisioningRepository(private val context: Context, private val provider:
         staleCatalogBlockHours = staleCatalogBlockHours,
         openAmountCategoriesJson = json.encodeToString(openAmountCategories.filter(String::isNotBlank).distinct()),
         stockless = stockless,
+        highSaleWarningCentavos = highSaleWarningCentavos,
+        highChangeWarningCentavos = highChangeWarningCentavos,
     )
-
-    private fun retrofit(url: String, access: String?): DeviceApi {
-        val normalized = if (url.endsWith("/")) url else "$url/"
-        val client = okhttp3.OkHttpClient.Builder().apply { if (access != null) addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("Authorization", "Bearer $access").build()) } }.build()
-        return retrofit2.Retrofit.Builder().baseUrl(normalized).client(client).addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build().create(DeviceApi::class.java)
-    }
 
     fun applyBootstrap(snapshot: BootstrapResponse, syncedEvents: List<EventResult> = emptyList()) {
         db.runInTransaction {

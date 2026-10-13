@@ -22,7 +22,9 @@ public final class HeadquarterPosWebMapper {
         request.openAmountCategories(),
         request.allowOpenProducts(),
         request.defaultNegativeStockLimit(),
-        request.stockless());
+        request.stockless(),
+        request.highSaleWarningCentavos(),
+        request.highChangeWarningCentavos());
   }
 
   public static PosSettingsResponse toResponse(PosOperationalConfig config) {
@@ -36,6 +38,8 @@ public final class HeadquarterPosWebMapper {
         config.isAllowOpenProducts(),
         config.getDefaultNegativeStockLimit(),
         config.isStockless(),
+        config.getHighSaleWarningCentavos(),
+        config.getHighChangeWarningCentavos(),
         config.getCreatedAt(),
         config.getUpdatedAt(),
         config.getVersion());

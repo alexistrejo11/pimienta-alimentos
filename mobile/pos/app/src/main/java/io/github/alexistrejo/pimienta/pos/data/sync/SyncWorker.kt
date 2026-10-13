@@ -41,5 +41,3 @@ class SyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorke
         }
     }
 }
-
-typealias SyncSalesWorker = SyncWorker

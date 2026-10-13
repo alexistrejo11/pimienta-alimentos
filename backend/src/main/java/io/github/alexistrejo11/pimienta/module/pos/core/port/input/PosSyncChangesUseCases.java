@@ -46,5 +46,7 @@ public interface PosSyncChangesUseCases {
       int staleCatalogWarnHours,
       int staleCatalogBlockHours,
       List<String> openAmountCategories,
-      boolean stockless) {}
+      boolean stockless,
+      long highSaleWarningCentavos,
+      long highChangeWarningCentavos) {}
 }
