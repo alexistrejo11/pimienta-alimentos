@@ -96,11 +96,13 @@ object Money {
         }.getOrNull()
     }
 
-    // Ticket-safe amount without a currency symbol, including shortages such as -20.50.
+    // Ticket-safe amount without a currency symbol, grouped by thousands (1,000.00) and including shortages such as -20.50.
+    // Display only: fromInput reads commas as decimal marks, so this output must never be parsed back.
     fun formatAmount(centavos: Long): String {
         val sign = if (centavos < 0) "-" else ""
         val absolute = if (centavos == Long.MIN_VALUE) Long.MAX_VALUE else if (centavos < 0) -centavos else centavos
-        return "$sign${absolute / 100}.${(absolute % 100).toString().padStart(2, '0')}"
+        val pesos = (absolute / 100).toString().reversed().chunked(3).joinToString(",").reversed()
+        return "$sign$pesos.${(absolute % 100).toString().padStart(2, '0')}"
     }
 
     fun format(centavos: Long): String {
