@@ -1,0 +1,253 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <app-page-header
+    [title]="isEdit ? 'Editar gasto operativo' : 'Nuevo gasto operativo'"
+    [subtitle]="canManageOperatingExpenses() ? 'Costo de operación en una sede' : 'Gasto operativo de hoy en tu sede'"
+    backLink="/app/ops/gastos-operativos"
+    backLabel="Gastos Operativos"
+  />
+
+  @if (staffUnassigned()) {
+    <div class="ui-panel p-6 text-sm text-on-surface-variant">
+      No tienes sede asignada. Pide a un administrador que te asigne una sede en Usuarios.
+    </div>
+  } @else if (loadingExisting()) {
+    <p class="text-sm text-on-surface-variant">Cargando gasto…</p>
+  } @else {
+    <form class="space-y-6" [formGroup]="form" (ngSubmit)="submit()">
+      <app-api-form-error [error]="apiError()" />
+
+      <section class="ui-panel p-6">
+        <h2 class="font-headline mb-4 text-base font-bold text-on-surface">Datos del gasto</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="space-y-1.5">
+            @if (fixedHeadquarterLabel(); as sede) {
+              <span class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+                >Sede</span
+              >
+              <p class="rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm">
+                {{ sede }}
+              </p>
+            } @else if (canManageOperatingExpenses()) {
+              <app-headquarter-select
+                label="Sede"
+                catalog="all"
+                [value]="form.controls.headquarterId.value"
+                (valueChange)="onHeadquarterChange($event)"
+              />
+            } @else {
+              <app-headquarter-select
+                label="Sede"
+                catalog="assigned"
+                [value]="form.controls.headquarterId.value"
+                (valueChange)="onHeadquarterChange($event)"
+              />
+            }
+            @if (form.controls.headquarterId.touched && form.controls.headquarterId.hasError('required')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+            }
+            @if (apiFieldMessage('headquarterId'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+
+          <div class="space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="expense-amount"
+              >Monto (MXN)</label
+            >
+            <input
+              id="expense-amount"
+              formControlName="amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+            @if (form.controls.amount.touched && form.controls.amount.invalid) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">El monto debe ser mayor a 0.</p>
+            }
+            @if (apiFieldMessage('amount'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+
+          <div class="space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="expense-category"
+              >Categoría</label
+            >
+            <select
+              id="expense-category"
+              formControlName="category"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="" disabled>Selecciona una categoría</option>
+              @for (code of categories; track code) {
+                <option [value]="code">{{ categoryLabel(code) }}</option>
+              }
+            </select>
+            @if (form.controls.category.touched && form.controls.category.hasError('required')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+            }
+            @if (apiFieldMessage('category'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+
+          <div class="space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="expense-date"
+              >Fecha</label
+            >
+            <input
+              id="expense-date"
+              formControlName="occurredOn"
+              type="date"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 disabled:opacity-70"
+            />
+            @if (!canManageOperatingExpenses()) {
+              <p class="ml-1 text-xs text-on-surface-variant">Los gastos operativos de sede se registran con la fecha de hoy.</p>
+            }
+          </div>
+
+          <div class="sm:col-span-2 space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="expense-concept"
+              >Concepto</label
+            >
+            <input
+              id="expense-concept"
+              formControlName="concept"
+              type="text"
+              maxlength="200"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+            @if (form.controls.concept.touched && form.controls.concept.hasError('required')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Requerido.</p>
+            }
+            @if (form.controls.concept.touched && form.controls.concept.hasError('maxlength')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Máximo 200 caracteres.</p>
+            }
+            @if (apiFieldMessage('concept'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+
+          <div class="sm:col-span-2 space-y-1.5">
+            <label
+              class="ml-1 block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant"
+              for="expense-notes"
+              >Notas</label
+            >
+            <textarea
+              id="expense-notes"
+              formControlName="notes"
+              rows="3"
+              maxlength="500"
+              class="w-full rounded-lg border border-transparent bg-surface-container px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            ></textarea>
+            @if (form.controls.notes.touched && form.controls.notes.hasError('maxlength')) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">Máximo 500 caracteres.</p>
+            }
+            @if (apiFieldMessage('notes'); as m) {
+              <p class="ml-1 text-xs text-[var(--color-error)]">{{ m }}</p>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="ui-panel p-6">
+        <h2 class="font-headline mb-1 text-base font-bold text-on-surface">Comprobantes</h2>
+        <p class="mb-4 text-sm text-on-surface-variant">
+          Hasta {{ maxAttachments }} imágenes (JPEG, PNG o WebP). {{ attachmentCount() }} de {{ maxAttachments }}.
+        </p>
+
+        @if (retained().length > 0 || pending().length > 0) {
+          <div class="mb-4 flex flex-wrap gap-3">
+            @for (file of retained(); track file.key) {
+              <div class="relative">
+                <button type="button" (click)="openReceipt(file.url)">
+                  <img [src]="file.url" alt="Comprobante guardado" class="h-24 w-24 rounded-lg object-cover" />
+                </button>
+                <button
+                  type="button"
+                  class="absolute -right-2 -top-2 rounded-full bg-[var(--color-error)] px-2 py-0.5 text-xs font-bold text-white"
+                  (click)="removeRetained(file.key)"
+                >
+                  Quitar
+                </button>
+              </div>
+            }
+            @for (file of pending(); track file.url) {
+              <div class="relative">
+                <button type="button" (click)="openReceipt(file.url)">
+                  <img [src]="file.url" alt="Comprobante nuevo" class="h-24 w-24 rounded-lg object-cover" />
+                </button>
+                <button
+                  type="button"
+                  class="absolute -right-2 -top-2 rounded-full bg-[var(--color-error)] px-2 py-0.5 text-xs font-bold text-white"
+                  (click)="removePending(file.url)"
+                >
+                  Quitar
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="flex flex-wrap gap-3">
+          <label
+            class="inline-flex cursor-pointer items-center rounded-lg border px-4 py-2 text-sm font-semibold"
+            [class.opacity-40]="attachmentCount() >= maxAttachments"
+          >
+            Agregar fotos
+            <input
+              class="sr-only"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              [disabled]="attachmentCount() >= maxAttachments"
+              (change)="onFilesSelected($event)"
+            />
+          </label>
+          <label
+            class="inline-flex cursor-pointer items-center rounded-lg border px-4 py-2 text-sm font-semibold"
+            [class.opacity-40]="attachmentCount() >= maxAttachments"
+          >
+            Tomar foto
+            <input
+              class="sr-only"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              [disabled]="attachmentCount() >= maxAttachments"
+              (change)="onFilesSelected($event)"
+            />
+          </label>
+        </div>
+      </section>
+
+      <div class="flex gap-3">
+        <button
+          type="submit"
+          class="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary disabled:opacity-50"
+          [disabled]="saving()"
+        >
+          {{ saving() ? 'Guardando…' : 'Guardar' }}
+        </button>
+        <a routerLink="/app/ops/gastos-operativos" class="rounded-lg border px-4 py-2.5 text-sm font-semibold">Cancelar</a>
+      </div>
+    </form>
+  }
+</div>
+
+@if (previewUrl(); as url) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" (click)="closeReceipt()">
+    <img [src]="url" alt="Comprobante" class="max-h-[90vh] max-w-full rounded-lg bg-white object-contain" />
+  </div>
+}

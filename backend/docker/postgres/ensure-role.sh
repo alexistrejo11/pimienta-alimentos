@@ -16,7 +16,14 @@ until pg_isready -q -U "$USER_NAME"; do
   sleep 0.3
 done
 
-gosu postgres psql -v ON_ERROR_STOP=1 -U "$USER_NAME" -d postgres \
+# A new cluster uses POSTGRES_USER as its superuser, while older local volumes
+# may contain only the image's default postgres role.
+ADMIN_USER="$USER_NAME"
+if ! gosu postgres psql -q -U "$ADMIN_USER" -d postgres -c 'SELECT 1' >/dev/null 2>&1; then
+  ADMIN_USER="postgres"
+fi
+
+gosu postgres psql -v ON_ERROR_STOP=1 -U "$ADMIN_USER" -d postgres \
   --set=user_name="$USER_NAME" \
   --set=pass="$PASSWORD" \
   --set=db_name="$DB_NAME" <<'SQL'

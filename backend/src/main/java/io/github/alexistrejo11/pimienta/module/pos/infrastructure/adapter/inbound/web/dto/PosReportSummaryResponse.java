@@ -16,6 +16,8 @@ public record PosReportSummaryResponse(List<PosReportSummaryItemResponse> rows) 
   public record PosReportSummaryItemResponse(
       long headquarterId,
       long salesCentavos,
+      long cashSalesCentavos,
+      long cardSalesCentavos,
       long ticketCount,
       long wasteCount,
       long cancellationCount,
@@ -31,6 +33,8 @@ public record PosReportSummaryResponse(List<PosReportSummaryItemResponse> rows) 
       return new PosReportSummaryItemResponse(
           row.headquarterId(),
           row.salesCentavos(),
+          row.cashSalesCentavos(),
+          row.cardSalesCentavos(),
           row.ticketCount(),
           row.wasteCount(),
           row.cancellationCount(),

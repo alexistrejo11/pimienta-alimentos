@@ -1,6 +1,6 @@
 @if (loading()) {
   <p class="text-sm text-on-surface-variant">Cargando sedes…</p>
-} @else if (!isAdmin()) {
+} @else if (!fullCatalog()) {
   @if (mode() === 'single' && assignedHqIds().length > 1) {
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-medium">{{ label() }}</span>

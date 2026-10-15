@@ -5,6 +5,8 @@ import java.time.Instant;
 public record PosReportSummaryRow(
     long headquarterId,
     long salesCentavos,
+    long cashSalesCentavos,
+    long cardSalesCentavos,
     long ticketCount,
     long wasteCount,
     long cancellationCount,

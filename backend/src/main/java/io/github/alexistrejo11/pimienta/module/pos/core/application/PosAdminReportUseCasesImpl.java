@@ -102,6 +102,8 @@ public class PosAdminReportUseCasesImpl implements PosAdminReportUseCases {
           new PosReportSummaryRow(
               hqId,
               sales.salesCentavos(),
+              sales.cashSalesCentavos(),
+              sales.cardSalesCentavos(),
               sales.ticketCount(),
               wasteCount,
               cancellationCount,

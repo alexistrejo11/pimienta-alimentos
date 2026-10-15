@@ -88,7 +88,19 @@ public class PosSaleRepositoryImpl implements PosSaleRepository {
     Object[] row =
         firstAggregateRow(
             jpa.summarizeAcceptedSales(headquarterId, from, to, PosEventResultStatus.ACCEPTED), 2);
-    return new PosSalesSummary(number(row[0]), number(row[1]));
+    long cash = 0;
+    long card = 0;
+    for (Object[] payment :
+        jpa.sumPaymentsByMethod(headquarterId, from, to, PosEventResultStatus.ACCEPTED)) {
+      PosPaymentMethod method = (PosPaymentMethod) payment[0];
+      long sum = number(payment[1]);
+      if (method == PosPaymentMethod.CASH) {
+        cash = sum;
+      } else if (method == PosPaymentMethod.EXTERNAL_CARD_MP) {
+        card = sum;
+      }
+    }
+    return new PosSalesSummary(number(row[0]), number(row[1]), cash, card);
   }
 
   @Override

@@ -106,6 +106,19 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
     ],
   },
   {
+    id: 'operating-expenses',
+    label: 'Gastos Operativos',
+    collapsible: false,
+    items: [
+      {
+        label: 'Gastos Operativos',
+        icon: 'payments',
+        route: `${OPS_PATH}/gastos-operativos`,
+        roles: OPS,
+      },
+    ],
+  },
+  {
     id: 'product-masters',
     label: 'Productos maestros',
     collapsible: false,

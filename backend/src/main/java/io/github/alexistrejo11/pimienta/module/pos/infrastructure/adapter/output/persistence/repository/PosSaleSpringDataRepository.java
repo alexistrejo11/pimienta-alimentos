@@ -217,4 +217,27 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       """)
   List<Object[]> sumPaymentsByMethodForShift(
       @Param("shiftId") UUID shiftId, @Param("accepted") PosEventResultStatus accepted);
+
+  @Query(
+      """
+      SELECT p.method, COALESCE(SUM(p.amountCentavos), 0)
+      FROM PosSalePaymentJpaEntity p
+      JOIN p.sale s
+      WHERE s.deletedAt IS NULL
+        AND s.headquarterId = :headquarterId
+        AND s.occurredAt >= :from
+        AND s.occurredAt < :to
+        AND EXISTS (
+              SELECT 1 FROM PosSyncEventJpaEntity e
+              WHERE e.eventId = s.eventId
+                AND e.deletedAt IS NULL
+                AND e.status = :accepted
+            )
+      GROUP BY p.method
+      """)
+  List<Object[]> sumPaymentsByMethod(
+      @Param("headquarterId") long headquarterId,
+      @Param("from") Instant from,
+      @Param("to") Instant to,
+      @Param("accepted") PosEventResultStatus accepted);
 }

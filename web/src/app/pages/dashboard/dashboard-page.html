@@ -41,6 +41,26 @@
           <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(posTotals().salesCentavos) }}</p>
         </li>
         <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Venta efectivo</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(posTotals().cashSalesCentavos) }}</p>
+        </li>
+        <li class="ui-panel p-5">
+          <p class="text-xs font-medium uppercase text-on-surface-variant">Venta tarjeta</p>
+          <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ formatCentavos(posTotals().cardSalesCentavos) }}</p>
+        </li>
+        <li class="ui-panel p-5">
+          <a routerLink="/app/ops/gastos-operativos" class="block">
+            <p class="text-xs font-medium uppercase text-on-surface-variant">Gastos operativos</p>
+            @if (expenseError(); as err) {
+              <p class="mt-2 text-sm text-error" role="alert">{{ err.message }}</p>
+            } @else if (expenseLoading() && expenseTotal() == null) {
+              <p class="mt-2 text-sm text-on-surface-variant">Cargando…</p>
+            } @else {
+              <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ formatMxn(expenseTotal() ?? 0) }}</p>
+            }
+          </a>
+        </li>
+        <li class="ui-panel p-5">
           <p class="text-xs font-medium uppercase text-on-surface-variant">Tickets</p>
           <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ posTotals().ticketCount }}</p>
         </li>

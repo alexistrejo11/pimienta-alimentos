@@ -29,6 +29,25 @@ describe('POS routes and permissions', () => {
     expect(settings?.data?.['access']?.['roles']).toContain(AppRole.EMPLOYEE);
   });
 
+  it('opens gastos operativos to floor staff and limits edit to admin and director', () => {
+    const list = opsChildren.find((route) => route.path === 'gastos-operativos');
+    const create = opsChildren.find((route) => route.path === 'gastos-operativos/nuevo');
+    const edit = opsChildren.find((route) => route.path === 'gastos-operativos/:id/editar');
+    expect(list?.data?.['access']?.['roles']).toEqual([
+      AppRole.ADMIN,
+      AppRole.DIRECTOR,
+      AppRole.MANAGER,
+      AppRole.EMPLOYEE,
+    ]);
+    expect(create?.data?.['access']?.['roles']).toEqual([
+      AppRole.ADMIN,
+      AppRole.DIRECTOR,
+      AppRole.MANAGER,
+      AppRole.EMPLOYEE,
+    ]);
+    expect(edit?.data?.['access']?.['roles']).toEqual([AppRole.ADMIN, AppRole.DIRECTOR]);
+  });
+
   it('limits product masters to admin', () => {
     const masters = opsChildren.find((route) => route.path === 'productos-maestros');
     expect(masters?.data?.['access']?.['roles']).toEqual([AppRole.ADMIN]);
