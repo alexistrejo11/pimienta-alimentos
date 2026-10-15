@@ -1,0 +1,181 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()" />
+    @if (!staffUnassigned()) {
+      <a
+        routerLink="/app/ops/gastos-operativos/nuevo"
+        class="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-md transition hover:opacity-95"
+      >
+        <span class="material-symbols-outlined mr-1 text-lg" aria-hidden="true">add</span>
+        Nuevo gasto operativo
+      </a>
+    }
+  </div>
+
+  @if (staffUnassigned()) {
+    <div class="ui-panel p-6 text-sm text-on-surface-variant">
+      No tienes sede asignada. Pide a un administrador que te asigne una sede en Usuarios.
+    </div>
+  } @else {
+    <div class="flex flex-wrap items-end gap-4">
+      @if (showHeadquarterFilter()) {
+        <app-headquarter-select
+          class="max-w-xs"
+          label="Sede"
+          [catalog]="canManageOperatingExpenses() ? 'all' : 'assigned'"
+          [allowAll]="canManageOperatingExpenses()"
+          [value]="selectedHeadquarterId"
+          (valueChange)="onHeadquarterChange($event)"
+        />
+      }
+      @if (canManageOperatingExpenses()) {
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium">Desde</span>
+          <input
+            type="date"
+            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            [(ngModel)]="fromDate"
+            (ngModelChange)="onDateChange()"
+          />
+        </label>
+        <label class="flex flex-col gap-1 text-sm">
+          <span class="font-medium">Hasta</span>
+          <input
+            type="date"
+            class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+            [(ngModel)]="toDate"
+            (ngModelChange)="onDateChange()"
+          />
+        </label>
+      }
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-medium">Categoría</span>
+        <select
+          class="rounded-lg border border-outline-variant/30 bg-surface-container px-3 py-2"
+          [(ngModel)]="category"
+          (ngModelChange)="onCategoryChange()"
+        >
+          <option value="">Todas las categorías</option>
+          @for (code of categories; track code) {
+            <option [value]="code">{{ categoryLabel(code) }}</option>
+          }
+        </select>
+      </label>
+      <app-list-search-field
+        class="max-w-md flex-1"
+        label="Buscar"
+        placeholder="Concepto o notas"
+        [(draft)]="searchDraft"
+        (search)="applySearch($event)"
+      />
+    </div>
+
+    <app-data-state
+      [loading]="loading()"
+      [error]="error()"
+      [empty]="items().length === 0"
+      emptyMessage="No hay gastos operativos para este filtro."
+      (retry)="cargar()"
+    >
+      <div class="responsive-table rounded-xl border ui-panel">
+        <table class="w-full text-sm" aria-label="Gastos">
+          <thead class="border-b border-outline-variant/20 bg-surface-container-low">
+            <tr>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Fecha</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Categoría</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Concepto</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Sede</th>
+              <th class="px-4 py-3 text-right font-semibold text-on-surface-variant">Monto</th>
+              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Comprobantes</th>
+              @if (canManageOperatingExpenses()) {
+                <th class="px-4 py-3"></th>
+              }
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/15">
+            @for (row of items(); track row.id) {
+              <tr>
+                <td class="px-4 py-3 whitespace-nowrap">{{ formatIsoDate(row.occurredOn) }}</td>
+                <td class="px-4 py-3">
+                  <span class="rounded-full bg-surface-container px-2 py-1 text-xs font-semibold">
+                    {{ categoryLabel(row.category) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 font-medium">
+                  {{ row.concept }}
+                  @if (row.notes) {
+                    <p class="mt-1 text-xs font-normal text-on-surface-variant">{{ row.notes }}</p>
+                  }
+                </td>
+                <td class="px-4 py-3 text-on-surface-variant">{{ headquarterLabel(row.headquarterId) }}</td>
+                <td class="px-4 py-3 text-right tabular-nums">{{ formatMxn(row.amount) }}</td>
+                <td class="px-4 py-3">
+                  @if (row.attachments.length === 0) {
+                    —
+                  } @else {
+                    <div class="flex flex-wrap gap-2">
+                      @for (file of row.attachments; track file.key) {
+                        <button type="button" class="overflow-hidden rounded-md border" (click)="openReceipt(file.url)">
+                          <img [src]="file.url" alt="Comprobante" class="h-12 w-12 object-cover" />
+                        </button>
+                      }
+                    </div>
+                  }
+                </td>
+                @if (canManageOperatingExpenses()) {
+                  <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <a
+                      [routerLink]="['/app/ops/gastos-operativos', row.id, 'editar']"
+                      class="text-sm font-semibold text-primary hover:underline"
+                    >
+                      Editar
+                    </a>
+                    <button
+                      type="button"
+                      class="ml-3 text-sm font-semibold text-[var(--color-error)] hover:underline disabled:opacity-50"
+                      [disabled]="deletingId() === row.id"
+                      (click)="eliminar(row)"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </app-data-state>
+
+    @if (metadata(); as page) {
+      <div class="flex items-center justify-between text-sm text-on-surface-variant">
+        <span>{{ page.totalElements }} registros</span>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 disabled:opacity-40"
+            [disabled]="!page.hasPrevious"
+            (click)="setPage(page.pageNumber - 1)"
+          >
+            Anterior
+          </button>
+          <span class="px-2 py-2">Página {{ page.pageNumber + 1 }} de {{ page.totalPages }}</span>
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 disabled:opacity-40"
+            [disabled]="!page.hasNext"
+            (click)="setPage(page.pageNumber + 1)"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>
+
+@if (previewUrl(); as url) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" (click)="closeReceipt()">
+    <img [src]="url" alt="Comprobante" class="max-h-[90vh] max-w-full rounded-lg bg-white object-contain" />
+  </div>
+}

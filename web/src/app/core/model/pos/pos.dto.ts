@@ -236,6 +236,8 @@ export interface PosReportSummaryResponse {
 export interface PosReportSummaryItemResponse {
   headquarterId: number;
   salesCentavos: number;
+  cashSalesCentavos: number;
+  cardSalesCentavos: number;
   ticketCount: number;
   wasteCount: number;
   cancellationCount: number;

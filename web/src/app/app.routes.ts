@@ -202,6 +202,33 @@ const opsChildren: Routes = [
     data: { access: { roles: OPS } },
   },
   {
+    path: 'gastos-operativos/nuevo',
+    loadComponent: () =>
+      import('./pages/app/gastos-operativos/gasto-form-page/gasto-form-page').then(
+        (m) => m.OperatingExpenseFormPageComponent,
+      ),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  {
+    path: 'gastos-operativos/:id/editar',
+    loadComponent: () =>
+      import('./pages/app/gastos-operativos/gasto-form-page/gasto-form-page').then(
+        (m) => m.OperatingExpenseFormPageComponent,
+      ),
+    canDeactivate: [dirtyFormGuard],
+    canActivate: [roleGuard],
+    data: { access: { roles: POS_FINANCIAL } },
+  },
+  {
+    path: 'gastos-operativos',
+    loadComponent: () =>
+      import('./pages/app/gastos-operativos/gastos-page').then((m) => m.OperatingExpensesPageComponent),
+    canActivate: [roleGuard],
+    data: { access: { roles: OPS } },
+  },
+  {
     path: 'sedes/nueva',
     loadComponent: () =>
       import('./pages/app/sedes/sede-form-page/sede-form-page').then((m) => m.SedeFormPageComponent),
@@ -433,6 +460,7 @@ const legacyAppRedirects: Routes = [
   { path: 'catalogo', redirectTo: 'ops/catalogo' },
   { path: 'sedes', redirectTo: 'ops/sedes' },
   { path: 'proveedores', redirectTo: 'ops/proveedores' },
+  { path: 'gastos-operativos', redirectTo: 'ops/gastos-operativos' },
   { path: 'pos', redirectTo: 'ops/pos' },
   { path: 'crm', redirectTo: 'erp/crm' },
   { path: 'empleados', redirectTo: 'erp/empleados' },

@@ -36,6 +36,10 @@ export function itemStatusLabel(status: string): string {
   return ITEM_STATUS_LABELS[status] ?? status;
 }
 
+export function operatingExpenseCategoryLabel(category: string): string {
+  return OPERATING_EXPENSE_CATEGORY_LABELS[category] ?? category;
+}
+
 export function itemCategoryLabel(category: string): string {
   return ITEM_CATEGORY_LABELS[category] ?? category;
 }
@@ -344,6 +348,15 @@ const MILESTONE_STATUS_LABELS: Record<string, string> = {
   COMPLETED: 'Completado',
   DELAYED: 'Retrasado',
   CANCELLED: 'Cancelado',
+};
+
+const OPERATING_EXPENSE_CATEGORY_LABELS: Record<string, string> = {
+  SUPPLIERS_MERCHANDISE: 'Proveedores / Mercancía',
+  RENT: 'Renta',
+  UTILITIES: 'Servicios',
+  MAINTENANCE: 'Mantenimiento y Limpieza',
+  SUPPLIES_PETTY_CASH: 'Caja Chica / Insumos',
+  OTHER: 'Otros',
 };
 
 const CONTRACT_CATEGORY_LABELS: Record<string, string> = {

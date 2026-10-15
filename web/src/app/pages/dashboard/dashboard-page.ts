@@ -13,11 +13,15 @@ import {
 } from '../../core/http/parse-api-error';
 import type { PosReportSummaryItemResponse, PosSaleReportResponse } from '../../core/model/pos/pos.dto';
 import { formatCentavos, todayInstantRange } from '../../core/pos/pos-date.util';
+import { OperatingExpenseService } from '../../core/operating-expenses/expense.service';
+import { businessToday, formatMxn } from '../../core/operating-expenses/business-date';
 import { PosAdminService } from '../../core/pos/pos-admin.service';
 import { HeadquarterSelectComponent } from '../../shared/ui/headquarter-select/headquarter-select';
 
 interface PosTotals {
   salesCentavos: number;
+  cashSalesCentavos: number;
+  cardSalesCentavos: number;
   ticketCount: number;
   wasteCount: number;
   cancellationCount: number;
@@ -30,6 +34,8 @@ interface PosTotals {
 
 const EMPTY_POS: PosTotals = {
   salesCentavos: 0,
+  cashSalesCentavos: 0,
+  cardSalesCentavos: 0,
   ticketCount: 0,
   wasteCount: 0,
   cancellationCount: 0,
@@ -48,6 +54,7 @@ const EMPTY_POS: PosTotals = {
 })
 export class DashboardPageComponent implements OnInit {
   private readonly posAdmin = inject(PosAdminService);
+  private readonly expenses = inject(OperatingExpenseService);
   private readonly inventory = inject(InventoryService);
   readonly session = inject(SessionContextService);
 
@@ -55,6 +62,9 @@ export class DashboardPageComponent implements OnInit {
   readonly posError = signal<ParsedApiError | null>(null);
   readonly posTotals = signal<PosTotals>(EMPTY_POS);
   readonly hasPosRows = signal(false);
+  readonly expenseTotal = signal<number | null>(null);
+  readonly expenseLoading = signal(false);
+  readonly expenseError = signal<ParsedApiError | null>(null);
   readonly activity = signal<PosSaleReportResponse[]>([]);
   readonly activityLoading = signal(false);
   readonly activityError = signal<ParsedApiError | null>(null);
@@ -66,6 +76,7 @@ export class DashboardPageComponent implements OnInit {
   readonly isAdmin = this.session.isAdmin;
   readonly canViewPosFinancials = this.session.canViewPosFinancials;
   readonly formatCentavos = formatCentavos;
+  readonly formatMxn = formatMxn;
   private readonly destroyRef = inject(DestroyRef);
   private readonly refresh$ = new Subject<void>();
   private pollingStarted = false;
@@ -119,6 +130,8 @@ export class DashboardPageComponent implements OnInit {
             this.posLoading.set(false);
             this.posTotals.set(EMPTY_POS);
             this.hasPosRows.set(false);
+            this.expenseTotal.set(null);
+            this.expenseLoading.set(false);
             return of(null);
           }
           this.posError.set(null);
@@ -140,6 +153,30 @@ export class DashboardPageComponent implements OnInit {
         const rows = res?.rows ?? [];
         this.hasPosRows.set(rows.length > 0);
         this.posTotals.set(sumPosRows(rows));
+      });
+
+    ticks$
+      .pipe(
+        switchMap(() => {
+          if (!this.session.canViewPosFinancials()) {
+            return of(null);
+          }
+          this.expenseError.set(null);
+          this.expenseLoading.set(true);
+          const day = businessToday();
+          const headquarterId = this.session.activeHeadquarterId() ?? undefined;
+          return this.expenses.summary({ headquarterId, from: day, to: day }).pipe(
+            catchError((err: unknown) => {
+              this.expenseError.set(parseApiError(err));
+              return of(null);
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.expenseLoading.set(false);
+        if (res) this.expenseTotal.set(Number(res.totalAmount));
       });
 
     ticks$
@@ -192,6 +229,8 @@ function sumPosRows(rows: PosReportSummaryItemResponse[]): PosTotals {
   return rows.reduce(
     (acc, row) => ({
       salesCentavos: acc.salesCentavos + row.salesCentavos,
+      cashSalesCentavos: acc.cashSalesCentavos + row.cashSalesCentavos,
+      cardSalesCentavos: acc.cardSalesCentavos + row.cardSalesCentavos,
       ticketCount: acc.ticketCount + row.ticketCount,
       wasteCount: acc.wasteCount + row.wasteCount,
       cancellationCount: acc.cancellationCount + row.cancellationCount,

@@ -1,4 +1,4 @@
-import { Component, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
@@ -18,6 +18,8 @@ export class HeadquarterSelectComponent implements OnInit {
 
   readonly mode = input<'single' | 'multi'>('single');
   readonly allowAll = input(false);
+  /** `all` loads every sede (ADMIN and DIRECTOR). Default stays on assigned sedes. */
+  readonly catalog = input<'assigned' | 'all'>('assigned');
   readonly label = input('Sede');
   readonly disabled = input(false);
 
@@ -28,6 +30,7 @@ export class HeadquarterSelectComponent implements OnInit {
   readonly loading = signal(true);
   readonly isAdmin = this.session.isAdmin;
   readonly assignedHqIds = this.session.assignedHeadquarterIds;
+  protected readonly fullCatalog = computed(() => this.isAdmin() || this.catalog() === 'all');
 
   ngOnInit(): void {
     this.session.ensureLoaded().subscribe({
@@ -37,7 +40,7 @@ export class HeadquarterSelectComponent implements OnInit {
   }
 
   private loadHeadquarters(): void {
-    if (!this.session.isAdmin()) {
+    if (!this.fullCatalog()) {
       void this.lookup.ensureLoaded();
       const ids = this.assignedHqIds();
       this.sedes.set(ids.map((id) => ({ id, name: this.lookup.name(id) }) as HeadQuarterResponse));

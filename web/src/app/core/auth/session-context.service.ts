@@ -34,6 +34,8 @@ export class SessionContextService {
   readonly isDirector = computed(() => this.roles().includes(AppRole.DIRECTOR));
   readonly isManager = computed(() => this.roles().includes(AppRole.MANAGER));
   readonly canViewPosFinancials = computed(() => this.isAdmin() || this.isDirector());
+  /** Unrestricted operating-expense CRUD (all sedes and dates). MANAGER and EMPLOYEE stay on today. */
+  readonly canManageOperatingExpenses = computed(() => this.isAdmin() || this.isDirector());
   readonly canOperateOps = computed(
     () =>
       this.isAdmin() ||
