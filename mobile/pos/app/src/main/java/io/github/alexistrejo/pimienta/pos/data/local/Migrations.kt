@@ -267,4 +267,22 @@ object Migrations {
             database.execSQL("ALTER TABLE `pos_policy` ADD COLUMN `highChangeWarningCentavos` INTEGER")
         }
     }
+
+    // Records how a discount was chosen, and the catalog unit cost at the moment of the sale.
+    val V19_TO_V20 = object : Migration(19, 20) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `sale_discount` ADD COLUMN `mode` TEXT")
+            database.execSQL("ALTER TABLE `sale_line` ADD COLUMN `unitCostCentavos` INTEGER")
+            database.execSQL(
+                """
+                UPDATE `sale_discount`
+                SET `mode` = 'FULL_COURTESY'
+                WHERE `amountCentavos` > 0
+                  AND `amountCentavos` = (
+                    SELECT `grossCentavos` FROM `sale` WHERE `sale`.`id` = `sale_discount`.`saleId`
+                  )
+                """.trimIndent()
+            )
+        }
+    }
 }

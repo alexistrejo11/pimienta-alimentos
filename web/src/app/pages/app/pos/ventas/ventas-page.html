@@ -48,7 +48,8 @@
           <option value="all">Todas las ventas</option>
           <option value="open">Solo montos abiertos</option>
           <option value="pending">Solo sin catalogar</option>
-          <option value="courtesy">Solo cortesías</option>
+          <option value="discounted">Con descuento o cortesía</option>
+          <option value="courtesy">Solo cortesías 100%</option>
         </select>
       </label>
     </div>
@@ -111,12 +112,58 @@
                 >
                   {{ s.folio }}
                 </button>
-                @if (expandedSaleId() === s.saleId) {
-                  <div class="mt-2 space-y-1 font-sans text-xs text-on-surface-variant">
+              </td>
+              <td class="px-4 py-3">{{ s.occurredAt | date: 'short' }}</td>
+              <td class="px-4 py-3">{{ operatorLabel(s.cashierOperatorId) }}</td>
+              <td class="px-4 py-3 text-right tabular-nums">
+                <div>{{ formatCentavos(s.totalCentavos) }}</div>
+                @if (s.discountCentavos > 0) {
+                  <span
+                    [class]="discountBadgeClass(s.discountMode) + ' mt-1 inline-flex rounded px-1.5 py-0.5 text-xs font-medium'"
+                  >
+                    {{ discountModeLabel(s.discountMode) }}
+                    · −{{ formatCentavos(s.discountCentavos) }}
+                  </span>
+                }
+              </td>
+            </tr>
+            @if (expandedSaleId() === s.saleId) {
+              <tr>
+                <td colspan="4" class="bg-surface-container-low px-4 py-3">
+                  <div class="space-y-2 font-sans text-xs text-on-surface-variant">
+                    @if (s.discountCentavos > 0) {
+                      <dl class="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                        <div class="flex justify-between gap-3">
+                          <dt>Subtotal (bruto)</dt>
+                          <dd class="tabular-nums text-on-surface">{{ formatCentavos(s.grossCentavos) }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                          <dt>Descuento · {{ discountModeLabel(s.discountMode) }}</dt>
+                          <dd class="tabular-nums text-on-surface">−{{ formatCentavos(s.discountCentavos) }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                          <dt>Motivo</dt>
+                          <dd class="text-on-surface">{{ s.discountReason || '—' }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                          <dt>Total cobrado</dt>
+                          <dd class="tabular-nums font-semibold text-on-surface">
+                            {{ formatCentavos(s.totalCentavos) }}
+                          </dd>
+                        </div>
+                        <div class="flex justify-between gap-3 sm:col-span-2">
+                          <dt>Autorizó</dt>
+                          <dd class="text-on-surface">{{ operatorLabel(s.discountAuthorizedByOperatorId) }}</dd>
+                        </div>
+                      </dl>
+                    }
                     @for (line of s.lines ?? []; track line.lineId) {
                       <div>
                         <span class="font-medium text-on-surface">{{ line.productName }}</span>
                         · {{ formatCentavos(line.subtotalCentavos) }}
+                        @if (line.unitCostCentavos != null) {
+                          · Costo unitario {{ formatCentavos(line.unitCostCentavos) }}
+                        }
                         @if (line.lineType === 'OPEN_AMOUNT') {
                           <span class="ui-badge-warning">Abierto</span>
                         }
@@ -126,12 +173,9 @@
                       </div>
                     }
                   </div>
-                }
-              </td>
-              <td class="px-4 py-3">{{ s.occurredAt | date: 'short' }}</td>
-              <td class="px-4 py-3">{{ operatorLabel(s.cashierOperatorId) }}</td>
-              <td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(s.totalCentavos) }}</td>
-            </tr>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
@@ -167,7 +211,12 @@
   <section class="flex flex-col gap-4">
     <div>
       <h2 class="font-headline text-lg font-bold text-on-surface">Resumen por producto</h2>
-      <p class="text-sm text-on-surface-variant">Cantidades e importes del mismo filtro.</p>
+      <p class="text-sm text-on-surface-variant">
+        Cantidades e importes del mismo filtro.
+        @if (includeKind === 'discounted') {
+          El filtro de descuento aplica a los tickets; este resumen sigue el resto del periodo.
+        }
+      </p>
     </div>
 
     @if (!loading() && !error() && selectedHeadquarterId != null) {

@@ -119,6 +119,7 @@ object OutboxPayloadBuilder {
         put("soldWhileUnavailable", product?.available == false)
         if (line.authorizedByOperatorId != null) put("authorizedByOperatorId", line.authorizedByOperatorId) else put("authorizedByOperatorId", JsonNull)
         if (line.authorizedAtEpochMillis != null) put("authorizedAt", Instant.ofEpochMilli(line.authorizedAtEpochMillis).toString()) else put("authorizedAt", JsonNull)
+        if (line.unitCostCentavos != null) put("unitCostCentavos", line.unitCostCentavos) else put("unitCostCentavos", JsonNull)
         when {
             !line.sourceBarcode.isNullOrBlank() -> put("rawBarcode", line.sourceBarcode)
             product?.barcode?.isNotBlank() == true -> put("rawBarcode", product.barcode)
@@ -140,7 +141,7 @@ object OutboxPayloadBuilder {
         put("amountCentavos", discount.amountCentavos)
         put("reason", discount.reason)
         put("authorizedByUserId", discount.authorizedByUserId)
-        put("authorizedByRole", discount.authorizedByRole)
+        if (discount.mode != null) put("mode", discount.mode)
     }
 
     private fun encode(body: JsonObject): String = json.encodeToString(JsonObject.serializer(), body)

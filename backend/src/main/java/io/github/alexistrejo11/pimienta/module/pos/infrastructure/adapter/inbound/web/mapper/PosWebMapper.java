@@ -52,6 +52,7 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inboun
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.IngestPosEventItem;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SaleConfirmedPayload;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SaleDiscountPayload;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SaleLinePayload;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SalePaymentPayload;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncEventsUseCases.EventIngestResult;
@@ -157,7 +158,8 @@ public final class PosWebMapper {
                   parseBoolean(line.get("soldWhileUnavailable")),
                    asString(line.get("rawBarcode")),
                    parseLong(line.get("authorizedByOperatorId")),
-                   parseInstant(line.get("authorizedAt"))));
+                   parseInstant(line.get("authorizedAt")),
+                   parseLong(line.get("unitCostCentavos"))));
         }
       }
     }
@@ -186,7 +188,20 @@ public final class PosWebMapper {
         parseLongPrimitive(payload.get("totalCentavos"), 0L),
         asString(payload.get("status")),
         List.copyOf(lines),
-        List.copyOf(payments));
+        List.copyOf(payments),
+        parseDiscount(payload.get("discount")));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static SaleDiscountPayload parseDiscount(Object raw) {
+    if (!(raw instanceof Map<?, ?> map)) {
+      return null;
+    }
+    Map<String, Object> discount = (Map<String, Object>) map;
+    return new SaleDiscountPayload(
+        asString(discount.get("mode")),
+        asString(discount.get("reason")),
+        parseLong(discount.get("authorizedByUserId")));
   }
 
   private static UUID parseUuid(Object value) {
@@ -407,6 +422,11 @@ public final class PosWebMapper {
         sale.getGrossCentavos(),
         sale.getDiscountCentavos(),
         sale.getTotalCentavos(),
+        sale.getDiscountMode() == io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosDiscountMode.UNDEFINED
+            ? null
+            : sale.getDiscountMode().name(),
+        sale.getDiscountReason(),
+        sale.getDiscountAuthorizedByOperatorId(),
         sale.getStatus().name(),
         syncStatus != null ? syncStatus.name() : io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus.ACCEPTED.name(),
          sale.getOccurredAt(),

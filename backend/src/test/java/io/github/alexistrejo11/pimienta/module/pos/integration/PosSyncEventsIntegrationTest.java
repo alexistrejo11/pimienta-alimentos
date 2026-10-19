@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.pos.integration;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -591,6 +592,66 @@ class PosSyncEventsIntegrationTest {
   }
 
   @Test
+  void salesReport_persistsDiscountTraceAndFiltersDiscountedSales() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-DISC-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long itemId = createItem(staffToken, "SKU-DISC-" + UUID.randomUUID(), "Jugo");
+    putCatalog(staffToken, hqId, itemId, "Bebidas", "40.00", "NOT_CONTROLLED");
+    long operatorId = createOperator(staffToken, hqId, "Gerente Desc", "MANAGER");
+    EnrolledDevice device = enrollDevice(staffToken, hqId, "Caja Desc");
+
+    UUID atCostSale = UUID.randomUUID();
+    UUID courtesySale = UUID.randomUUID();
+    UUID plainSale = UUID.randomUUID();
+    String body =
+        """
+        {
+          "events": [
+            %s,
+            %s,
+            %s
+          ]
+        }
+        """
+            .formatted(
+                saleEnvelope(device, hqId, 1, atCostSale, "AT-COST", 4000, 1500, 2500, "CASH", 2500,
+                    """
+                    {"mode":"AT_COST","reason":"Personal","authorizedByUserId":"%d"}
+                    """.formatted(operatorId),
+                    itemId, 800L),
+                saleEnvelope(device, hqId, 2, courtesySale, "LEGACY", 4000, 4000, 0, "CORTESIA", 0, "null", itemId, null),
+                saleEnvelope(device, hqId, 3, plainSale, "PLAIN", 4000, 0, 4000, "CASH", 4000, "null", itemId, null));
+
+    mockMvc
+        .perform(AccountTestRequests.postJsonBearer("/api/v1/pos/sync/events", device.accessToken(), body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[1].status").value("ACCEPTED"))
+        .andExpect(jsonPath("$.results[2].status").value("ACCEPTED"));
+
+    String report =
+        "/api/v1/pos/admin/reports/sales?headquarterId=%d&from=2026-09-01T00:00:00Z&to=2026-09-30T00:00:00Z"
+            .formatted(hqId);
+    mockMvc
+        .perform(AccountTestRequests.getBearer(report + "&discountedOnly=true", staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(2)))
+        .andExpect(jsonPath("$.items[?(@.folio=='AT-COST')].discountMode").value("AT_COST"))
+        .andExpect(jsonPath("$.items[?(@.folio=='AT-COST')].discountReason").value("Personal"))
+        .andExpect(jsonPath("$.items[?(@.folio=='AT-COST')].discountAuthorizedByOperatorId").value((int) operatorId))
+        .andExpect(jsonPath("$.items[?(@.folio=='AT-COST')].lines[0].unitCostCentavos").value(800))
+        .andExpect(jsonPath("$.items[?(@.folio=='LEGACY')].discountMode").value("FULL_COURTESY"))
+        .andExpect(jsonPath("$.items[?(@.folio=='LEGACY')].discountReason").value(contains(nullValue())));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer(report + "&courtesyOnly=true", staffToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items", hasSize(1)))
+        .andExpect(jsonPath("$.items[0].folio").value("LEGACY"));
+  }
+
+  @Test
   void openAmount_enabled_isAuditedAndDoesNotMoveInventory() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-OPEN-" + UUID.randomUUID());
@@ -738,6 +799,94 @@ class PosSyncEventsIntegrationTest {
             aggregateId,
             shiftId,
             payloadJson);
+  }
+
+  private static String saleEnvelope(
+      EnrolledDevice device,
+      long siteId,
+      long sequence,
+      UUID saleId,
+      String folio,
+      long gross,
+      long discount,
+      long total,
+      String method,
+      long tendered,
+      String discountJson,
+      long productId,
+      Long unitCost) {
+    return """
+        {
+          "eventId": "%s",
+          "eventType": "SALE_CONFIRMED",
+          "schemaVersion": 1,
+          "deviceId": "%s",
+          "siteId": "%d",
+          "deviceSequence": %d,
+          "aggregateId": "%s",
+          "shiftId": "%s",
+          "occurredAt": "2026-09-08T15:23:12Z",
+          "payload": {
+            "saleId": "%s",
+            "folio": "%s",
+            "cashierOperatorId": %d,
+            "grossCentavos": %d,
+            "discountCentavos": %d,
+            "totalCentavos": %d,
+            "status": "CONFIRMED",
+            "lines": [
+              {
+                "lineId": "%s",
+                "productId": "%d",
+                "productName": "Jugo",
+                "saleCategory": "Bebidas",
+                "quantity": 1,
+                "unit": "PIECE",
+                "unitPriceCentavos": %d,
+                "subtotalCentavos": %d,
+                "stockPolicy": "NOT_CONTROLLED",
+                "soldWithNegativeStock": false,
+                "soldWhileUnavailable": false,
+                "rawBarcode": null,
+                "unitCostCentavos": %s
+              }
+            ],
+            "payments": [
+              {
+                "paymentId": "%s",
+                "method": "%s",
+                "amountCentavos": %d,
+                "tenderedCentavos": %d,
+                "changeCentavos": 0
+              }
+            ],
+            "discount": %s
+          }
+        }
+        """
+        .formatted(
+            UUID.randomUUID(),
+            device.deviceId(),
+            siteId,
+            sequence,
+            saleId,
+            UUID.randomUUID(),
+            saleId,
+            folio,
+            1,
+            gross,
+            discount,
+            total,
+            UUID.randomUUID(),
+            productId,
+            gross,
+            gross,
+            unitCost == null ? "null" : unitCost.toString(),
+            UUID.randomUUID(),
+            method,
+            total,
+            tendered,
+            discountJson.strip());
   }
 
   private String saleEventJsonForShift(

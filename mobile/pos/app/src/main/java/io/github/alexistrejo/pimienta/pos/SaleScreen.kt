@@ -73,20 +73,31 @@ internal fun Sale(
     // Re-read after leaving the manager panel, where Configuración can change it.
     val uppercaseNames = remember(managerId) { repository.salesCardNamesUppercase() }
     var discountAmountCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
+    var discountModeName by rememberSaveable { mutableStateOf<String?>(null) }
+    var discountTargetCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
     var discountReason by rememberSaveable { mutableStateOf("") }
     var discountAuthorizedById by rememberSaveable { mutableStateOf<String?>(null) }
-    val discount = remember(discountAmountCentavos, discountReason, discountAuthorizedById, users) {
+    val discount = remember(discountAmountCentavos, discountModeName, discountTargetCentavos, discountReason, discountAuthorizedById, users) {
         val amount = discountAmountCentavos ?: return@remember null
+        val mode = discountModeName?.let { runCatching { DiscountMode.valueOf(it) }.getOrNull() } ?: return@remember null
         val authorizer = users.firstOrNull { it.id == discountAuthorizedById } ?: return@remember null
-        SaleDiscountDraft(amount, discountReason, authorizer)
+        SaleDiscountDraft(amount, discountReason, authorizer, mode, discountTargetCentavos)
     }
+    val acceptedDiscount = discount?.let { SaleCalculator.quote(it.mode, cart, it.targetCentavos) as? DiscountQuote.Accepted }
+    // Charge is the quoted amount the customer pays. A blocked mode cannot be checked out.
+    val chargeCentavos = acceptedDiscount?.chargeCentavos ?: cart.totalCentavos()
+    val courtesySale = acceptedDiscount != null && acceptedDiscount.chargeCentavos == 0L
     fun updateDiscount(draft: SaleDiscountDraft?) {
         if (draft == null) {
             discountAmountCentavos = null
+            discountModeName = null
+            discountTargetCentavos = null
             discountReason = ""
             discountAuthorizedById = null
         } else {
             discountAmountCentavos = draft.amountCentavos
+            discountModeName = draft.mode.name
+            discountTargetCentavos = draft.targetCentavos
             discountReason = draft.reason
             discountAuthorizedById = draft.authorizedBy.id
         }
@@ -174,6 +185,7 @@ internal fun Sale(
             stockPolicy = product.stockPolicy,
             quantity = 1,
             lineType = SaleLineType.CATALOG,
+            unitCostCentavos = Money.fromInput(product.cost),
         )
         cart = if (cart.none { it.lineType == SaleLineType.CATALOG && it.productId == product.id }) {
             cart + line
@@ -322,7 +334,8 @@ internal fun Sale(
 
     // Single entry to checkout for both layouts; asks once per total when it reaches the site threshold.
     fun requestCheckout() {
-        val net = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0)
+        if (discount != null && acceptedDiscount == null) return
+        val net = chargeCentavos
         if (HighSaleWarning.shouldWarn(net, HighSaleWarning.thresholdCentavos(policy), acknowledgedHighSaleNet)) {
             highSaleWarningNet = net
         } else {
@@ -360,7 +373,7 @@ internal fun Sale(
     // Single confirm entry for both checkout layouts; asks before saving a cash sale with unusually high change.
     fun requestConfirm(method: PaymentMethod, tendered: Long) {
         if (busy) return
-        val net = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0)
+        val net = chargeCentavos
         if (UnusualChangeWarning.shouldWarn(method, tendered, net, UnusualChangeWarning.thresholdCentavos(policy))) {
             unusualChangeTendered = tendered
         } else {
@@ -423,7 +436,7 @@ internal fun Sale(
             if (discountRequested) {
                 DiscountAuthorization(
                     users = users,
-                    gross = cart.totalCentavos(),
+                    lines = cart,
                     current = discount,
                     repository = repository,
                     onDismiss = { discountRequested = false },
@@ -496,7 +509,7 @@ internal fun Sale(
             }
 
             unusualChangeTendered?.let { tendered ->
-                val net = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0)
+                val net = chargeCentavos
                 AmountWarningDialog(
                     title = "Cambio inusualmente alto",
                     amountCentavos = SaleCalculator.changeCentavos(tendered, net),
@@ -562,8 +575,8 @@ internal fun Sale(
                             if (checkout) {
                                 Checkout(
                                     modifier = Modifier.fillMaxSize().padding(12.dp),
-                                    total = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0),
-                                    courtesy = SaleCalculator.isFullCourtesy(cart.totalCentavos(), discount?.amountCentavos ?: 0),
+                                    total = chargeCentavos,
+                                    courtesy = courtesySale,
                                     busy = busy,
                                     method = paymentMethodDraft,
                                     onMethodChanged = { paymentMethodDraft = it },
@@ -579,6 +592,7 @@ internal fun Sale(
                                     discount = discount,
                                     onChange = { cart = it; updateDiscount(null) },
                                     applyDiscount = { discountRequested = true },
+                                    clearDiscount = { updateDiscount(null) },
                                     onShowCatalog = if (!isCatalogVisible) { { catalogSplitWeight = 0.6f } } else null,
                                     checkout = ::requestCheckout,
                                 )
@@ -589,8 +603,8 @@ internal fun Sale(
             } else if (checkout) {
                 Checkout(
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(12.dp),
-                    total = SaleCalculator.netCentavos(cart.totalCentavos(), discount?.amountCentavos ?: 0),
-                    courtesy = SaleCalculator.isFullCourtesy(cart.totalCentavos(), discount?.amountCentavos ?: 0),
+                    total = chargeCentavos,
+                    courtesy = courtesySale,
                     busy = busy,
                     method = paymentMethodDraft,
                     onMethodChanged = { paymentMethodDraft = it },
@@ -624,7 +638,15 @@ internal fun Sale(
                         uppercaseNames = uppercaseNames,
                     )
                 } else {
-                    CartPanel(Modifier.weight(1f).fillMaxWidth(), cart, discount, { cart = it; updateDiscount(null) }, { discountRequested = true }, checkout = ::requestCheckout)
+                    CartPanel(
+                        Modifier.weight(1f).fillMaxWidth(),
+                        cart,
+                        discount,
+                        { cart = it; updateDiscount(null) },
+                        { discountRequested = true },
+                        { updateDiscount(null) },
+                        checkout = ::requestCheckout,
+                    )
                 }
             }
         }

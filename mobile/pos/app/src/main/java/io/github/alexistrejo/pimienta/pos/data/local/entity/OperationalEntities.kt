@@ -43,7 +43,7 @@ import androidx.room.PrimaryKey
 // Stores a confirmed sale as an immutable local fact.
 @Entity(tableName = "sale", indices = [Index(value = ["folio"], unique = true)]) data class SaleEntity(@PrimaryKey val id: String, val folio: String, val shiftId: String, val cashierId: String, val grossCentavos: Long, val discountCentavos: Long, val totalCentavos: Long, val paymentMethod: String, val tenderedCentavos: Long, val changeCentavos: Long, val confirmedAtEpochMillis: Long, val status: String = "CONFIRMED")
 // Stores the single authorized discount attached to a confirmed sale.
-@Entity(tableName = "sale_discount") data class SaleDiscountEntity(@PrimaryKey val id: String, val saleId: String, val amountCentavos: Long, val reason: String, val authorizedByUserId: String, val authorizedByRole: String, val authorizedAtEpochMillis: Long)
+@Entity(tableName = "sale_discount") data class SaleDiscountEntity(@PrimaryKey val id: String, val saleId: String, val amountCentavos: Long, val reason: String, val authorizedByUserId: String, val authorizedByRole: String, val authorizedAtEpochMillis: Long, val mode: String? = null)
 // Stores an immutable cash safeguard withdrawal made during an open shift.
 @Entity(tableName = "cash_withdrawal", indices = [Index(value = ["folio"], unique = true)]) data class CashWithdrawalEntity(@PrimaryKey val id: String, val folio: String, val shiftId: String, val cashierId: String, val amountCentavos: Long, val reason: String, val authorizedByUserId: String, val authorizedByRole: String, val createdAtEpochMillis: Long)
 // Stores the catalog information exactly as it was sold.
@@ -61,6 +61,7 @@ import androidx.room.PrimaryKey
     val sourceBarcode: String? = null,
     val authorizedByOperatorId: Long? = null,
     val authorizedAtEpochMillis: Long? = null,
+    val unitCostCentavos: Long? = null,
 )
 // Stores the selected payment type and its applied amount.
 @Entity(tableName = "payment") data class PaymentEntity(@PrimaryKey val id: String, val saleId: String, val method: String, val amountCentavos: Long)

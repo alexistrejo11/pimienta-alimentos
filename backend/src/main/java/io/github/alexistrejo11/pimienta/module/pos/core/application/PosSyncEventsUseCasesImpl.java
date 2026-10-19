@@ -11,11 +11,13 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSale
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.IngestPosEventItem;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SaleConfirmedPayload;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SaleDiscountPayload;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SaleLinePayload;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.SalePaymentPayload;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSyncEvent;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosDiscountMode;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosEventResultStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosPaymentMethod;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
@@ -415,7 +417,8 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
                 line.soldWhileUnavailable(),
                 blankToNull(line.rawBarcode()),
                 line.authorizedByOperatorId(),
-                line.authorizedAt()));
+                line.authorizedAt(),
+                line.unitCostCentavos()));
       }
     }
     List<PosSale.Payment> payments = new ArrayList<>();
@@ -430,6 +433,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
                 payment.changeCentavos()));
       }
     }
+    SaleDiscountPayload discount = payload.discount();
     return PosSale.builder()
         .withId(payload.saleId())
         .withEventId(item.eventId())
@@ -440,6 +444,9 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
         .withFolio(payload.folio() != null ? payload.folio() : "")
         .withGrossCentavos(payload.grossCentavos())
         .withDiscountCentavos(payload.discountCentavos())
+        .withDiscountMode(resolveDiscountMode(payload.grossCentavos(), payload.discountCentavos(), discount))
+        .withDiscountReason(limit(discount != null ? discount.reason() : null, 512))
+        .withDiscountAuthorizedByOperatorId(discount != null ? discount.authorizedByOperatorId() : null)
         .withTotalCentavos(payload.totalCentavos())
         .withStatus(parseSaleStatus(payload.status()))
         .withOccurredAt(item.occurredAt() != null ? item.occurredAt() : Instant.now())
@@ -535,5 +542,31 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
       return null;
     }
     return value.strip();
+  }
+
+  private static String limit(String value, int max) {
+    String trimmed = blankToNull(value);
+    if (trimmed == null || trimmed.length() <= max) {
+      return trimmed;
+    }
+    return trimmed.substring(0, max);
+  }
+
+  /** Explicit mode wins. Older payloads infer a full courtesy when the discount covers the gross. */
+  private static PosDiscountMode resolveDiscountMode(
+      long grossCentavos, long discountCentavos, SaleDiscountPayload discount) {
+    if (discount != null) {
+      PosDiscountMode explicit = PosDiscountMode.fromWire(discount.mode());
+      if (explicit != PosDiscountMode.UNDEFINED) {
+        return explicit;
+      }
+    }
+    if (discountCentavos <= 0) {
+      return PosDiscountMode.UNDEFINED;
+    }
+    if (discountCentavos == grossCentavos) {
+      return PosDiscountMode.FULL_COURTESY;
+    }
+    return PosDiscountMode.TARGET_AMOUNT;
   }
 }

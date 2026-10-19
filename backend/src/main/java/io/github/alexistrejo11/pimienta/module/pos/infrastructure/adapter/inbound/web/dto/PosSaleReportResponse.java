@@ -18,6 +18,9 @@ public record PosSaleReportResponse(
     long grossCentavos,
     long discountCentavos,
     long totalCentavos,
+    String discountMode,
+    String discountReason,
+    Long discountAuthorizedByOperatorId,
     String status,
     String syncStatus,
     Instant occurredAt,
@@ -32,10 +35,12 @@ public record PosSaleReportResponse(
       String saleCategory,
       int quantity,
       long unitPriceCentavos,
-      long subtotalCentavos) {
+      long subtotalCentavos,
+      Long unitCostCentavos) {
     public static PosSaleLineReportResponse from(PosSale.Line line) {
       return new PosSaleLineReportResponse(line.lineId(), line.productId(), line.lineType().name(),
-          line.productName(), line.saleCategory(), line.quantity(), line.unitPriceCentavos(), line.subtotalCentavos());
+          line.productName(), line.saleCategory(), line.quantity(), line.unitPriceCentavos(),
+          line.subtotalCentavos(), line.unitCostCentavos());
     }
   }
 }

@@ -98,6 +98,58 @@ class SaleCalculatorTest {
     }
 
     @Test
+    fun fullCourtesyChargesNothing() {
+        val lines = listOf(catalog(2_000, 2))
+        val quote = SaleCalculator.quote(DiscountMode.FULL_COURTESY, lines) as DiscountQuote.Accepted
+        assertEquals(0L, quote.chargeCentavos)
+        assertEquals(4_000L, quote.discountCentavos)
+    }
+
+    @Test
+    fun atCostChargesTheSumOfPositiveCatalogCosts() {
+        val lines = listOf(
+            catalog(2_000, 2).copy(unitCostCentavos = 500),
+            catalog(1_500, 1).copy(name = "Jugo", unitCostCentavos = 400),
+        )
+        val quote = SaleCalculator.quote(DiscountMode.AT_COST, lines) as DiscountQuote.Accepted
+        assertEquals(1_400L, quote.chargeCentavos)
+        assertEquals(4_100L, quote.discountCentavos)
+    }
+
+    @Test
+    fun atCostNamesLinesWithoutAPositiveCost() {
+        val lines = listOf(
+            catalog(2_000, 1).copy(name = "Agua", unitCostCentavos = 0),
+            open(500).copy(name = "Producto abierto · Snack"),
+        )
+        val quote = SaleCalculator.quote(DiscountMode.AT_COST, lines) as DiscountQuote.Blocked
+        assertEquals(DiscountBlock.MISSING_UNIT_COST, quote.block)
+        assertEquals(listOf("Agua", "Producto abierto · Snack"), quote.lineNames)
+    }
+
+    @Test
+    fun atCostRejectsACostThatDoesNotLowerThePrice() {
+        val lines = listOf(catalog(1_000, 1).copy(unitCostCentavos = 1_000))
+        val quote = SaleCalculator.quote(DiscountMode.AT_COST, lines) as DiscountQuote.Blocked
+        assertEquals(DiscountBlock.COST_NOT_BELOW_SALE_PRICE, quote.block)
+    }
+
+    @Test
+    fun targetAmountIsWhatTheCustomerPays() {
+        val lines = listOf(catalog(4_000, 1))
+        val quote = SaleCalculator.quote(DiscountMode.TARGET_AMOUNT, lines, targetCentavos = 3_500) as DiscountQuote.Accepted
+        assertEquals(3_500L, quote.chargeCentavos)
+        assertEquals(500L, quote.discountCentavos)
+    }
+
+    @Test
+    fun targetAmountMustStayStrictlyInsideTheSale() {
+        val lines = listOf(catalog(4_000, 1))
+        assertEquals(DiscountBlock.TARGET_OUT_OF_RANGE, (SaleCalculator.quote(DiscountMode.TARGET_AMOUNT, lines, 0) as DiscountQuote.Blocked).block)
+        assertEquals(DiscountBlock.TARGET_OUT_OF_RANGE, (SaleCalculator.quote(DiscountMode.TARGET_AMOUNT, lines, 4_000) as DiscountQuote.Blocked).block)
+    }
+
+    @Test
     fun subtractingCancelledCashAgainWouldUnderstateTheDrawer() {
         val opening = 50_000L
         val liveCash = 18_000L

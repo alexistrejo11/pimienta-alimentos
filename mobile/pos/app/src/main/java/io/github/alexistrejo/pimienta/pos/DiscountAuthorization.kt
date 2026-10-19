@@ -56,38 +56,57 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Authorizes one fixed-amount discount while preserving the active cashier cart.
+// Authorizes one of the three discount modes while preserving the active cashier cart.
 @Composable
 internal fun DiscountAuthorization(
     users: List<LocalUserEntity>,
-    gross: Long,
+    lines: List<CartLine>,
     current: SaleDiscountDraft?,
     repository: PosRepository,
     onDismiss: () -> Unit,
     onAuthorized: (SaleDiscountDraft) -> Unit,
 ) {
     val managers = users.filter { it.isManagerOrAdmin }
-    var selected by remember { mutableStateOf(managers.firstOrNull()) }
-    var amount by remember { mutableStateOf(current?.amountCentavos?.let { BigDecimal.valueOf(it, 2).toPlainString() } ?: "") }
+    val gross = SaleCalculator.grossCentavos(lines)
+    var mode by remember { mutableStateOf(current?.mode ?: DiscountMode.TARGET_AMOUNT) }
+    var selected by remember { mutableStateOf(current?.authorizedBy ?: managers.firstOrNull()) }
+    var targetText by remember {
+        mutableStateOf(current?.targetCentavos?.let { BigDecimal.valueOf(it, 2).toPlainString() } ?: "")
+    }
     var reason by remember { mutableStateOf(current?.reason ?: "") }
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    val (amountInteraction, forceAmountKeyboard) = rememberForceSoftKeyboardInteractionSource()
+    val (targetInteraction, forceTargetKeyboard) = rememberForceSoftKeyboardInteractionSource()
     val (reasonInteraction, forceReasonKeyboard) = rememberForceSoftKeyboardInteractionSource()
+    val targetCentavos = Money.fromInput(targetText)
+    val quote = SaleCalculator.quote(mode, lines, if (mode == DiscountMode.TARGET_AMOUNT) targetCentavos else null)
+    val accepted = quote as? DiscountQuote.Accepted
+    val warning = discountWarning(mode, targetText, targetCentavos, quote)
 
     // Uses the same validation for the keypad enter key and the primary action.
     fun authorize() {
-        val cents = Money.fromInput(amount)
         val user = selected
+        val priced = accepted
         when {
-            cents == null || cents <= 0 -> error = "Captura un importe válido."
-            cents > gross -> error = "El descuento no puede superar la venta."
+            priced == null -> error = warning ?: "Este descuento no se puede aplicar."
             reason.isBlank() -> error = "El motivo es obligatorio."
             user == null -> error = "Selecciona un autorizador."
             else -> scope.launch {
                 val valid = withContext(Dispatchers.IO) { repository.authenticate(user.id, pin) }
-                if (valid) onAuthorized(SaleDiscountDraft(cents, reason.trim(), user)) else error = "El PIN no corresponde al perfil seleccionado."
+                if (valid) {
+                    onAuthorized(
+                        SaleDiscountDraft(
+                            amountCentavos = priced.discountCentavos,
+                            reason = reason.trim(),
+                            authorizedBy = user,
+                            mode = priced.mode,
+                            targetCentavos = if (priced.mode == DiscountMode.TARGET_AMOUNT) priced.chargeCentavos else null,
+                        )
+                    )
+                } else {
+                    error = "El PIN no corresponde al perfil seleccionado."
+                }
             }
         }
     }
@@ -102,17 +121,29 @@ internal fun DiscountAuthorization(
             ) {
                 Text("Descuento / cortesía", style = MaterialTheme.typography.titleLarge)
                 Text("Venta bruta: ${Money.format(gross)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { amount = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { if (it.isFocused) forceAmountKeyboard() },
-                    interactionSource = amountInteraction,
-                    label = { Text("Importe fijo en pesos") },
-                    singleLine = true,
-                    colors = catalogFieldColors(),
-                )
+                DiscountMode.entries.forEach { option ->
+                    PosButton(
+                        option.dialogLabel(),
+                        { mode = option; error = null },
+                        selected = mode == option,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (mode == DiscountMode.TARGET_AMOUNT) {
+                    OutlinedTextField(
+                        value = targetText,
+                        onValueChange = { targetText = it; error = null },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (it.isFocused) forceTargetKeyboard() },
+                        interactionSource = targetInteraction,
+                        label = { Text("Monto a cobrar") },
+                        singleLine = true,
+                        colors = catalogFieldColors(),
+                    )
+                }
+                DiscountQuoteSummary(mode, gross, accepted)
+                warning?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 OutlinedTextField(
                     value = reason,
                     onValueChange = { reason = it },
@@ -131,10 +162,65 @@ internal fun DiscountAuthorization(
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PosButton("Cancelar", onDismiss, modifier = Modifier.weight(1f))
-                    PosButton("Autorizar", ::authorize, primary = true, modifier = Modifier.weight(1f))
+                    PosButton(
+                        "Autorizar",
+                        ::authorize,
+                        enabled = accepted != null && reason.isNotBlank() && selected != null,
+                        primary = true,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
     }
+}
+
+// Live charge and discount for the mode the operator is about to authorize.
+@Composable
+private fun DiscountQuoteSummary(mode: DiscountMode, gross: Long, accepted: DiscountQuote.Accepted?) {
+    if (accepted == null && mode != DiscountMode.TARGET_AMOUNT) return
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (mode == DiscountMode.TARGET_AMOUNT) {
+            Text("Subtotal: ${Money.format(gross)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (accepted != null) {
+            val discountLabel = if (mode == DiscountMode.FULL_COURTESY) {
+                "${Money.format(accepted.discountCentavos)} (100%)"
+            } else {
+                Money.format(accepted.discountCentavos)
+            }
+            if (mode != DiscountMode.TARGET_AMOUNT) {
+                Text("Monto a cobrar: ${Money.format(accepted.chargeCentavos)}")
+            }
+            Text("Descuento: $discountLabel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (mode == DiscountMode.TARGET_AMOUNT) {
+                Text("Monto a cobrar: ${Money.format(accepted.chargeCentavos)}", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// Selector copy. The cart uses a shorter label for a custom charge.
+private fun DiscountMode.dialogLabel(): String = when (this) {
+    DiscountMode.FULL_COURTESY -> "Cortesía total"
+    DiscountMode.AT_COST -> "Cobro al costo"
+    DiscountMode.TARGET_AMOUNT -> "Monto a cobrar"
+}
+
+// Explains why Autorizar stays disabled, including a $0 target that belongs on cortesía total.
+private fun discountWarning(
+    mode: DiscountMode,
+    targetText: String,
+    targetCentavos: Long?,
+    quote: DiscountQuote,
+): String? {
+    if (mode == DiscountMode.TARGET_AMOUNT) {
+        when {
+            targetText.isBlank() -> return "Captura el monto a cobrar."
+            targetCentavos == null -> return "Captura un monto válido."
+            targetCentavos == 0L -> return "Para cobrar $0 selecciona Cortesía total."
+        }
+    }
+    return (quote as? DiscountQuote.Blocked)?.let { discountBlockMessage(it.block, it.lineNames) }
 }
 

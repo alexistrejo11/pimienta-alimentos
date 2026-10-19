@@ -44,6 +44,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                   SELECT 1 FROM PosSalePaymentJpaEntity p
                   WHERE p.sale = s AND p.deletedAt IS NULL AND p.method = 'CORTESIA'
                 ))
+            AND (:discountedOnly = false OR s.discountCentavos > 0)
             AND EXISTS (
                   SELECT 1 FROM PosSyncEventJpaEntity e
                   WHERE e.eventId = s.eventId
@@ -75,6 +76,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                   SELECT 1 FROM PosSalePaymentJpaEntity p
                   WHERE p.sale = s AND p.deletedAt IS NULL AND p.method = 'CORTESIA'
                 ))
+            AND (:discountedOnly = false OR s.discountCentavos > 0)
             AND EXISTS (
                   SELECT 1 FROM PosSyncEventJpaEntity e
                   WHERE e.eventId = s.eventId
@@ -91,6 +93,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       @Param("lineType") io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType lineType,
       @Param("openProductsOnly") boolean openProductsOnly,
       @Param("courtesyOnly") boolean courtesyOnly,
+      @Param("discountedOnly") boolean discountedOnly,
       @Param("syncStatuses") java.util.Collection<PosEventResultStatus> syncStatuses,
       Pageable pageable);
 
@@ -118,6 +121,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
                   SELECT 1 FROM PosSalePaymentJpaEntity p
                   WHERE p.sale = s AND p.deletedAt IS NULL AND p.method = 'CORTESIA'
                 ))
+            AND (:discountedOnly = false OR s.discountCentavos > 0)
         AND EXISTS (
               SELECT 1 FROM PosSyncEventJpaEntity e
               WHERE e.eventId = s.eventId
@@ -136,6 +140,7 @@ public interface PosSaleSpringDataRepository extends JpaRepository<PosSaleJpaEnt
       @Param("lineType") io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleLineType lineType,
       @Param("openProductsOnly") boolean openProductsOnly,
       @Param("courtesyOnly") boolean courtesyOnly,
+      @Param("discountedOnly") boolean discountedOnly,
       @Param("accepted") PosEventResultStatus accepted);
 
   @Query(

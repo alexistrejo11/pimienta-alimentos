@@ -37,6 +37,7 @@ data class CartLine(
     val authorizedAtEpochMillis: Long? = null,
     val cartLineId: String = "",
     val authorizedByUserId: String? = null,
+    val unitCostCentavos: Long? = null,
 ) {
     // Stable cart identity for catalog ids or pending barcodes. Open amounts stay unique.
     val lineKey: String
@@ -53,7 +54,14 @@ data class CartLine(
 enum class PaymentMethod { CASH, EXTERNAL_CARD_MP, CORTESIA }
 
 // Captures the manager approval that makes one draft discount eligible for confirmation.
-data class SaleDiscountDraft(val amountCentavos: Long, val reason: String, val authorizedBy: LocalUserEntity)
+// amountCentavos is the quoted discount (gross − charge). Confirm recomputes it from the mode.
+data class SaleDiscountDraft(
+    val amountCentavos: Long,
+    val reason: String,
+    val authorizedBy: LocalUserEntity,
+    val mode: DiscountMode,
+    val targetCentavos: Long? = null,
+)
 
 // Provides the immutable totals shown by the local Corte Z summary.
 data class ShiftTotals(val grossCentavos: Long, val discountsCentavos: Long, val netCentavos: Long, val courtesyCentavos: Long, val ticketCount: Int = 0, val cancelledCount: Int = 0)
@@ -521,11 +529,14 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             }
         }
         val gross = SaleCalculator.grossCentavos(lines)
-        if (discount != null && (discount.amountCentavos <= 0 || discount.amountCentavos > gross || discount.reason.isBlank() || !discount.authorizedBy.isManagerOrAdmin)) {
-            return Result.failure(IllegalArgumentException("El descuento no es válido."))
-        }
-        val total = SaleCalculator.netCentavos(gross, discount?.amountCentavos ?: 0)
-        if (total == 0L && (method != PaymentMethod.CORTESIA || !SaleCalculator.isFullCourtesy(gross, discount?.amountCentavos ?: 0))) {
+        val costedLines = lines.map { line -> line.withSaleCost() }
+        val quoted = resolveDiscount(discount, costedLines)
+        val discountCentavos = quoted.fold(
+            onSuccess = { it },
+            onFailure = { return Result.failure(it) },
+        )
+        val total = SaleCalculator.netCentavos(gross, discountCentavos)
+        if (total == 0L && (method != PaymentMethod.CORTESIA || !SaleCalculator.isFullCourtesy(gross, discountCentavos))) {
             return Result.failure(IllegalArgumentException("Una venta en cero debe registrarse como cortesía."))
         }
         if (total > 0L && method == PaymentMethod.CORTESIA) {
@@ -544,13 +555,14 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             val confirmedAt = System.currentTimeMillis()
             val change = if (method == PaymentMethod.CASH) SaleCalculator.changeCentavos(tenderedCentavos, total) else 0
             val folio = "${device.visibleCode}-${liveShift.id.take(4).uppercase()}-${liveShift.nextFolioNumber.toString().padStart(4, '0')}"
-            val sale = SaleEntity(saleId, folio, liveShift.id, liveShift.cashierId, gross, discount?.amountCentavos ?: 0, total, method.name, if (method == PaymentMethod.CASH) tenderedCentavos else total, change, confirmedAt)
+            val sale = SaleEntity(saleId, folio, liveShift.id, liveShift.cashierId, gross, discountCentavos, total, method.name, if (method == PaymentMethod.CASH) tenderedCentavos else total, change, confirmedAt)
             operations.insertSale(sale)
+            val storedMode = discount?.mode?.name
             val discountEntity = discount?.let {
-                SaleDiscountEntity(UUID.randomUUID().toString(), saleId, it.amountCentavos, it.reason.trim(), it.authorizedBy.id, it.authorizedBy.role, confirmedAt)
+                SaleDiscountEntity(UUID.randomUUID().toString(), saleId, discountCentavos, it.reason.trim(), it.authorizedBy.id, it.authorizedBy.role, confirmedAt, storedMode)
             }
             discountEntity?.let { operations.insertDiscount(it) }
-            val saleLines = lines.map { line ->
+            val saleLines = costedLines.map { line ->
                 SaleLineEntity(
                     UUID.randomUUID().toString(),
                     saleId,
@@ -565,6 +577,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     line.sourceBarcode,
                     line.authorizedByUserId?.toLongOrNull() ?: line.authorizedByOperatorId,
                     line.authorizedAtEpochMillis,
+                    line.unitCostCentavos,
                 )
             }
             operations.insertLines(saleLines)
@@ -621,5 +634,29 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
             )
         )
         operations.updateSequence(device.id, device.nextEventSequence + 1)
+    }
+
+    // Copies the catalog cost onto a sale line. Open and pending lines stay without a cost.
+    private fun CartLine.withSaleCost(): CartLine {
+        if (lineType != SaleLineType.CATALOG || productId == null) {
+            return copy(unitCostCentavos = null)
+        }
+        val product = database.productDao().findById(productId) ?: return copy(unitCostCentavos = null)
+        return copy(unitCostCentavos = Money.fromInput(product.cost))
+    }
+
+    // Recomputes the authorized mode against the costs snapshotted for this sale.
+    private fun resolveDiscount(
+        discount: SaleDiscountDraft?,
+        lines: List<CartLine>,
+    ): Result<Long> {
+        if (discount == null) return Result.success(0L)
+        if (discount.reason.isBlank() || !discount.authorizedBy.isManagerOrAdmin) {
+            return Result.failure(IllegalArgumentException("El descuento no es válido."))
+        }
+        return when (val quote = SaleCalculator.quote(discount.mode, lines, discount.targetCentavos)) {
+            is DiscountQuote.Accepted -> Result.success(quote.discountCentavos)
+            is DiscountQuote.Blocked -> Result.failure(DiscountRejectedException(quote.block, quote.lineNames))
+        }
     }
 }
