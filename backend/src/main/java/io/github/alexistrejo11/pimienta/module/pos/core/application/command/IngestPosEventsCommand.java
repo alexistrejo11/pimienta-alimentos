@@ -29,7 +29,11 @@ public record IngestPosEventsCommand(List<IngestPosEventItem> events) {
       long totalCentavos,
       String status,
       List<SaleLinePayload> lines,
-      List<SalePaymentPayload> payments) {}
+      List<SalePaymentPayload> payments,
+      SaleDiscountPayload discount) {}
+
+  public record SaleDiscountPayload(
+      String mode, String reason, Long authorizedByOperatorId) {}
 
   public record SaleLinePayload(
       UUID lineId,
@@ -46,7 +50,8 @@ public record IngestPosEventsCommand(List<IngestPosEventItem> events) {
       boolean soldWhileUnavailable,
       String rawBarcode,
       Long authorizedByOperatorId,
-      Instant authorizedAt) {}
+      Instant authorizedAt,
+      Long unitCostCentavos) {}
 
   public record SalePaymentPayload(
       UUID paymentId,

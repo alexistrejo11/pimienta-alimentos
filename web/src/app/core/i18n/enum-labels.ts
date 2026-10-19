@@ -100,6 +100,18 @@ export function posSaleTicketStatusLabel(status: string): string {
   return POS_SALE_TICKET_STATUS_LABELS[status] ?? status;
 }
 
+const POS_DISCOUNT_MODE_LABELS: Record<string, string> = {
+  FULL_COURTESY: 'Cortesía total',
+  AT_COST: 'Cobro al costo',
+  TARGET_AMOUNT: 'Monto a cobrar',
+};
+
+/** Spanish label for a POS sale discount. Missing mode still reads as a discount, never the wire code. */
+export function posDiscountModeLabel(mode: string | null | undefined): string {
+  if (!mode) return 'Descuento';
+  return POS_DISCOUNT_MODE_LABELS[mode] ?? 'Descuento';
+}
+
 export function posSyncEventStatusLabel(status: string): string {
   return POS_SYNC_EVENT_STATUS_LABELS[status] ?? status;
 }

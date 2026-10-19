@@ -36,4 +36,20 @@ describe('PosAdminService observability reads', () => {
     expect(request.request.params.get('to')).toContain('2026-09-13');
     request.flush({ rows: [] });
   });
+
+  it('asks the sales report for discounted tickets only', () => {
+    service
+      .reportSales({
+        headquarterId: 3,
+        from: '2026-10-17T06:00:00.000Z',
+        to: '2026-10-18T06:00:00.000Z',
+        discountedOnly: true,
+      })
+      .subscribe();
+
+    const request = http.expectOne((req) => req.url.endsWith('/pos/admin/reports/sales'));
+    expect(request.request.params.get('discountedOnly')).toBe('true');
+    expect(request.request.params.get('courtesyOnly')).toBeNull();
+    request.flush({ items: [], metadata: {} });
+  });
 });

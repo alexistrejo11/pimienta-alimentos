@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.domain;
 
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosDiscountMode;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosPaymentMethod;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStockPolicy;
@@ -21,6 +22,9 @@ public class PosSale extends BaseDomain<UUID> {
   private String folio;
   private long grossCentavos;
   private long discountCentavos;
+  private PosDiscountMode discountMode;
+  private String discountReason;
+  private Long discountAuthorizedByOperatorId;
   private long totalCentavos;
   private PosSaleStatus status;
   private Instant occurredAt;
@@ -70,6 +74,18 @@ public class PosSale extends BaseDomain<UUID> {
     return discountCentavos;
   }
 
+  public PosDiscountMode getDiscountMode() {
+    return discountMode != null ? discountMode : PosDiscountMode.UNDEFINED;
+  }
+
+  public String getDiscountReason() {
+    return discountReason;
+  }
+
+  public Long getDiscountAuthorizedByOperatorId() {
+    return discountAuthorizedByOperatorId;
+  }
+
   public long getTotalCentavos() {
     return totalCentavos;
   }
@@ -105,7 +121,8 @@ public class PosSale extends BaseDomain<UUID> {
       boolean soldWhileUnavailable,
       String rawBarcode,
       Long authorizedByOperatorId,
-      Instant authorizedAt) {}
+      Instant authorizedAt,
+      Long unitCostCentavos) {}
 
   public record Payment(
       UUID paymentId,
@@ -128,6 +145,9 @@ public class PosSale extends BaseDomain<UUID> {
     private String folio;
     private Long grossCentavos;
     private Long discountCentavos;
+    private PosDiscountMode discountMode;
+    private String discountReason;
+    private Long discountAuthorizedByOperatorId;
     private Long totalCentavos;
     private PosSaleStatus status;
     private Instant occurredAt;
@@ -180,6 +200,21 @@ public class PosSale extends BaseDomain<UUID> {
 
     public SafeBuilder withDiscountCentavos(Long discountCentavos) {
       this.discountCentavos = discountCentavos;
+      return this;
+    }
+
+    public SafeBuilder withDiscountMode(PosDiscountMode discountMode) {
+      this.discountMode = discountMode;
+      return this;
+    }
+
+    public SafeBuilder withDiscountReason(String discountReason) {
+      this.discountReason = discountReason;
+      return this;
+    }
+
+    public SafeBuilder withDiscountAuthorizedByOperatorId(Long discountAuthorizedByOperatorId) {
+      this.discountAuthorizedByOperatorId = discountAuthorizedByOperatorId;
       return this;
     }
 
@@ -239,6 +274,9 @@ public class PosSale extends BaseDomain<UUID> {
       s.folio = folio != null ? folio : "";
       s.grossCentavos = grossCentavos != null ? grossCentavos : 0L;
       s.discountCentavos = discountCentavos != null ? discountCentavos : 0L;
+      s.discountMode = discountMode != null ? discountMode : PosDiscountMode.UNDEFINED;
+      s.discountReason = discountReason;
+      s.discountAuthorizedByOperatorId = discountAuthorizedByOperatorId;
       s.totalCentavos = totalCentavos != null ? totalCentavos : 0L;
       s.status = status != null ? status : PosSaleStatus.CONFIRMED;
       s.occurredAt = occurredAt != null ? occurredAt : Instant.now();

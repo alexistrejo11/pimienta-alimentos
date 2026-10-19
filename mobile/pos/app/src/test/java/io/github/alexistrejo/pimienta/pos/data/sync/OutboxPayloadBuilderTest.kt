@@ -1,6 +1,7 @@
 package io.github.alexistrejo.pimienta.pos.data.sync
 
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PaymentEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleDiscountEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
 import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleLineEntity
 import kotlinx.serialization.json.Json
@@ -30,6 +31,26 @@ class OutboxPayloadBuilderTest {
         assertEquals("1250", payloadLine["unitPriceCentavos"].toString())
         assertEquals("null", payloadLine["authorizedByOperatorId"].toString())
         assertEquals("null", payloadLine["authorizedAt"].toString())
+        assertEquals("null", payloadLine["unitCostCentavos"].toString())
+    }
+
+    @Test
+    fun salePayloadCarriesDiscountModeAndCatalogCost() {
+        val sale = SaleEntity("sale-1", "T1-0001", "shift-1", "cashier-1", 4000, 1500, 2500, "CASH", 2500, 0, 1)
+        val line = SaleLineEntity("line-1", sale.id, "p1", "Agua", "Bebidas", 1, 4000, 4000, "NOT_CONTROLLED", unitCostCentavos = 800)
+        val payment = PaymentEntity("payment-1", sale.id, "CASH", 2500)
+        val discount = SaleDiscountEntity("d1", sale.id, 1500, "Personal", "7", "MANAGER", 1, mode = "AT_COST")
+
+        val body = json.parseToJsonElement(
+            OutboxPayloadBuilder.saleConfirmed(sale, listOf(line), payment, discount, emptyMap()),
+        ).jsonObject
+        val payloadLine = body["lines"]!!.jsonArray.single().jsonObject
+        val payloadDiscount = body["discount"]!!.jsonObject
+
+        assertEquals("800", payloadLine["unitCostCentavos"].toString())
+        assertEquals("AT_COST", payloadDiscount["mode"]!!.toString().trim('"'))
+        assertEquals("Personal", payloadDiscount["reason"]!!.toString().trim('"'))
+        assertEquals(null, payloadDiscount["authorizedByRole"])
     }
 
     @Test

@@ -262,6 +262,10 @@ export interface PosSaleReportResponse {
   grossCentavos: number;
   discountCentavos: number;
   totalCentavos: number;
+  /** FULL_COURTESY, AT_COST, or TARGET_AMOUNT. Null when the ticket has no discount. */
+  discountMode?: string | null;
+  discountReason?: string | null;
+  discountAuthorizedByOperatorId?: number | null;
   status: string;
   syncStatus: string;
   occurredAt: string;
@@ -278,6 +282,8 @@ export interface PosSaleLineReportResponse {
   quantity: number;
   unitPriceCentavos: number;
   subtotalCentavos: number;
+  /** Catalog cost snapshotted at sale time. Null for open-amount and pending lines. */
+  unitCostCentavos?: number | null;
 }
 
 /** GET /api/v1/pos/admin/reports/products */
@@ -310,6 +316,8 @@ export interface PosReportFilterParams {
   openProductsOnly?: boolean;
   /** Solo tickets cobrados como cortesía. */
   courtesyOnly?: boolean;
+  /** Tickets con descuento o cortesía (`discount_centavos > 0`). */
+  discountedOnly?: boolean;
   /** Reporte de ventas: `recent` (default) u `oldest`. */
   salesOrder?: 'recent' | 'oldest';
   eventType?: string;

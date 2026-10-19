@@ -75,6 +75,9 @@ public class PosSaleLineJpaEntity extends BaseJpaEntity {
   @Column(name = "authorized_at")
   private java.time.Instant authorizedAt;
 
+  @Column(name = "unit_cost_centavos")
+  private Long unitCostCentavos;
+
   public Long getId() {
     return id;
   }
@@ -194,4 +197,7 @@ public class PosSaleLineJpaEntity extends BaseJpaEntity {
   public void setAuthorizedByOperatorId(Long id) { this.authorizedByOperatorId = id; }
   public java.time.Instant getAuthorizedAt() { return authorizedAt; }
   public void setAuthorizedAt(java.time.Instant at) { this.authorizedAt = at; }
+
+  public Long getUnitCostCentavos() { return unitCostCentavos; }
+  public void setUnitCostCentavos(Long unitCostCentavos) { this.unitCostCentavos = unitCostCentavos; }
 }

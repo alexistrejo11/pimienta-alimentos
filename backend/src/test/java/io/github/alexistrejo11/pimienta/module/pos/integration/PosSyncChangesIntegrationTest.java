@@ -76,6 +76,70 @@ class PosSyncChangesIntegrationTest {
   }
 
   @Test
+  void changes_costPriceUpdate_pushesCostToEverySedeAndSkipsUnchangedCost() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqA = createHeadquarter(staffToken, "POS-COST-A-" + UUID.randomUUID());
+    long hqB = createHeadquarter(staffToken, "POS-COST-B-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqA);
+    putPosSettings(staffToken, hqB);
+    long productId = createItem(staffToken, "SKU-COST-" + UUID.randomUUID(), "Agua");
+    putCatalog(staffToken, hqA, productId, "Bebidas", "20.00");
+    putCatalog(staffToken, hqB, productId, "Bebidas", "20.00");
+
+    MvcResult product =
+        mockMvc
+            .perform(AccountTestRequests.getBearer("/api/v1/products/" + productId, staffToken))
+            .andExpect(status().isOk())
+            .andReturn();
+    Number inventoryItemId = JsonPath.read(product.getResponse().getContentAsString(), "$.inventoryItemId");
+
+    String accessA = enrollDevice(staffToken, hqA, "Caja costo A");
+    String accessB = enrollDevice(staffToken, hqB, "Caja costo B");
+    String cursorA = bootstrapCursor(accessA);
+    String cursorB = bootstrapCursor(accessB);
+
+    Thread.sleep(15);
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/inventory/items/" + inventoryItemId.longValue() + "/stock-settings",
+                staffToken,
+                """
+                {"costPrice": 12.50, "reorderPoint": 4, "reorderQuantity": 8, "status": "ACTIVE"}
+                """))
+        .andExpect(status().isOk());
+
+    MvcResult changedA =
+        mockMvc
+            .perform(AccountTestRequests.getBearer(changesUrl(cursorA), accessA))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.operations[?(@.entity=='product' && @.op=='upsert')]", hasSize(1)))
+            .andExpect(jsonPath("$.operations[?(@.entity=='product')].data.costCentavos").value(1250))
+            .andReturn();
+    mockMvc
+        .perform(AccountTestRequests.getBearer(changesUrl(cursorB), accessB))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.operations[?(@.entity=='product' && @.op=='upsert')]", hasSize(1)))
+        .andExpect(jsonPath("$.operations[?(@.entity=='product')].data.costCentavos").value(1250));
+
+    String cursorAfterCost = JsonPath.read(changedA.getResponse().getContentAsString(), "$.nextCursor");
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/inventory/items/" + inventoryItemId.longValue() + "/stock-settings",
+                staffToken,
+                """
+                {"costPrice": 12.50, "reorderPoint": 9, "reorderQuantity": 8, "status": "ACTIVE"}
+                """))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer(changesUrl(cursorAfterCost), accessA))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.operations", hasSize(0)));
+  }
+
+  @Test
   void changes_highSaleWarningUpdate_emitsPolicyUpsertWithThreshold() throws Exception {
     String staffToken = obtainAccessToken();
     long hqId = createHeadquarter(staffToken, "POS-HSW-" + UUID.randomUUID());

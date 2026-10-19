@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity;
 
 import io.github.alexistrejo11.pimienta.shared.jpa.BaseJpaEntity;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosDiscountMode;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -51,6 +52,16 @@ public class PosSaleJpaEntity extends BaseJpaEntity implements Persistable<UUID>
 
   @Column(name = "discount_centavos", nullable = false)
   private long discountCentavos;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "discount_mode", length = 32)
+  private PosDiscountMode discountMode;
+
+  @Column(name = "discount_reason", length = 512)
+  private String discountReason;
+
+  @Column(name = "discount_authorized_by_operator_id")
+  private Long discountAuthorizedByOperatorId;
 
   @Column(name = "total_centavos", nullable = false)
   private long totalCentavos;
@@ -158,6 +169,30 @@ public class PosSaleJpaEntity extends BaseJpaEntity implements Persistable<UUID>
 
   public void setDiscountCentavos(long discountCentavos) {
     this.discountCentavos = discountCentavos;
+  }
+
+  public PosDiscountMode getDiscountMode() {
+    return discountMode;
+  }
+
+  public void setDiscountMode(PosDiscountMode discountMode) {
+    this.discountMode = discountMode;
+  }
+
+  public String getDiscountReason() {
+    return discountReason;
+  }
+
+  public void setDiscountReason(String discountReason) {
+    this.discountReason = discountReason;
+  }
+
+  public Long getDiscountAuthorizedByOperatorId() {
+    return discountAuthorizedByOperatorId;
+  }
+
+  public void setDiscountAuthorizedByOperatorId(Long discountAuthorizedByOperatorId) {
+    this.discountAuthorizedByOperatorId = discountAuthorizedByOperatorId;
   }
 
   public long getTotalCentavos() {

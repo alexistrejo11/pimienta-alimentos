@@ -14,4 +14,6 @@ public record PosReportFilterQuery(
     PosSaleLineType lineType,
     boolean openProductsOnly,
     /** Solo ventas con un pago de cortesía. */
-    boolean courtesyOnly) {}
+    boolean courtesyOnly,
+    /** Cualquier venta con descuento, incluida la cortesía parcial. */
+    boolean discountedOnly) {}

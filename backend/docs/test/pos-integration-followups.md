@@ -89,3 +89,13 @@ No extra follow-ups from this pass.
 A name or barcode save publishes one catalog upsert per sede that sells the product. Description-only saves do not. Tablets already apply `data.name` and `data.barcode` on product upsert, so no APK change is required.
 
 No extra follow-ups from this pass.
+
+## 2026-10-17 — Sale discount trace and cost delta
+
+- `V23` backfills `discount_mode` as `FULL_COURTESY` or `TARGET_AMOUNT`. Historical at-cost tickets cannot be distinguished from a custom amount, because older payloads had no mode.
+- `discountedOnly` is on `GET /pos/admin/reports/sales` only. The product report still receives the flag as false from that controller.
+- A reorder-point save with the same `costPrice` does not publish a catalog change. Cost edits do, for every sede that sells the linked product.
+- Flyway is off under the `test` profile, so the JSON backfill is not exercised by H2. Ingest of an old payload (no `discount` object, discount equals gross) covers the inference the migration encodes.
+- `discount_authorized_by_role` was removed from `V23` before that migration shipped. The authorizer column is `discount_authorized_by_operator_id` only.
+
+No extra follow-ups from this pass.

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, finalize, map, Observable, of, switchMap } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
+import { posDiscountModeLabel } from '../../../../core/i18n/enum-labels';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import {
   formatCentavos,
@@ -23,6 +24,22 @@ import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-se
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { ProductSelectComponent } from '../../../../shared/ui/product-select/product-select';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
+
+/** Mutually exclusive ticket filters on Ventas POS. */
+export type PosSalesIncludeKind = 'all' | 'open' | 'pending' | 'courtesy' | 'discounted';
+
+/** Maps the Ventas filter to the sales-report query flags. */
+export function posSalesIncludeFilter(kind: PosSalesIncludeKind): Pick<
+  PosReportFilterParams,
+  'openProductsOnly' | 'lineType' | 'courtesyOnly' | 'discountedOnly'
+> {
+  return {
+    openProductsOnly: kind === 'open',
+    lineType: kind === 'pending' ? 'PENDING_CATALOG' : undefined,
+    courtesyOnly: kind === 'courtesy',
+    discountedOnly: kind === 'discounted',
+  };
+}
 
 @Component({
   selector: 'app-ventas-page',
@@ -46,6 +63,7 @@ export class VentasPageComponent implements OnInit {
   readonly metadata = signal<PageMetadata | null>(null);
   readonly page = signal(0);
   readonly formatCentavos = formatCentavos;
+  readonly discountModeLabel = posDiscountModeLabel;
 
   readonly productRows = signal<PosProductReportResponse[]>([]);
   /** El último Consultar usó un producto del catálogo, montos abiertos, sin catalogar o cortesías. */
@@ -62,7 +80,7 @@ export class VentasPageComponent implements OnInit {
   /** Un producto del catálogo. Acota tickets y resumen al pulsar Consultar. */
   filterProductId: number | null = null;
   /** `all` muestra todo. Las otras opciones se excluyen entre sí. */
-  includeKind: 'all' | 'open' | 'pending' | 'courtesy' = 'all';
+  includeKind: PosSalesIncludeKind = 'all';
   /** `true` = más recientes primero (API `recent`). */
   readonly salesNewestFirst = signal(true);
   readonly expandedSaleId = signal<string | null>(null);
@@ -97,6 +115,17 @@ export class VentasPageComponent implements OnInit {
     if (this.initialLoad && this.selectedHeadquarterId != null) {
       this.initialLoad = false;
       this.cargar();
+    }
+  }
+
+  discountBadgeClass(mode: string | null | undefined): string {
+    switch (mode) {
+      case 'FULL_COURTESY':
+        return 'ui-badge-info';
+      case 'AT_COST':
+        return 'ui-badge-warning';
+      default:
+        return 'ui-badge-neutral';
     }
   }
 
@@ -184,6 +213,7 @@ export class VentasPageComponent implements OnInit {
   ): PosReportFilterParams {
     return {
       ...this.reportBaseParams(headquarterId, from, to),
+      discountedOnly: posSalesIncludeFilter(this.includeKind).discountedOnly,
       salesOrder: this.salesNewestFirst() ? 'recent' : 'oldest',
       page,
       size: 20,
@@ -191,14 +221,15 @@ export class VentasPageComponent implements OnInit {
   }
 
   private reportBaseParams(headquarterId: number, from: string, to: string): PosReportFilterParams {
+    const include = posSalesIncludeFilter(this.includeKind);
     return {
       headquarterId,
       from,
       to,
       productId: this.filterProductId ?? undefined,
-      openProductsOnly: this.includeKind === 'open',
-      lineType: this.includeKind === 'pending' ? 'PENDING_CATALOG' : undefined,
-      courtesyOnly: this.includeKind === 'courtesy',
+      openProductsOnly: include.openProductsOnly,
+      lineType: include.lineType,
+      courtesyOnly: include.courtesyOnly,
     };
   }
 

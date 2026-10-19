@@ -17,7 +17,7 @@ Tablet POS ──outbox local──┘
 
 ## Backend observado
 
-Stack: Java 26, Spring Boot 4, `/api/v1`, PostgreSQL + Flyway (12 migraciones), Redis, JWT, S3.
+Stack: Java 25, Spring Boot 4, `/api/v1`, PostgreSQL + Flyway (12 migraciones), Redis, JWT, S3.
 
 Módulos: `account` (auth + user), `employees`, `contract`, `crm`, `task`, `headquarter`, `inventory`, `payroll`, `files`, `notification`. Paquete POS: `module.pos` con un controller vacío.
 

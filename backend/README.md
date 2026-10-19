@@ -36,7 +36,7 @@ remain outside the versioned API prefix.
 
 ## Technology Stack
 
-- Java 26
+- Java 25
 - Spring Boot 4
 - Spring Security and JWT
 - PostgreSQL 16 with Flyway
@@ -46,7 +46,7 @@ remain outside the versioned API prefix.
 
 ## Requirements
 
-- Java 26
+- Java 25
 - Docker and Docker Compose for local dependencies
 - Maven, or the included Maven wrapper
 

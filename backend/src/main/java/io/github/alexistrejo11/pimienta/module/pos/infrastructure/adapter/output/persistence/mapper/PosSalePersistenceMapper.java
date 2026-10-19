@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.mapper;
 
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosSale;
+import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosDiscountMode;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosPaymentMethod;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStatus;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosSaleStockPolicy;
@@ -40,7 +41,8 @@ public final class PosSalePersistenceMapper {
                 line.isSoldWhileUnavailable(),
                 line.getRawBarcode(),
                 line.getAuthorizedByOperatorId(),
-                line.getAuthorizedAt()));
+                line.getAuthorizedAt(),
+                line.getUnitCostCentavos()));
       }
     }
     List<PosSale.Payment> payments = new ArrayList<>();
@@ -65,6 +67,9 @@ public final class PosSalePersistenceMapper {
         .withFolio(entity.getFolio())
         .withGrossCentavos(entity.getGrossCentavos())
         .withDiscountCentavos(entity.getDiscountCentavos())
+        .withDiscountMode(entity.getDiscountMode())
+        .withDiscountReason(entity.getDiscountReason())
+        .withDiscountAuthorizedByOperatorId(entity.getDiscountAuthorizedByOperatorId())
         .withTotalCentavos(entity.getTotalCentavos())
         .withStatus(entity.getStatus())
         .withOccurredAt(entity.getOccurredAt())
@@ -89,6 +94,9 @@ public final class PosSalePersistenceMapper {
         domain.getFolio() != null && !domain.getFolio().isBlank() ? domain.getFolio() : "");
     e.setGrossCentavos(domain.getGrossCentavos());
     e.setDiscountCentavos(domain.getDiscountCentavos());
+    e.setDiscountMode(storedDiscountMode(domain.getDiscountMode()));
+    e.setDiscountReason(blankToNull(domain.getDiscountReason()));
+    e.setDiscountAuthorizedByOperatorId(domain.getDiscountAuthorizedByOperatorId());
     e.setTotalCentavos(domain.getTotalCentavos());
     e.setStatus(domain.getStatus() != null ? domain.getStatus() : PosSaleStatus.CONFIRMED);
     e.setOccurredAt(domain.getOccurredAt() != null ? domain.getOccurredAt() : Instant.now());
@@ -118,6 +126,7 @@ public final class PosSalePersistenceMapper {
       le.setRawBarcode(blankToNull(line.rawBarcode()));
       le.setAuthorizedByOperatorId(line.authorizedByOperatorId());
       le.setAuthorizedAt(line.authorizedAt());
+      le.setUnitCostCentavos(line.unitCostCentavos());
       le.setCreatedAt(now);
       le.setUpdatedAt(now);
       le.setVersion(null);
@@ -141,6 +150,10 @@ public final class PosSalePersistenceMapper {
     }
     e.setPayments(paymentEntities);
     return e;
+  }
+
+  private static PosDiscountMode storedDiscountMode(PosDiscountMode mode) {
+    return mode == null || mode == PosDiscountMode.UNDEFINED ? null : mode;
   }
 
   private static String blankToNull(String value) {

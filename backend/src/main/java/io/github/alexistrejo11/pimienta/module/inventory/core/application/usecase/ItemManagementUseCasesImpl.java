@@ -7,6 +7,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemLinkedToProductException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemNotFoundException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.ItemManagementUseCases;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemCostChangePort;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,9 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
 
   private final ItemRepository itemRepository;
+  private final ItemCostChangePort itemCostChangePort;
 
-  public ItemManagementUseCasesImpl(ItemRepository itemRepository) {
+  public ItemManagementUseCasesImpl(
+      ItemRepository itemRepository, ItemCostChangePort itemCostChangePort) {
     this.itemRepository = itemRepository;
+    this.itemCostChangePort = itemCostChangePort;
   }
 
   @Override
@@ -59,14 +63,21 @@ public class ItemManagementUseCasesImpl implements ItemManagementUseCases {
   @Transactional
   public Item updateStockSettings(Long id, UpdateItemStockSettingsCommand command) {
     Item existing = getById(id);
-    existing.setCostPrice(command.costPrice() != null ? command.costPrice() : BigDecimal.ZERO);
+    BigDecimal nextCost = command.costPrice() != null ? command.costPrice() : BigDecimal.ZERO;
+    BigDecimal previousCost = existing.getCostPrice() != null ? existing.getCostPrice() : BigDecimal.ZERO;
+    boolean costChanged = previousCost.compareTo(nextCost) != 0;
+    existing.setCostPrice(nextCost);
     existing.setReorderPoint(command.reorderPoint());
     existing.setReorderQuantity(command.reorderQuantity());
     if (command.status() != null) {
       existing.setStatus(command.status());
     }
     existing.setUpdatedAt(LocalDateTime.now());
-    return itemRepository.save(existing);
+    Item saved = itemRepository.save(existing);
+    if (costChanged) {
+      itemCostChangePort.publish(saved.getId());
+    }
+    return saved;
   }
 
   @Override

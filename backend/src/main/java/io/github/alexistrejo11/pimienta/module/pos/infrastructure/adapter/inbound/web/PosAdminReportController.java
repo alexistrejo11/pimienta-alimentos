@@ -73,12 +73,13 @@ public class PosAdminReportController {
        @RequestParam(required = false) PosSaleLineType lineType,
        @RequestParam(defaultValue = "false") boolean openProductsOnly,
        @RequestParam(defaultValue = "false") boolean courtesyOnly,
+       @RequestParam(defaultValue = "false") boolean discountedOnly,
        @RequestParam(defaultValue = "recent") String salesOrder,
        @ModelAttribute PageableRequest pageable) {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
          reportUseCases.sales(
-             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly, courtesyOnly),
+             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly, courtesyOnly, discountedOnly),
              salesPageable(pageable, salesOrder)),
         row -> PosWebMapper.toSaleReportResponse(row.sale(), row.syncStatus()));
   }
@@ -109,7 +110,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.products(
-             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly, courtesyOnly),
+             filter(hq, from, to, shiftId, productId, null, lineType, openProductsOnly, courtesyOnly, false),
              pageable.toPageable()),
         PosWebMapper::toProductReportResponse);
   }
@@ -128,7 +129,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.wasteCancellations(
-             filter(hq, from, to, shiftId, null, eventType, null, false, false), pageable.toPageable()),
+             filter(hq, from, to, shiftId, null, eventType, null, false, false, false), pageable.toPageable()),
         PosWebMapper::toLedgerEventReportResponse);
   }
 
@@ -145,7 +146,7 @@ public class PosAdminReportController {
     long hq = headquarterAccessService.enforceHeadquarterFilter(principal, headquarterId);
     return PagedResponse.map(
         reportUseCases.shiftCloses(
-             filter(hq, from, to, shiftId, null, null, null, false, false), pageable.toPageable()),
+             filter(hq, from, to, shiftId, null, null, null, false, false, false), pageable.toPageable()),
         PosWebMapper::toLedgerEventReportResponse);
   }
 
@@ -158,8 +159,9 @@ public class PosAdminReportController {
       String eventType,
       PosSaleLineType lineType,
       boolean openProductsOnly,
-      boolean courtesyOnly) {
+      boolean courtesyOnly,
+      boolean discountedOnly) {
     return new PosReportFilterQuery(
-        headquarterId, from, to, shiftId, productId, eventType, lineType, openProductsOnly, courtesyOnly);
+        headquarterId, from, to, shiftId, productId, eventType, lineType, openProductsOnly, courtesyOnly, discountedOnly);
   }
 }

@@ -20,7 +20,8 @@ import java.lang.annotation.Target;
     summary = "POS sales report",
     description =
         "Paged ACCEPTED sales for a headquarter and date range (centavos). "
-            + "courtesyOnly keeps sales with a CORTESIA payment.")
+            + "courtesyOnly keeps sales with a CORTESIA payment. "
+            + "discountedOnly keeps any sale whose discount is greater than zero.")
 @ApiResponse(
     responseCode = "200",
     description = "Page of sales.",

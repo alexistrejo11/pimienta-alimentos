@@ -1,11 +1,12 @@
 # Configure the current PowerShell session to use Android Studio's embedded JDK.
 $candidates = @(
-    "$env:USERPROFILE\.jdks\openjdk-26.0.2.1",
+    (Get-ChildItem "$env:USERPROFILE\.jdks\openjdk-25*" -Directory -ErrorAction SilentlyContinue |
+        Select-Object -First 1 -ExpandProperty FullName),
     "$env:ProgramFiles\Android\Android Studio\jbr",
     "$env:ProgramFiles\Android\Android Studio\jre",
     "$env:LOCALAPPDATA\Programs\Android Studio\jbr",
     "$env:LOCALAPPDATA\Programs\Android Studio\jre"
-)
+) | Where-Object { $_ }
 
 $jdk = $candidates | Where-Object { Test-Path (Join-Path $_ "bin\java.exe") } | Select-Object -First 1
 if (-not $jdk) {

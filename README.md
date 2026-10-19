@@ -30,7 +30,7 @@ Spring Boot API -> PostgreSQL, Redis, and S3
 | Area | Technologies |
 | --- | --- |
 | Web | Angular 21, TypeScript, SSR, Express, Tailwind CSS |
-| API | Java 26, Spring Boot 4, PostgreSQL, Flyway, Redis, JWT |
+| API | Java 25, Spring Boot 4, PostgreSQL, Flyway, Redis, JWT |
 | Mobile | Kotlin, Jetpack Compose, Room, WorkManager, Retrofit |
 | Delivery | GitHub Actions, GHCR, Docker Compose, Cloudflare Access, S3 |
 

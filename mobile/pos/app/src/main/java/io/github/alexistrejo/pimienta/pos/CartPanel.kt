@@ -64,12 +64,16 @@ internal fun CartPanel(
     discount: SaleDiscountDraft?,
     onChange: (List<CartLine>) -> Unit,
     applyDiscount: () -> Unit,
+    clearDiscount: () -> Unit,
     onShowCatalog: (() -> Unit)? = null,
     checkout: () -> Unit,
 ) {
     val gross = cart.totalCentavos()
-    val discountAmount = discount?.amountCentavos ?: 0
-    val total = SaleCalculator.netCentavos(gross, discountAmount)
+    val draft = discount
+    val quote = draft?.let { SaleCalculator.quote(it.mode, cart, it.targetCentavos) }
+    val accepted = quote as? DiscountQuote.Accepted
+    val blocked = quote as? DiscountQuote.Blocked
+    val total = accepted?.chargeCentavos ?: gross
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().padding(12.dp)) {
             Row(
@@ -134,27 +138,36 @@ internal fun CartPanel(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (discount == null) {
+                if (draft == null || accepted == null) {
                     Text("Total", style = MaterialTheme.typography.titleMedium)
                     Text(Money.format(total), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 } else {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         TotalLine("Venta bruta", Money.format(gross))
-                        TotalLine("Descuento · ${discount.reason}", "− ${Money.format(discountAmount)}")
+                        TotalLine("${draft.mode.summaryLabel()} · ${draft.reason}", "− ${Money.format(accepted.discountCentavos)}")
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                        TotalLine("Total neto", Money.format(total), emphasized = true)
+                        TotalLine("Monto a cobrar", Money.format(accepted.chargeCentavos), emphasized = true)
                     }
                 }
             }
+            blocked?.let { Text(discountBlockMessage(it.block, it.lineNames), color = MaterialTheme.colorScheme.error) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PosButton("Limpiar", { onChange(emptyList()) }, enabled = cart.isNotEmpty(), modifier = Modifier.weight(0.8f))
-                PosButton("Descuento / cortesía", applyDiscount, enabled = cart.isNotEmpty(), modifier = Modifier.weight(1.2f))
+                PosButton(
+                    if (draft == null) "Descuento / cortesía" else "Editar descuento",
+                    applyDiscount,
+                    enabled = cart.isNotEmpty(),
+                    modifier = Modifier.weight(1.2f),
+                )
+                if (draft != null) {
+                    PosButton("Quitar", clearDiscount, modifier = Modifier.weight(0.7f))
+                }
             }
             Spacer(Modifier.height(6.dp))
             PosButton(
                 "Cobrar ${Money.format(total)}",
                 checkout,
-                enabled = cart.isNotEmpty(),
+                enabled = cart.isNotEmpty() && blocked == null,
                 primary = true,
                 modifier = Modifier.fillMaxWidth(),
             )
