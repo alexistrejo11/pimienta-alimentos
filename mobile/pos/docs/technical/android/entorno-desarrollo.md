@@ -40,13 +40,12 @@ disco.
 
 La ruta puede variar si Android Studio se instaló en otra carpeta. También se
 puede configurar `JAVA_HOME` permanentemente desde las variables de entorno de
-Windows. En tu computadora también existe el JDK `C:\Users\Alexis\.jdks\openjdk-26.0.2.1`,
-y el script lo intenta detectar automáticamente. El proyecto no necesita
-`KOTLIN_HOME`.
+Windows. En tu computadora también puede existir un JDK `openjdk-25*` bajo
+`%USERPROFILE%\.jdks\`, y el script lo intenta detectar automáticamente. El
+proyecto no necesita `KOTLIN_HOME`.
 
-JDK 26 es relativamente nuevo; si Gradle o Android Gradle Plugin reporta una
-versión no soportada, selecciona `Embedded JDK (jbr)` en Android Studio o usa
-un JDK LTS compatible.
+Si Gradle o Android Gradle Plugin reporta una versión no soportada, selecciona
+`Embedded JDK (jbr)` en Android Studio o usa un JDK LTS compatible.
 
 ## Diagnóstico rápido
 
