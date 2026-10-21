@@ -88,7 +88,7 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
             hqId,
             itemId,
             new UpsertHeadquarterItemCommand(
-                category, BigDecimal.valueOf(salePriceCentavos, 2), null, stockPolicy, null));
+                category, BigDecimal.valueOf(salePriceCentavos, 2), null, stockPolicy));
     return project(saved);
   }
 
@@ -150,8 +150,7 @@ public class PosDeviceCatalogUseCasesImpl implements PosDeviceCatalogUseCases {
                 salePrice,
                 category.getId(),
                 true,
-                command.stockPolicy() != null ? command.stockPolicy() : StockPolicy.NOT_CONTROLLED,
-                null));
+                command.stockPolicy() != null ? command.stockPolicy() : StockPolicy.NOT_CONTROLLED));
     return projector
         .toProductRow(created.catalog())
         .orElseThrow(() -> new IllegalStateException("Created POS product could not be projected"));

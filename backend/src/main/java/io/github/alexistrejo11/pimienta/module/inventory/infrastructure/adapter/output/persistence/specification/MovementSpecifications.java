@@ -24,6 +24,9 @@ public final class MovementSpecifications {
         if (criteria.direction() != null) {
           parts.add(cb.equal(root.get("direction"), criteria.direction()));
         }
+        if (criteria.exitReason() != null) {
+          parts.add(cb.equal(root.get("exitReason"), criteria.exitReason()));
+        }
         if (criteria.itemId() != null) {
           parts.add(cb.equal(root.get("itemId"), criteria.itemId()));
         }

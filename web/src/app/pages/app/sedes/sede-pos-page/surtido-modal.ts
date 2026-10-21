@@ -60,7 +60,6 @@ export class SurtidoModalComponent implements OnInit {
     salePrice: [0, [Validators.required, Validators.min(0.01)]],
     available: [true],
     stockPolicy: ['NOT_CONTROLLED' as StockPolicy, Validators.required],
-    negativeStockLimit: [null as number | null],
   });
 
   ngOnInit(): void {
@@ -126,7 +125,6 @@ export class SurtidoModalComponent implements OnInit {
       salePrice: 0,
       available: true,
       stockPolicy: product.trackStock ? 'CONTROLLED' : 'NOT_CONTROLLED',
-      negativeStockLimit: null,
     });
     markFormPristine(this.catalogForm);
     this.editingOffer.set(false);
@@ -141,7 +139,6 @@ export class SurtidoModalComponent implements OnInit {
       salePrice: row.salePrice,
       available: row.available,
       stockPolicy: row.stockPolicy,
-      negativeStockLimit: row.negativeStockLimit,
     });
     markFormPristine(this.catalogForm);
     this.editingOffer.set(true);
@@ -259,7 +256,6 @@ export class SurtidoModalComponent implements OnInit {
         salePrice: v.salePrice,
         available: v.available,
         stockPolicy: v.stockPolicy,
-        negativeStockLimit: v.negativeStockLimit,
       })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
@@ -313,7 +309,6 @@ export class SurtidoModalComponent implements OnInit {
             salePrice: v.salePrice,
             available: row.available,
             stockPolicy: nextPolicy,
-            negativeStockLimit: row.negativeStockLimit,
           });
         }),
         finalize(() => this.saving.set(false)),

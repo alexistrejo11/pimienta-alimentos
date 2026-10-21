@@ -85,7 +85,7 @@ public class InventoryStockController {
         ? Page.empty(pageable)
         : inventoryManagementUseCases.searchGlobalSummary(
             filter.getSearch(), filter.getCategory(), filter.getStatus(), filter.getMinCost(), filter.getMaxCost(), scope, pageable);
-    return PagedResponse.map(page, row -> new GlobalInventoryResponse(row.itemId(), row.sku(), row.name(), row.category(), row.headquarterId(), row.headquarterName(), row.availableQuantity(), row.reservedQuantity(), row.inTransitQuantity(), row.totalQuantity(), row.unitCost(), row.totalValue(), row.status()));
+    return PagedResponse.map(page, row -> new GlobalInventoryResponse(row.itemId(), row.sku(), row.name(), row.category(), row.headquarterId(), row.headquarterName(), row.availableQuantity(), row.totalQuantity(), row.unitCost(), row.totalValue(), row.status()));
   }
 
   @GetMapping("/low-stock")
@@ -141,7 +141,7 @@ public class InventoryStockController {
   public InventoryStockResponse createInitialStock(@AuthenticationPrincipal JwtAuthenticationContext principal, @Valid @RequestBody CreateInitialStockRequest request) {
     headquarterAccessService.requireOwnedLocation(principal, storageLocationManagementUseCases.getById(request.locationId()).getHeadquarterId());
     Inventory created = inventoryManagementUseCases.createInitialStock(
-        request.itemId(), request.locationId(), request.initialQuantity());
+        request.itemId(), request.locationId(), request.initialQuantity(), principal.userId());
     return InventoryStockWebMapper.toResponse(created);
   }
 }

@@ -41,11 +41,10 @@ public interface InventoryJpaRepository
   @Query(value = """
       SELECT s.item_id AS itemId, COALESCE(p.sku, '') AS sku, i.name AS name, i.category AS category,
              l.headquarter_id AS headquarterId, COALESCE(h.name, 'Almacén central') AS headquarterName,
-             SUM(s.available_quantity) AS availableQuantity, SUM(s.reserved_quantity) AS reservedQuantity,
-             SUM(s.in_transit_quantity) AS inTransitQuantity,
-             SUM(s.available_quantity + s.reserved_quantity) AS totalQuantity,
+             SUM(s.available_quantity) AS availableQuantity,
+             SUM(s.available_quantity) AS totalQuantity,
              i.cost_price AS unitCost,
-             i.cost_price * SUM(s.available_quantity + s.reserved_quantity) AS totalValue,
+             i.cost_price * SUM(s.available_quantity) AS totalValue,
              CASE WHEN SUM(s.available_quantity) <= 0 THEN 'OUT_OF_STOCK'
                   WHEN SUM(s.available_quantity) <= i.reorder_point THEN 'LOW_STOCK' ELSE 'NORMAL' END AS status
       FROM inventory_stock s JOIN inventory_items i ON i.id = s.item_id
@@ -85,7 +84,7 @@ public interface InventoryJpaRepository
           FROM (
             SELECT SUM(s.available_quantity) AS availableQty,
                    i.reorder_point AS reorderPoint,
-                   i.cost_price * SUM(s.available_quantity + s.reserved_quantity) AS stockValue
+                   i.cost_price * SUM(s.available_quantity) AS stockValue
             FROM inventory_stock s
             JOIN inventory_items i ON i.id = s.item_id
             JOIN storage_locations l ON l.id = s.location_id

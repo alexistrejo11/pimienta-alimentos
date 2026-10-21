@@ -16,7 +16,7 @@ public class InventoryGlobalSummaryRepositoryImpl implements InventoryGlobalSumm
   private final InventoryJpaRepository repository;
   public InventoryGlobalSummaryRepositoryImpl(InventoryJpaRepository repository) { this.repository = repository; }
   public Page<InventoryGlobalSummary> search(String search, ItemCategory category, InventoryStatus status, java.math.BigDecimal minCost, java.math.BigDecimal maxCost, List<Long> hqs, Pageable pageable) {
-    return repository.searchGlobalSummary(blankToNull(search), category == null ? null : category.name(), status == null ? null : status.name(), minCost, maxCost, hqs == null, hqBinding(hqs), pageable).map(row -> new InventoryGlobalSummary(row.getItemId(), row.getSku(), row.getName(), ItemCategory.valueOf(row.getCategory()), row.getHeadquarterId(), row.getHeadquarterName(), row.getAvailableQuantity(), row.getReservedQuantity(), row.getInTransitQuantity(), row.getTotalQuantity(), row.getUnitCost(), row.getTotalValue(), InventoryStatus.valueOf(row.getStatus())));
+    return repository.searchGlobalSummary(blankToNull(search), category == null ? null : category.name(), status == null ? null : status.name(), minCost, maxCost, hqs == null, hqBinding(hqs), pageable).map(row -> new InventoryGlobalSummary(row.getItemId(), row.getSku(), row.getName(), ItemCategory.valueOf(row.getCategory()), row.getHeadquarterId(), row.getHeadquarterName(), row.getAvailableQuantity(), row.getTotalQuantity(), row.getUnitCost(), row.getTotalValue(), InventoryStatus.valueOf(row.getStatus())));
   }
 
   @Override
@@ -32,7 +32,6 @@ public class InventoryGlobalSummaryRepositoryImpl implements InventoryGlobalSumm
         nz(row.getSkuCount()),
         nz(row.getLowStockCount()),
         nz(row.getOutOfStockCount()),
-        0,
         nz(row.getTotalAvailableQuantity()),
         row.getTotalStockValue() == null ? BigDecimal.ZERO : row.getTotalStockValue());
   }

@@ -349,53 +349,8 @@ const opsChildren: Routes = [
     canActivate: [roleGuard],
     data: { access: { roles: OPS } },
   },
-  {
-    path: 'inventario/transferencias',
-    loadComponent: () =>
-      import('./pages/app/inventario/transferencias/inventario-transfer-page').then(
-        (m) => m.InventarioTransferPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: OPS } },
-  },
   { path: 'inventario/mermas', redirectTo: 'inventario/ledger' },
   { path: 'inventario/ajustes', redirectTo: 'inventario/ledger' },
-  {
-    path: 'inventario/conteos/nuevo',
-    loadComponent: () =>
-      import('./pages/app/inventario/counts/count-session-create-page').then(
-        (m) => m.CountSessionCreatePageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: OPS } },
-  },
-  {
-    path: 'inventario/conteos/:id/revision',
-    loadComponent: () =>
-      import('./pages/app/inventario/counts/count-session-detail-page').then(
-        (m) => m.CountSessionDetailPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: OPS, review: true } },
-  },
-  {
-    path: 'inventario/conteos/:id',
-    loadComponent: () =>
-      import('./pages/app/inventario/counts/count-session-detail-page').then(
-        (m) => m.CountSessionDetailPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: OPS } },
-  },
-  {
-    path: 'inventario/conteos',
-    loadComponent: () =>
-      import('./pages/app/inventario/counts/count-session-list-page').then(
-        (m) => m.CountSessionListPageComponent,
-      ),
-    canActivate: [roleGuard],
-    data: { access: { roles: OPS } },
-  },
   {
     path: 'pos/dispositivos',
     loadComponent: () =>

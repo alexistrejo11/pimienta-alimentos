@@ -97,10 +97,6 @@ public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogU
                       .withAvailable(
                           command.available() != null ? command.available() : existing.isAvailable())
                       .withStockPolicy(resolved)
-                      .withNegativeStockLimit(
-                          command.negativeStockLimit() != null
-                              ? command.negativeStockLimit()
-                              : existing.getNegativeStockLimit())
                       .revise(existing));
             })
         .orElseGet(
@@ -113,7 +109,6 @@ public class HeadquarterPosCatalogUseCasesImpl implements HeadquarterPosCatalogU
                         .withSalePrice(resolvePrice(command.salePrice(), BigDecimal.ZERO))
                         .withAvailable(command.available() == null || command.available())
                         .withStockPolicy(policy)
-                        .withNegativeStockLimit(command.negativeStockLimit())
                         .register()));
   }
 

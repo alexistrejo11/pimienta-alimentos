@@ -19,7 +19,7 @@ internal fun ProductDto.toProductEntity() = ProductEntity(
     stockQuantity.toString(),
     stockMinQuantity.toString(),
     stockPolicy,
-    negativeStockLimit,
+    null,
 )
 
 // Builds a training-only catalog row. Ids never leave the scratch sandbox database.

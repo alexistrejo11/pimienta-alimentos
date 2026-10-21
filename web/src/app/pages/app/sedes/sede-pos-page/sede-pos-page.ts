@@ -431,7 +431,6 @@ export class SedePosPageComponent implements OnInit {
             catalogStaleBlockHours: settings.catalogStaleBlockHours,
             openAmountCategories: updated,
             allowOpenProducts: settings.allowOpenProducts,
-            defaultNegativeStockLimit: settings.defaultNegativeStockLimit,
             stockless: settings.stockless,
             highSaleWarningCentavos: settings.highSaleWarningCentavos,
             highChangeWarningCentavos: settings.highChangeWarningCentavos,

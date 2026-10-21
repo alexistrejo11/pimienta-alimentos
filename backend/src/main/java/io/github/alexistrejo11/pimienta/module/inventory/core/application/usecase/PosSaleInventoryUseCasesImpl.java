@@ -3,7 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.core.application.useca
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.command.ApplyPosSaleStockCommand;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement;
-import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.InventoryMovementType;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLocation;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemNotFoundException;
@@ -97,12 +97,12 @@ public class PosSaleInventoryUseCasesImpl implements PosSaleInventoryUseCases {
 
     if (command.quantityOut() > 0) {
       movementRepository.save(
-          InventoryMovement.recordExit(
+          InventoryMovement.recordOut(
               item,
               posLocation,
               command.quantityOut(),
               unitCost,
-              InventoryMovementType.SALE,
+              InventoryExitReason.SALE,
               reference,
               "POS sale",
               command.performedById(),
@@ -110,14 +110,14 @@ public class PosSaleInventoryUseCasesImpl implements PosSaleInventoryUseCases {
     } else {
       int qtyIn = Math.abs(command.quantityOut());
       movementRepository.save(
-          InventoryMovement.recordEntry(
+          InventoryMovement.recordIn(
               item,
               posLocation,
               qtyIn,
               unitCost,
-              InventoryMovementType.RETURN_FROM_CLIENT,
+              InventoryExitReason.RETURN_FROM_CLIENT,
               reference,
-              "POS stock reverse",
+              "POS sale cancel",
               command.performedById(),
               saved.getAvailableQuantity()));
     }

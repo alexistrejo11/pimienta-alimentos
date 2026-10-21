@@ -36,6 +36,7 @@ public class MovementPersistenceMapper {
     e.setUnitCost(domain.getUnitCost() != null ? domain.getUnitCost() : BigDecimal.ZERO);
     e.setType(domain.getType());
     e.setDirection(domain.getDirection());
+    e.setExitReason(domain.getExitReason());
     e.setDescription(domain.getDescription());
     e.setReferenceNumber(domain.getReferenceNumber());
     e.setPerformedById(domain.getPerformedById());
@@ -66,6 +67,7 @@ public class MovementPersistenceMapper {
     movement.setUnitCost(e.getUnitCost());
     movement.setType(e.getType());
     movement.setDirection(e.getDirection());
+    movement.setExitReason(e.getExitReason());
     movement.setDescription(e.getDescription());
     movement.setReferenceNumber(e.getReferenceNumber());
     movement.setPerformedById(e.getPerformedById());

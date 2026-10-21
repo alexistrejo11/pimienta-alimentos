@@ -17,7 +17,6 @@ public record HeadquarterPosCatalogItemResponse(
     BigDecimal salePrice,
     boolean available,
     StockPolicy stockPolicy,
-    Integer negativeStockLimit,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     Long version) {}

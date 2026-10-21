@@ -4,15 +4,16 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.Inven
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import java.util.List;
 
-public record ScrapTransactionRequest(
+public record OutTransactionRequest(
     String externalReference,
     String notes,
     @NotNull InventoryExitReason exitReason,
     Long initiatedById,
-    @NotEmpty @Valid List<ScrapLineRequest> lines) {
+    @NotEmpty @Valid List<OutLineRequest> lines) {
 
-  public record ScrapLineRequest(
-      long itemId, long locationId, int quantity, @NotNull java.math.BigDecimal unitCost) {}
+  public record OutLineRequest(
+      long itemId, long locationId, int quantity, @NotNull BigDecimal unitCost) {}
 }

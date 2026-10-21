@@ -37,7 +37,6 @@ public final class PosSalePersistenceMapper {
                 line.getUnitPriceCentavos(),
                 line.getSubtotalCentavos(),
                 line.getStockPolicy(),
-                line.isSoldWithNegativeStock(),
                 line.isSoldWhileUnavailable(),
                 line.getRawBarcode(),
                 line.getAuthorizedByOperatorId(),
@@ -121,7 +120,6 @@ public final class PosSalePersistenceMapper {
       le.setSubtotalCentavos(line.subtotalCentavos());
       le.setStockPolicy(
           line.stockPolicy() != null ? line.stockPolicy() : PosSaleStockPolicy.NOT_CONTROLLED);
-      le.setSoldWithNegativeStock(line.soldWithNegativeStock());
       le.setSoldWhileUnavailable(line.soldWhileUnavailable());
       le.setRawBarcode(blankToNull(line.rawBarcode()));
       le.setAuthorizedByOperatorId(line.authorizedByOperatorId());

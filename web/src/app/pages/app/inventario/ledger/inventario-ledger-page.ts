@@ -12,7 +12,11 @@ import {
   movementDirectionLabel,
 } from '../../../../core/i18n/enum-labels';
 import type { InventoryMovementResponse } from '../../../../core/model/inventory/inventory.dto';
-import type { ItemCategory } from '../../../../core/model/inventory/inventory.enums';
+import type {
+  InventoryExitReason,
+  InventoryMovementType,
+  ItemCategory,
+} from '../../../../core/model/inventory/inventory.enums';
 import type { PageMetadata } from '../../../../core/model/common/pagination';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
@@ -33,16 +37,43 @@ export class InventarioLedgerPageComponent implements OnInit {
   readonly page = signal(0);
   searchDraft = '';
   searchApplied = '';
-  type = ''; direction = ''; category = ''; fromDate = ''; toDate = '';
+  type = '';
+  direction = '';
+  exitReason = '';
+  category = '';
+  fromDate = '';
+  toDate = '';
   readonly categories: ItemCategory[] = ['RAW_MATERIAL', 'FINISHED_GOOD', 'CONSUMABLE', 'SPARE_PART', 'PACKAGING', 'TOOL', 'MACHINE', 'FURNITURE', 'OTHER'];
+  readonly movementTypes: InventoryMovementType[] = ['IN', 'OUT', 'ADJUSTMENT_PLUS', 'ADJUSTMENT_MINUS'];
+  readonly exitReasons: InventoryExitReason[] = ['SALE', 'WASTE', 'WITHDRAWAL', 'RETURN_FROM_CLIENT'];
   readonly itemCategoryLabel = itemCategoryLabel;
   readonly movementTypeLabel = inventoryMovementTypeLabel;
   readonly directionLabel = movementDirectionLabel;
+  readonly exitReasonLabel = inventoryExitReasonLabel;
 
   ngOnInit(): void { this.load(); }
   load(page = this.page()): void {
     this.page.set(page); this.loading.set(true); this.error.set(null);
-    this.inventory.searchMovements({ page, size: 20, search: this.searchApplied || undefined, type: this.type as never || undefined, direction: this.direction as never || undefined, category: this.category as ItemCategory || undefined, fromDate: this.fromDate ? `${this.fromDate}T00:00:00` : undefined, toDate: this.toDate ? `${this.toDate}T23:59:59` : undefined }).pipe(finalize(() => this.loading.set(false))).subscribe({ next: result => { this.rows.set(result.items); this.metadata.set(result.metadata); }, error: err => this.error.set(parseApiError(err)) });
+    this.inventory
+      .searchMovements({
+        page,
+        size: 20,
+        search: this.searchApplied || undefined,
+        type: (this.type || undefined) as InventoryMovementType | undefined,
+        direction: (this.direction || undefined) as 'IN' | 'OUT' | undefined,
+        exitReason: (this.exitReason || undefined) as InventoryExitReason | undefined,
+        category: (this.category || undefined) as ItemCategory | undefined,
+        fromDate: this.fromDate ? `${this.fromDate}T00:00:00` : undefined,
+        toDate: this.toDate ? `${this.toDate}T23:59:59` : undefined,
+      })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (result) => {
+          this.rows.set(result.items);
+          this.metadata.set(result.metadata);
+        },
+        error: (err: unknown) => this.error.set(parseApiError(err)),
+      });
   }
   applySearch(term: string): void {
     const normalized = term.trim();
@@ -60,10 +91,7 @@ export class InventarioLedgerPageComponent implements OnInit {
   cerrarRegistro(): void { this.registrarAbierto.set(false); }
   onRegistrado(message: string): void { this.registrarAbierto.set(false); this.notice.set(message); this.load(0); }
 
-  movementReason(row: InventoryMovementResponse): string {
-    if (row.type === 'SCRAP' && row.description) {
-      return inventoryExitReasonLabel(row.description);
-    }
-    return row.description || row.referenceNumber || 'Sin motivo';
+  movementDetail(row: InventoryMovementResponse): string {
+    return row.description || row.referenceNumber || '';
   }
 }

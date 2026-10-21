@@ -283,9 +283,9 @@ class ProvisioningRepository(private val context: Context, private val provider:
     }
     private fun PoliciesDto.toEntity(siteId: String) = PosPolicyEntity(
         siteId = siteId,
-        allowNegativeStock = allowNegativeStock,
+        allowNegativeStock = true,
         allowOpenProducts = allowOpenProducts,
-        defaultNegativeStockLimit = defaultNegativeStockLimit,
+        defaultNegativeStockLimit = null,
         staleCatalogWarnHours = staleCatalogWarnHours,
         staleCatalogBlockHours = staleCatalogBlockHours,
         openAmountCategoriesJson = json.encodeToString(openAmountCategories.filter(String::isNotBlank).distinct()),

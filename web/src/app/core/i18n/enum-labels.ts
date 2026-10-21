@@ -56,14 +56,6 @@ export function inventoryStatusLabel(status: string): string {
   return INVENTORY_STATUS_LABELS[status] ?? status;
 }
 
-export function inventoryCountStatusLabel(status: string): string {
-  return INVENTORY_COUNT_STATUS_LABELS[status] ?? status;
-}
-
-export function inventoryCountTypeLabel(type: string): string {
-  return INVENTORY_COUNT_TYPE_LABELS[type] ?? type;
-}
-
 export function locationTypeLabel(type: string): string {
   return LOCATION_TYPE_LABELS[type] ?? type;
 }
@@ -121,11 +113,10 @@ export function posShiftStatusLabel(status: string): string {
 }
 
 const INVENTORY_EXIT_REASON_LABELS: Record<string, string> = {
-  SCRAP: 'Merma genérica',
-  DAMAGED: 'Deteriorado',
-  EXPIRED: 'Caducado',
-  INTERNAL_USE: 'Uso interno',
-  INVENTORY_ADJUSTMENT: 'Ajuste de inventario',
+  SALE: 'Venta',
+  WASTE: 'Merma',
+  WITHDRAWAL: 'Retiro',
+  RETURN_FROM_CLIENT: 'Devolución / Cancelación de venta',
 };
 
 export function inventoryExitReasonLabel(reason: string): string {
@@ -251,18 +242,6 @@ const INVENTORY_STATUS_LABELS: Record<string, string> = {
   OVERSTOCKED: 'Sobre stock',
 };
 
-const INVENTORY_COUNT_STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Borrador',
-  SUBMITTED: 'Enviado',
-  APPROVED: 'Aprobado',
-  CANCELLED: 'Cancelado',
-};
-
-const INVENTORY_COUNT_TYPE_LABELS: Record<string, string> = {
-  FULL: 'Completo',
-  PARTIAL: 'Parcial',
-};
-
 const LOCATION_TYPE_LABELS: Record<string, string> = {
   WAREHOUSE: 'Almacén',
   ZONE: 'Zona',
@@ -278,22 +257,23 @@ const STOCK_POLICY_LABELS: Record<string, string> = {
 };
 
 const INVENTORY_TRANSACTION_TYPE_LABELS: Record<string, string> = {
-  PURCHASE_RECEIPT: 'Entrada por compra', SALE_DISPATCH: 'Salida por venta', INTERNAL_TRANSFER: 'Transferencia interna',
-  PHYSICAL_COUNT: 'Conteo físico', RETURN_FROM_CLIENT: 'Devolución de cliente', RETURN_TO_SUPPLIER: 'Devolución a proveedor',
-  PRODUCTION_ISSUE: 'Consumo de producción', SCRAP_WRITE_OFF: 'Merma',
+  IN: 'Entrada',
+  OUT: 'Salida',
+  ADJUSTMENT: 'Ajuste',
 };
 
 const INVENTORY_TRANSACTION_STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Borrador', PENDING: 'Pendiente', APPROVED: 'Aprobado', IN_PROGRESS: 'En proceso', COMPLETED: 'Completado', CANCELLED: 'Cancelado',
+  COMPLETED: 'Completado',
 };
 
 const INVENTORY_MOVEMENT_TYPE_LABELS: Record<string, string> = {
-  PURCHASE: 'Compra', RETURN_FROM_CLIENT: 'Devolución de cliente', INITIAL_STOCK: 'Existencia inicial', SALE: 'Venta',
-  RETURN_TO_SUPPLIER: 'Devolución a proveedor', USAGE: 'Consumo', SCRAP: 'Merma', TRANSFER: 'Transferencia',
-  ADJUSTMENT_PLUS: 'Ajuste positivo', ADJUSTMENT_MINUS: 'Ajuste negativo',
+  IN: 'Entrada',
+  OUT: 'Salida',
+  ADJUSTMENT_PLUS: 'Ajuste positivo',
+  ADJUSTMENT_MINUS: 'Ajuste negativo',
 };
 
-const MOVEMENT_DIRECTION_LABELS: Record<string, string> = { IN: 'Entrada', OUT: 'Salida', NEUTRAL: 'Ajuste' };
+const MOVEMENT_DIRECTION_LABELS: Record<string, string> = { IN: 'Entrada', OUT: 'Salida' };
 
 const POS_ROLE_LABELS: Record<string, string> = {
   CASHIER: 'Cajero',

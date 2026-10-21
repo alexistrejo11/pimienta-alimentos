@@ -8,6 +8,5 @@ public record InventoryDashboardResponse(
     long skuCount,
     long lowStockCount,
     long outOfStockCount,
-    long openCountSessionCount,
     long totalAvailableQuantity,
     BigDecimal totalStockValue) {}

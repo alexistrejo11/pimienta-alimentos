@@ -7,5 +7,4 @@ public record UpsertHeadquarterItemCommand(
     String saleCategory,
     BigDecimal salePrice,
     Boolean available,
-    StockPolicy stockPolicy,
-    Integer negativeStockLimit) {}
+    StockPolicy stockPolicy) {}

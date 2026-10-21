@@ -48,7 +48,6 @@ public class InventoryDashboardController {
         dashboard.skuCount(),
         dashboard.lowStockCount(),
         dashboard.outOfStockCount(),
-        dashboard.openCountSessionCount(),
         dashboard.totalAvailableQuantity(),
         dashboard.totalStockValue());
   }

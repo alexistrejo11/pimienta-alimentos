@@ -20,12 +20,8 @@ public class Inventory extends BaseDomain<Long> {
   // ─────────────────────────────────────────────
   // CANTIDADES
   // ─────────────────────────────────────────────
-  /** Cantidad física disponible para venta/uso */
+  /** Cantidad física disponible para venta/uso. May be negative after a POS sale. */
   private int availableQuantity;
-  /** Reservado por órdenes pendientes (no disponible aún para otros) */
-  private int reservedQuantity;
-  /** En tránsito / recepción pendiente */
-  private int inTransitQuantity;
 
   private InventoryStatus status;
 
@@ -47,8 +43,6 @@ public class Inventory extends BaseDomain<Long> {
   public Inventory() {
     this.id = 0L;
     this.availableQuantity = 0;
-    this.reservedQuantity = 0;
-    this.inTransitQuantity = 0;
     this.status = InventoryStatus.NORMAL;
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
@@ -77,9 +71,8 @@ public class Inventory extends BaseDomain<Long> {
   // LÓGICA DE DOMINIO
   // ─────────────────────────────────────────────
 
-  /** Cantidad total física (disponible + reservado) */
   public int getTotalQuantity() {
-    return availableQuantity + reservedQuantity;
+    return availableQuantity;
   }
 
   /** Entrada de stock (compra, devolución, ajuste +) */
@@ -104,44 +97,35 @@ public class Inventory extends BaseDomain<Long> {
     this.updatedAt = LocalDateTime.now();
   }
 
-  /** Reserva stock para una orden (lo separa pero no lo egresa aún) */
-  public void reserve(int quantity) {
-    if (quantity > this.availableQuantity)
-      throw new IllegalStateException("No hay suficiente stock para reservar");
-    this.availableQuantity -= quantity;
-    this.reservedQuantity += quantity;
+  /**
+   * Sets on-hand quantity to a physical count. Does not reject a short location capacity:
+   * POS sales may already have driven quantity negative and floored occupied capacity at zero.
+   */
+  public void adjust(int countedQuantity) {
+    if (countedQuantity < 0) {
+      throw new IllegalArgumentException("Counted quantity cannot be negative");
+    }
+    int delta = countedQuantity - this.availableQuantity;
+    this.availableQuantity = countedQuantity;
+    if (this.location != null && delta != 0) {
+      this.location.adjustOccupiedSoft(delta);
+    }
     recalculateStatus();
     this.updatedAt = LocalDateTime.now();
   }
 
-  /** Confirma salida de stock previamente reservado */
-  public void confirmReservation(int quantity) {
-    if (quantity > this.reservedQuantity)
-      throw new IllegalStateException("No hay suficiente stock reservado");
-    this.reservedQuantity -= quantity;
-    this.location.removeStock(quantity);
-    recalculateStatus();
-    this.updatedAt = LocalDateTime.now();
-  }
-
-  /** Cancela una reserva y regresa al disponible */
-  public void cancelReservation(int quantity) {
-    if (quantity > this.reservedQuantity)
-      throw new IllegalStateException("No hay suficiente stock reservado para cancelar");
-    this.reservedQuantity -= quantity;
-    this.availableQuantity += quantity;
-    recalculateStatus();
-    this.updatedAt = LocalDateTime.now();
-  }
-
-  /** Ajuste directo (inventario físico) — puede subir o bajar */
-  public void adjust(int newAvailableQuantity) {
-    int delta = newAvailableQuantity - this.availableQuantity;
-    this.availableQuantity = newAvailableQuantity;
-    if (delta > 0)
-      this.location.addStock(delta);
-    else if (delta < 0)
-      this.location.removeStock(Math.abs(delta));
+  /**
+   * Adds {@code signedDelta} to available quantity. Positive increases stock. Never rejects a
+   * negative result or a short location capacity.
+   */
+  public void applyUnrestrictedDelta(int signedDelta) {
+    if (signedDelta == 0) {
+      return;
+    }
+    this.availableQuantity += signedDelta;
+    if (this.location != null) {
+      this.location.adjustOccupiedSoft(signedDelta);
+    }
     recalculateStatus();
     this.updatedAt = LocalDateTime.now();
   }
@@ -161,10 +145,7 @@ public class Inventory extends BaseDomain<Long> {
     if (location == null || !location.isPos()) {
       throw new IllegalStateException("POS stock delta is only allowed on LocationType.POS");
     }
-    this.availableQuantity -= quantityOut;
-    location.adjustOccupiedSoft(-quantityOut);
-    recalculateStatus();
-    this.updatedAt = LocalDateTime.now();
+    applyUnrestrictedDelta(-quantityOut);
   }
 
   private void recalculateStatus() {
@@ -207,22 +188,6 @@ public class Inventory extends BaseDomain<Long> {
 
   public void setAvailableQuantity(int availableQuantity) {
     this.availableQuantity = availableQuantity;
-  }
-
-  public int getReservedQuantity() {
-    return reservedQuantity;
-  }
-
-  public void setReservedQuantity(int reservedQuantity) {
-    this.reservedQuantity = reservedQuantity;
-  }
-
-  public int getInTransitQuantity() {
-    return inTransitQuantity;
-  }
-
-  public void setInTransitQuantity(int inTransitQuantity) {
-    this.inTransitQuantity = inTransitQuantity;
   }
 
   public InventoryStatus getStatus() {

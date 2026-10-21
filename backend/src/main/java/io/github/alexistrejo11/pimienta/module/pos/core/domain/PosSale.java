@@ -117,7 +117,6 @@ public class PosSale extends BaseDomain<UUID> {
       long unitPriceCentavos,
       long subtotalCentavos,
       PosSaleStockPolicy stockPolicy,
-      boolean soldWithNegativeStock,
       boolean soldWhileUnavailable,
       String rawBarcode,
       Long authorizedByOperatorId,

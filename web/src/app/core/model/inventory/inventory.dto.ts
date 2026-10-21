@@ -5,8 +5,6 @@ import type {
   ItemStatus,
   ItemUnit,
   LocationType,
-  InventoryCountStatus,
-  InventoryCountType,
   InventoryTransactionType,
   InventoryTransactionStatus,
   InventoryMovementType,
@@ -86,8 +84,6 @@ export interface InventoryStockResponse {
   locationCode: string;
   locationName: string;
   availableQuantity: number;
-  reservedQuantity: number;
-  inTransitQuantity: number;
   status: InventoryStatus;
   createdAt: string;
   updatedAt: string;
@@ -120,8 +116,6 @@ export interface GlobalInventoryResponse {
   headquarterId: number | null;
   headquarterName: string;
   availableQuantity: number;
-  reservedQuantity: number;
-  inTransitQuantity: number;
   totalQuantity: number;
   unitCost: number;
   totalValue: number;
@@ -144,7 +138,6 @@ export interface InventoryDashboardResponse {
   skuCount: number;
   lowStockCount: number;
   outOfStockCount: number;
-  openCountSessionCount: number;
   totalAvailableQuantity: number;
   totalStockValue: number;
 }
@@ -174,98 +167,46 @@ export interface StorageLocationSearchParams {
   headquarterId?: number;
 }
 
-export interface InventoryCountResponseDto {
-  itemId: number;
-  expectedQuantity: number | null;
-  countedQuantity: number | null;
-  variance: number | null;
-}
-
-export interface InventoryCountSessionResponse {
-  id: number;
-  locationId: number;
-  type: InventoryCountType;
-  status: InventoryCountStatus;
-  createdById: number;
-  submittedById: number | null;
-  approvedById: number | null;
-  createdAt: string;
-  submittedAt: string | null;
-  approvedAt: string | null;
-  cancelledAt: string | null;
-  responses: InventoryCountResponseDto[];
-}
-
-export interface OpenInventoryCountRequest {
-  locationId: number;
-  type: InventoryCountType;
-  itemIds?: number[];
-}
-
-export interface InventoryCountResponseRequest {
-  itemId: number;
-  countedQuantity: number;
-}
-
-export interface InventoryCountSessionSummaryResponse {
-  id: number;
-  locationId: number;
-  type: InventoryCountType;
-  status: InventoryCountStatus;
-  createdById: number;
-  submittedById: number | null;
-  approvedById: number | null;
-  createdAt: string;
-  submittedAt: string | null;
-  approvedAt: string | null;
-  cancelledAt: string | null;
-}
-
-export interface InventoryCountSearchParams {
-  page?: number;
-  size?: number;
-  locationId?: number;
-  status?: InventoryCountStatus;
-  headquarterId?: number;
-}
-
-export interface PurchaseLineRequest {
+export interface InLineRequest {
   itemId: number;
   locationId: number;
   quantity: number;
   unitCost: number;
 }
 
-export interface PurchaseTransactionRequest {
+export interface InTransactionRequest {
   externalReference?: string;
   notes?: string;
-  lines: PurchaseLineRequest[];
+  initiatedById?: number;
+  lines: InLineRequest[];
 }
 
-export interface ScrapLineRequest {
+export interface OutLineRequest {
   itemId: number;
   locationId: number;
   quantity: number;
   unitCost: number;
 }
 
-export interface ScrapTransactionRequest {
+export interface OutTransactionRequest {
   externalReference?: string;
   notes?: string;
   exitReason: InventoryExitReason;
-  lines: ScrapLineRequest[];
+  initiatedById?: number;
+  lines: OutLineRequest[];
 }
 
 export interface AdjustmentLineRequest {
   itemId: number;
   locationId: number;
-  newQuantity: number;
+  countedQuantity: number;
   reason: string;
 }
 
 export interface AdjustmentTransactionRequest {
   externalReference?: string;
   notes?: string;
+  initiatedById?: number;
   lines: AdjustmentLineRequest[];
 }
 
@@ -300,6 +241,7 @@ export interface InventoryMovementResponse {
   unitCost: number;
   type: InventoryMovementType;
   direction: MovementDirection;
+  exitReason: InventoryExitReason | null;
   description: string | null;
   referenceNumber: string | null;
   performedById: number | null;
@@ -319,24 +261,16 @@ export interface InventoryTransactionSearchParams {
   toDate?: string;
 }
 
-export interface InventoryMovementSearchParams extends InventoryTransactionSearchParams {
+export interface InventoryMovementSearchParams {
+  page?: number;
+  size?: number;
+  type?: InventoryMovementType;
   direction?: MovementDirection;
+  exitReason?: InventoryExitReason;
   itemId?: number;
   locationId?: number;
   search?: string;
   category?: ItemCategory;
-}
-
-export interface TransferLineRequest {
-  itemId: number;
-  fromLocationId: number;
-  toLocationId: number;
-  quantity: number;
-  unitCost: number;
-}
-
-export interface TransferTransactionRequest {
-  externalReference?: string;
-  notes?: string;
-  lines: TransferLineRequest[];
+  fromDate?: string;
+  toDate?: string;
 }

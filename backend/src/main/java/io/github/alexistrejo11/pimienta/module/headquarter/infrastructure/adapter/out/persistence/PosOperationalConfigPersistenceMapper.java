@@ -25,7 +25,6 @@ public final class PosOperationalConfigPersistenceMapper {
                 ? new ArrayList<>(entity.getOpenAmountCategories())
                 : List.of())
         .withAllowOpenProducts(entity.isAllowOpenProducts())
-        .withDefaultNegativeStockLimit(entity.getDefaultNegativeStockLimit())
         .withStockless(entity.isStockless())
         .withHighSaleWarningCentavos(entity.getHighSaleWarningCentavos())
         .withHighChangeWarningCentavos(entity.getHighChangeWarningCentavos())
@@ -47,7 +46,6 @@ public final class PosOperationalConfigPersistenceMapper {
     e.setCatalogStaleBlockHours(domain.getCatalogStaleBlockHours());
     e.setOpenAmountCategories(new ArrayList<>(domain.getOpenAmountCategories()));
     e.setAllowOpenProducts(domain.isAllowOpenProducts());
-    e.setDefaultNegativeStockLimit(domain.getDefaultNegativeStockLimit());
     e.setStockless(domain.isStockless());
     e.setHighSaleWarningCentavos(domain.getHighSaleWarningCentavos());
     e.setHighChangeWarningCentavos(domain.getHighChangeWarningCentavos());

@@ -135,14 +135,7 @@ public class SecurityConfig {
                 .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .requestMatchers(HttpMethod.GET, BASE + "/headquarters/*")
                 .hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
-                .requestMatchers(
-                    HttpMethod.POST,
-                    BASE + "/inventory/transactions/adjustment",
-                    BASE + "/inventory/transactions/physical-adjustment")
-                .hasRole("ADMIN")
-                .requestMatchers(
-                    HttpMethod.POST,
-                    BASE + "/inventory/count-sessions/*/approve")
+                .requestMatchers(HttpMethod.POST, BASE + "/inventory/transactions/adjustment")
                 .hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, BASE + "/inventory/items", BASE + "/inventory/items/**")
                 .hasRole("ADMIN")

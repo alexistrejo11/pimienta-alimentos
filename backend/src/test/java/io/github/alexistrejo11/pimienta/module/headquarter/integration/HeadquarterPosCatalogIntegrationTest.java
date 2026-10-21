@@ -84,7 +84,6 @@ class HeadquarterPosCatalogIntegrationTest {
         .andExpect(jsonPath("$.openAmountCategories[0]").value("MISC"))
         .andExpect(jsonPath("$.openAmountCategories[1]").value("SERVICE"))
         .andExpect(jsonPath("$.allowOpenProducts").value(true))
-        .andExpect(jsonPath("$.defaultNegativeStockLimit").value(10))
         .andExpect(jsonPath("$.stockless").value(false))
         .andExpect(jsonPath("$.highSaleWarningCentavos").value(1000000))
         .andExpect(jsonPath("$.highChangeWarningCentavos").value(100000));

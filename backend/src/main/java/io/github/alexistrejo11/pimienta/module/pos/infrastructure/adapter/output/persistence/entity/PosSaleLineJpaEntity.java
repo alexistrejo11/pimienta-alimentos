@@ -60,9 +60,6 @@ public class PosSaleLineJpaEntity extends BaseJpaEntity {
   @Column(name = "stock_policy", nullable = false, length = 32)
   private PosSaleStockPolicy stockPolicy;
 
-  @Column(name = "sold_with_negative_stock", nullable = false)
-  private boolean soldWithNegativeStock;
-
   @Column(name = "sold_while_unavailable", nullable = false)
   private boolean soldWhileUnavailable;
 
@@ -167,14 +164,6 @@ public class PosSaleLineJpaEntity extends BaseJpaEntity {
 
   public void setStockPolicy(PosSaleStockPolicy stockPolicy) {
     this.stockPolicy = stockPolicy;
-  }
-
-  public boolean isSoldWithNegativeStock() {
-    return soldWithNegativeStock;
-  }
-
-  public void setSoldWithNegativeStock(boolean soldWithNegativeStock) {
-    this.soldWithNegativeStock = soldWithNegativeStock;
   }
 
   public boolean isSoldWhileUnavailable() {

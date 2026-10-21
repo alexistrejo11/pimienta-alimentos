@@ -17,5 +17,4 @@ public record PosBootstrapProductResponse(
     boolean available,
     int stockQuantity,
     int stockMinQuantity,
-    String stockPolicy,
-    Integer negativeStockLimit) {}
+    String stockPolicy) {}

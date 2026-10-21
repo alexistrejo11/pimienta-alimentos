@@ -33,16 +33,13 @@ public interface PosSyncChangesUseCases {
       boolean available,
       int stockQuantity,
       int stockMinQuantity,
-      StockPolicy stockPolicy,
-      Integer negativeStockLimit) {}
+      StockPolicy stockPolicy) {}
 
   record OperatorData(
       String id, String displayName, PosRole role, String pinHash, boolean active) {}
 
   record PoliciesData(
-      boolean allowNegativeStock,
       boolean allowOpenProducts,
-      Integer defaultNegativeStockLimit,
       int staleCatalogWarnHours,
       int staleCatalogBlockHours,
       List<String> openAmountCategories,

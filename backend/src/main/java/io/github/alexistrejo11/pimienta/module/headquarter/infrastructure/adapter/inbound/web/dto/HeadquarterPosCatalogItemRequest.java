@@ -13,5 +13,4 @@ public record HeadquarterPosCatalogItemRequest(
     @NotBlank @Size(max = 64) @Schema(example = "BEVERAGE") String saleCategory,
     @NotNull @DecimalMin("0") @Schema(example = "25.50") BigDecimal salePrice,
     @Schema(example = "true") Boolean available,
-    @NotNull @Schema(example = "CONTROLLED") StockPolicy stockPolicy,
-    @Schema(example = "5") Integer negativeStockLimit) {}
+    @NotNull @Schema(example = "CONTROLLED") StockPolicy stockPolicy) {}

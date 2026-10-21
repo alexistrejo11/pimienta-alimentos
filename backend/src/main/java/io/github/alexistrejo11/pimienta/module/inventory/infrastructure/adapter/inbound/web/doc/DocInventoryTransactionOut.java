@@ -1,6 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc;
 
-import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.SaleTransactionRequest;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.OutTransactionRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.InventoryTransactionResponse;
 import io.github.alexistrejo11.pimienta.shared.web.openapi.doc.DocJwtSecured;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,22 +14,24 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** {@code POST /api/v1/inventory/transactions/sale} */
+/** {@code POST /api/v1/inventory/transactions/out} */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @DocJwtSecured
-@Operation(summary = "Register sale transaction", description = "Cuerpo JSON **SaleTransactionRequest**. Rate limit: **SENSITIVE_OPERATIONS**.")
+@Operation(
+    summary = "Register stock out",
+    description =
+        "Exit with reason WASTE or WITHDRAWAL. Does not block when on-hand quantity is short. "
+            + "Body **OutTransactionRequest**. Rate limit: **SENSITIVE_OPERATIONS**.")
 @RequestBody(
     required = true,
     content =
-        @Content(
-            mediaType = "application/json",
-            schema = @Schema(implementation = SaleTransactionRequest.class)))
+        @Content(mediaType = "application/json", schema = @Schema(implementation = OutTransactionRequest.class)))
 @ApiResponse(
     responseCode = "200",
     content =
         @Content(
             mediaType = "application/json",
             schema = @Schema(implementation = InventoryTransactionResponse.class)))
-public @interface DocInventoryTransactionSale {}
+public @interface DocInventoryTransactionOut {}

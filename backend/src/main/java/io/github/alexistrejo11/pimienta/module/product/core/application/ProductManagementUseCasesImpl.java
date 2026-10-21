@@ -153,7 +153,7 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
   private void archiveStockItem(long inventoryItemId) {
     boolean hasStock =
         inventoryRepository.findByItemId(inventoryItemId).stream()
-            .anyMatch(row -> row.getTotalQuantity() != 0 || row.getInTransitQuantity() != 0);
+            .anyMatch(row -> row.getTotalQuantity() != 0);
     if (hasStock) {
       throw new ItemHasStockException(inventoryItemId);
     }

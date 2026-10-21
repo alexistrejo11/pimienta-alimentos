@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.core.domain;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 
 /**
@@ -51,30 +52,23 @@ public class InventoryMovement extends BaseDomain<Long> {
   /** Transacción contable que agrupa este movimiento (persistencia / consultas). */
   private Long transactionId;
 
+  /** Set on OUT, and on an IN that reverses a POS sale. */
+  private InventoryExitReason exitReason;
+
   // ─────────────────────────────────────────────
   // ENUMERACIONES
   // ─────────────────────────────────────────────
 
   public enum InventoryMovementType {
-    // Entradas
-    PURCHASE, // Compra a proveedor
-    RETURN_FROM_CLIENT, // Devolución de cliente
-    INITIAL_STOCK, // Carga inicial del sistema
-    // Salidas
-    SALE, // Venta
-    RETURN_TO_SUPPLIER, // Devolución a proveedor
-    USAGE, // Consumo interno (producción, etc.)
-    SCRAP, // Merma / baja definitiva
-    // Bidireccional
-    TRANSFER, // Transferencia entre ubicaciones
-    ADJUSTMENT_PLUS, // Ajuste físico positivo
-    ADJUSTMENT_MINUS // Ajuste físico negativo
+    IN,
+    OUT,
+    ADJUSTMENT_PLUS,
+    ADJUSTMENT_MINUS
   }
 
   public enum MovementDirection {
-    IN, // Incrementa el inventario disponible
-    OUT, // Decrementa el inventario disponible
-    NEUTRAL // Sin impacto en total (solo cambia ubicación)
+    IN,
+    OUT
   }
 
   // ─────────────────────────────────────────────
@@ -91,37 +85,41 @@ public class InventoryMovement extends BaseDomain<Long> {
   // FACTORY METHODS
   // ─────────────────────────────────────────────
 
-  public static InventoryMovement recordEntry(
+  public static InventoryMovement recordIn(
       Item item, StorageLocation destination,
       int quantity, BigDecimal unitCost,
-      InventoryMovementType type, String referenceNumber,
+      InventoryExitReason exitReason, String referenceNumber,
       String description, Long performedById, int stockAfter) {
 
     return build(item, null, destination, quantity, unitCost,
-        type, MovementDirection.IN, referenceNumber,
+        InventoryMovementType.IN, MovementDirection.IN, exitReason, referenceNumber,
         description, performedById, stockAfter);
   }
 
-  public static InventoryMovement recordExit(
+  public static InventoryMovement recordOut(
       Item item, StorageLocation source,
       int quantity, BigDecimal unitCost,
-      InventoryMovementType type, String referenceNumber,
+      InventoryExitReason exitReason, String referenceNumber,
       String description, Long performedById, int stockAfter) {
 
     return build(item, source, null, quantity, unitCost,
-        type, MovementDirection.OUT, referenceNumber,
+        InventoryMovementType.OUT, MovementDirection.OUT, exitReason, referenceNumber,
         description, performedById, stockAfter);
   }
 
-  public static InventoryMovement recordTransfer(
-      Item item, StorageLocation source, StorageLocation destination,
-      int quantity, BigDecimal unitCost,
-      String referenceNumber, String description,
-      Long performedById, int stockAfter) {
+  public static InventoryMovement recordAdjustment(
+      Item item, StorageLocation location,
+      int quantity, boolean increase, String referenceNumber,
+      String description, Long performedById, int stockAfter) {
 
-    return build(item, source, destination, quantity, unitCost,
-        InventoryMovementType.TRANSFER, MovementDirection.NEUTRAL,
-        referenceNumber, description, performedById, stockAfter);
+    if (increase) {
+      return build(item, null, location, quantity, BigDecimal.ZERO,
+          InventoryMovementType.ADJUSTMENT_PLUS, MovementDirection.IN, null, referenceNumber,
+          description, performedById, stockAfter);
+    }
+    return build(item, location, null, quantity, BigDecimal.ZERO,
+        InventoryMovementType.ADJUSTMENT_MINUS, MovementDirection.OUT, null, referenceNumber,
+        description, performedById, stockAfter);
   }
 
   // ─────────────────────────────────────────────
@@ -132,6 +130,7 @@ public class InventoryMovement extends BaseDomain<Long> {
       Item item, StorageLocation source, StorageLocation destination,
       int quantity, BigDecimal unitCost,
       InventoryMovementType type, MovementDirection direction,
+      InventoryExitReason exitReason,
       String referenceNumber, String description,
       Long performedById, int stockAfter) {
 
@@ -144,6 +143,7 @@ public class InventoryMovement extends BaseDomain<Long> {
     m.unitCost = unitCost;
     m.type = type;
     m.direction = direction;
+    m.exitReason = exitReason;
     m.referenceNumber = referenceNumber;
     m.description = description;
     m.performedById = performedById;
@@ -208,6 +208,14 @@ public class InventoryMovement extends BaseDomain<Long> {
 
   public int getStockAfterMovement() {
     return stockAfterMovement;
+  }
+
+  public InventoryExitReason getExitReason() {
+    return exitReason;
+  }
+
+  public void setExitReason(InventoryExitReason exitReason) {
+    this.exitReason = exitReason;
   }
 
   public Long getTransactionId() {

@@ -130,10 +130,6 @@
               }
             </select>
           </label>
-          <label class="flex flex-col gap-1 text-sm">
-            <span class="font-semibold">Límite de stock negativo</span>
-            <input type="number" class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" formControlName="negativeStockLimit" />
-          </label>
         </form>
       } @else {
         <form class="grid gap-3 sm:grid-cols-2" [formGroup]="productForm" (ngSubmit)="guardar()" id="surtido-form">

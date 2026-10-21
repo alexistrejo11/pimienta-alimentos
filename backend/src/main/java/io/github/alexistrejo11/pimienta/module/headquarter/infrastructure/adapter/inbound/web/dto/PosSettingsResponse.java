@@ -13,7 +13,6 @@ public record PosSettingsResponse(
     int catalogStaleBlockHours,
     List<String> openAmountCategories,
     boolean allowOpenProducts,
-    Integer defaultNegativeStockLimit,
     boolean stockless,
     long highSaleWarningCentavos,
     long highChangeWarningCentavos,

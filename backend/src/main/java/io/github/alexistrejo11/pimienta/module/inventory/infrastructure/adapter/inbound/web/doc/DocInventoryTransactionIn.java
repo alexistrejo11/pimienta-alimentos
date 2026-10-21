@@ -1,6 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc;
 
-import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.ReturnClientTransactionRequest;
+import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.InTransactionRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.InventoryTransactionResponse;
 import io.github.alexistrejo11.pimienta.shared.web.openapi.doc.DocJwtSecured;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,24 +14,22 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** {@code POST /api/v1/inventory/transactions/return-client} */
+/** {@code POST /api/v1/inventory/transactions/in} */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @DocJwtSecured
 @Operation(
-    summary = "Register client return transaction",
-    description = "Cuerpo JSON **ReturnClientTransactionRequest**. Rate limit: **SENSITIVE_OPERATIONS**.")
+    summary = "Register stock in",
+    description = "Restock or supplier receipt. Body **InTransactionRequest**. Rate limit: **SENSITIVE_OPERATIONS**.")
 @RequestBody(
     required = true,
     content =
-        @Content(
-            mediaType = "application/json",
-            schema = @Schema(implementation = ReturnClientTransactionRequest.class)))
+        @Content(mediaType = "application/json", schema = @Schema(implementation = InTransactionRequest.class)))
 @ApiResponse(
     responseCode = "200",
     content =
         @Content(
             mediaType = "application/json",
             schema = @Schema(implementation = InventoryTransactionResponse.class)))
-public @interface DocInventoryTransactionReturnClient {}
+public @interface DocInventoryTransactionIn {}

@@ -58,7 +58,6 @@ class InventoryIntegrationTest {
     long baseSkuCount = readLong(baselineJson, "$.skuCount");
     long baseLowStockCount = readLong(baselineJson, "$.lowStockCount");
     long baseOutOfStockCount = readLong(baselineJson, "$.outOfStockCount");
-    long baseOpenCountSessions = readLong(baselineJson, "$.openCountSessionCount");
     long baseAvailableQty = readLong(baselineJson, "$.totalAvailableQuantity");
     double baseStockValue = readDouble(baselineJson, "$.totalStockValue");
 
@@ -94,7 +93,6 @@ class InventoryIntegrationTest {
         .andExpect(jsonPath("$.skuCount").value(baseSkuCount + 1))
         .andExpect(jsonPath("$.lowStockCount").value(baseLowStockCount + 1))
         .andExpect(jsonPath("$.outOfStockCount").value(baseOutOfStockCount))
-        .andExpect(jsonPath("$.openCountSessionCount").value(baseOpenCountSessions))
         .andExpect(jsonPath("$.totalAvailableQuantity").value(baseAvailableQty + 4))
         .andExpect(jsonPath("$.totalStockValue").value(baseStockValue + 40.0));
   }
@@ -399,12 +397,12 @@ class InventoryIntegrationTest {
   }
 
   @Test
-  void transactions_scrap_missingExitReason_returns400() throws Exception {
+  void transactions_out_missingExitReason_returns400() throws Exception {
     String token = obtainAccessToken();
     mockMvc
         .perform(
             AccountTestRequests.postJson(
-                    "/api/v1/inventory/transactions/scrap",
+                    "/api/v1/inventory/transactions/out",
                     """
                     {"notes": "x", "lines": [{"itemId": 1, "locationId": 1, "quantity": 1, "unitCost": 1}]}
                     """)
@@ -414,7 +412,7 @@ class InventoryIntegrationTest {
   }
 
   @Test
-  void transactions_scrap_persistsExitReason() throws Exception {
+  void transactions_out_persistsWasteReason() throws Exception {
     String token = obtainAccessToken();
     String suffix = UUID.randomUUID().toString().substring(0, 8);
     long locId = createWarehouseLocation(token, "WH-SCRAP-" + suffix, "Scrap WH " + suffix);
@@ -429,7 +427,7 @@ class InventoryIntegrationTest {
     String scrapBody =
         """
         {
-          "exitReason": "DAMAGED",
+          "exitReason": "WASTE",
           "notes": "Empaque roto",
           "lines": [{"itemId": %d, "locationId": %d, "quantity": 1, "unitCost": 2.5}]
         }
@@ -438,19 +436,19 @@ class InventoryIntegrationTest {
 
     mockMvc
         .perform(
-            AccountTestRequests.postJson("/api/v1/inventory/transactions/scrap", scrapBody)
+            AccountTestRequests.postJson("/api/v1/inventory/transactions/out", scrapBody)
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.exitReason").value("DAMAGED"))
-        .andExpect(jsonPath("$.type").value("SCRAP_WRITE_OFF"));
+        .andExpect(jsonPath("$.exitReason").value("WASTE"))
+        .andExpect(jsonPath("$.type").value("OUT"));
   }
 
   @Test
-  void transactions_purchase_emptyLines_returns400() throws Exception {
+  void transactions_in_emptyLines_returns400() throws Exception {
     String token = obtainAccessToken();
     mockMvc
         .perform(
-            AccountTestRequests.postJson("/api/v1/inventory/transactions/purchase", "{\"lines\":[]}")
+            AccountTestRequests.postJson("/api/v1/inventory/transactions/in", "{\"lines\":[]}")
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
@@ -723,11 +721,11 @@ class InventoryIntegrationTest {
         mockMvc
             .perform(
                 AccountTestRequests.postJson(
-                        "/api/v1/inventory/transactions/purchase", purchaseBody)
+                        "/api/v1/inventory/transactions/in", purchaseBody)
                     .header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("COMPLETED"))
-            .andExpect(jsonPath("$.type").value("PURCHASE_RECEIPT"))
+            .andExpect(jsonPath("$.type").value("IN"))
             .andReturn();
     long purchaseTxId = extractLongId(purchaseRes.getResponse().getContentAsString(), "$.id");
 
@@ -756,27 +754,23 @@ class InventoryIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items").isArray());
 
-    String saleBody =
+    String withdrawalBody =
         """
             {
               "externalReference": "SO-%s",
+              "exitReason": "WITHDRAWAL",
               "lines": [{"itemId": %d, "locationId": %d, "quantity": 5, "unitCost": 5.00}]
             }
             """
             .formatted(suffix, itemId, locationId);
     mockMvc
         .perform(
-            AccountTestRequests.postJson("/api/v1/inventory/transactions/sale", saleBody)
+            AccountTestRequests.postJson("/api/v1/inventory/transactions/out", withdrawalBody)
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("COMPLETED"));
-
-    mockMvc
-        .perform(
-            post("/api/v1/inventory/transactions/" + purchaseTxId + "/cancel")
-                .header("Authorization", "Bearer " + token))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.errorCode").value("INVALID_ARGUMENT"));
+        .andExpect(jsonPath("$.status").value("COMPLETED"))
+        .andExpect(jsonPath("$.type").value("OUT"))
+        .andExpect(jsonPath("$.exitReason").value("WITHDRAWAL"));
 
     mockMvc
         .perform(AccountTestRequests.deleteBearer("/api/v1/inventory/items/" + itemId, token))
@@ -822,7 +816,7 @@ class InventoryIntegrationTest {
     String adjustmentBody =
         """
             {
-              "lines": [{"itemId": %d, "locationId": %d, "newQuantity": 12, "reason": "Audit fix"}]
+              "lines": [{"itemId": %d, "locationId": %d, "countedQuantity": 12, "reason": "Audit fix"}]
             }
             """
             .formatted(itemId, locationId);
@@ -842,85 +836,59 @@ class InventoryIntegrationTest {
   }
 
   @Test
-  void countSession_blindDraft_adminSeesVarianceOnSubmitted_managerCannotApprove() throws Exception {
+  void adjustment_setsCountedQuantity_andWasteAllowsNegative() throws Exception {
     TokenPair admin = obtainToken(Set.of(Role.ADMIN));
-    TokenPair manager = obtainToken(Set.of(Role.MANAGER));
     long hq = createHeadquarter(admin.token(), "CNT-HQ-" + UUID.randomUUID());
-    assignHeadquarters(admin.token(), manager.userId(), hq);
     putPosSettings(admin.token(), hq);
 
     long locationId = findPosLocationId(admin.token(), hq);
     long itemId = createItem(admin.token(), "SKU-CNT-" + UUID.randomUUID(), "Count item");
     createInitialStock(admin.token(), itemId, locationId, 8);
 
-    MvcResult openResult =
-        mockMvc
-            .perform(
-                AccountTestRequests.postJson(
-                        "/api/v1/inventory/count-sessions",
-                        """
-                        {"locationId": %d, "type": "FULL"}
-                        """
-                            .formatted(locationId))
-                    .header("Authorization", "Bearer " + manager.token()))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("DRAFT"))
-            .andExpect(jsonPath("$.responses[0].expectedQuantity").doesNotExist())
-            .andReturn();
-    long sessionId = extractLongId(openResult.getResponse().getContentAsString(), "$.id");
+    mockMvc
+        .perform(
+            AccountTestRequests.getBearer("/api/v1/inventory/movements/item/" + itemId, admin.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].type").value("IN"))
+        .andExpect(jsonPath("$[0].quantity").value(8));
 
     mockMvc
         .perform(
             AccountTestRequests.postJson(
-                    "/api/v1/inventory/count-sessions/" + sessionId + "/responses",
+                    "/api/v1/inventory/transactions/adjustment",
                     """
-                    {"itemId": %d, "countedQuantity": 6}
+                    {"lines":[{"itemId":%d,"locationId":%d,"countedQuantity":6,"reason":"Snapshot"}]}
                     """
-                        .formatted(itemId))
-                .header("Authorization", "Bearer " + manager.token()))
-        .andExpect(status().isOk());
-
-    mockMvc
-        .perform(
-            AccountTestRequests.postJsonBearer(
-                "/api/v1/inventory/count-sessions/" + sessionId + "/submit", manager.token(), "{}"))
+                        .formatted(itemId, locationId))
+                .header("Authorization", "Bearer " + admin.token()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("SUBMITTED"));
+        .andExpect(jsonPath("$.type").value("ADJUSTMENT"))
+        .andExpect(jsonPath("$.status").value("COMPLETED"));
 
     mockMvc
         .perform(
-            AccountTestRequests.getBearer("/api/v1/inventory/count-sessions/" + sessionId, manager.token()))
+            AccountTestRequests.getBearer("/api/v1/inventory/stock/item/" + itemId, admin.token()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.responses[0].expectedQuantity").doesNotExist())
-        .andExpect(jsonPath("$.responses[0].variance").doesNotExist());
+        .andExpect(jsonPath("$[0].availableQuantity").value(6));
 
     mockMvc
         .perform(
-            AccountTestRequests.getBearer("/api/v1/inventory/count-sessions/" + sessionId, admin.token()))
+            AccountTestRequests.postJson(
+                    "/api/v1/inventory/transactions/out",
+                    """
+                    {"exitReason":"WASTE","notes":"short theoretical stock","lines":[{"itemId":%d,"locationId":%d,"quantity":10,"unitCost":1}]}
+                    """
+                        .formatted(itemId, locationId))
+                .header("Authorization", "Bearer " + admin.token()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.responses[0].expectedQuantity").value(8))
-        .andExpect(jsonPath("$.responses[0].variance").value(-2));
+        .andExpect(jsonPath("$.type").value("OUT"))
+        .andExpect(jsonPath("$.exitReason").value("WASTE"));
 
     mockMvc
         .perform(
-            AccountTestRequests.postJsonBearer(
-                "/api/v1/inventory/count-sessions/" + sessionId + "/approve", manager.token(), "{}"))
-        .andExpect(status().isForbidden());
-
-    mockMvc
-        .perform(
-            AccountTestRequests.postJsonBearer(
-                "/api/v1/inventory/count-sessions/" + sessionId + "/approve", admin.token(), "{}"))
+            AccountTestRequests.getBearer("/api/v1/inventory/stock/item/" + itemId, admin.token()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("APPROVED"));
-
-    mockMvc
-        .perform(
-            AccountTestRequests.getBearer(
-                "/api/v1/inventory/count-sessions?headquarterId=" + hq + "&page=0&size=20",
-                manager.token()))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items[0].id").value((int) sessionId));
+        .andExpect(jsonPath("$[0].availableQuantity").value(-4));
   }
 
   private record TokenPair(String token, Long userId) {}

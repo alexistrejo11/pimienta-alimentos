@@ -19,7 +19,6 @@ public class HeadquarterItem extends BaseDomain<Long> {
   private BigDecimal salePrice;
   private boolean available;
   private StockPolicy stockPolicy;
-  private Integer negativeStockLimit;
 
   private HeadquarterItem() {
     this.id = 0L;
@@ -62,10 +61,6 @@ public class HeadquarterItem extends BaseDomain<Long> {
     return stockPolicy != null ? stockPolicy : StockPolicy.CONTROLLED;
   }
 
-  public Integer getNegativeStockLimit() {
-    return negativeStockLimit;
-  }
-
   public void touch() {
     this.updatedAt = LocalDateTime.now();
   }
@@ -88,7 +83,6 @@ public class HeadquarterItem extends BaseDomain<Long> {
     private BigDecimal salePrice;
     private Boolean available;
     private StockPolicy stockPolicy;
-    private Integer negativeStockLimit;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
@@ -134,11 +128,6 @@ public class HeadquarterItem extends BaseDomain<Long> {
       return this;
     }
 
-    public SafeBuilder withNegativeStockLimit(Integer negativeStockLimit) {
-      this.negativeStockLimit = negativeStockLimit;
-      return this;
-    }
-
     public SafeBuilder withCreatedAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -169,7 +158,6 @@ public class HeadquarterItem extends BaseDomain<Long> {
       h.salePrice = salePrice != null ? salePrice : BigDecimal.ZERO;
       h.available = available == null || available;
       h.stockPolicy = stockPolicy != null ? stockPolicy : StockPolicy.CONTROLLED;
-      h.negativeStockLimit = negativeStockLimit;
       h.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       h.updatedAt = updatedAt != null ? updatedAt : h.createdAt;
       h.deletedAt = deletedAt;
