@@ -13,6 +13,7 @@ import {
 import type { PosReportSummaryItemResponse, PosSaleReportResponse } from '../../core/model/pos/pos.dto';
 import { formatCentavos, todayInstantRange } from '../../core/pos/pos-date.util';
 import { OperatingExpenseService } from '../../core/operating-expenses/expense.service';
+import { clientZone } from '../../core/i18n/client-zone';
 import { formatDateTime } from '../../core/i18n/format-date';
 import { businessToday, formatMxn } from '../../core/operating-expenses/business-date';
 import { PosAdminService } from '../../core/pos/pos-admin.service';
@@ -164,7 +165,7 @@ export class DashboardPageComponent implements OnInit {
           }
           this.expenseError.set(null);
           this.expenseLoading.set(true);
-          const day = businessToday();
+          const day = businessToday(new Date(), clientZone());
           const headquarterId = this.session.activeHeadquarterId() ?? undefined;
           return this.expenses.summary({ headquarterId, from: day, to: day }).pipe(
             catchError((err: unknown) => {

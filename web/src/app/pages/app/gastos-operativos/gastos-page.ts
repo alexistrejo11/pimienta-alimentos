@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 
 import { SessionContextService } from '../../../core/auth/session-context.service';
+import { clientZone } from '../../../core/i18n/client-zone';
 import {
   businessMonthToDate,
   businessToday,
@@ -106,7 +107,7 @@ export class OperatingExpensesPageComponent implements OnInit {
         } else {
           const active = this.session.activeHeadquarterId();
           if (active != null) this.selectedHeadquarterId = active;
-          const today = businessToday();
+          const today = businessToday(new Date(), clientZone());
           this.fromDate = today;
           this.toDate = today;
           this.activePreset = 'today';
@@ -132,7 +133,7 @@ export class OperatingExpensesPageComponent implements OnInit {
 
   pageSubtitle(): string {
     if (this.canManageOperatingExpenses()) return 'Costos de operación por sede';
-    return `Solo los gastos operativos de hoy (${formatIsoDate(businessToday())})`;
+    return `Solo los gastos operativos de hoy (${formatIsoDate(businessToday(new Date(), clientZone()))})`;
   }
 
   headquarterLabel(id: number): string {
@@ -161,20 +162,20 @@ export class OperatingExpensesPageComponent implements OnInit {
   }
 
   applyPreset(preset: ExpenseDatePreset): void {
-    const today = businessToday();
+    const today = businessToday(new Date(), clientZone());
     if (preset === 'today') {
       this.fromDate = today;
       this.toDate = today;
     } else if (preset === 'yesterday') {
-      const day = businessYesterday();
+      const day = businessYesterday(new Date(), clientZone());
       this.fromDate = day;
       this.toDate = day;
     } else if (preset === 'week') {
-      const range = businessWeekToDate();
+      const range = businessWeekToDate(new Date(), clientZone());
       this.fromDate = range.from;
       this.toDate = range.to;
     } else {
-      const range = businessMonthToDate();
+      const range = businessMonthToDate(new Date(), clientZone());
       this.fromDate = range.from;
       this.toDate = range.to;
     }
@@ -273,13 +274,13 @@ export class OperatingExpensesPageComponent implements OnInit {
 
   private presetMatching(from: string, to: string): ExpenseDatePreset | null {
     if (!from || !to) return null;
-    const today = businessToday();
+    const today = businessToday(new Date(), clientZone());
     if (from === today && to === today) return 'today';
-    const yesterday = businessYesterday();
+    const yesterday = businessYesterday(new Date(), clientZone());
     if (from === yesterday && to === yesterday) return 'yesterday';
-    const week = businessWeekToDate();
+    const week = businessWeekToDate(new Date(), clientZone());
     if (from === week.from && to === week.to) return 'week';
-    const month = businessMonthToDate();
+    const month = businessMonthToDate(new Date(), clientZone());
     if (from === month.from && to === month.to) return 'month';
     return null;
   }

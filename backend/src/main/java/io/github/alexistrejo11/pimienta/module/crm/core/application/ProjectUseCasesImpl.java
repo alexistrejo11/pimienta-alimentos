@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.crm.core.application;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.command.CreateProjectParams;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.command.UpdateProjectParams;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.query.ProjectSearchCriteria;
@@ -203,7 +204,7 @@ public class ProjectUseCasesImpl implements ProjectUseCases {
     }
     p.setStatus(ProjectStatus.ACTIVE);
     if (p.getActualStartDate() == null) {
-      p.setActualStartDate(LocalDate.now());
+      p.setActualStartDate(LocalDate.now(ClientTimeZones.current()));
     }
     p.setOnHoldReason(null);
     p.touch();
@@ -243,7 +244,7 @@ public class ProjectUseCasesImpl implements ProjectUseCases {
     }
     p.setStatus(ProjectStatus.COMPLETED);
     p.setProgressPercent(100);
-    p.setActualEndDate(LocalDate.now());
+    p.setActualEndDate(LocalDate.now(ClientTimeZones.current()));
     p.touch();
 
     Project saved = projectRepository.save(p);

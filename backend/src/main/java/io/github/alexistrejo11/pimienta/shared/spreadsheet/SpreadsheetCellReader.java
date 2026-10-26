@@ -2,12 +2,13 @@ package io.github.alexistrejo11.pimienta.shared.spreadsheet;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.Locale;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Date1904Support;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 
@@ -83,10 +84,13 @@ public final class SpreadsheetCellReader {
       return null;
     }
     if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-      return cell.getDateCellValue()
-          .toInstant()
-          .atZone(ZoneId.systemDefault())
-          .toLocalDate();
+      double serial = cell.getNumericCellValue();
+      if (isCalendarDateWithoutTime(serial)) {
+        boolean use1904 =
+            cell.getSheet().getWorkbook() instanceof Date1904Support dated && dated.isDate1904();
+        return DateUtil.getLocalDateTime(serial, use1904).toLocalDate();
+      }
+      return cell.getDateCellValue().toInstant().atZone(ZoneOffset.UTC).toLocalDate();
     }
     String s = FORMATTER.formatCellValue(cell).trim();
     if (s.isEmpty()) {
@@ -97,6 +101,11 @@ public final class SpreadsheetCellReader {
     } catch (DateTimeParseException e) {
       return null;
     }
+  }
+
+  private static boolean isCalendarDateWithoutTime(double serial) {
+    double fraction = serial - Math.floor(serial);
+    return fraction < (0.5d / 86400d);
   }
 
   public static boolean isBlankRow(String... values) {

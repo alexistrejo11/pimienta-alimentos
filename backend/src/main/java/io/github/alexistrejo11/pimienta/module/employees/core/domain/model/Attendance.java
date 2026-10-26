@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.domain.model;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.AttendanceStatus;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 import java.time.Duration;
@@ -20,7 +21,7 @@ public class Attendance extends BaseDomain<Long> {
     super();
     this.employeeId = 0L;
     this.headquarterId = 0L;
-    this.workDate = LocalDate.now();
+    this.workDate = LocalDate.now(ClientTimeZones.current());
     this.checkInTime = null;
     this.checkOutTime = null;
     this.status = AttendanceStatus.UNDEFINED;
@@ -91,7 +92,7 @@ public class Attendance extends BaseDomain<Long> {
   }
 
   public LocalDate getWorkDate() {
-    return workDate != null ? workDate : LocalDate.now();
+    return workDate != null ? workDate : LocalDate.now(ClientTimeZones.current());
   }
 
   public LocalDateTime getCheckInTime() {

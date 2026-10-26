@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.crm.core.domain;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -56,7 +57,7 @@ public class ProjectMilestone extends BaseDomain<Long> {
     return status != MilestoneStatus.COMPLETED
         && status != MilestoneStatus.CANCELLED
         && plannedDate != null
-        && LocalDate.now().isAfter(plannedDate);
+        && LocalDate.now(ClientTimeZones.current()).isAfter(plannedDate);
   }
 
   public Long getProjectId() {

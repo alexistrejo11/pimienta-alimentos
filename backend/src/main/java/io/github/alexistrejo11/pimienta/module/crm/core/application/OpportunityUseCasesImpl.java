@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.crm.core.application;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.command.CreateOpportunityParams;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.command.UpdateOpportunityParams;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.command.WinOpportunityParams;
@@ -284,7 +285,7 @@ public class OpportunityUseCasesImpl implements OpportunityUseCases {
     }
     o.setStatus(OpportunityStatus.WON);
     o.setProbabilityPercent(100);
-    o.setActualCloseDate(LocalDate.now());
+    o.setActualCloseDate(LocalDate.now(ClientTimeZones.current()));
     o.setConvertedProjectId(savedProject.getId());
     o.touch();
 
@@ -314,7 +315,7 @@ public class OpportunityUseCasesImpl implements OpportunityUseCases {
     o.setStatus(OpportunityStatus.LOST);
     o.setLostReason(reason);
     o.setProbabilityPercent(0);
-    o.setActualCloseDate(LocalDate.now());
+    o.setActualCloseDate(LocalDate.now(ClientTimeZones.current()));
     o.touch();
 
     Opportunity saved = opportunityRepository.save(o);

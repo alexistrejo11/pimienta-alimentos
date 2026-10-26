@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.crm.core.domain;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -85,7 +86,7 @@ public class Opportunity extends BaseDomain<Long> {
 
   public boolean isOverdue() {
     return expectedCloseDate != null
-        && LocalDate.now().isAfter(expectedCloseDate)
+        && LocalDate.now(ClientTimeZones.current()).isAfter(expectedCloseDate)
         && (status != OpportunityStatus.WON && status != OpportunityStatus.LOST);
   }
 

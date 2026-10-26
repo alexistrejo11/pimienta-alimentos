@@ -13,7 +13,7 @@ import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Ac
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
-import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.OperatingExpenseAccessPolicy;
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZone;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.integration.support.StubOperatingExpenseReceiptStorage;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -57,7 +57,7 @@ class OperatingExpenseIntegrationTest {
   @Autowired private UserJpaRepository userJpaRepository;
   @Autowired private StubOperatingExpenseReceiptStorage storage;
 
-  private final LocalDate today = LocalDate.now(OperatingExpenseAccessPolicy.BUSINESS_ZONE);
+  private final LocalDate today = LocalDate.now(ClientTimeZone.FALLBACK);
 
   @BeforeEach
   void clearStorage() {

@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.domain.model;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.exception.EmployeeInvalidOnboardingStateException;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.BenefitsProfile;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.Compensation;
@@ -36,32 +37,32 @@ public class Employee extends BaseDomain<Long> {
   // ─── Status Transitions ───
 
   public void terminate() {
-    this.employment = getEmployment().terminate(EmployeeStatus.TERMINATED, LocalDate.now());
+    this.employment = getEmployment().terminate(EmployeeStatus.TERMINATED, LocalDate.now(ClientTimeZones.current()));
     touch();
   }
 
   public void fire() {
-    this.employment = getEmployment().terminate(EmployeeStatus.FIRED, LocalDate.now());
+    this.employment = getEmployment().terminate(EmployeeStatus.FIRED, LocalDate.now(ClientTimeZones.current()));
     touch();
   }
 
   public void resign() {
-    this.employment = getEmployment().terminate(EmployeeStatus.RESIGNED, LocalDate.now());
+    this.employment = getEmployment().terminate(EmployeeStatus.RESIGNED, LocalDate.now(ClientTimeZones.current()));
     touch();
   }
 
   public void sick() {
-    this.employment = getEmployment().terminate(EmployeeStatus.SICK, LocalDate.now());
+    this.employment = getEmployment().terminate(EmployeeStatus.SICK, LocalDate.now(ClientTimeZones.current()));
     touch();
   }
 
   public void onVacation() {
-    this.employment = getEmployment().terminate(EmployeeStatus.ON_VACATION, LocalDate.now());
+    this.employment = getEmployment().terminate(EmployeeStatus.ON_VACATION, LocalDate.now(ClientTimeZones.current()));
     touch();
   }
 
   public void onLeave() {
-    this.employment = getEmployment().terminate(EmployeeStatus.ON_LEAVE, LocalDate.now());
+    this.employment = getEmployment().terminate(EmployeeStatus.ON_LEAVE, LocalDate.now(ClientTimeZones.current()));
     touch();
   }
 
@@ -91,7 +92,7 @@ public class Employee extends BaseDomain<Long> {
           "activateEmploymentAfterSignedContract invalid status=" + st + " id=" + id);
     }
 
-    LocalDate effective = hireDate != null ? hireDate : LocalDate.now();
+    LocalDate effective = hireDate != null ? hireDate : LocalDate.now(ClientTimeZones.current());
     this.employment = new Employment(
         em.position(),
         em.department(),

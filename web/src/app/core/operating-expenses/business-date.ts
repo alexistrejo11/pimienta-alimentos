@@ -1,3 +1,4 @@
+import { clientZone } from '../i18n/client-zone';
 import { formatDateOnly, formatDateOnlyFullYear } from '../i18n/format-date';
 
 /** Business calendar used by the expense API. */
@@ -14,8 +15,8 @@ interface CalendarDay {
   day: number;
 }
 
-/** Today as `YYYY-MM-DD` in the business zone. */
-export function businessToday(now = new Date(), timeZone = BUSINESS_ZONE): string {
+/** Today as `YYYY-MM-DD` in the client zone. Pass `BUSINESS_ZONE` to pin Mexico City. */
+export function businessToday(now = new Date(), timeZone = clientZone()): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone,
     year: 'numeric',
@@ -25,12 +26,12 @@ export function businessToday(now = new Date(), timeZone = BUSINESS_ZONE): strin
 }
 
 /** Yesterday as `YYYY-MM-DD` in the business zone. */
-export function businessYesterday(now = new Date(), timeZone = BUSINESS_ZONE): string {
+export function businessYesterday(now = new Date(), timeZone = clientZone()): string {
   return formatDay(shiftDays(parseDay(businessToday(now, timeZone)), -1));
 }
 
 /** Monday through today, as `YYYY-MM-DD` in the business zone. */
-export function businessWeekToDate(now = new Date(), timeZone = BUSINESS_ZONE): BusinessDateRange {
+export function businessWeekToDate(now = new Date(), timeZone = clientZone()): BusinessDateRange {
   const today = parseDay(businessToday(now, timeZone));
   return { from: formatDay(shiftDays(today, -mondayIndex(today))), to: formatDay(today) };
 }
@@ -53,7 +54,7 @@ export function eachCalendarDay(from: string, to: string): string[] {
 }
 
 /** First of the current month through today, as `YYYY-MM-DD` in the business zone. */
-export function businessMonthToDate(now = new Date(), timeZone = BUSINESS_ZONE): BusinessDateRange {
+export function businessMonthToDate(now = new Date(), timeZone = clientZone()): BusinessDateRange {
   const today = parseDay(businessToday(now, timeZone));
   return { from: formatDay({ year: today.year, month: today.month, day: 1 }), to: formatDay(today) };
 }

@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.crm.core.domain;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -111,7 +112,7 @@ public class Project extends BaseDomain<Long> {
   public boolean isOverdue() {
     return status == ProjectStatus.ACTIVE
         && plannedEndDate != null
-        && LocalDate.now().isAfter(plannedEndDate);
+        && LocalDate.now(ClientTimeZones.current()).isAfter(plannedEndDate);
   }
 
   public boolean isActive() {

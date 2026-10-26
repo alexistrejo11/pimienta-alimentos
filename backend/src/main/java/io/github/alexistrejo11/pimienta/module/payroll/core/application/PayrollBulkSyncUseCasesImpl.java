@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -208,7 +209,7 @@ public class PayrollBulkSyncUseCasesImpl implements PayrollBulkSyncUseCases {
         .withNetAmount(nz(net, gross))
         .withStatus(status)
         .withCreatedAt(existing.getCreatedAt())
-        .withUpdatedAt(LocalDate.now().atStartOfDay())
+        .withUpdatedAt(LocalDateTime.now())
         .withDeletedAt(existing.getDeletedAt())
         .withVersion(existing.getVersion())
         .reconstruct();

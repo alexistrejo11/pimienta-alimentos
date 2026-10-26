@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
+import { clientZone } from '../../../../core/i18n/client-zone';
 import { businessToday } from '../../../../core/operating-expenses/business-date';
 import { OperatingExpenseService } from '../../../../core/operating-expenses/expense.service';
 import { compressReceiptImage } from '../../../../core/operating-expenses/receipt-image';
@@ -71,7 +72,7 @@ export class OperatingExpenseFormPageComponent implements OnInit, OnDestroy {
     category: ['', Validators.required],
     concept: ['', [Validators.required, Validators.maxLength(200)]],
     notes: ['', Validators.maxLength(500)],
-    occurredOn: [businessToday(), Validators.required],
+    occurredOn: [businessToday(new Date(), clientZone()), Validators.required],
   });
 
   get isEdit(): boolean {
@@ -87,7 +88,7 @@ export class OperatingExpenseFormPageComponent implements OnInit, OnDestroy {
       next: () => {
         if (!this.canManageOperatingExpenses()) {
           this.form.controls.occurredOn.disable();
-          this.form.controls.occurredOn.setValue(businessToday());
+          this.form.controls.occurredOn.setValue(businessToday(new Date(), clientZone()));
         }
         if (!idRaw) {
           this.prefillHeadquarter();

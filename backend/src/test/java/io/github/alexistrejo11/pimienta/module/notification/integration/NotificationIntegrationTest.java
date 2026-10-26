@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZone;
 import io.github.alexistrejo11.pimienta.module.account.integration.AccountTestRequests;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.AccountStatus;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
@@ -16,7 +17,8 @@ import io.github.alexistrejo11.pimienta.module.notification.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.notification.integration.support.NotificationTestData;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -147,7 +149,10 @@ class NotificationIntegrationTest {
     String token = obtainAccessToken(Set.of(Role.ADMIN));
     String suffix = UUID.randomUUID().toString().substring(0, 8);
     String correlationId = "it-log-" + suffix;
-    LocalDateTime today = LocalDateTime.now();
+    ZoneId zone = ClientTimeZone.FALLBACK;
+    LocalDate businessToday = LocalDate.now(zone);
+    LocalDateTime today =
+        LocalDateTime.ofInstant(businessToday.atTime(12, 0).atZone(zone).toInstant(), ZoneOffset.UTC);
 
     UUID logId =
         NotificationTestData.seed(
@@ -166,7 +171,9 @@ class NotificationIntegrationTest {
         "IT email should not appear in logs",
         today);
 
-    LocalDateTime yesterday = LocalDate.now().minusDays(1).atTime(LocalTime.NOON);
+    LocalDateTime yesterday =
+        LocalDateTime.ofInstant(
+            businessToday.minusDays(1).atTime(12, 0).atZone(zone).toInstant(), ZoneOffset.UTC);
     NotificationTestData.seed(
         notificationJpaRepository,
         NotificationChannel.LOG,
