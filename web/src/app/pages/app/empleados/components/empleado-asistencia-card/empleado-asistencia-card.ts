@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 import { EmployeeService } from '../../../../../core/employees/employee.service';
 import { parseApiError, type ParsedApiError } from '../../../../../core/http/parse-api-error';
 import { attendanceStatusLabel } from '../../../../../core/i18n/enum-labels';
+import { formatDateTime as formatInstant } from '../../../../../core/i18n/format-date';
 import type { AttendanceResponse, AttendanceStatus } from '../../../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../../../core/model/common/pagination';
 import { DataStateComponent } from '../../../../../shared/ui/data-state/data-state';
@@ -86,11 +87,7 @@ export class EmpleadoAsistenciaCardComponent implements OnInit {
   }
 
   formatDateTime(iso: string | null): string {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString('es-MX', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
+    return formatInstant(iso);
   }
 
   // ── Acciones ──────────────────────────────────────────────────────────────

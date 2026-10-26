@@ -57,8 +57,7 @@ public class PosProductController {
                 request.salePrice(),
                 request.posSaleCategoryId(),
                 request.available(),
-                request.stockPolicy(),
-                request.negativeStockLimit()));
+                request.stockPolicy()));
 
     var product = result.product();
     var row = result.catalog();

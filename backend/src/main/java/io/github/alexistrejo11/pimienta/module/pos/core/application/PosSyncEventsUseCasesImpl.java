@@ -413,7 +413,6 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
                 line.unitPriceCentavos(),
                 line.subtotalCentavos(),
                 parseStockPolicy(line.stockPolicy()),
-                line.soldWithNegativeStock(),
                 line.soldWhileUnavailable(),
                 blankToNull(line.rawBarcode()),
                 line.authorizedByOperatorId(),

@@ -107,8 +107,6 @@ class PosSyncBootstrapIntegrationTest {
         .andExpect(jsonPath("$.products[0].unit").value("PIECE"))
         .andExpect(jsonPath("$.products[0].stockPolicy").value("CONTROLLED"))
         .andExpect(jsonPath("$.openAmountCategories[0]").value("MISC"))
-        .andExpect(jsonPath("$.policies.allowNegativeStock").value(true))
-        .andExpect(jsonPath("$.policies.defaultNegativeStockLimit").value(10))
         .andExpect(jsonPath("$.policies.staleCatalogWarnHours").value(24))
         .andExpect(jsonPath("$.policies.stockless").value(false))
         .andExpect(jsonPath("$.policies.highSaleWarningCentavos").value(1000000))

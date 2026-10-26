@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.application.Invent
 import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.InventorySearchCriteria;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Inventory;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryGlobalSummary;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLocation;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.StorageLocation.LocationStatus;
@@ -12,19 +13,21 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.I
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.ItemNotFoundException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.exception.StorageLocationNotFoundException;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.InventoryManagementUseCases;
+import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryMovementRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.StorageLocationRepository;
-import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryCountRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryGlobalSummaryRepository;
 import io.github.alexistrejo11.pimienta.shared.exception.BusinessValidationException;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.math.BigDecimal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InventoryManagementUseCasesImpl implements InventoryManagementUseCases {
@@ -35,19 +38,19 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
   private final ItemRepository itemRepository;
   private final StorageLocationRepository storageLocationRepository;
   private final InventoryGlobalSummaryRepository globalSummaryRepository;
-  private final InventoryCountRepository inventoryCountRepository;
+  private final InventoryMovementRepository movementRepository;
 
   public InventoryManagementUseCasesImpl(
       InventoryRepository inventoryRepository,
       ItemRepository itemRepository,
       StorageLocationRepository storageLocationRepository,
       InventoryGlobalSummaryRepository globalSummaryRepository,
-      InventoryCountRepository inventoryCountRepository) {
+      InventoryMovementRepository movementRepository) {
     this.inventoryRepository = inventoryRepository;
     this.itemRepository = itemRepository;
     this.storageLocationRepository = storageLocationRepository;
     this.globalSummaryRepository = globalSummaryRepository;
-    this.inventoryCountRepository = inventoryCountRepository;
+    this.movementRepository = movementRepository;
   }
 
   @Override
@@ -57,15 +60,7 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
 
   @Override
   public InventoryDashboard dashboard(List<Long> headquarterIds) {
-    InventoryDashboard stock = globalSummaryRepository.stockKpis(headquarterIds);
-    long openCounts = inventoryCountRepository.countOpen(headquarterIds);
-    return new InventoryDashboard(
-        stock.skuCount(),
-        stock.lowStockCount(),
-        stock.outOfStockCount(),
-        openCounts,
-        stock.totalAvailableQuantity(),
-        stock.totalStockValue());
+    return globalSummaryRepository.stockKpis(headquarterIds);
   }
 
   @Override
@@ -153,7 +148,8 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
   }
 
   @Override
-  public Inventory createInitialStock(long itemId, long locationId, int initialQuantity) {
+  @Transactional
+  public Inventory createInitialStock(long itemId, long locationId, int initialQuantity, long performedById) {
     log.info(
         "create initial stock start itemId={} locationId={} initialQuantity={}",
         itemId,
@@ -176,6 +172,20 @@ public class InventoryManagementUseCasesImpl implements InventoryManagementUseCa
     Inventory inv = Inventory.create(item, location, initialQuantity);
 
     Inventory saved = inventoryRepository.save(inv);
+    if (initialQuantity > 0) {
+      BigDecimal unitCost = item.getCostPrice() != null ? item.getCostPrice() : BigDecimal.ZERO;
+      movementRepository.save(
+          InventoryMovement.recordIn(
+              item,
+              location,
+              initialQuantity,
+              unitCost,
+              null,
+              null,
+              "Opening stock",
+              performedById,
+              saved.getAvailableQuantity()));
+    }
 
     log.info("create initial stock complete inventoryId={}", saved.getId());
     return saved;

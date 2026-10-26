@@ -1,6 +1,7 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { formatDateOnlyFullYear } from '../../../../../../core/i18n/format-date';
 import type { OpportunityResponse } from '../../../../../../core/model/crm/opportunity.dto';
 import { StatusBadgeComponent } from '../../../../../../shared/ui/status-badge/status-badge';
 
@@ -20,7 +21,6 @@ export class OportunidadRowComponent {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    return formatDateOnlyFullYear(iso);
   }
 }

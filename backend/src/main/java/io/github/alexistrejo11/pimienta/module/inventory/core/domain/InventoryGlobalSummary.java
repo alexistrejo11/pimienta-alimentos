@@ -6,6 +6,6 @@ import java.math.BigDecimal;
 
 public record InventoryGlobalSummary(
     Long itemId, String sku, String name, ItemCategory category, Long headquarterId,
-    String headquarterName, long availableQuantity, long reservedQuantity,
-    long inTransitQuantity, long totalQuantity, BigDecimal unitCost, BigDecimal totalValue,
+    String headquarterName, long availableQuantity, long totalQuantity, BigDecimal unitCost,
+    BigDecimal totalValue,
     InventoryStatus status) {}

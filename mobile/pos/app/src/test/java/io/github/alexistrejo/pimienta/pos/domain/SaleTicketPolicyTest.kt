@@ -98,7 +98,7 @@ class SaleTicketPolicyTest {
         val lines = listOf(
             CartLine(
                 productId = null,
-                name = "Producto abierto · Bebidas",
+                name = "Monto Abierto · Bebidas",
                 category = "Bebidas",
                 unitPriceCentavos = 1000,
                 stockPolicy = "NOT_CONTROLLED",

@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, finalize } from 'rxjs';
 
 import { CrmService } from '../../../../../core/crm/crm.service';
+import { formatDateOnlyFullYear } from '../../../../../core/i18n/format-date';
 import { parseApiError, type ParsedApiError } from '../../../../../core/http/parse-api-error';
 import type { ProjectResponse, ProjectSummaryResponse } from '../../../../../core/model/crm/project.dto';
 import type { ProjectMilestoneResponse } from '../../../../../core/model/crm/project-milestone.dto';
@@ -66,8 +67,7 @@ export class ProyectoDetailPageComponent implements OnInit {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    return formatDateOnlyFullYear(iso);
   }
 
   formatMXN(value: number): string {

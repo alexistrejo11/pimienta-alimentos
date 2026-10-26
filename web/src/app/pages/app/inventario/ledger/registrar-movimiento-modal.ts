@@ -5,23 +5,16 @@ import { finalize } from 'rxjs';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
-import { inventoryExitReasonLabel } from '../../../../core/i18n/enum-labels';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import type { ItemResponse, StorageLocationResponse } from '../../../../core/model/inventory/inventory.dto';
-import type { InventoryExitReason } from '../../../../core/model/inventory/inventory.enums';
+import type { StaffExitReason } from '../../../../core/model/inventory/inventory.enums';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { ItemSelectComponent } from '../../../../shared/ui/item-select/item-select';
 
-type MovementKind = 'entry' | 'scrap' | 'adjustment';
-type EntryMode = 'purchase' | 'initial';
+type MovementKind = 'entry' | 'exit' | 'adjustment';
+type EntryMode = 'receipt' | 'initial';
 
-const EXIT_REASONS: InventoryExitReason[] = [
-  'SCRAP',
-  'DAMAGED',
-  'EXPIRED',
-  'INTERNAL_USE',
-  'INVENTORY_ADJUSTMENT',
-];
+const STAFF_EXIT_REASONS: StaffExitReason[] = ['WASTE', 'WITHDRAWAL'];
 
 @Component({
   selector: 'app-registrar-movimiento-modal',
@@ -41,10 +34,9 @@ export class RegistrarMovimientoModalComponent implements OnInit {
   readonly validation = signal('');
   readonly locations = signal<StorageLocationResponse[]>([]);
   readonly kind = signal<MovementKind>('entry');
-  readonly entryMode = signal<EntryMode>('purchase');
+  readonly entryMode = signal<EntryMode>('receipt');
   readonly isAdmin = this.session.isAdmin;
-  readonly exitReasons = EXIT_REASONS;
-  readonly exitReasonLabel = inventoryExitReasonLabel;
+  readonly exitReasons = STAFF_EXIT_REASONS;
 
   readonly needsHeadquarter = computed(() => this.kind() !== 'adjustment');
 
@@ -55,8 +47,8 @@ export class RegistrarMovimientoModalComponent implements OnInit {
   unitCost = 0;
   reference = '';
   notes = '';
-  exitReason: InventoryExitReason = 'SCRAP';
-  newQuantity = 0;
+  exitReason: StaffExitReason = 'WASTE';
+  countedQuantity = 0;
   reason = '';
 
   readonly effectiveHeadquarterId = computed(() =>
@@ -88,8 +80,8 @@ export class RegistrarMovimientoModalComponent implements OnInit {
     this.unitCost = 0;
     this.reference = '';
     this.notes = '';
-    this.exitReason = 'SCRAP';
-    this.newQuantity = 0;
+    this.exitReason = 'WASTE';
+    this.countedQuantity = 0;
     this.reason = '';
     this.loadLocations();
   }
@@ -97,6 +89,10 @@ export class RegistrarMovimientoModalComponent implements OnInit {
   selectEntryMode(mode: EntryMode): void {
     if (this.loading()) return;
     this.entryMode.set(mode);
+  }
+
+  exitReasonOptionLabel(reason: StaffExitReason): string {
+    return reason === 'WASTE' ? 'Merma / Desperdicio' : 'Retiro';
   }
 
   onHeadquarterChange(id: number | number[] | null): void {
@@ -115,7 +111,7 @@ export class RegistrarMovimientoModalComponent implements OnInit {
 
   onItemPicked(item: ItemResponse | null): void {
     if (!item || this.unitCost !== 0) return;
-    if (this.kind() === 'scrap' || (this.kind() === 'entry' && this.entryMode() === 'purchase')) {
+    if (this.kind() === 'exit' || (this.kind() === 'entry' && this.entryMode() === 'receipt')) {
       this.unitCost = item.costPrice;
     }
   }
@@ -147,6 +143,7 @@ export class RegistrarMovimientoModalComponent implements OnInit {
     this.loading.set(true);
     const done = () => this.loading.set(false);
     const kind = this.kind();
+    const initiatedById = this.session.userId() > 0 ? this.session.userId() : undefined;
     if (kind === 'entry' && this.entryMode() === 'initial') {
       this.inventory
         .createInitialStock({
@@ -163,9 +160,10 @@ export class RegistrarMovimientoModalComponent implements OnInit {
     }
     if (kind === 'entry') {
       this.inventory
-        .purchase({
+        .stockIn({
           externalReference: this.reference || undefined,
           notes: this.notes || undefined,
+          initiatedById,
           lines: [
             {
               itemId: this.itemId!,
@@ -177,16 +175,18 @@ export class RegistrarMovimientoModalComponent implements OnInit {
         })
         .pipe(finalize(done))
         .subscribe({
-          next: () => this.registrado.emit('Entrada de compra registrada.'),
+          next: () => this.registrado.emit('Entrada registrada.'),
           error: (err: unknown) => this.error.set(parseApiError(err)),
         });
       return;
     }
-    if (kind === 'scrap') {
+    if (kind === 'exit') {
       this.inventory
-        .scrap({
-          exitReason: this.exitReason,
+        .stockOut({
+          externalReference: this.reference || undefined,
           notes: this.notes.trim() || undefined,
+          exitReason: this.exitReason,
+          initiatedById,
           lines: [
             {
               itemId: this.itemId!,
@@ -198,18 +198,20 @@ export class RegistrarMovimientoModalComponent implements OnInit {
         })
         .pipe(finalize(done))
         .subscribe({
-          next: () => this.registrado.emit('Merma registrada.'),
+          next: () => this.registrado.emit('Salida registrada.'),
           error: (err: unknown) => this.error.set(parseApiError(err)),
         });
       return;
     }
     this.inventory
       .adjustment({
+        notes: this.notes.trim() || undefined,
+        initiatedById,
         lines: [
           {
             itemId: this.itemId!,
             locationId: this.locationId!,
-            newQuantity: this.newQuantity,
+            countedQuantity: this.countedQuantity,
             reason: this.reason.trim(),
           },
         ],
@@ -229,7 +231,9 @@ export class RegistrarMovimientoModalComponent implements OnInit {
     if (this.locationId == null) return 'Selecciona la ubicación.';
     if (this.kind() === 'adjustment') {
       if (!this.reason.trim()) return 'Escribe el motivo del ajuste.';
-      if (this.newQuantity < 0) return 'La cantidad no puede ser negativa.';
+      if (!Number.isFinite(this.countedQuantity) || this.countedQuantity < 0) {
+        return 'La cantidad contada no puede ser negativa.';
+      }
       return null;
     }
     if (this.quantity <= 0) return 'La cantidad debe ser mayor a cero.';

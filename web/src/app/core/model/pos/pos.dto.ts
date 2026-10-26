@@ -18,7 +18,6 @@ export interface CreatePosProductRequest {
   posSaleCategoryId: number;
   available?: boolean;
   stockPolicy?: StockPolicy;
-  negativeStockLimit?: number | null;
 }
 
 export interface CreatedPosProductResponse {
@@ -45,7 +44,6 @@ export interface PosSettingsResponse {
   catalogStaleBlockHours: number;
   openAmountCategories: string[];
   allowOpenProducts: boolean;
-  defaultNegativeStockLimit: number | null;
   stockless: boolean;
   /** Soft POS warning threshold on the net sale total; 0 disables it. */
   highSaleWarningCentavos: number;
@@ -62,7 +60,6 @@ export interface PosSettingsRequest {
   catalogStaleBlockHours?: number;
   openAmountCategories?: string[];
   allowOpenProducts?: boolean;
-  defaultNegativeStockLimit?: number | null;
   stockless?: boolean;
   highSaleWarningCentavos?: number;
   highChangeWarningCentavos?: number;
@@ -80,7 +77,6 @@ export interface HeadquarterPosCatalogItemResponse {
   salePrice: number;
   available: boolean;
   stockPolicy: StockPolicy;
-  negativeStockLimit: number | null;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -91,7 +87,6 @@ export interface HeadquarterPosCatalogItemRequest {
   salePrice: number;
   available?: boolean;
   stockPolicy: StockPolicy;
-  negativeStockLimit?: number | null;
 }
 
 export type PosCatalogCandidateResponse = ProductResponse;

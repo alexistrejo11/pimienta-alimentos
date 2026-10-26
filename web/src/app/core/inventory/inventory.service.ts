@@ -8,26 +8,20 @@ import type {
   InventoryTransactionSearchParams,
   InventoryMovementResponse,
   InventoryMovementSearchParams,
-  TransferTransactionRequest,
   CreateInitialStockRequest,
-  InventoryCountResponseRequest,
-  InventoryCountSearchParams,
-  InventoryCountSessionResponse,
-  InventoryCountSessionSummaryResponse,
   InventoryStockResponse,
   InventoryStockSearchParams,
   GlobalInventoryResponse,
   GlobalInventorySearchParams,
   InventoryDashboardResponse,
   InventoryTransactionResponse,
+  InTransactionRequest,
   ItemCreateRequest,
   ItemResponse,
   ItemSearchParams,
   ItemStockSettingsRequest,
   ItemUpdateRequest,
-  OpenInventoryCountRequest,
-  PurchaseTransactionRequest,
-  ScrapTransactionRequest,
+  OutTransactionRequest,
   StorageLocationResponse,
   StorageLocationSearchParams,
 } from '../model/inventory/inventory.dto';
@@ -40,7 +34,6 @@ export class InventoryService {
   private readonly itemsBase = `${API_BASE_URL}/inventory/items`;
   private readonly stockBase = `${API_BASE_URL}/inventory/stock`;
   private readonly locationsBase = `${API_BASE_URL}/inventory/locations`;
-  private readonly countsBase = `${API_BASE_URL}/inventory/count-sessions`;
   private readonly transactionsBase = `${API_BASE_URL}/inventory/transactions`;
 
   searchItems(params: ItemSearchParams = {}): Observable<PagedResponse<ItemResponse>> {
@@ -125,46 +118,12 @@ export class InventoryService {
     return this.http.get<PagedResponse<StorageLocationResponse>>(this.locationsBase, { params: p });
   }
 
-  searchCounts(params: InventoryCountSearchParams = {}): Observable<PagedResponse<InventoryCountSessionSummaryResponse>> {
-    let p = new HttpParams()
-      .set('page', String(params.page ?? 0))
-      .set('size', String(params.size ?? 20));
-    if (params.locationId != null) p = p.set('locationId', String(params.locationId));
-    if (params.status) p = p.set('status', params.status);
-    if (params.headquarterId != null) p = p.set('headquarterId', String(params.headquarterId));
-    return this.http.get<PagedResponse<InventoryCountSessionSummaryResponse>>(this.countsBase, { params: p });
+  stockIn(body: InTransactionRequest): Observable<InventoryTransactionResponse> {
+    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/in`, body);
   }
 
-  openCount(body: OpenInventoryCountRequest): Observable<InventoryCountSessionResponse> {
-    return this.http.post<InventoryCountSessionResponse>(this.countsBase, body);
-  }
-
-  getCount(id: number): Observable<InventoryCountSessionResponse> {
-    return this.http.get<InventoryCountSessionResponse>(`${this.countsBase}/${id}`);
-  }
-
-  respondToCount(id: number, body: InventoryCountResponseRequest): Observable<InventoryCountSessionResponse> {
-    return this.http.post<InventoryCountSessionResponse>(`${this.countsBase}/${id}/responses`, body);
-  }
-
-  submitCount(id: number): Observable<InventoryCountSessionResponse> {
-    return this.http.post<InventoryCountSessionResponse>(`${this.countsBase}/${id}/submit`, {});
-  }
-
-  approveCount(id: number): Observable<InventoryCountSessionResponse> {
-    return this.http.post<InventoryCountSessionResponse>(`${this.countsBase}/${id}/approve`, {});
-  }
-
-  cancelCount(id: number): Observable<void> {
-    return this.http.post<void>(`${this.countsBase}/${id}/cancel`, {});
-  }
-
-  purchase(body: PurchaseTransactionRequest): Observable<InventoryTransactionResponse> {
-    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/purchase`, body);
-  }
-
-  scrap(body: ScrapTransactionRequest): Observable<InventoryTransactionResponse> {
-    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/scrap`, body);
+  stockOut(body: OutTransactionRequest): Observable<InventoryTransactionResponse> {
+    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/out`, body);
   }
 
   adjustment(body: AdjustmentTransactionRequest): Observable<InventoryTransactionResponse> {
@@ -188,12 +147,9 @@ export class InventoryService {
     if (params.locationId != null) p = p.set('locationId', String(params.locationId));
     if (params.search) p = p.set('search', params.search);
     if (params.category) p = p.set('category', params.category);
+    if (params.exitReason) p = p.set('exitReason', params.exitReason);
     if (params.fromDate) p = p.set('fromDate', params.fromDate);
     if (params.toDate) p = p.set('toDate', params.toDate);
     return this.http.get<PagedResponse<InventoryMovementResponse>>(`${API_BASE_URL}/inventory/movements`, { params: p });
-  }
-
-  transfer(body: TransferTransactionRequest): Observable<InventoryTransactionResponse> {
-    return this.http.post<InventoryTransactionResponse>(`${this.transactionsBase}/transfer`, body);
   }
 }

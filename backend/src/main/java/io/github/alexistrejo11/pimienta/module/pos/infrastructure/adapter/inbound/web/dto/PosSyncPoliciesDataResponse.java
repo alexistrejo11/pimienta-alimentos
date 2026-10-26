@@ -7,9 +7,7 @@ import java.util.List;
 @Schema(name = "PosSyncPoliciesDataResponse")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record PosSyncPoliciesDataResponse(
-    boolean allowNegativeStock,
     boolean allowOpenProducts,
-    Integer defaultNegativeStockLimit,
     int staleCatalogWarnHours,
     int staleCatalogBlockHours,
     List<String> openAmountCategories,

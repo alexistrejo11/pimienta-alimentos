@@ -1,5 +1,4 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, interval } from 'rxjs';
@@ -19,6 +18,7 @@ import type {
   PosShiftReconciliationResponse,
 } from '../../../../core/model/pos/pos.dto';
 import { posShiftStatusLabel } from '../../../../core/i18n/enum-labels';
+import { formatDateTime } from '../../../../core/i18n/format-date';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
@@ -27,7 +27,7 @@ type TurnosTab = 'active' | 'history';
 
 @Component({
   selector: 'app-turnos-page',
-  imports: [PageHeaderComponent, DataStateComponent, FormsModule, DatePipe, HeadquarterSelectComponent],
+  imports: [PageHeaderComponent, DataStateComponent, FormsModule, HeadquarterSelectComponent],
   templateUrl: './turnos-page.html',
 })
 export class TurnosPageComponent implements OnInit {
@@ -46,6 +46,7 @@ export class TurnosPageComponent implements OnInit {
   readonly isAdmin = this.session.isAdmin;
   readonly canViewPosFinancials = this.session.canViewPosFinancials;
   readonly formatCentavos = formatCentavos;
+  readonly formatDateTime = formatDateTime;
   readonly shiftStatusLabel = posShiftStatusLabel;
 
   tab: TurnosTab = 'active';

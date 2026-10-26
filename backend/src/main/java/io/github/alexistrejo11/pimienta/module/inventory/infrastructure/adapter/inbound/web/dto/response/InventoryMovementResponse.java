@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.InventoryMovementType;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.MovementDirection;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -17,6 +18,7 @@ public record InventoryMovementResponse(
     BigDecimal unitCost,
     InventoryMovementType type,
     MovementDirection direction,
+    InventoryExitReason exitReason,
     String description,
     String referenceNumber,
     Long performedById,

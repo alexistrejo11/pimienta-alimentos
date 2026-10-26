@@ -1,6 +1,7 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { formatDateOnlyFullYear, formatDateTime } from '../../../../../core/i18n/format-date';
 import type { TaskListItemResponse } from '../../../../../core/model/task/task.dto';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge';
 
@@ -16,9 +17,7 @@ export class TareaRowComponent {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    // Las fechas de tareas pueden venir con hora (ISO 8601 completo)
-    const date = new Date(iso);
-    return date.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return iso.includes('T') ? formatDateTime(iso) : formatDateOnlyFullYear(iso);
   }
 
   get prioridadLabel(): string {

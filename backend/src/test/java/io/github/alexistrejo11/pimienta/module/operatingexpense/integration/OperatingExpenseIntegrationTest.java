@@ -201,6 +201,11 @@ class OperatingExpenseIntegrationTest {
               AccountTestRequests.getBearer(
                   "/api/v1/operating-expenses?from=" + today.minusDays(1), staff.token()))
           .andExpect(status().isForbidden());
+      mockMvc
+          .perform(
+              AccountTestRequests.getBearer(
+                  "/api/v1/operating-expenses/summary?from=" + today.minusDays(1), staff.token()))
+          .andExpect(status().isForbidden());
 
       MvcResult own =
           mockMvc
@@ -232,6 +237,40 @@ class OperatingExpenseIntegrationTest {
         .perform(create(manager.token(), body(hq2, "Sede dos", today, null)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.headquarterId").value((int) hq2));
+  }
+
+  @Test
+  void summaryGroupsEveryMatchingDayAndBreaksCategoryTies() throws Exception {
+    TokenPair admin = obtainToken(Set.of(Role.ADMIN));
+    long hq = createHeadquarter(admin.token(), "EXP-SUM-" + UUID.randomUUID());
+    LocalDate first = today.minusDays(1);
+    mockMvc.perform(create(admin.token(), expenseJson(hq, "Hielo renta", first, "RENT", "20.00"))).andExpect(status().isCreated());
+    mockMvc
+        .perform(create(admin.token(), expenseJson(hq, "Hielo proveedores", first, "SUPPLIERS_MERCHANDISE", "10.00")))
+        .andExpect(status().isCreated());
+    mockMvc
+        .perform(create(admin.token(), expenseJson(hq, "Hielo proveedores", today, "SUPPLIERS_MERCHANDISE", "10.00")))
+        .andExpect(status().isCreated());
+    mockMvc
+        .perform(create(admin.token(), expenseJson(hq, "Otro concepto", today, "OTHER", "100.00")))
+        .andExpect(status().isCreated());
+
+    String summary =
+        "/api/v1/operating-expenses/summary?headquarterId=" + hq + "&from=" + first + "&to=" + today;
+    mockMvc
+        .perform(AccountTestRequests.getBearer(summary + "&search=hielo", admin.token()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalAmount").value(40.0))
+        .andExpect(jsonPath("$.topCategory.category").value("SUPPLIERS_MERCHANDISE"))
+        .andExpect(jsonPath("$.topCategory.totalAmount").value(20.0))
+        .andExpect(jsonPath("$.topCategory.count").value(2))
+        .andExpect(jsonPath("$.byDay.length()").value(2))
+        .andExpect(jsonPath("$.byDay[0].occurredOn").value(first.toString()))
+        .andExpect(jsonPath("$.byDay[0].totalAmount").value(30.0))
+        .andExpect(jsonPath("$.byDay[0].count").value(2))
+        .andExpect(jsonPath("$.byDay[1].occurredOn").value(today.toString()))
+        .andExpect(jsonPath("$.byDay[1].totalAmount").value(10.0))
+        .andExpect(jsonPath("$.byDay[1].count").value(1));
   }
 
   @Test
@@ -309,6 +348,20 @@ class OperatingExpenseIntegrationTest {
 
   private static MockMultipartFile jsonPart(String json) {
     return new MockMultipartFile("data", "data", MediaType.APPLICATION_JSON_VALUE, json.getBytes(StandardCharsets.UTF_8));
+  }
+
+  private static String expenseJson(long headquarterId, String concept, LocalDate day, String category, String amount) {
+    return "{\"amount\":"
+        + amount
+        + ",\"category\":\""
+        + category
+        + "\",\"concept\":\""
+        + concept
+        + "\",\"headquarterId\":"
+        + headquarterId
+        + ",\"occurredOn\":\""
+        + day
+        + "\"}";
   }
 
   private static String body(Long headquarterId, String concept, LocalDate day, List<String> retain) {

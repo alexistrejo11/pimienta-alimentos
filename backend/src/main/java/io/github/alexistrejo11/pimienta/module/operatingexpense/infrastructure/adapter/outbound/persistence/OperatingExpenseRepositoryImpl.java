@@ -1,12 +1,20 @@
 package io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.outbound.persistence;
 
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseCategoryTotal;
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseDayTotal;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.OperatingExpense;
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.enums.OperatingExpenseCategory;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.exception.OperatingExpenseNotFoundException;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.port.output.OperatingExpenseRepository;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.outbound.persistence.entity.OperatingExpenseJpaEntity;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -52,6 +60,60 @@ public class OperatingExpenseRepositoryImpl implements OperatingExpenseRepositor
     query.where(OperatingExpenseSpecifications.fromCriteria(criteria).toPredicate(root, query, cb));
     BigDecimal total = entityManager.createQuery(query).getSingleResult();
     return total == null ? BigDecimal.ZERO : total;
+  }
+
+  @Override
+  public List<OperatingExpenseDayTotal> sumByDay(OperatingExpenseSearchCriteria criteria) {
+    return grouped(criteria, "occurredOn", true).stream()
+        .map(
+            row ->
+                new OperatingExpenseDayTotal(
+                    (LocalDate) row[0], money(row[1]), count(row[2])))
+        .toList();
+  }
+
+  @Override
+  public List<OperatingExpenseCategoryTotal> sumByCategory(OperatingExpenseSearchCriteria criteria) {
+    return grouped(criteria, "category", false).stream()
+        .map(
+            row ->
+                new OperatingExpenseCategoryTotal(
+                    category(row[0]), money(row[1]), count(row[2])))
+        .toList();
+  }
+
+  private List<Object[]> grouped(OperatingExpenseSearchCriteria criteria, String field, boolean chronological) {
+    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+    Root<OperatingExpenseJpaEntity> root = query.from(OperatingExpenseJpaEntity.class);
+    query.multiselect(root.get(field), cb.sum(root.get("amount")), cb.count(root));
+    query.where(OperatingExpenseSpecifications.fromCriteria(criteria).toPredicate(root, query, cb));
+    query.groupBy(root.get(field));
+    if (chronological) {
+      query.orderBy(cb.asc(root.get(field)));
+    }
+    return entityManager.createQuery(query).getResultList();
+  }
+
+  private static BigDecimal money(Object value) {
+    if (value == null) {
+      return BigDecimal.ZERO;
+    }
+    if (value instanceof BigDecimal decimal) {
+      return decimal;
+    }
+    return new BigDecimal(value.toString());
+  }
+
+  private static long count(Object value) {
+    return value instanceof Number number ? number.longValue() : 0L;
+  }
+
+  private static OperatingExpenseCategory category(Object value) {
+    if (value instanceof OperatingExpenseCategory category) {
+      return category;
+    }
+    return OperatingExpenseCategory.valueOf(String.valueOf(value));
   }
 
   @Override

@@ -44,9 +44,6 @@ public class HeadquarterPosSettingsJpaEntity extends BaseJpaEntity {
   @Column(name = "allow_open_products", nullable = false)
   private boolean allowOpenProducts;
 
-  @Column(name = "default_negative_stock_limit")
-  private Integer defaultNegativeStockLimit;
-
   @Column(name = "stockless", nullable = false)
   private boolean stockless;
 
@@ -111,14 +108,6 @@ public class HeadquarterPosSettingsJpaEntity extends BaseJpaEntity {
 
   public void setAllowOpenProducts(boolean allowOpenProducts) {
     this.allowOpenProducts = allowOpenProducts;
-  }
-
-  public Integer getDefaultNegativeStockLimit() {
-    return defaultNegativeStockLimit;
-  }
-
-  public void setDefaultNegativeStockLimit(Integer defaultNegativeStockLimit) {
-    this.defaultNegativeStockLimit = defaultNegativeStockLimit;
   }
 
   public boolean isStockless() {

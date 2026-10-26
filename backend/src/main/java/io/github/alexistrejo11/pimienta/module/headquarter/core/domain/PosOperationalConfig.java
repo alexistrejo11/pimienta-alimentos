@@ -20,7 +20,6 @@ public class PosOperationalConfig extends BaseDomain<Long> {
   private int catalogStaleBlockHours;
   private List<String> openAmountCategories;
   private boolean allowOpenProducts;
-  private Integer defaultNegativeStockLimit;
   private boolean stockless;
   private long highSaleWarningCentavos;
   private long highChangeWarningCentavos;
@@ -60,10 +59,6 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     return openAmountCategories != null ? List.copyOf(openAmountCategories) : List.of();
   }
 
-  public Integer getDefaultNegativeStockLimit() {
-    return defaultNegativeStockLimit;
-  }
-
   public boolean isAllowOpenProducts() {
     return allowOpenProducts;
   }
@@ -96,7 +91,6 @@ public class PosOperationalConfig extends BaseDomain<Long> {
     private Integer catalogStaleBlockHours;
     private List<String> openAmountCategories;
     private Boolean allowOpenProducts;
-    private Integer defaultNegativeStockLimit;
     private Boolean stockless;
     private Long highSaleWarningCentavos;
     private Long highChangeWarningCentavos;
@@ -137,11 +131,6 @@ public class PosOperationalConfig extends BaseDomain<Long> {
 
     public SafeBuilder withAllowOpenProducts(Boolean allowOpenProducts) {
       this.allowOpenProducts = allowOpenProducts;
-      return this;
-    }
-
-    public SafeBuilder withDefaultNegativeStockLimit(Integer limit) {
-      this.defaultNegativeStockLimit = limit;
       return this;
     }
 
@@ -190,7 +179,6 @@ public class PosOperationalConfig extends BaseDomain<Long> {
       c.openAmountCategories =
           openAmountCategories != null ? new ArrayList<>(openAmountCategories) : new ArrayList<>();
       c.allowOpenProducts = allowOpenProducts != null && allowOpenProducts;
-      c.defaultNegativeStockLimit = defaultNegativeStockLimit;
       c.stockless = stockless != null && stockless;
       c.highSaleWarningCentavos =
           highSaleWarningCentavos != null && highSaleWarningCentavos >= 0

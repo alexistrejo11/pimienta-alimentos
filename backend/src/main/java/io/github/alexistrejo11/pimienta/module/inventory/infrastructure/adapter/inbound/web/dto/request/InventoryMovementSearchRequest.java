@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.application.query.
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.InventoryMovementType;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.MovementDirection;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import io.github.alexistrejo11.pimienta.shared.web.PageableRequest;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +18,7 @@ public class InventoryMovementSearchRequest extends PageableRequest {
   private Long locationId;
   private String search;
   private ItemCategory category;
+  private InventoryExitReason exitReason;
 
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private LocalDateTime fromDate;
@@ -60,6 +62,8 @@ public class InventoryMovementSearchRequest extends PageableRequest {
   public void setSearch(String search) { this.search = search; }
   public ItemCategory getCategory() { return category; }
   public void setCategory(ItemCategory category) { this.category = category; }
+  public InventoryExitReason getExitReason() { return exitReason; }
+  public void setExitReason(InventoryExitReason exitReason) { this.exitReason = exitReason; }
 
   public LocalDateTime getFromDate() {
     return fromDate;
@@ -78,6 +82,7 @@ public class InventoryMovementSearchRequest extends PageableRequest {
   }
 
   public InventoryMovementSearchCriteria toCriteria(List<Long> headquarterIds) {
-    return new InventoryMovementSearchCriteria(type, direction, itemId, locationId, fromDate, toDate, search, category, headquarterIds);
+    return new InventoryMovementSearchCriteria(
+        type, direction, itemId, locationId, fromDate, toDate, search, category, exitReason, headquarterIds);
   }
 }

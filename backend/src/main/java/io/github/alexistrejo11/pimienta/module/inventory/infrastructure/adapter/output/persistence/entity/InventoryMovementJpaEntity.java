@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.shared.jpa.VersionedJpaEntity;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.InventoryMovementType;
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement.MovementDirection;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -59,6 +60,10 @@ public class InventoryMovementJpaEntity extends VersionedJpaEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   private MovementDirection direction;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "exit_reason", length = 32)
+  private InventoryExitReason exitReason;
 
   @Column(length = 2000)
   private String description;
@@ -140,6 +145,14 @@ public class InventoryMovementJpaEntity extends VersionedJpaEntity {
 
   public void setType(InventoryMovementType type) {
     this.type = type;
+  }
+
+  public InventoryExitReason getExitReason() {
+    return exitReason;
+  }
+
+  public void setExitReason(InventoryExitReason exitReason) {
+    this.exitReason = exitReason;
   }
 
   public MovementDirection getDirection() {

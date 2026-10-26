@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, finalize } from 'rxjs';
 
 import { CrmService } from '../../../../../core/crm/crm.service';
+import { formatDateOnlyFullYear } from '../../../../../core/i18n/format-date';
 import { parseApiError, type ParsedApiError } from '../../../../../core/http/parse-api-error';
 import type { OpportunityResponse, OpportunitySummaryResponse } from '../../../../../core/model/crm/opportunity.dto';
 import { PageHeaderComponent } from '../../../../../shared/ui/page-header/page-header';
@@ -63,8 +64,7 @@ export class OportunidadDetailPageComponent implements OnInit {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    return formatDateOnlyFullYear(iso);
   }
 
   formatMXN(value: number): string {

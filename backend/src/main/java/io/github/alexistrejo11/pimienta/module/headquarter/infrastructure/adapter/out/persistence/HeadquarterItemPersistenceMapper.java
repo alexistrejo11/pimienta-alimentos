@@ -22,7 +22,6 @@ public final class HeadquarterItemPersistenceMapper {
         .withSalePrice(entity.getSalePrice())
         .withAvailable(entity.isAvailable())
         .withStockPolicy(entity.getStockPolicy())
-        .withNegativeStockLimit(entity.getNegativeStockLimit())
         .withCreatedAt(entity.getCreatedAt())
         .withUpdatedAt(entity.getUpdatedAt())
         .withDeletedAt(entity.getDeletedAt())
@@ -45,7 +44,6 @@ public final class HeadquarterItemPersistenceMapper {
     e.setSalePrice(domain.getSalePrice() != null ? domain.getSalePrice() : BigDecimal.ZERO);
     e.setAvailable(domain.isAvailable());
     e.setStockPolicy(domain.getStockPolicy());
-    e.setNegativeStockLimit(domain.getNegativeStockLimit());
     e.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     e.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt() : LocalDateTime.now());
     e.setDeletedAt(domain.getDeletedAt());

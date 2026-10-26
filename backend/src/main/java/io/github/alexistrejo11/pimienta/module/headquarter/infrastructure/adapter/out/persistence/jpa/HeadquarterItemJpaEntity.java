@@ -49,9 +49,6 @@ public class HeadquarterItemJpaEntity extends BaseJpaEntity {
   @Column(name = "stock_policy", nullable = false, length = 32)
   private StockPolicy stockPolicy;
 
-  @Column(name = "negative_stock_limit")
-  private Integer negativeStockLimit;
-
   public Long getId() {
     return id;
   }
@@ -116,11 +113,4 @@ public class HeadquarterItemJpaEntity extends BaseJpaEntity {
     this.stockPolicy = stockPolicy;
   }
 
-  public Integer getNegativeStockLimit() {
-    return negativeStockLimit;
-  }
-
-  public void setNegativeStockLimit(Integer negativeStockLimit) {
-    this.negativeStockLimit = negativeStockLimit;
-  }
 }

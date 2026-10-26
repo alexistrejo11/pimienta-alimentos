@@ -72,10 +72,6 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                     existing.getOpenAmountCategories(),
                                     resolveBoolean(
                                         command.allowOpenProducts(), existing.isAllowOpenProducts())))
-                            .withDefaultNegativeStockLimit(
-                                command.defaultNegativeStockLimit() != null
-                                    ? command.defaultNegativeStockLimit()
-                                    : existing.getDefaultNegativeStockLimit())
                             .withStockless(
                                 resolveBoolean(command.stockless(), existing.isStockless()))
                             .withHighSaleWarningCentavos(
@@ -103,7 +99,6 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
                                     command.openAmountCategories(),
                                     List.of(),
                                     resolveBoolean(command.allowOpenProducts(), false)))
-                            .withDefaultNegativeStockLimit(command.defaultNegativeStockLimit())
                             .withStockless(resolveBoolean(command.stockless(), false))
                             .withHighSaleWarningCentavos(
                                 resolveLong(
@@ -121,7 +116,6 @@ public class HeadquarterPosSettingsUseCasesImpl implements HeadquarterPosSetting
     policyProjection.put("openAmountCategories", saved.getOpenAmountCategories());
     policyProjection.put("catalogStaleWarnHours", saved.getCatalogStaleWarnHours());
     policyProjection.put("catalogStaleBlockHours", saved.getCatalogStaleBlockHours());
-    policyProjection.put("defaultNegativeStockLimit", saved.getDefaultNegativeStockLimit());
     policyProjection.put("stockless", saved.isStockless());
     policyProjection.put("highSaleWarningCentavos", saved.getHighSaleWarningCentavos());
     policyProjection.put("highChangeWarningCentavos", saved.getHighChangeWarningCentavos());

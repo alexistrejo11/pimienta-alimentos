@@ -73,6 +73,9 @@ export class OperatingExpenseService {
     if (params.headquarterId != null) {
       httpParams = httpParams.set('headquarterId', params.headquarterId);
     }
+    if (params.search?.trim()) {
+      httpParams = httpParams.set('search', params.search.trim());
+    }
     if (params.from) {
       httpParams = httpParams.set('from', params.from);
     }

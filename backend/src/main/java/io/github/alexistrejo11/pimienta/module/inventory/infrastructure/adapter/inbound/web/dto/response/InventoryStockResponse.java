@@ -12,8 +12,6 @@ public record InventoryStockResponse(
     String locationCode,
     String locationName,
     int availableQuantity,
-    int reservedQuantity,
-    int inTransitQuantity,
     InventoryStatus status,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,

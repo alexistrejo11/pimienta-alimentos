@@ -56,24 +56,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Captures category and amount; the cashier adds the line without a manager PIN.
+// Captures category, optional concept, and amount; the cashier adds the line without a manager PIN.
 @Composable
 internal fun OpenAmountDialog(
     categories: List<String>,
     onDismiss: () -> Unit,
-    onConfirm: (category: String, centavos: Long) -> Unit,
+    onConfirm: (category: String, centavos: Long, concept: String) -> Unit,
     initialCategory: String? = null,
 ) {
     var amount by remember { mutableStateOf("") }
+    var concept by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(initialCategory ?: categories.firstOrNull().orEmpty()) }
     var error by remember { mutableStateOf<String?>(null) }
+    val (conceptInteraction, forceConceptKeyboard) = rememberForceSoftKeyboardInteractionSource()
 
     fun submit() {
         val cents = Money.fromInput(amount)
         when {
             selectedCategory.isBlank() -> error = "Selecciona una categoría."
             cents == null || cents <= 0 -> error = "Captura un importe válido."
-            else -> onConfirm(selectedCategory.trim(), cents)
+            else -> onConfirm(selectedCategory.trim(), cents, concept)
         }
     }
 
@@ -98,8 +100,23 @@ internal fun OpenAmountDialog(
                         }
                     }
                 }
+                OutlinedTextField(
+                    value = concept,
+                    onValueChange = { concept = it.take(120) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) forceConceptKeyboard() },
+                    interactionSource = conceptInteraction,
+                    label = { Text("Concepto (opcional)") },
+                    placeholder = { Text("Ej. 5 cucharas") },
+                    singleLine = true,
+                    colors = catalogFieldColors(),
+                )
                 Text("Descripción generada", style = MaterialTheme.typography.labelLarge)
-                Text("Producto abierto · ${selectedCategory.ifBlank { "categoría" }}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    formatOpenAmountProductName(selectedCategory.ifBlank { "categoría" }, concept),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Text("Importe", style = MaterialTheme.typography.labelLarge)
                 Numpad(amount, { amount = it }, decimal = true, onSubmit = ::submit)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

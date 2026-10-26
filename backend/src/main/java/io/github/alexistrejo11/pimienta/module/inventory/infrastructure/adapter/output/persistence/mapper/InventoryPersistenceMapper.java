@@ -29,8 +29,6 @@ public class InventoryPersistenceMapper {
     e.setItemId(domain.getItem().getId());
     e.setLocationId(domain.getLocation().getId());
     e.setAvailableQuantity(domain.getAvailableQuantity());
-    e.setReservedQuantity(domain.getReservedQuantity());
-    e.setInTransitQuantity(domain.getInTransitQuantity());
     e.setStatus(domain.getStatus());
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
@@ -55,8 +53,6 @@ public class InventoryPersistenceMapper {
     inv.setItem(item);
     inv.setLocation(location);
     inv.setAvailableQuantity(e.getAvailableQuantity());
-    inv.setReservedQuantity(e.getReservedQuantity());
-    inv.setInTransitQuantity(e.getInTransitQuantity());
     inv.setStatus(e.getStatus());
     inv.setCreatedAt(e.getCreatedAt());
     inv.setUpdatedAt(e.getUpdatedAt());

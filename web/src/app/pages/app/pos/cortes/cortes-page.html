@@ -58,8 +58,8 @@
           @for (s of shifts(); track s.shiftId) {
             <tr>
               <td class="px-4 py-3">{{ operatorLabel(s.cashierOperatorId) }}</td>
-              <td class="px-4 py-3">{{ s.openedAt | date: 'short' }}</td>
-              <td class="px-4 py-3">{{ s.closedAt | date: 'short' }}</td>
+              <td class="px-4 py-3">{{ formatDateTime(s.openedAt) }}</td>
+              <td class="px-4 py-3">{{ formatDateTime(s.closedAt) }}</td>
               <td class="px-4 py-3 tabular-nums">{{ formatCentavos(s.openingCashCentavos) }}</td>
               <td class="px-4 py-3 tabular-nums">
                 {{ s.expectedCashCentavos != null ? formatCentavos(s.expectedCashCentavos) : '—' }}

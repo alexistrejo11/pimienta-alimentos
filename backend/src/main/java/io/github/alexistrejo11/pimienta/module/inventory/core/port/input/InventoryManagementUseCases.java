@@ -22,7 +22,7 @@ public interface InventoryManagementUseCases {
 
   Page<Inventory> findOutOfStock(InventorySearchCriteria criteria, Pageable pageable);
 
-  Inventory createInitialStock(long itemId, long locationId, int initialQuantity);
+  Inventory createInitialStock(long itemId, long locationId, int initialQuantity, long performedById);
 
   Page<InventoryGlobalSummary> searchGlobalSummary(String search, io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item.ItemCategory category, Inventory.InventoryStatus status, java.math.BigDecimal minCost, java.math.BigDecimal maxCost, java.util.List<Long> headquarterIds, Pageable pageable);
 

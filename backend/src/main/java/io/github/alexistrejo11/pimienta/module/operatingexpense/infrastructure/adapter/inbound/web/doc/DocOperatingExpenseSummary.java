@@ -19,7 +19,8 @@ import java.lang.annotation.Target;
 @Operation(
     summary = "Sum operating expenses",
     description =
-        "Total amount for the same filters as the list. Restricted roles are forced to today and their sede.")
+        "Total, top category, and daily totals for the same filters as the list. "
+            + "Restricted roles are forced to today and their sede. Days without expenses are omitted.")
 @ApiResponse(
     responseCode = "200",
     content = @Content(schema = @Schema(implementation = OperatingExpenseSummaryResponse.class)))

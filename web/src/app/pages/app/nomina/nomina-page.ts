@@ -10,6 +10,7 @@ import {
   payrollFrequencyLabel,
   payrollRecordStatusLabel,
 } from '../../../core/i18n/enum-labels';
+import { formatDateOnlyFullYear } from '../../../core/i18n/format-date';
 import type { PageMetadata } from '../../../core/model/common/pagination';
 import type {
   PayrollDebtResponse,
@@ -455,8 +456,8 @@ export class NominaPageComponent implements OnInit {
   }
 
   formatDate(iso: string): string {
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    if (!iso) return '—';
+    return formatDateOnlyFullYear(iso);
   }
 
   statusLabel(status: string): string {

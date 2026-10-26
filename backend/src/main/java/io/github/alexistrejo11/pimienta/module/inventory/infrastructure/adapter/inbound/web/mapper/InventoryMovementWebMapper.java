@@ -23,6 +23,7 @@ public final class InventoryMovementWebMapper {
         m.getUnitCost(),
         m.getType(),
         m.getDirection(),
+        m.getExitReason(),
         m.getDescription(),
         m.getReferenceNumber(),
         m.getPerformedById(),

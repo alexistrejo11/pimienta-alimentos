@@ -115,7 +115,6 @@ object OutboxPayloadBuilder {
         put("unitPriceCentavos", line.unitPriceCentavos)
         put("subtotalCentavos", line.subtotalCentavos)
         put("stockPolicy", line.stockPolicy)
-        put("soldWithNegativeStock", false)
         put("soldWhileUnavailable", product?.available == false)
         if (line.authorizedByOperatorId != null) put("authorizedByOperatorId", line.authorizedByOperatorId) else put("authorizedByOperatorId", JsonNull)
         if (line.authorizedAtEpochMillis != null) put("authorizedAt", Instant.ofEpochMilli(line.authorizedAtEpochMillis).toString()) else put("authorizedAt", JsonNull)

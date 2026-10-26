@@ -46,7 +46,6 @@ public record IngestPosEventsCommand(List<IngestPosEventItem> events) {
       long unitPriceCentavos,
       long subtotalCentavos,
       String stockPolicy,
-      boolean soldWithNegativeStock,
       boolean soldWhileUnavailable,
       String rawBarcode,
       Long authorizedByOperatorId,

@@ -154,7 +154,6 @@ public final class PosWebMapper {
                   parseLongPrimitive(line.get("unitPriceCentavos"), 0L),
                   parseLongPrimitive(line.get("subtotalCentavos"), 0L),
                   asString(line.get("stockPolicy")),
-                  parseBoolean(line.get("soldWithNegativeStock")),
                   parseBoolean(line.get("soldWhileUnavailable")),
                    asString(line.get("rawBarcode")),
                    parseLong(line.get("authorizedByOperatorId")),
@@ -483,9 +482,7 @@ public final class PosWebMapper {
         snapshot.products().stream().map(PosWebMapper::toBootstrapProduct).toList(),
         snapshot.openAmountCategories(),
         new PosBootstrapPoliciesResponse(
-            snapshot.policies().allowNegativeStock(),
             snapshot.policies().allowOpenProducts(),
-            snapshot.policies().defaultNegativeStockLimit(),
             snapshot.policies().staleCatalogWarnHours(),
             snapshot.policies().staleCatalogBlockHours(),
             snapshot.policies().stockless(),
@@ -517,8 +514,7 @@ public final class PosWebMapper {
               p.available(),
               p.stockQuantity(),
               p.stockMinQuantity(),
-              p.stockPolicy().name(),
-              p.negativeStockLimit());
+              p.stockPolicy().name());
     } else if (data instanceof OperatorData o) {
       data =
           new PosBootstrapOperatorResponse(
@@ -526,9 +522,7 @@ public final class PosWebMapper {
     } else if (data instanceof PoliciesData pol) {
       data =
           new PosSyncPoliciesDataResponse(
-              pol.allowNegativeStock(),
               pol.allowOpenProducts(),
-              pol.defaultNegativeStockLimit(),
               pol.staleCatalogWarnHours(),
               pol.staleCatalogBlockHours(),
               pol.openAmountCategories(),
@@ -561,7 +555,6 @@ public final class PosWebMapper {
         row.available(),
         row.stockQuantity(),
         row.stockMinQuantity(),
-        row.stockPolicy().name(),
-        row.negativeStockLimit());
+        row.stockPolicy().name());
   }
 }

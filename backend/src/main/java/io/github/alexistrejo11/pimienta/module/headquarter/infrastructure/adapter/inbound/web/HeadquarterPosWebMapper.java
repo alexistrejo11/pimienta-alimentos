@@ -21,7 +21,6 @@ public final class HeadquarterPosWebMapper {
         request.catalogStaleBlockHours(),
         request.openAmountCategories(),
         request.allowOpenProducts(),
-        request.defaultNegativeStockLimit(),
         request.stockless(),
         request.highSaleWarningCentavos(),
         request.highChangeWarningCentavos());
@@ -36,7 +35,6 @@ public final class HeadquarterPosWebMapper {
         config.getCatalogStaleBlockHours(),
         config.getOpenAmountCategories(),
         config.isAllowOpenProducts(),
-        config.getDefaultNegativeStockLimit(),
         config.isStockless(),
         config.getHighSaleWarningCentavos(),
         config.getHighChangeWarningCentavos(),
@@ -50,8 +48,7 @@ public final class HeadquarterPosWebMapper {
         request.saleCategory(),
         request.salePrice(),
         request.available(),
-        request.stockPolicy(),
-        request.negativeStockLimit());
+        request.stockPolicy());
   }
 
   public static HeadquarterPosCatalogItemResponse toResponse(HeadquarterItem item) {
@@ -66,7 +63,6 @@ public final class HeadquarterPosWebMapper {
         item.getSalePrice(),
         item.isAvailable(),
         item.getStockPolicy(),
-        item.getNegativeStockLimit(),
         item.getCreatedAt(),
         item.getUpdatedAt(),
         item.getVersion());
@@ -84,7 +80,6 @@ public final class HeadquarterPosWebMapper {
         row.getSalePrice(),
         row.isAvailable(),
         row.getStockPolicy(),
-        row.getNegativeStockLimit(),
         row.getCreatedAt(),
         row.getUpdatedAt(),
         row.getVersion());

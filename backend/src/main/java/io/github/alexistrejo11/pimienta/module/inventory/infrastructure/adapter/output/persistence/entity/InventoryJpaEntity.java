@@ -36,12 +36,6 @@ public class InventoryJpaEntity extends BaseJpaEntity {
   @Column(name = "available_quantity", nullable = false)
   private int availableQuantity;
 
-  @Column(name = "reserved_quantity", nullable = false)
-  private int reservedQuantity;
-
-  @Column(name = "in_transit_quantity", nullable = false)
-  private int inTransitQuantity;
-
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   private InventoryStatus status;
@@ -76,22 +70,6 @@ public class InventoryJpaEntity extends BaseJpaEntity {
 
   public void setAvailableQuantity(int availableQuantity) {
     this.availableQuantity = availableQuantity;
-  }
-
-  public int getReservedQuantity() {
-    return reservedQuantity;
-  }
-
-  public void setReservedQuantity(int reservedQuantity) {
-    this.reservedQuantity = reservedQuantity;
-  }
-
-  public int getInTransitQuantity() {
-    return inTransitQuantity;
-  }
-
-  public void setInTransitQuantity(int inTransitQuantity) {
-    this.inTransitQuantity = inTransitQuantity;
   }
 
   public InventoryStatus getStatus() {

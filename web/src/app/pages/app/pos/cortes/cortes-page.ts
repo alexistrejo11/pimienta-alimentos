@@ -1,5 +1,4 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
@@ -14,13 +13,14 @@ import {
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { PosShiftResponse } from '../../../../core/model/pos/pos.dto';
 import { posShiftStatusLabel } from '../../../../core/i18n/enum-labels';
+import { formatDateTime } from '../../../../core/i18n/format-date';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 
 @Component({
   selector: 'app-cortes-page',
-  imports: [PageHeaderComponent, DataStateComponent, FormsModule, DatePipe, HeadquarterSelectComponent],
+  imports: [PageHeaderComponent, DataStateComponent, FormsModule, HeadquarterSelectComponent],
   templateUrl: './cortes-page.html',
 })
 export class CortesPageComponent implements OnInit {
@@ -32,6 +32,7 @@ export class CortesPageComponent implements OnInit {
   readonly shifts = signal<PosShiftResponse[]>([]);
   readonly isAdmin = this.session.isAdmin;
   readonly formatCentavos = formatCentavos;
+  readonly formatDateTime = formatDateTime;
   readonly shiftStatusLabel = posShiftStatusLabel;
 
   selectedHeadquarterId: number | null = null;

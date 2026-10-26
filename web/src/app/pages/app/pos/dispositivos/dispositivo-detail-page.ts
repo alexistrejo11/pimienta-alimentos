@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -9,13 +8,14 @@ import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-
 import type { PosDeviceAdminResponse, PosSaleReportResponse, PosShiftResponse } from '../../../../core/model/pos/pos.dto';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import { posDeviceStatusLabel, posShiftStatusLabel, posSaleTicketStatusLabel } from '../../../../core/i18n/enum-labels';
+import { formatDateTime } from '../../../../core/i18n/format-date';
 import { todayInstantRange, formatCentavos } from '../../../../core/pos/pos-date.util';
 import { DataStateComponent } from '../../../../shared/ui/data-state/data-state';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 
 @Component({
   selector: 'app-dispositivo-detail-page',
-  imports: [DatePipe, RouterLink, PageHeaderComponent, DataStateComponent],
+  imports: [RouterLink, PageHeaderComponent, DataStateComponent],
   templateUrl: './dispositivo-detail-page.html',
 })
 export class DispositivoDetailPageComponent implements OnInit {
@@ -32,6 +32,7 @@ export class DispositivoDetailPageComponent implements OnInit {
   readonly sales = signal<PosSaleReportResponse[]>([]);
   readonly shifts = signal<PosShiftResponse[]>([]);
   readonly formatCentavos = formatCentavos;
+  readonly formatDateTime = formatDateTime;
   readonly hqName = this.lookup.name.bind(this.lookup);
   readonly posDeviceStatusLabel = posDeviceStatusLabel;
   readonly posShiftStatusLabel = posShiftStatusLabel;

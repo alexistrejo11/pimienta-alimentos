@@ -66,7 +66,6 @@ public class PosProductManagementUseCasesImpl implements PosProductManagementUse
             .withSalePrice(command.salePrice())
             .withAvailable(command.available() == null || command.available())
             .withStockPolicy(policy)
-            .withNegativeStockLimit(command.negativeStockLimit())
             .register();
 
     return new CreatedPosProduct(saved, catalog.save(row));

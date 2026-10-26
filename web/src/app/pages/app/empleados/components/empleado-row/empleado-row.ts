@@ -1,6 +1,7 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { formatDateOnlyFullYear } from '../../../../../core/i18n/format-date';
 import type { EmployeeListItemResponse } from '../../../../../core/model/employee/employee.dto';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge';
 
@@ -19,11 +20,10 @@ export class EmpleadoRowComponent {
   /** Datos resumidos del empleado que provienen de la lista paginada. */
   readonly empleado = input.required<EmployeeListItemResponse>();
 
-  /** Formatea la fecha ISO a formato legible en español (dd/mm/aaaa). */
+  /** Fecha de ingreso: dd/MM/yyyy, sin interpretar el día como instante UTC. */
   formatDate(iso: string): string {
     if (!iso) return '—';
-    const [year, month, day] = iso.split('-');
-    return `${day}/${month}/${year}`;
+    return formatDateOnlyFullYear(iso);
   }
 
   onPhotoError(event: Event): void {

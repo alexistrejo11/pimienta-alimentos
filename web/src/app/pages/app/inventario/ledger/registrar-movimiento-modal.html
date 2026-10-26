@@ -14,7 +14,7 @@
         <h2 id="registrar-movimiento-titulo" class="font-headline text-lg font-bold text-on-surface">
           Registrar movimiento
         </h2>
-        <p class="text-sm text-on-surface-variant">Entrada, merma o ajuste de existencias.</p>
+        <p class="text-sm text-on-surface-variant">Entrada, salida o ajuste de existencias.</p>
       </div>
       <button
         type="button"
@@ -46,13 +46,13 @@
             type="button"
             class="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold"
             role="radio"
-            [attr.aria-checked]="kind() === 'scrap'"
-            [class.bg-primary]="kind() === 'scrap'"
-            [class.text-on-primary]="kind() === 'scrap'"
-            [class.bg-surface-container]="kind() !== 'scrap'"
-            (click)="selectKind('scrap')"
+            [attr.aria-checked]="kind() === 'exit'"
+            [class.bg-primary]="kind() === 'exit'"
+            [class.text-on-primary]="kind() === 'exit'"
+            [class.bg-surface-container]="kind() !== 'exit'"
+            (click)="selectKind('exit')"
           >
-            Merma
+            Salida
           </button>
           @if (isAdmin()) {
             <button
@@ -76,13 +76,13 @@
               type="button"
               class="min-h-11 rounded-lg px-4 py-2 text-sm font-semibold"
               role="radio"
-              [attr.aria-checked]="entryMode() === 'purchase'"
-              [class.bg-primary]="entryMode() === 'purchase'"
-              [class.text-on-primary]="entryMode() === 'purchase'"
-              [class.bg-surface-container]="entryMode() !== 'purchase'"
-              (click)="selectEntryMode('purchase')"
+              [attr.aria-checked]="entryMode() === 'receipt'"
+              [class.bg-primary]="entryMode() === 'receipt'"
+              [class.text-on-primary]="entryMode() === 'receipt'"
+              [class.bg-surface-container]="entryMode() !== 'receipt'"
+              (click)="selectEntryMode('receipt')"
             >
-              Compra / recepción
+              Recepción
             </button>
             <button
               type="button"
@@ -132,8 +132,8 @@
 
         @if (kind() === 'adjustment') {
           <label class="flex flex-col gap-1 text-sm">
-            <span class="font-semibold">Nueva cantidad absoluta</span>
-            <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" type="number" min="0" name="newQuantity" [(ngModel)]="newQuantity" />
+            <span class="font-semibold">Cantidad contada</span>
+            <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" type="number" min="0" name="countedQuantity" [(ngModel)]="countedQuantity" />
           </label>
           <label class="flex flex-col gap-1 text-sm">
             <span class="font-semibold">Motivo</span>
@@ -145,28 +145,32 @@
               <span class="font-semibold">Cantidad</span>
               <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" type="number" min="1" name="quantity" [(ngModel)]="quantity" />
             </label>
-            @if (kind() === 'scrap' || entryMode() === 'purchase') {
+            @if (kind() === 'exit' || entryMode() === 'receipt') {
               <label class="flex flex-col gap-1 text-sm">
                 <span class="font-semibold">Costo unitario</span>
                 <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" type="number" min="0" step="0.01" name="unitCost" [(ngModel)]="unitCost" />
               </label>
             }
           </div>
-          @if (kind() === 'scrap') {
+          @if (kind() === 'exit') {
             <label class="flex flex-col gap-1 text-sm">
               <span class="font-semibold">Motivo de salida</span>
               <select class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="exitReason" [(ngModel)]="exitReason">
                 @for (r of exitReasons; track r) {
-                  <option [ngValue]="r">{{ exitReasonLabel(r) }}</option>
+                  <option [ngValue]="r">{{ exitReasonOptionLabel(r) }}</option>
                 }
               </select>
+            </label>
+            <label class="flex flex-col gap-1 text-sm">
+              <span class="font-semibold">Referencia (opcional)</span>
+              <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="reference" [(ngModel)]="reference" />
             </label>
             <label class="flex flex-col gap-1 text-sm">
               <span class="font-semibold">Detalle (opcional)</span>
               <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="notes" [(ngModel)]="notes" />
             </label>
           }
-          @if (kind() === 'entry' && entryMode() === 'purchase') {
+          @if (kind() === 'entry' && entryMode() === 'receipt') {
             <label class="flex flex-col gap-1 text-sm">
               <span class="font-semibold">Referencia</span>
               <input class="min-h-11 rounded-lg bg-surface-container px-3 py-2.5" name="reference" [(ngModel)]="reference" />

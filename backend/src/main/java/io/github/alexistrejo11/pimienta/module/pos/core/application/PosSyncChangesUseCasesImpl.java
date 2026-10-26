@@ -104,9 +104,7 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
           "policies",
           entry.entityId(),
           new PoliciesData(
-              policies.allowNegativeStock(),
               policies.allowOpenProducts(),
-              policies.defaultNegativeStockLimit(),
               policies.staleCatalogWarnHours(),
               policies.staleCatalogBlockHours(),
               config.getOpenAmountCategories(),
@@ -135,8 +133,7 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
         product.available(),
         product.stockQuantity(),
         product.stockMinQuantity(),
-        product.stockPolicy(),
-        product.negativeStockLimit());
+        product.stockPolicy());
   }
 
 }

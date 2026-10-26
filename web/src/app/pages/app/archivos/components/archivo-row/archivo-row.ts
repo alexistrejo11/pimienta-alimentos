@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 
+import { formatDateTime } from '../../../../../core/i18n/format-date';
 import type { FileAssetResponse } from '../../../../../core/model/files/file.dto';
 import { FILE_CATEGORY_LABELS } from '../../../../../core/model/files/file.enums';
 
@@ -44,15 +45,7 @@ export class ArchivoRowComponent {
   }
 
   formatDate(iso: string): string {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTime(iso);
   }
 
   onDownload(): void {

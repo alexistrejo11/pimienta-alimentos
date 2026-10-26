@@ -12,5 +12,4 @@ public record CreatePosProductCommand(
     BigDecimal salePrice,
     long posSaleCategoryId,
     Boolean available,
-    StockPolicy stockPolicy,
-    Integer negativeStockLimit) {}
+    StockPolicy stockPolicy) {}

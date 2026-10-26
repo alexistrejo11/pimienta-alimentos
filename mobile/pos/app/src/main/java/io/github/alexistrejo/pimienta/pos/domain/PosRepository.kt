@@ -494,7 +494,6 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         if (lines.any { it.quantity <= 0 || it.unitPriceCentavos <= 0 }) {
             return Result.failure(IllegalArgumentException("Hay una línea con cantidad o precio inválido."))
         }
-        val policy = database.syncProjectionDao().policy()
         val allowedOpenCategories = openAmountCategories().toSet()
         lines.forEach { line ->
             when (line.lineType) {
@@ -504,12 +503,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                     if (!product.available) {
                         return Result.failure(IllegalArgumentException("${product.name} no está disponible."))
                     }
-                    if (!stockless() && product.stockPolicy == "CONTROLLED" && policy?.allowNegativeStock != true) {
-                        val stock = product.stock.toBigDecimalOrNull() ?: BigDecimal.ZERO
-                        if (stock < BigDecimal.valueOf(line.quantity.toLong())) {
-                            return Result.failure(IllegalArgumentException("No hay existencias suficientes de ${product.name}."))
-                        }
-                    }
+                    // Controlled stock is deducted after the sale, including below zero.
                 }
                 SaleLineType.PENDING_CATALOG -> Unit
                 SaleLineType.OPEN_AMOUNT -> {
@@ -522,7 +516,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                             return Result.failure(IllegalArgumentException("La categoría ${line.category} no está permitida para monto abierto."))
                         line.productId != null || !line.sourceBarcode.isNullOrBlank() || line.stockPolicy != "NOT_CONTROLLED" ->
                             return Result.failure(IllegalArgumentException("La línea de monto abierto no es válida."))
-                        line.name != "Producto abierto · ${line.category.trim()}" ->
+                        !openAmountNameMatchesCategory(line.name, line.category) ->
                             return Result.failure(IllegalArgumentException("La descripción de monto abierto no coincide con la categoría."))
                     }
                 }

@@ -5,6 +5,7 @@ import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.command.UpdateOperatingExpenseCommand;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseListQuery;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseSearchCriteria;
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseSummary;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.OperatingExpense;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.exception.OperatingExpenseNotFoundException;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.port.input.OperatingExpenseManagementUseCases;
@@ -63,8 +64,12 @@ public class OperatingExpenseManagementUseCasesImpl implements OperatingExpenseM
 
   @Override
   @Transactional(readOnly = true)
-  public BigDecimal summarize(JwtAuthenticationContext principal, OperatingExpenseListQuery query) {
-    return expenseRepository.sumAmount(accessPolicy.resolveList(principal, query));
+  public OperatingExpenseSummary summarize(JwtAuthenticationContext principal, OperatingExpenseListQuery query) {
+    OperatingExpenseSearchCriteria criteria = accessPolicy.resolveList(principal, query);
+    return new OperatingExpenseSummary(
+        expenseRepository.sumAmount(criteria),
+        OperatingExpenseSummaries.topCategory(expenseRepository.sumByCategory(criteria)),
+        expenseRepository.sumByDay(criteria));
   }
 
   @Override

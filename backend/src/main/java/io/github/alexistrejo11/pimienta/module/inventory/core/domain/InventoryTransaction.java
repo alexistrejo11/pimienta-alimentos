@@ -48,24 +48,16 @@ public class InventoryTransaction extends BaseDomain<Long> {
   // ─────────────────────────────────────────────
 
   public enum TransactionType {
-    PURCHASE_RECEIPT, // Recepción de compra
-    SALE_DISPATCH, // Despacho por venta
-    INTERNAL_TRANSFER, // Transferencia entre ubicaciones
-    PHYSICAL_COUNT, // Conteo físico aprobado
-    ADJUSTMENT, // Ajuste directo autorizado (ADMIN)
-    RETURN_FROM_CLIENT, // Devolución recibida de cliente
-    RETURN_TO_SUPPLIER, // Devolución enviada a proveedor
-    PRODUCTION_ISSUE, // Salida para producción
-    SCRAP_WRITE_OFF // Baja por merma o daño
+    /** Restock, supplier receipt, or opening balance. */
+    IN,
+    /** Exit. Reason is WASTE or WITHDRAWAL. POS sales are movements, not this header. */
+    OUT,
+    /** Admin snapshot. The stored movement is the signed delta. */
+    ADJUSTMENT
   }
 
   public enum TransactionStatus {
-    DRAFT, // Creada, aún editable
-    PENDING, // Esperando aprobación
-    APPROVED, // Aprobada, lista para ejecutar
-    IN_PROGRESS, // Ejecutándose (movimientos en curso)
-    COMPLETED, // Todos los movimientos confirmados
-    CANCELLED // Anulada
+    COMPLETED
   }
 
   // ─────────────────────────────────────────────
@@ -74,7 +66,7 @@ public class InventoryTransaction extends BaseDomain<Long> {
 
   public InventoryTransaction() {
     this.id = 0L;
-    this.status = TransactionStatus.DRAFT;
+    this.status = TransactionStatus.COMPLETED;
     this.movements = new ArrayList<>();
     this.createdAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
@@ -93,7 +85,7 @@ public class InventoryTransaction extends BaseDomain<Long> {
     tx.externalReference = externalReference;
     tx.notes = notes;
     tx.initiatedById = initiatedById;
-    tx.status = TransactionStatus.DRAFT;
+    tx.status = TransactionStatus.COMPLETED;
     tx.createdAt = LocalDateTime.now();
     tx.updatedAt = LocalDateTime.now();
     return tx;
@@ -104,38 +96,13 @@ public class InventoryTransaction extends BaseDomain<Long> {
   // ─────────────────────────────────────────────
 
   public void addMovement(InventoryMovement movement) {
-    if (status != TransactionStatus.DRAFT && status != TransactionStatus.APPROVED)
-      throw new IllegalStateException("No se pueden agregar movimientos en estado " + status);
     this.movements.add(movement);
-    this.updatedAt = LocalDateTime.now();
-  }
-
-  public void submit() {
-    if (movements.isEmpty())
-      throw new IllegalStateException("La transacción no tiene movimientos");
-    this.status = TransactionStatus.PENDING;
-    this.updatedAt = LocalDateTime.now();
-  }
-
-  public void approve(Long approvedById) {
-    if (status != TransactionStatus.PENDING)
-      throw new IllegalStateException("Solo se pueden aprobar transacciones PENDING");
-    this.status = TransactionStatus.APPROVED;
-    this.approvedById = approvedById;
-    this.approvedAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
   }
 
   public void complete() {
     this.status = TransactionStatus.COMPLETED;
     this.completedAt = LocalDateTime.now();
-    this.updatedAt = LocalDateTime.now();
-  }
-
-  public void cancel() {
-    if (status == TransactionStatus.COMPLETED)
-      throw new IllegalStateException("No se puede cancelar una transacción completada");
-    this.status = TransactionStatus.CANCELLED;
     this.updatedAt = LocalDateTime.now();
   }
 

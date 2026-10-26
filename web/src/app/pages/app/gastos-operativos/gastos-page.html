@@ -29,6 +29,25 @@
         />
       }
       @if (canManageOperatingExpenses()) {
+        <div class="flex flex-col gap-1 text-sm">
+          <span class="font-medium">Rango</span>
+          <div class="flex flex-wrap gap-1" role="group" aria-label="Rango de fechas">
+            @for (preset of datePresets; track preset.id) {
+              <button
+                type="button"
+                class="rounded-full px-3 py-1.5 text-xs font-semibold"
+                [class.bg-primary]="activePreset === preset.id"
+                [class.text-on-primary]="activePreset === preset.id"
+                [class.bg-surface-container]="activePreset !== preset.id"
+                [class.text-on-surface]="activePreset !== preset.id"
+                [attr.aria-pressed]="activePreset === preset.id"
+                (click)="applyPreset(preset.id)"
+              >
+                {{ preset.label }}
+              </button>
+            }
+          </div>
+        </div>
         <label class="flex flex-col gap-1 text-sm">
           <span class="font-medium">Desde</span>
           <input
@@ -70,6 +89,51 @@
       />
     </div>
 
+    <section class="ui-panel flex flex-col gap-4 px-4 py-3" aria-label="Resumen del rango">
+      <div class="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Total</p>
+          <p class="font-headline text-xl font-bold tabular-nums text-on-surface">
+            @if (summary(); as totals) {
+              {{ formatMxn(totals.totalAmount) }}
+            } @else {
+              —
+            }
+          </p>
+        </div>
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Registros</p>
+          <p class="font-headline text-xl font-bold tabular-nums text-on-surface">
+            {{ metadata()?.totalElements ?? '—' }}
+          </p>
+        </div>
+        <div class="min-w-0">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Categoría principal</p>
+          @if (summary()?.topCategory; as top) {
+            <p class="truncate font-headline text-xl font-bold text-on-surface" [attr.title]="categoryLabel(top.category)">
+              {{ categoryLabel(top.category) }}
+            </p>
+            <p class="text-sm tabular-nums text-on-surface-variant">{{ formatMxn(top.totalAmount) }}</p>
+          } @else {
+            <p class="font-headline text-xl font-bold text-on-surface">—</p>
+          }
+        </div>
+      </div>
+      @let bars = dailyBars();
+      @if (bars.length > 0) {
+        <div class="flex items-end gap-1 overflow-x-auto" role="list" aria-label="Gasto por día">
+          @for (bar of bars; track bar.date) {
+            <div class="flex w-8 shrink-0 flex-col items-center gap-1" role="listitem" [attr.title]="bar.title">
+              <div class="flex h-14 w-full items-end rounded-sm bg-surface-container">
+                <div class="w-full rounded-sm bg-primary" [style.height.%]="bar.heightPercent"></div>
+              </div>
+              <span class="text-[10px] leading-none text-on-surface-variant">{{ bar.label }}</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
     <app-data-state
       [loading]="loading()"
       [error]="error()"
@@ -78,65 +142,83 @@
       (retry)="cargar()"
     >
       <div class="responsive-table rounded-xl border ui-panel">
-        <table class="w-full text-sm" aria-label="Gastos">
+        <table class="expense-table w-full table-fixed text-sm" aria-label="Gastos">
           <thead class="border-b border-outline-variant/20 bg-surface-container-low">
             <tr>
-              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Fecha</th>
-              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Categoría</th>
-              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Concepto</th>
-              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Sede</th>
-              <th class="px-4 py-3 text-right font-semibold text-on-surface-variant">Monto</th>
-              <th class="px-4 py-3 text-left font-semibold text-on-surface-variant">Comprobantes</th>
+              <th class="w-24 px-3 py-1.5 text-left text-xs font-semibold text-on-surface-variant">Fecha</th>
+              <th class="w-40 px-3 py-1.5 text-left text-xs font-semibold text-on-surface-variant">Categoría</th>
+              <th class="px-3 py-1.5 text-left text-xs font-semibold text-on-surface-variant">Concepto</th>
+              @if (showSedeColumn()) {
+                <th class="w-36 px-3 py-1.5 text-left text-xs font-semibold text-on-surface-variant">Sede</th>
+              }
+              <th class="w-28 px-3 py-1.5 text-right text-xs font-semibold text-on-surface-variant">Monto</th>
+              <th class="w-28 px-3 py-1.5 text-left text-xs font-semibold text-on-surface-variant">Comprobantes</th>
               @if (canManageOperatingExpenses()) {
-                <th class="px-4 py-3"></th>
+                <th class="w-20 px-3 py-1.5"><span class="sr-only">Acciones</span></th>
               }
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant/15">
             @for (row of items(); track row.id) {
               <tr>
-                <td class="px-4 py-3 whitespace-nowrap">{{ formatIsoDate(row.occurredOn) }}</td>
-                <td class="px-4 py-3">
-                  <span class="rounded-full bg-surface-container px-2 py-1 text-xs font-semibold">
+                <td class="px-3 py-1.5 whitespace-nowrap">{{ formatCompactDate(row.occurredOn) }}</td>
+                <td class="px-3 py-1.5">
+                  <span class="inline-block max-w-full truncate rounded-full bg-surface-container px-2 py-0.5 text-xs font-semibold">
                     {{ categoryLabel(row.category) }}
                   </span>
                 </td>
-                <td class="px-4 py-3 font-medium">
-                  {{ row.concept }}
-                  @if (row.notes) {
-                    <p class="mt-1 text-xs font-normal text-on-surface-variant">{{ row.notes }}</p>
-                  }
+                <td class="overflow-hidden px-3 py-1.5">
+                  <div class="flex min-w-0 items-center gap-1">
+                    <span class="min-w-0 flex-1 truncate font-medium" [attr.title]="conceptTitle(row)">{{ row.concept }}</span>
+                    @if (row.notes) {
+                      <span
+                        class="material-symbols-outlined shrink-0 text-base text-on-surface-variant"
+                        [attr.title]="row.notes"
+                        aria-hidden="true"
+                      >sticky_note_2</span>
+                    }
+                  </div>
                 </td>
-                <td class="px-4 py-3 text-on-surface-variant">{{ headquarterLabel(row.headquarterId) }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ formatMxn(row.amount) }}</td>
-                <td class="px-4 py-3">
+                @if (showSedeColumn()) {
+                  <td class="truncate px-3 py-1.5 text-on-surface-variant" [attr.title]="headquarterLabel(row.headquarterId)">
+                    {{ headquarterLabel(row.headquarterId) }}
+                  </td>
+                }
+                <td class="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">{{ formatMxn(row.amount) }}</td>
+                <td class="px-3 py-1.5">
                   @if (row.attachments.length === 0) {
-                    —
+                    <span class="text-on-surface-variant">—</span>
                   } @else {
-                    <div class="flex flex-wrap gap-2">
-                      @for (file of row.attachments; track file.key) {
-                        <button type="button" class="overflow-hidden rounded-md border" (click)="openReceipt(file.url)">
-                          <img [src]="file.url" alt="Comprobante" class="h-12 w-12 object-cover" />
-                        </button>
-                      }
-                    </div>
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-md bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface"
+                      [attr.aria-label]="'Ver ' + row.attachments.length + (row.attachments.length === 1 ? ' comprobante' : ' comprobantes')"
+                      (click)="openReceipts(row)"
+                    >
+                      <span class="material-symbols-outlined text-base" aria-hidden="true">receipt_long</span>
+                      {{ row.attachments.length }}
+                    </button>
                   }
                 </td>
                 @if (canManageOperatingExpenses()) {
-                  <td class="px-4 py-3 text-right whitespace-nowrap">
+                  <td class="px-3 py-1.5 text-right whitespace-nowrap">
                     <a
                       [routerLink]="['/app/ops/gastos-operativos', row.id, 'editar']"
-                      class="text-sm font-semibold text-primary hover:underline"
+                      class="inline-flex rounded-md p-1 text-on-surface-variant hover:text-primary"
+                      aria-label="Editar"
+                      title="Editar"
                     >
-                      Editar
+                      <span class="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
                     </a>
                     <button
                       type="button"
-                      class="ml-3 text-sm font-semibold text-[var(--color-error)] hover:underline disabled:opacity-50"
+                      class="inline-flex rounded-md p-1 text-on-surface-variant hover:text-[var(--color-error)] disabled:opacity-50"
+                      aria-label="Eliminar"
+                      title="Eliminar"
                       [disabled]="deletingId() === row.id"
                       (click)="eliminar(row)"
                     >
-                      Eliminar
+                      <span class="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
                     </button>
                   </td>
                 }
@@ -174,8 +256,39 @@
   }
 </div>
 
-@if (previewUrl(); as url) {
+@if (preview(); as shot) {
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" (click)="closeReceipt()">
-    <img [src]="url" alt="Comprobante" class="max-h-[90vh] max-w-full rounded-lg bg-white object-contain" />
+    <div class="flex max-w-full items-center gap-3" (click)="$event.stopPropagation()">
+      @if (shot.urls.length > 1) {
+        <button
+          type="button"
+          class="inline-flex rounded-full bg-surface-container-lowest p-2 text-on-surface"
+          aria-label="Comprobante anterior"
+          (click)="stepPreview(-1)"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+        </button>
+      }
+      <figure class="flex min-w-0 flex-col items-center gap-2">
+        <img
+          [src]="shot.urls[shot.index]"
+          alt="Comprobante"
+          class="max-h-[90vh] max-w-full rounded-lg bg-surface-container-lowest object-contain"
+        />
+        @if (shot.urls.length > 1) {
+          <figcaption class="text-sm text-white">{{ shot.index + 1 }} / {{ shot.urls.length }}</figcaption>
+        }
+      </figure>
+      @if (shot.urls.length > 1) {
+        <button
+          type="button"
+          class="inline-flex rounded-full bg-surface-container-lowest p-2 text-on-surface"
+          aria-label="Comprobante siguiente"
+          (click)="stepPreview(1)"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+        </button>
+      }
+    </div>
   </div>
 }

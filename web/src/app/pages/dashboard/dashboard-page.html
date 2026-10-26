@@ -117,12 +117,6 @@
           </a>
         </li>
         <li class="ui-panel p-5">
-          <a routerLink="/app/ops/inventario/conteos" class="block">
-            <p class="text-xs font-medium uppercase text-on-surface-variant">Conteos abiertos</p>
-            <p class="font-headline mt-2 text-3xl font-bold tabular-nums text-primary">{{ inv.openCountSessionCount }}</p>
-          </a>
-        </li>
-        <li class="ui-panel p-5">
           <p class="text-xs font-medium uppercase text-on-surface-variant">Unidades disponibles</p>
           <p class="font-headline mt-2 text-3xl font-bold tabular-nums">{{ inv.totalAvailableQuantity }}</p>
         </li>
@@ -165,7 +159,7 @@
                 <tr>
                   <td class="px-4 py-3 font-mono">{{ sale.folio }}</td>
                   <td class="px-4 py-3">{{ sale.deviceId }}</td>
-                  <td class="px-4 py-3">{{ sale.occurredAt | date: 'shortTime' }}</td>
+                  <td class="px-4 py-3">{{ formatDateTime(sale.occurredAt) }}</td>
                   <td class="px-4 py-3 text-right tabular-nums">{{ formatCentavos(sale.totalCentavos) }}</td>
                 </tr>
               }

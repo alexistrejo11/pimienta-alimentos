@@ -22,7 +22,7 @@ class CartLineTest {
 
     private fun openLine(id: String) = CartLine(
         productId = null,
-        name = "Producto abierto · Snack",
+        name = "Monto Abierto · Snack",
         category = "Snack",
         unitPriceCentavos = 4500,
         stockPolicy = "NOT_CONTROLLED",

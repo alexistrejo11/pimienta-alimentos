@@ -161,10 +161,6 @@ export const OPS_NAVIGATION: readonly WorkspaceNavSection[] = [
     items: [
       { label: 'Existencias', icon: 'warehouse', route: `${OPS_PATH}/inventario`, roles: OPS },
       { label: 'Movimientos', icon: 'receipt_long', route: `${OPS_PATH}/inventario/ledger`, roles: OPS },
-      // Pendiente reactivar en sidebar: transferencias entre sedes y conteos físicos en sede
-      // (rutas siguen en app.routes.ts). Una sede activa + inventario en sede aún no maduro.
-      // { label: 'Transferencias', icon: 'swap_horiz', route: `${OPS_PATH}/inventario/transferencias`, roles: OPS },
-      // { label: 'Conteos físicos', icon: 'fact_check', route: `${OPS_PATH}/inventario/conteos`, roles: OPS },
       { label: 'Catálogo de stock', icon: 'category', route: `${OPS_PATH}/catalogo`, roles: OPS },
       { label: 'Artículos de bodega', icon: 'inventory_2', route: `${OPS_PATH}/bodega`, roles: OPS },
     ],

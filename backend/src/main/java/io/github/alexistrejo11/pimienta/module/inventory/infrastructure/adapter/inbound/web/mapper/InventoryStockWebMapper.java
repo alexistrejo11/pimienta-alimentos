@@ -17,8 +17,6 @@ public final class InventoryStockWebMapper {
         inv.getLocation().getCode(),
         inv.getLocation().getName(),
         inv.getAvailableQuantity(),
-        inv.getReservedQuantity(),
-        inv.getInTransitQuantity(),
         inv.getStatus(),
         inv.getCreatedAt(),
         inv.getUpdatedAt(),

@@ -4,8 +4,8 @@ import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.command.CreateOperatingExpenseCommand;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.command.UpdateOperatingExpenseCommand;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseListQuery;
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseSummary;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.OperatingExpense;
-import java.math.BigDecimal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,7 +13,7 @@ public interface OperatingExpenseManagementUseCases {
 
   Page<OperatingExpense> search(JwtAuthenticationContext principal, OperatingExpenseListQuery query, Pageable pageable);
 
-  BigDecimal summarize(JwtAuthenticationContext principal, OperatingExpenseListQuery query);
+  OperatingExpenseSummary summarize(JwtAuthenticationContext principal, OperatingExpenseListQuery query);
 
   OperatingExpense getById(JwtAuthenticationContext principal, long id);
 

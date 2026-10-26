@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.doc;
 
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.InventoryMovement;
+import io.github.alexistrejo11.pimienta.module.inventory.core.domain.enums.InventoryExitReason;
 import io.github.alexistrejo11.pimienta.shared.web.PagedResponse;
 import io.github.alexistrejo11.pimienta.shared.web.openapi.doc.DocJwtSecured;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,10 @@ import java.lang.annotation.Target;
       name = "direction",
       in = ParameterIn.QUERY,
       schema = @Schema(implementation = InventoryMovement.MovementDirection.class)),
+  @Parameter(
+      name = "exitReason",
+      in = ParameterIn.QUERY,
+      schema = @Schema(implementation = InventoryExitReason.class)),
   @Parameter(name = "itemId", in = ParameterIn.QUERY),
   @Parameter(name = "locationId", in = ParameterIn.QUERY),
   @Parameter(name = "fromDate", in = ParameterIn.QUERY, description = "ISO-8601 date-time"),

@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { formatDateTime as formatInstant } from '../../../../core/i18n/format-date';
 import { HeadquarterService } from '../../../../core/headquarters/headquarter.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { HeadQuarterResponse } from '../../../../core/model/headquarter/headquarter.dto';
@@ -43,14 +44,7 @@ export class SedeDetailPageComponent implements OnInit {
   }
 
   formatDateTime(iso: string | null): string {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString('es-MX', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatInstant(iso);
   }
 
   get activa(): boolean {

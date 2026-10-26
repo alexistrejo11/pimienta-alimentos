@@ -9,3 +9,10 @@
 - Soft-deleted operating expenses keep their S3 objects. There is no purge job.
 
 No extra follow-ups from this pass.
+
+## 2026-10-22 — Summary breakdown
+
+- `byDay` omits calendar days with no matching expenses. The gastos page zero-fills a range of at most 31 days.
+- A tie on amount uses the higher count, then the category name.
+
+No extra follow-ups from this pass.

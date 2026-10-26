@@ -70,8 +70,7 @@ public class PosSyncCatalogProjector {
             row.isAvailable(),
             stockQty,
             reorderPoint,
-            row.getStockPolicy(),
-            row.getNegativeStockLimit()));
+            row.getStockPolicy()));
   }
 
   public OperatorRow toOperatorRow(PosOperator op) {
@@ -84,13 +83,10 @@ public class PosSyncCatalogProjector {
   }
 
   public Policies toPolicies(PosOperationalConfig config) {
-    Integer defaultNegative = config != null ? config.getDefaultNegativeStockLimit() : null;
     int warnHours = config != null ? config.getCatalogStaleWarnHours() : 24;
     int blockHours = config != null ? config.getCatalogStaleBlockHours() : 72;
     return new Policies(
-        true,
         config != null && config.isAllowOpenProducts(),
-        defaultNegative,
         warnHours,
         blockHours,
         config != null && config.isStockless(),
