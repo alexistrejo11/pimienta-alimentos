@@ -1,8 +1,8 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
+import { formatDateTime } from '../../../../core/i18n/format-date';
 import { InventoryService } from '../../../../core/inventory/inventory.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import {
@@ -23,7 +23,7 @@ import { DataStateComponent } from '../../../../shared/ui/data-state/data-state'
 import { ListSearchFieldComponent } from '../../../../shared/ui/list-search-field/list-search-field';
 import { RegistrarMovimientoModalComponent } from './registrar-movimiento-modal';
 
-@Component({ selector: 'app-inventario-ledger-page', imports: [FormsModule, DatePipe, PageHeaderComponent, DataStateComponent, ListSearchFieldComponent, RegistrarMovimientoModalComponent], templateUrl: './inventario-ledger-page.html' })
+@Component({ selector: 'app-inventario-ledger-page', imports: [FormsModule, PageHeaderComponent, DataStateComponent, ListSearchFieldComponent, RegistrarMovimientoModalComponent], templateUrl: './inventario-ledger-page.html' })
 export class InventarioLedgerPageComponent implements OnInit {
   private readonly inventory = inject(InventoryService);
   private readonly session = inject(SessionContextService);
@@ -50,6 +50,7 @@ export class InventarioLedgerPageComponent implements OnInit {
   readonly movementTypeLabel = inventoryMovementTypeLabel;
   readonly directionLabel = movementDirectionLabel;
   readonly exitReasonLabel = inventoryExitReasonLabel;
+  readonly formatDateTime = formatDateTime;
 
   ngOnInit(): void { this.load(); }
   load(page = this.page()): void {

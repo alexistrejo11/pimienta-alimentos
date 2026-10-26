@@ -1,6 +1,7 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { formatDateOnlyFullYear } from '../../../../../../core/i18n/format-date';
 import type { ProjectResponse } from '../../../../../../core/model/crm/project.dto';
 import { StatusBadgeComponent } from '../../../../../../shared/ui/status-badge/status-badge';
 
@@ -16,8 +17,7 @@ export class ProyectoRowComponent {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    return formatDateOnlyFullYear(iso);
   }
 
   get prioridadLabel(): string {

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { formatDateOnlyFullYear, formatDateTime } from '../../../../core/i18n/format-date';
 import { TaskService } from '../../../../core/tasks/task.service';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { TaskResponse } from '../../../../core/model/task/task.dto';
@@ -135,7 +136,7 @@ export class TareaDetailPageComponent implements OnInit {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+    return iso.includes('T') ? formatDateTime(iso) : formatDateOnlyFullYear(iso);
   }
 
   get prioridadLabel(): string {

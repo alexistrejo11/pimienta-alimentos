@@ -1,20 +1,20 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 
 import { AttendanceService } from '../../../core/employees/attendance.service';
 import { attendanceStatusLabel } from '../../../core/i18n/enum-labels';
+import { formatDateTime } from '../../../core/i18n/format-date';
 import type { AttendanceResponse } from '../../../core/model/employee/attendance.dto';
 import type { ParsedApiError } from '../../../core/http/parse-api-error';
 import { parseApiError } from '../../../core/http/parse-api-error';
 
 @Component({
   selector: 'app-asistencia-page',
-  imports: [DatePipe],
   templateUrl: './asistencia-page.html',
 })
 export class AsistenciaPageComponent implements OnInit {
   private readonly service = inject(AttendanceService);
+  readonly formatDateTime = formatDateTime;
   readonly records = signal<AttendanceResponse[]>([]);
   readonly loading = signal(true);
   readonly error = signal<ParsedApiError | null>(null);

@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { HeadquarterLookupService } from '../../../../core/headquarters/headquarter-lookup.service';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
+import { formatDateTime } from '../../../../core/i18n/format-date';
 import { parseApiError, type ParsedApiError } from '../../../../core/http/parse-api-error';
 import type { EnrollmentCodeResponse } from '../../../../core/model/pos/pos.dto';
 import { ApiFormErrorComponent } from '../../../../shared/ui/api-form-error/api-form-error';
@@ -53,6 +54,6 @@ export class EnrolamientoPageComponent implements OnInit {
   }
 
   formatExpiry(iso: string): string {
-    return new Date(iso).toLocaleString('es-MX');
+    return formatDateTime(iso);
   }
 }

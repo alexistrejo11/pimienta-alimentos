@@ -1,10 +1,10 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, finalize, map, Observable, of, switchMap } from 'rxjs';
 
 import { SessionContextService } from '../../../../core/auth/session-context.service';
 import { posDiscountModeLabel } from '../../../../core/i18n/enum-labels';
+import { formatDateTime } from '../../../../core/i18n/format-date';
 import { PosAdminService } from '../../../../core/pos/pos-admin.service';
 import {
   formatCentavos,
@@ -47,7 +47,6 @@ export function posSalesIncludeFilter(kind: PosSalesIncludeKind): Pick<
     PageHeaderComponent,
     DataStateComponent,
     FormsModule,
-    DatePipe,
     HeadquarterSelectComponent,
     ProductSelectComponent,
   ],
@@ -63,6 +62,7 @@ export class VentasPageComponent implements OnInit {
   readonly metadata = signal<PageMetadata | null>(null);
   readonly page = signal(0);
   readonly formatCentavos = formatCentavos;
+  readonly formatDateTime = formatDateTime;
   readonly discountModeLabel = posDiscountModeLabel;
 
   readonly productRows = signal<PosProductReportResponse[]>([]);

@@ -111,11 +111,11 @@
               >
                 <td class="px-4 py-3">{{ deviceLabel(s) }}</td>
                 <td class="px-4 py-3">{{ operatorLabel(s) }}</td>
-                <td class="px-4 py-3">{{ s.openedAt | date: 'short' }}</td>
+                <td class="px-4 py-3">{{ formatDateTime(s.openedAt) }}</td>
                 @if (tab === 'active') {
                   <td class="px-4 py-3">{{ elapsed(s.openedAt) }}</td>
                 } @else {
-                  <td class="px-4 py-3">{{ s.closedAt | date: 'short' }}</td>
+                  <td class="px-4 py-3">{{ formatDateTime(s.closedAt) }}</td>
                   <td class="px-4 py-3 tabular-nums">
                     {{ s.differenceCentavos != null ? formatCentavos(s.differenceCentavos) : '—' }}
                   </td>

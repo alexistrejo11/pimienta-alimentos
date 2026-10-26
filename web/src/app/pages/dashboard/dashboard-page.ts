@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, finalize, merge, of, Subject, switchMap, timer } from 'rxjs';
@@ -14,6 +13,7 @@ import {
 import type { PosReportSummaryItemResponse, PosSaleReportResponse } from '../../core/model/pos/pos.dto';
 import { formatCentavos, todayInstantRange } from '../../core/pos/pos-date.util';
 import { OperatingExpenseService } from '../../core/operating-expenses/expense.service';
+import { formatDateTime } from '../../core/i18n/format-date';
 import { businessToday, formatMxn } from '../../core/operating-expenses/business-date';
 import { PosAdminService } from '../../core/pos/pos-admin.service';
 import { HeadquarterSelectComponent } from '../../shared/ui/headquarter-select/headquarter-select';
@@ -48,7 +48,7 @@ const EMPTY_POS: PosTotals = {
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [HeadquarterSelectComponent, DatePipe, RouterLink],
+  imports: [HeadquarterSelectComponent, RouterLink],
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.css',
 })
@@ -77,6 +77,7 @@ export class DashboardPageComponent implements OnInit {
   readonly canViewPosFinancials = this.session.canViewPosFinancials;
   readonly formatCentavos = formatCentavos;
   readonly formatMxn = formatMxn;
+  readonly formatDateTime = formatDateTime;
   private readonly destroyRef = inject(DestroyRef);
   private readonly refresh$ = new Subject<void>();
   private pollingStarted = false;

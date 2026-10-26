@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 
+import { formatDateOnlyFullYear } from '../../../../../../core/i18n/format-date';
 import type { ProjectMilestoneResponse } from '../../../../../../core/model/crm/project-milestone.dto';
 import { StatusBadgeComponent } from '../../../../../../shared/ui/status-badge/status-badge';
 
@@ -15,8 +16,7 @@ export class HitoItemComponent {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    return formatDateOnlyFullYear(iso);
   }
 
   formatMXN(value: number): string {

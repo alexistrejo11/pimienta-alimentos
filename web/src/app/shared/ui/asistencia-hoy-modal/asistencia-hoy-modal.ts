@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 import { AttendanceService } from '../../../core/employees/attendance.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
 import { attendanceStatusLabel } from '../../../core/i18n/enum-labels';
+import { formatDateTime } from '../../../core/i18n/format-date';
 import type { AttendanceResponse, AttendanceStatus } from '../../../core/model/employee/attendance.dto';
 import type { PagedResponse } from '../../../core/model/common/pagination';
 
@@ -65,8 +66,7 @@ export class AsistenciaHoyModalComponent {
   }
 
   formatTime(iso: string | null): string {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    return formatDateTime(iso);
   }
 
   formatMinutes(m: number): string {
