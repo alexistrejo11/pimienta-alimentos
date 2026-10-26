@@ -42,6 +42,13 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'db_name')
 SELECT format('ALTER DATABASE %I OWNER TO %I', :'db_name', :'user_name')
 WHERE EXISTS (SELECT FROM pg_database WHERE datname = :'db_name')
 \gexec
+
+-- Outside Flyway: ALTER DATABASE cannot run inside Flyway's transaction.
+-- New sessions (DBeaver) display timestamptz in Mexico City. The API pool
+-- still runs SET TIME ZONE 'UTC' on checkout.
+SELECT format('ALTER DATABASE %I SET timezone TO %L', :'db_name', 'America/Mexico_City')
+WHERE EXISTS (SELECT FROM pg_database WHERE datname = :'db_name')
+\gexec
 SQL
 
 gosu postgres psql -v ON_ERROR_STOP=1 -U "$USER_NAME" -d "$DB_NAME" \

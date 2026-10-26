@@ -23,4 +23,4 @@ done
     mvn -q compile -DskipTests || true
   done
 ) &
-exec mvn spring-boot:run -Dspring-boot.run.jvmArguments="${JAVA_OPTS:-}"
+exec mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Duser.timezone=UTC ${JAVA_OPTS:-}"
