@@ -91,6 +91,26 @@ describe('OperatingExpenseService', () => {
     expect(request.request.params.get('headquarterId')).toBe('4');
     expect(request.request.params.get('from')).toBe('2026-10-15');
     expect(request.request.params.get('to')).toBe('2026-10-15');
+    expect(request.request.params.has('search')).toBe(false);
     request.flush({ totalAmount: 25.5 });
+  });
+
+  it('forwards search and category on the summary', () => {
+    service
+      .summary({
+        headquarterId: 4,
+        from: '2026-10-01',
+        to: '2026-10-15',
+        search: ' hielo ',
+        category: 'RENT',
+      })
+      .subscribe();
+
+    const request = http.expectOne((req) => req.url.endsWith('/operating-expenses/summary'));
+    expect(request.request.params.get('search')).toBe('hielo');
+    expect(request.request.params.get('category')).toBe('RENT');
+    expect(request.request.params.get('from')).toBe('2026-10-01');
+    expect(request.request.params.get('to')).toBe('2026-10-15');
+    request.flush({ totalAmount: 0 });
   });
 });

@@ -30,9 +30,25 @@ export interface OperatingExpenseResponse {
   updatedAt: string;
 }
 
+/** One category inside GET /api/v1/operating-expenses/summary. */
+export interface OperatingExpenseCategoryTotal {
+  category: OperatingExpenseCategory;
+  totalAmount: number | string;
+  count: number;
+}
+
+/** One business day inside GET /api/v1/operating-expenses/summary. Days without expenses are omitted. */
+export interface OperatingExpenseDayTotal {
+  occurredOn: string;
+  totalAmount: number | string;
+  count: number;
+}
+
 /** GET /api/v1/operating-expenses/summary */
 export interface OperatingExpenseSummaryResponse {
   totalAmount: number | string;
+  topCategory: OperatingExpenseCategoryTotal | null;
+  byDay: OperatingExpenseDayTotal[];
 }
 
 export interface OperatingExpenseSearchParams {

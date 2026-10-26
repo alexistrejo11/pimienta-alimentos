@@ -16,7 +16,10 @@ import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.OperatingExpenseManagementUseCasesImpl;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.command.CreateOperatingExpenseCommand;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.command.UpdateOperatingExpenseCommand;
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseCategoryTotal;
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseDayTotal;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseListQuery;
+import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseSummary;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.OperatingExpense;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.enums.OperatingExpenseCategory;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.port.output.OperatingExpenseReceiptStorage;
@@ -157,12 +160,42 @@ class OperatingExpenseManagementUseCasesImplTest {
   @Test
   void summarizeReturnsTheRepositoryTotal() {
     when(expenseRepository.sumAmount(any())).thenReturn(new BigDecimal("25.50"));
+    when(expenseRepository.sumByDay(any())).thenReturn(List.of());
+    when(expenseRepository.sumByCategory(any())).thenReturn(List.of());
 
-    BigDecimal total =
+    OperatingExpenseSummary summary =
         useCases.summarize(
             admin, new OperatingExpenseListQuery(null, 3L, LocalDate.of(2026, 10, 15), LocalDate.of(2026, 10, 15), null));
 
-    assertEquals(new BigDecimal("25.50"), total);
+    assertEquals(new BigDecimal("25.50"), summary.totalAmount());
+    assertEquals(null, summary.topCategory());
+    assertTrue(summary.byDay().isEmpty());
+  }
+
+  @Test
+  void summarizeKeepsRepositoryDayOrderAndBreaksCategoryTies() {
+    LocalDate monday = LocalDate.of(2026, 10, 12);
+    LocalDate tuesday = LocalDate.of(2026, 10, 13);
+    when(expenseRepository.sumAmount(any())).thenReturn(new BigDecimal("40.00"));
+    when(expenseRepository.sumByDay(any()))
+        .thenReturn(
+            List.of(
+                new OperatingExpenseDayTotal(monday, new BigDecimal("30.00"), 2),
+                new OperatingExpenseDayTotal(tuesday, new BigDecimal("10.00"), 1)));
+    when(expenseRepository.sumByCategory(any()))
+        .thenReturn(
+            List.of(
+                new OperatingExpenseCategoryTotal(
+                    OperatingExpenseCategory.RENT, new BigDecimal("20.00"), 1),
+                new OperatingExpenseCategoryTotal(
+                    OperatingExpenseCategory.SUPPLIERS_MERCHANDISE, new BigDecimal("20.00"), 2)));
+
+    OperatingExpenseSummary summary =
+        useCases.summarize(admin, new OperatingExpenseListQuery("hielo", 3L, monday, tuesday, null));
+
+    assertEquals(monday, summary.byDay().getFirst().occurredOn());
+    assertEquals(OperatingExpenseCategory.SUPPLIERS_MERCHANDISE, summary.topCategory().category());
+    assertEquals(2L, summary.topCategory().count());
   }
 
   private static MockMultipartFile jpegFile() throws IOException {

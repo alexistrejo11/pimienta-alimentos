@@ -72,7 +72,7 @@ public class OperatingExpenseController {
       @AuthenticationPrincipal JwtAuthenticationContext principal,
       @Valid @ModelAttribute OperatingExpenseSearchRequest filter) {
     OperatingExpenseSearchRequest query = filter != null ? filter : new OperatingExpenseSearchRequest();
-    return new OperatingExpenseSummaryResponse(
+    return OperatingExpenseWebMapper.toSummary(
         expenseUseCases.summarize(principal, OperatingExpenseWebMapper.toQuery(query)));
   }
 
