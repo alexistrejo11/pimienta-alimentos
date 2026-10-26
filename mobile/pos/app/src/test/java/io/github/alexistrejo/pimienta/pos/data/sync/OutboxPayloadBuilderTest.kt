@@ -17,7 +17,7 @@ class OutboxPayloadBuilderTest {
     @Test
     fun openAmountPayloadKeepsGeneratedDescriptionAndPrice() {
         val sale = SaleEntity("sale-1", "T1-0001", "shift-1", "cashier-1", 1250, 0, 1250, "CASH", 1300, 50, 1)
-        val line = SaleLineEntity("line-1", sale.id, null, "Producto abierto · Bebidas", "Bebidas", 1, 1250, 1250, "NOT_CONTROLLED", "OPEN_AMOUNT")
+        val line = SaleLineEntity("line-1", sale.id, null, "Monto Abierto · Bebidas", "Bebidas", 1, 1250, 1250, "NOT_CONTROLLED", "OPEN_AMOUNT")
         val payment = PaymentEntity("payment-1", sale.id, "CASH", 1250)
 
         val body = json.parseToJsonElement(
@@ -26,7 +26,7 @@ class OutboxPayloadBuilderTest {
         val payloadLine = body["lines"]!!.jsonArray.single().jsonObject
 
         assertEquals("OPEN_AMOUNT", payloadLine["lineType"]!!.toString().trim('"'))
-        assertEquals("Producto abierto · Bebidas", payloadLine["productName"]!!.toString().trim('"'))
+        assertEquals("Monto Abierto · Bebidas", payloadLine["productName"]!!.toString().trim('"'))
         assertEquals("Bebidas", payloadLine["saleCategory"]!!.toString().trim('"'))
         assertEquals("1250", payloadLine["unitPriceCentavos"].toString())
         assertEquals("null", payloadLine["authorizedByOperatorId"].toString())

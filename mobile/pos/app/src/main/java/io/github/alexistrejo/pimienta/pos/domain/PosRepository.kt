@@ -516,7 +516,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
                             return Result.failure(IllegalArgumentException("La categoría ${line.category} no está permitida para monto abierto."))
                         line.productId != null || !line.sourceBarcode.isNullOrBlank() || line.stockPolicy != "NOT_CONTROLLED" ->
                             return Result.failure(IllegalArgumentException("La línea de monto abierto no es válida."))
-                        line.name != "Producto abierto · ${line.category.trim()}" ->
+                        !openAmountNameMatchesCategory(line.name, line.category) ->
                             return Result.failure(IllegalArgumentException("La descripción de monto abierto no coincide con la categoría."))
                     }
                 }

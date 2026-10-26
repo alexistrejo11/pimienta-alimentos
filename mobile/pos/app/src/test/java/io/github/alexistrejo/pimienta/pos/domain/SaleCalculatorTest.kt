@@ -120,11 +120,11 @@ class SaleCalculatorTest {
     fun atCostNamesLinesWithoutAPositiveCost() {
         val lines = listOf(
             catalog(2_000, 1).copy(name = "Agua", unitCostCentavos = 0),
-            open(500).copy(name = "Producto abierto · Snack"),
+            open(500).copy(name = "Monto Abierto · Snack"),
         )
         val quote = SaleCalculator.quote(DiscountMode.AT_COST, lines) as DiscountQuote.Blocked
         assertEquals(DiscountBlock.MISSING_UNIT_COST, quote.block)
-        assertEquals(listOf("Agua", "Producto abierto · Snack"), quote.lineNames)
+        assertEquals(listOf("Agua", "Monto Abierto · Snack"), quote.lineNames)
     }
 
     @Test
@@ -172,7 +172,7 @@ class SaleCalculatorTest {
 
     private fun open(price: Long) = CartLine(
         productId = null,
-        name = "Producto abierto · Snack",
+        name = "Monto Abierto · Snack",
         category = "Snack",
         unitPriceCentavos = price,
         stockPolicy = "NOT_CONTROLLED",

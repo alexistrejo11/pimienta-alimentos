@@ -284,12 +284,12 @@ internal fun Sale(
     }
 
     // Adds one open-amount line. Quantity stays 1 so Corte Z can sum each capture.
-    fun addOpenAmountLine(category: String, centavos: Long) {
+    fun addOpenAmountLine(category: String, centavos: Long, concept: String = "") {
         if (busy || !openAmountAllowed || centavos <= 0) return
         val wasCheckout = checkout
         cart = cart + CartLine(
             productId = null,
-            name = "Producto abierto · ${category.trim()}",
+            name = formatOpenAmountProductName(category, concept),
             category = category.trim(),
             unitPriceCentavos = centavos,
             stockPolicy = "NOT_CONTROLLED",
@@ -487,8 +487,8 @@ internal fun Sale(
                         openAmountRequested = false
                         selectedOpenCategory = null
                     },
-                    onConfirm = { category, centavos ->
-                        addOpenAmountLine(category, centavos)
+                    onConfirm = { category, centavos, concept ->
+                        addOpenAmountLine(category, centavos, concept)
                     },
                     initialCategory = selectedOpenCategory
                 )
