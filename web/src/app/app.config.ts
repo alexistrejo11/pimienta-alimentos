@@ -9,6 +9,7 @@ import { routes } from './app.routes';
 import { apiLoggingInterceptor } from './core/http/api-logging.interceptor';
 import { authSessionInterceptor } from './core/http/auth-session.interceptor';
 import { authTokenInterceptor } from './core/http/auth-token.interceptor';
+import { timezoneInterceptor } from './core/http/timezone.interceptor';
 import { CentralErrorHandler } from './core/telemetry/web-telemetry.service';
 
 registerLocaleData(localeEsMx);
@@ -20,7 +21,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ErrorHandler, useClass: CentralErrorHandler },
     provideHttpClient(
       withFetch(),
-      withInterceptors([authSessionInterceptor, authTokenInterceptor, apiLoggingInterceptor]),
+      withInterceptors([timezoneInterceptor, authSessionInterceptor, authTokenInterceptor, apiLoggingInterceptor]),
     ),
     provideRouter(
       routes,

@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.co
 
 import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.AttendanceResponsePresenter;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocAttendanceEndWorkday;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocAttendanceEndWorkdayJsonHidden;
@@ -160,7 +161,8 @@ public class EmployeeAttendanceController {
 
   private AttendanceResponse startWorkdayInternal(
       Long employeeId, StartWorkdayRequest request, MultipartFile checkInEvidencePhoto) {
-    LocalDate workDate = request.workDate() != null ? request.workDate() : LocalDate.now();
+    LocalDate workDate =
+        request.workDate() != null ? request.workDate() : LocalDate.now(ClientTimeZones.current());
     StartWorkdayCommand command =
         new StartWorkdayCommand(employeeId, request.headquarterId(), workDate, checkInEvidencePhoto);
     Attendance saved = attendanceTrackingUseCases.startWorkday(command);
@@ -169,7 +171,8 @@ public class EmployeeAttendanceController {
 
   private AttendanceResponse endWorkdayInternal(
       Long employeeId, EndWorkdayRequest request, MultipartFile checkOutEvidencePhoto) {
-    LocalDate workDate = request.workDate() != null ? request.workDate() : LocalDate.now();
+    LocalDate workDate =
+        request.workDate() != null ? request.workDate() : LocalDate.now(ClientTimeZones.current());
     EndWorkdayCommand command = new EndWorkdayCommand(employeeId, workDate, checkOutEvidencePhoto);
     Attendance saved = attendanceTrackingUseCases.endWorkday(command);
     return attendanceResponsePresenter.toResponse(saved);

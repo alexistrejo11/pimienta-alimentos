@@ -6,6 +6,9 @@ spring:
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # Overrides a database TimeZone of America/Mexico_City so JDBC keeps speaking UTC.
+      connection-init-sql: SET TIME ZONE 'UTC'
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -17,6 +20,8 @@ spring:
     properties:
       hibernate:
         format_sql: false
+        jdbc:
+          time_zone: UTC
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}

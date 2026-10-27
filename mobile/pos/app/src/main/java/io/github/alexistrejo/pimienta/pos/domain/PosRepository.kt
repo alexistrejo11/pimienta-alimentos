@@ -220,6 +220,7 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun inventoryMovements(from: Long, to: Long) = database.operationsDao().inventoryMovementsBetween(from, to)
     fun recentInventoryMovements() = database.operationsDao().recentInventoryMovements()
     fun pendingPrintJobs() = database.operationsDao().pendingPrintJobs()
+    // Dashboard day uses the device zone, the same ZoneId sent as X-Timezone.
     fun dailySummary(now: Long = System.currentTimeMillis()): DashboardSummary {
         val zone = ZoneId.systemDefault()
         val date = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()

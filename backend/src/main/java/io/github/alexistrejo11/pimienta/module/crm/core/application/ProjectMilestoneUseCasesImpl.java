@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.crm.core.application;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.command.CreateProjectMilestoneParams;
 import io.github.alexistrejo11.pimienta.module.crm.core.application.command.UpdateProjectMilestoneParams;
 import io.github.alexistrejo11.pimienta.module.crm.core.domain.ProjectMilestone;
@@ -158,7 +159,7 @@ public class ProjectMilestoneUseCasesImpl implements ProjectMilestoneUseCases {
 
     ProjectMilestone m = getById(projectId, milestoneId);
     m.setStatus(MilestoneStatus.COMPLETED);
-    m.setActualDate(LocalDate.now());
+    m.setActualDate(LocalDate.now(ClientTimeZones.current()));
     m.touch();
 
     ProjectMilestone saved = milestoneRepository.save(m);

@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.application.usecase;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.command.EndWorkdayCommand;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.command.StartWorkdayCommand;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.query.AttendanceSearchCriteria;
@@ -20,8 +21,10 @@ import io.github.alexistrejo11.pimienta.module.employees.core.port.output.Employ
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.exception.HeadquarterNotFoundException;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +85,7 @@ public class AttendanceUseCasesImpl
               "check-in");
     }
 
-    LocalDateTime checkInAt = LocalDateTime.now();
+    LocalDateTime checkInAt = utcNow();
     Attendance row = Attendance.prepareNew();
     row.beginWorkday(
         command.employeeId(),
@@ -123,7 +126,7 @@ public class AttendanceUseCasesImpl
               "check-out");
     }
 
-    open.completeCheckout(LocalDateTime.now(), checkOutEvidenceKey);
+    open.completeCheckout(utcNow(), checkOutEvidenceKey);
     return attendanceRepository.save(open);
   }
 
@@ -136,7 +139,8 @@ public class AttendanceUseCasesImpl
   @Override
   @Transactional(readOnly = true)
   public Page<Attendance> listForToday(Long headquarterId, Pageable pageable) {
-    return attendanceRepository.findPageForWorkDate(LocalDate.now(), headquarterId, pageable);
+    return attendanceRepository.findPageForWorkDate(
+        LocalDate.now(ClientTimeZones.current()), headquarterId, pageable);
   }
 
   @Override
@@ -162,8 +166,8 @@ public class AttendanceUseCasesImpl
   @Override
   @Transactional
   public void runStaleOpenAttendanceSweep() {
-    LocalDateTime now = LocalDateTime.now();
-    LocalDate today = now.toLocalDate();
+    LocalDateTime now = utcNow();
+    LocalDate today = LocalDate.now(ClientTimeZones.current());
     List<Attendance> openRows = attendanceRepository.findAllOpenCheckedIn();
     int closedExcess = 0;
     int closedAssumed = 0;
@@ -196,5 +200,10 @@ public class AttendanceUseCasesImpl
           closedExcess,
           closedAssumed);
     }
+  }
+
+  /** Stored attendance instants are UTC wall times from {@code UtcLocalDateTimeConverter}. */
+  private static LocalDateTime utcNow() {
+    return LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
   }
 }

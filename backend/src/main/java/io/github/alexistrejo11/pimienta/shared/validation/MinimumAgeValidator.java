@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.shared.validation;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.time.LocalDate;
@@ -19,7 +20,7 @@ public class MinimumAgeValidator implements ConstraintValidator<MinimumAge, Loca
     if (dateOfBirth == null) {
       return false;
     }
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(ClientTimeZones.current());
     if (dateOfBirth.isAfter(today)) {
       return false;
     }

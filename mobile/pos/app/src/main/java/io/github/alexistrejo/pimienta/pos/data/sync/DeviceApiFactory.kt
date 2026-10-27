@@ -6,6 +6,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.time.ZoneId
 
 /**
  * Builds [DeviceApi] clients with a single shared OkHttp/Retrofit/JSON configuration.
@@ -38,6 +39,7 @@ internal object DeviceApiFactory {
     /** Builds an authenticated client whose Authorization header is read on every request. */
     fun create(baseUrl: String, tokenProvider: () -> String?): DeviceApi {
         val client = OkHttpClient.Builder()
+            .addInterceptor(timezoneInterceptor())
             .addInterceptor(Interceptor { chain ->
                 val token = tokenProvider()
                 val request = chain.request().newBuilder()
@@ -50,8 +52,21 @@ internal object DeviceApiFactory {
     }
 
     /** Builds a client with no Authorization interceptor; used for enroll/refresh endpoints. */
-    fun createUnauthenticated(baseUrl: String): DeviceApi =
-        buildRetrofit(normalize(baseUrl), OkHttpClient.Builder().build()).create(DeviceApi::class.java)
+    fun createUnauthenticated(baseUrl: String): DeviceApi {
+        val client = OkHttpClient.Builder()
+            .addInterceptor(timezoneInterceptor())
+            .build()
+        return buildRetrofit(normalize(baseUrl), client).create(DeviceApi::class.java)
+    }
+
+    // Sends the device IANA zone on every call, including enroll and refresh.
+    // The value is read per request so it stays the zone used by local day bounds.
+    private fun timezoneInterceptor(): Interceptor = Interceptor { chain ->
+        val request = chain.request().newBuilder()
+            .header("X-Timezone", ZoneId.systemDefault().id)
+            .build()
+        chain.proceed(request)
+    }
 
     private fun buildRetrofit(baseUrl: String, client: OkHttpClient): Retrofit =
         Retrofit.Builder()

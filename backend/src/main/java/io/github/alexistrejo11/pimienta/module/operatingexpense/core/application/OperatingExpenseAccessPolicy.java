@@ -1,15 +1,14 @@
 package io.github.alexistrejo11.pimienta.module.operatingexpense.core.application;
 
 import io.github.alexistrejo11.pimienta.config.security.JwtAuthenticationContext;
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.account.user.core.application.HeadquarterAccessService;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseListQuery;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.application.query.OperatingExpenseSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.OperatingExpense;
 import io.github.alexistrejo11.pimienta.shared.exception.BusinessValidationException;
 import io.github.alexistrejo11.pimienta.shared.exception.ForbiddenException;
-import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,23 +21,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class OperatingExpenseAccessPolicy {
 
-  public static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Mexico_City");
-
   private final HeadquarterAccessService headquarterAccess;
-  private final Clock clock;
 
   @Autowired
   public OperatingExpenseAccessPolicy(HeadquarterAccessService headquarterAccess) {
-    this(headquarterAccess, Clock.system(BUSINESS_ZONE));
-  }
-
-  OperatingExpenseAccessPolicy(HeadquarterAccessService headquarterAccess, Clock clock) {
     this.headquarterAccess = headquarterAccess;
-    this.clock = clock;
   }
 
   public LocalDate today() {
-    return LocalDate.now(clock);
+    return LocalDate.now(ClientTimeZones.current());
   }
 
   public OperatingExpenseSearchCriteria resolveList(JwtAuthenticationContext principal, OperatingExpenseListQuery query) {

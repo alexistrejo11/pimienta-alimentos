@@ -1,13 +1,17 @@
 package io.github.alexistrejo11.pimienta.module.notification.infrastructure.adapter.out.persistence;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
 import io.github.alexistrejo11.pimienta.module.notification.core.application.query.NotificationSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.notification.core.application.query.NotificationSearchScope;
 import io.github.alexistrejo11.pimienta.module.notification.core.application.query.NotificationStatisticsCriteria;
 import io.github.alexistrejo11.pimienta.module.notification.core.domain.enums.NotificationChannel;
 import jakarta.persistence.criteria.Predicate;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
@@ -31,9 +35,16 @@ public final class NotificationSpecifications {
 
       if (effective.scope() == NotificationSearchScope.MANAGER_LOG) {
         parts.add(cb.equal(root.get("channel"), NotificationChannel.LOG));
-        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfToday = LocalDate.now().atTime(LocalTime.MAX);
-        parts.add(cb.between(root.get("createdAt"), startOfToday, endOfToday));
+        ZoneId zone = ClientTimeZones.current();
+        LocalDate today = LocalDate.now(zone);
+        Instant start = today.atStartOfDay(zone).toInstant();
+        Instant end = today.atTime(LocalTime.MAX).atZone(zone).toInstant();
+        // createdAt is the UTC LocalDateTime written by UtcLocalDateTimeConverter.
+        parts.add(
+            cb.between(
+                root.get("createdAt"),
+                LocalDateTime.ofInstant(start, ZoneOffset.UTC),
+                LocalDateTime.ofInstant(end, ZoneOffset.UTC)));
       }
 
       if (effective.id() != null) {
