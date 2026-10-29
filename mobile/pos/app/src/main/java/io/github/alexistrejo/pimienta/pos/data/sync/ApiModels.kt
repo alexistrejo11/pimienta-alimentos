@@ -38,7 +38,24 @@ import kotlinx.serialization.Serializable
 @Serializable data class BootstrapResponse(val schemaVersion: Int, val kind: String, val snapshotId: String, val generatedAt: String, val site: SiteDto, val device: DeviceDto, val operators: List<OperatorDto>, val products: List<ProductDto>, val openAmountCategories: List<String>, val policies: PoliciesDto, val cursors: CursorsDto)
 @Serializable data class DeviceDto(val id: String, val name: String, val visibleCode: String, val status: String, val lastDeviceSequence: Long? = null)
 @Serializable data class ChangeOp(val op: String, val entity: String, val id: String, val data: kotlinx.serialization.json.JsonElement? = null)
-@Serializable data class ChangesResponse(val schemaVersion: Int, val nextCursor: String, val operations: List<ChangeOp>)
+@Serializable data class ChangesResponse(
+    val schemaVersion: Int,
+    val nextCursor: String,
+    val operations: List<ChangeOp>,
+    // Absent on older servers. The sync applies it when present and leaves Room unchanged otherwise.
+    val site: SiteDto? = null,
+)
+@Serializable data class RenameDeviceRequest(val deviceName: String)
+@Serializable data class DeviceMeResponse(
+    val deviceId: String,
+    val visibleCode: String,
+    val status: String,
+    val deviceName: String,
+    val site: SiteDto,
+    val minAppVersion: String? = null,
+    val eventSchemaVersions: Map<String, Int> = emptyMap(),
+    val lastDeviceSequence: Long? = null,
+)
 @Serializable data class EventEnvelope(val eventId: String, val eventType: String, val schemaVersion: Int, val deviceId: String, val siteId: String, val deviceSequence: Long, val aggregateId: String? = null, val shiftId: String? = null, val occurredAt: String, val payload: kotlinx.serialization.json.JsonObject)
 @Serializable data class EventsRequest(val events: List<EventEnvelope>)
 @Serializable data class EventResult(val eventId: String, val status: String, val serverReceivedAt: String? = null, val incidentId: String? = null, val message: String? = null)

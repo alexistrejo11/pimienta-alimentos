@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -45,6 +46,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,7 +60,13 @@ import io.github.alexistrejo.pimienta.pos.data.local.entity.ProductEntity
 import io.github.alexistrejo.pimienta.pos.app.PosApplication
 import io.github.alexistrejo.pimienta.pos.data.local.RuntimeMode
 import io.github.alexistrejo.pimienta.pos.data.sync.PosApiUserMessages
+import io.github.alexistrejo.pimienta.pos.data.sync.DEVICE_NAME_INVALID_MESSAGE
+import io.github.alexistrejo.pimienta.pos.data.sync.DEVICE_NAME_MAX_LENGTH
+import io.github.alexistrejo.pimienta.pos.data.sync.DEVICE_NAME_PENDING_MESSAGE
+import io.github.alexistrejo.pimienta.pos.data.sync.DEVICE_NAME_UPDATED_MESSAGE
+import io.github.alexistrejo.pimienta.pos.data.sync.DeviceRenameResult
 import io.github.alexistrejo.pimienta.pos.data.sync.ProvisioningRepository
+import io.github.alexistrejo.pimienta.pos.data.sync.normalizeDeviceName
 import io.github.alexistrejo.pimienta.pos.hardware.PosScannerRegistry
 import io.github.alexistrejo.pimienta.pos.data.sync.planProductEdit
 import io.github.alexistrejo.pimienta.pos.data.printing.PrintWorker
@@ -123,6 +132,7 @@ internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                 "Cada ajuste indica si aplica solo a esta tablet o si es una política de la sede que se cambia en la web.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            DeviceNameSettings(repository)
             SettingsBlock("Tickets e impresión") {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -203,6 +213,112 @@ internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                 SitePolicyThreshold("Advertencia de cambio alto", highChangeThreshold, policyLoaded)
             }
         }
+    }
+}
+
+// Local device name. The screen is already behind the manager PIN, so this only edits the tablet label.
+@Composable
+private fun DeviceNameSettings(repository: PosRepository) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val provisioning = remember(context) {
+        ProvisioningRepository(context, (context.applicationContext as PosApplication).databaseProvider)
+    }
+    var name by rememberSaveable { mutableStateOf("") }
+    var visibleCode by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf<String?>(null) }
+    var messageIsError by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var loaded by remember { mutableStateOf(false) }
+    val (nameInteraction, forceNameKeyboard) = rememberForceSoftKeyboardInteractionSource()
+
+    LaunchedEffect(repository) {
+        val snapshot = withContext(Dispatchers.IO) {
+            val device = repository.device()
+            val pending = provisioning.pendingDeviceName()
+            Triple(pending ?: device?.name.orEmpty(), device?.visibleCode.orEmpty(), pending != null)
+        }
+        name = snapshot.first
+        visibleCode = snapshot.second
+        if (snapshot.third) {
+            message = DEVICE_NAME_PENDING_MESSAGE
+            messageIsError = false
+        }
+        loaded = true
+    }
+
+    SettingsBlock("Esta tablet") {
+        if (visibleCode.isNotBlank()) {
+            Text(
+                "Código $visibleCode",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            "Solo esta tablet. El nombre se envía al servidor sin volver a enrolar.",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it.take(DEVICE_NAME_MAX_LENGTH) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) forceNameKeyboard() },
+            interactionSource = nameInteraction,
+            enabled = loaded && !busy,
+            label = { Text("Nombre del dispositivo") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                keyboardType = KeyboardType.Text,
+            ),
+            colors = catalogFieldColors(),
+        )
+        if (message != null) {
+            Text(
+                message!!,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (messageIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        PosButton(
+            label = if (busy) "Guardando…" else "Guardar nombre",
+            click = {
+                if (normalizeDeviceName(name) == null) {
+                    message = DEVICE_NAME_INVALID_MESSAGE
+                    messageIsError = true
+                } else {
+                    busy = true
+                    message = null
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) { provisioning.renameDevice(name) }
+                        val saved = normalizeDeviceName(name)
+                        busy = false
+                        when (result) {
+                            DeviceRenameResult.Invalid -> {
+                                message = DEVICE_NAME_INVALID_MESSAGE
+                                messageIsError = true
+                            }
+                            DeviceRenameResult.Synced -> {
+                                if (saved != null) name = saved
+                                message = DEVICE_NAME_UPDATED_MESSAGE
+                                messageIsError = false
+                            }
+                            DeviceRenameResult.Pending -> {
+                                if (saved != null) name = saved
+                                message = DEVICE_NAME_PENDING_MESSAGE
+                                messageIsError = false
+                            }
+                        }
+                    }
+                }
+            },
+            enabled = loaded && !busy && name.isNotBlank(),
+            primary = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

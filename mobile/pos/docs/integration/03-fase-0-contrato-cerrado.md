@@ -26,6 +26,10 @@ lectura del catálogo y la creación del watermark.
 Las operaciones mínimas son `product`, `operator` y `policies`; cada una admite
 `upsert` y las entidades aplicables admiten `deactivate`.
 
+La respuesta incluye además un objeto `site` (`id`, `name`, `address`,
+`currency`) con la sede viva. No es una operación del change log ni avanza el
+cursor. Los clientes que ignoran campos desconocidos pueden omitirlo.
+
 El servidor devolverá `409 POS_SYNC_CURSOR_INVALID` cuando el cursor sea
 inválido, pertenezca a otra sede, sea anterior al historial retenido o no sea
 compatible con el `schemaVersion`. La tablet debe conservar sus hechos locales

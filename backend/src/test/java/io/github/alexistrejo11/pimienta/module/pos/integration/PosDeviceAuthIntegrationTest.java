@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -16,7 +17,9 @@ import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Ro
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosEnrollmentCodeJpaEntity;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosDeviceSpringDataRepository;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosEnrollmentCodeSpringDataRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -41,6 +44,8 @@ class PosDeviceAuthIntegrationTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private UserJpaRepository userJpaRepository;
   @Autowired private PosEnrollmentCodeSpringDataRepository enrollmentCodeJpa;
+  @Autowired private PosDeviceSpringDataRepository deviceJpa;
+  @Autowired private EntityManager entityManager;
 
   @Test
   void enroll_refresh_me_happyPath() throws Exception {
@@ -401,6 +406,182 @@ class PosDeviceAuthIntegrationTest {
     mockMvc
         .perform(AccountTestRequests.getBearer("/api/v1/headquarters", deviceAccess))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void rename_ownDevice_updatesNameAndKeepsSession() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-REN-" + UUID.randomUUID());
+    UUID deviceId = UUID.randomUUID();
+    String code = createEnrollmentCode(staffToken, hqId);
+
+    MvcResult enroll =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll", enrollJson(code, deviceId, "Caja 1")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibleCode").value("T1"))
+            .andReturn();
+    String access = JsonPath.read(enroll.getResponse().getContentAsString(), "$.accessToken");
+    String refresh = JsonPath.read(enroll.getResponse().getContentAsString(), "$.refreshToken");
+
+    entityManager.flush();
+    entityManager.clear();
+    LocalDateTime updatedBefore =
+        deviceJpa.findById(deviceId).orElseThrow().getUpdatedAt();
+    entityManager.clear();
+    Thread.sleep(5);
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/pos/devices/me",
+                access,
+                "{\"deviceName\": \"  Caja Norte  \"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.deviceId").value(deviceId.toString()))
+        .andExpect(jsonPath("$.deviceName").value("Caja Norte"))
+        .andExpect(jsonPath("$.visibleCode").value("T1"))
+        .andExpect(jsonPath("$.status").value("AUTHORIZED"))
+        .andExpect(jsonPath("$.site.id").value(String.valueOf(hqId)))
+        .andExpect(jsonPath("$.site.address").value("Addr"));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/devices/me", access))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.deviceName").value("Caja Norte"))
+        .andExpect(jsonPath("$.visibleCode").value("T1"))
+        .andExpect(jsonPath("$.site.id").value(String.valueOf(hqId)));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postJson(
+                "/api/v1/pos/devices/refresh",
+                "{\"refreshToken\": \"%s\"}".formatted(refresh)))
+        .andExpect(status().isOk());
+
+    entityManager.clear();
+    LocalDateTime updatedAfter = deviceJpa.findById(deviceId).orElseThrow().getUpdatedAt();
+    assertTrue(updatedAfter.isAfter(updatedBefore));
+  }
+
+  @Test
+  void rename_otherDeviceToken_doesNotChangeCallerSibling() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-ISO-" + UUID.randomUUID());
+    UUID deviceA = UUID.randomUUID();
+    UUID deviceB = UUID.randomUUID();
+
+    MvcResult enrollA =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll",
+                    enrollJson(createEnrollmentCode(staffToken, hqId), deviceA, "Caja A")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibleCode").value("T1"))
+            .andReturn();
+    String accessA = JsonPath.read(enrollA.getResponse().getContentAsString(), "$.accessToken");
+
+    MvcResult enrollB =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll",
+                    enrollJson(createEnrollmentCode(staffToken, hqId), deviceB, "Caja B")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.visibleCode").value("T2"))
+            .andReturn();
+    String accessB = JsonPath.read(enrollB.getResponse().getContentAsString(), "$.accessToken");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/pos/devices/me", accessB, "{\"deviceName\": \"Caja B nueva\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.deviceId").value(deviceB.toString()))
+        .andExpect(jsonPath("$.deviceName").value("Caja B nueva"))
+        .andExpect(jsonPath("$.visibleCode").value("T2"));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/devices/me", accessA))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.deviceId").value(deviceA.toString()))
+        .andExpect(jsonPath("$.deviceName").value("Caja A"))
+        .andExpect(jsonPath("$.visibleCode").value("T1"))
+        .andExpect(jsonPath("$.site.id").value(String.valueOf(hqId)));
+  }
+
+  @Test
+  void rename_blankOrTooLong_returns400() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-BAD-" + UUID.randomUUID());
+    UUID deviceId = UUID.randomUUID();
+    MvcResult enroll =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll",
+                    enrollJson(createEnrollmentCode(staffToken, hqId), deviceId, "Caja valida")))
+            .andExpect(status().isOk())
+            .andReturn();
+    String access = JsonPath.read(enroll.getResponse().getContentAsString(), "$.accessToken");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/pos/devices/me", access, "{\"deviceName\": \"\"}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/pos/devices/me", access, "{\"deviceName\": \"   \"}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/pos/devices/me", access, "{\"deviceName\": \"%s\"}".formatted("x".repeat(41))))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+
+    mockMvc
+        .perform(AccountTestRequests.getBearer("/api/v1/pos/devices/me", access))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.deviceName").value("Caja valida"));
+  }
+
+  @Test
+  void rename_revokedDevice_returns403() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-RVK-" + UUID.randomUUID());
+    UUID deviceId = UUID.randomUUID();
+    MvcResult enroll =
+        mockMvc
+            .perform(
+                AccountTestRequests.postJson(
+                    "/api/v1/pos/devices/enroll",
+                    enrollJson(createEnrollmentCode(staffToken, hqId), deviceId, "Caja revocada")))
+            .andExpect(status().isOk())
+            .andReturn();
+    String access = JsonPath.read(enroll.getResponse().getContentAsString(), "$.accessToken");
+
+    mockMvc
+        .perform(
+            AccountTestRequests.postBearer(
+                "/api/v1/pos/admin/devices/" + deviceId + "/revoke", staffToken))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/pos/devices/me", access, "{\"deviceName\": \"Otro nombre\"}"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.errorCode").value("POS_DEVICE_REVOKED"));
   }
 
   @Test

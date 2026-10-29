@@ -38,8 +38,25 @@ class DeviceApiMockWebServerTest {
 
  @Test fun changesUsesSequenceCursorInQuery()=runBlocking{
    server.enqueue(MockResponse().setResponseCode(200).setBody("""{"schemaVersion":1,"nextCursor":"cursor-hq-1-s43","operations":[]}""").addHeader("Content-Type","application/json"))
-   api.changes("cursor-hq-1-s42")
+   val legacy = api.changes("cursor-hq-1-s42")
    Assert.assertEquals("cursor-hq-1-s42",server.takeRequest().requestUrl?.queryParameter("cursor"))
+   Assert.assertNull(legacy.site)
+ }
+ @Test fun changesDecodesLiveSite()=runBlocking{
+   server.enqueue(MockResponse().setResponseCode(200).setBody("""{"schemaVersion":1,"nextCursor":"cursor-hq-1-s44","operations":[],"site":{"id":"1","name":"CNA","address":"Calle 1","currency":"MXN"}}""").addHeader("Content-Type","application/json"))
+   val result = api.changes("cursor-hq-1-s43")
+   Assert.assertEquals("CNA", result.site?.name)
+   Assert.assertEquals("Calle 1", result.site?.address)
+ }
+ @Test fun renameDevicePatchesMe()=runBlocking{
+   server.enqueue(MockResponse().setResponseCode(200).setBody("""{"deviceId":"d","visibleCode":"T1","status":"AUTHORIZED","deviceName":"Caja Norte","site":{"id":"1","name":"CNA","address":"Calle 1","currency":"MXN"}}""").addHeader("Content-Type","application/json"))
+   val me = api.renameDevice(RenameDeviceRequest("Caja Norte"))
+   Assert.assertEquals("Caja Norte", me.deviceName)
+   Assert.assertEquals("T1", me.visibleCode)
+   val recorded = server.takeRequest()
+   Assert.assertEquals("PATCH", recorded.method)
+   Assert.assertEquals("/api/v1/pos/devices/me", recorded.path)
+   Assert.assertTrue(recorded.body.readUtf8().contains("\"deviceName\":\"Caja Norte\""))
  }
  @Test fun mixedResults()=runBlocking{
   server.enqueue(MockResponse().setResponseCode(200).setBody("""{"results":[{"eventId":"a","status":"ACCEPTED"},{"eventId":"b","status":"REQUIRES_REVIEW","incidentId":"inc-1"},{"eventId":"c","status":"REJECTED"}]}""").addHeader("Content-Type","application/json"))

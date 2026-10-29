@@ -76,6 +76,53 @@ class PosSyncChangesIntegrationTest {
   }
 
   @Test
+  void changes_headquarterRename_returnsLiveSiteWithCatalogOperations() throws Exception {
+    String staffToken = obtainAccessToken();
+    long hqId = createHeadquarter(staffToken, "POS-SITE-" + UUID.randomUUID());
+    putPosSettings(staffToken, hqId);
+    long itemId = createItem(staffToken, "SKU-SITE-" + UUID.randomUUID(), "Agua sitio");
+    putCatalog(staffToken, hqId, itemId, "Bebidas", "15.00");
+
+    String access = enrollDevice(staffToken, hqId, "Caja sitio");
+    String cursor = bootstrapCursor(access);
+    String siteName = "CNA-" + UUID.randomUUID();
+    String address = "Calle " + UUID.randomUUID();
+
+    mockMvc
+        .perform(
+            AccountTestRequests.putJsonBearer(
+                "/api/v1/headquarters/" + hqId,
+                staffToken,
+                """
+                {"name": "%s", "address": "%s", "description": "d"}
+                """
+                    .formatted(siteName, address)))
+        .andExpect(status().isOk());
+    putCatalog(staffToken, hqId, itemId, "Bebidas", "18.00");
+
+    MvcResult changed =
+        mockMvc
+            .perform(AccountTestRequests.getBearer(changesUrl(cursor), access))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.site.id").value(String.valueOf(hqId)))
+            .andExpect(jsonPath("$.site.name").value(siteName))
+            .andExpect(jsonPath("$.site.address").value(address))
+            .andExpect(jsonPath("$.site.currency").value("MXN"))
+            .andExpect(jsonPath("$.operations[?(@.entity=='product' && @.op=='upsert')]", hasSize(1)))
+            .andExpect(jsonPath("$.operations[?(@.entity=='product')].data.priceCentavos").value(1800))
+            .andReturn();
+
+    String nextCursor = JsonPath.read(changed.getResponse().getContentAsString(), "$.nextCursor");
+    mockMvc
+        .perform(AccountTestRequests.getBearer(changesUrl(nextCursor), access))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.operations", hasSize(0)))
+        .andExpect(jsonPath("$.site.name").value(siteName))
+        .andExpect(jsonPath("$.site.address").value(address))
+        .andExpect(jsonPath("$.site.currency").value("MXN"));
+  }
+
+  @Test
   void changes_costPriceUpdate_pushesCostToEverySedeAndSkipsUnchangedCost() throws Exception {
     String staffToken = obtainAccessToken();
     long hqA = createHeadquarter(staffToken, "POS-COST-A-" + UUID.randomUUID());

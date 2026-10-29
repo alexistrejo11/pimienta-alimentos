@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.application.PosProductRe
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.CreateEnrollmentCodeCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.CreatePosOperatorCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.EnrollDeviceCommand;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.command.RenameDeviceCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.UpdatePosOperatorCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosEnrollmentCode;
@@ -18,6 +19,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.port.input.DeviceAuthUse
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.BootstrapSnapshot;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.OperatorRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.ProductRow;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.SiteRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncChangesUseCases.ChangeOperation;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncChangesUseCases.ChangesBatch;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncChangesUseCases.OperatorData;
@@ -48,6 +50,7 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inboun
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.PosSyncChangesResponse;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.PosSyncIncidentResponse;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.PosSyncPoliciesDataResponse;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.RenameDeviceRequest;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.UpdatePosOperatorRequest;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.IngestPosEventsCommand.IngestPosEventItem;
@@ -296,6 +299,10 @@ public final class PosWebMapper {
         request.appVersion());
   }
 
+  public static RenameDeviceCommand toRenameCommand(RenameDeviceRequest request) {
+    return new RenameDeviceCommand(request.deviceName());
+  }
+
   public static DeviceEnrollResponse toEnrollResponse(EnrollResult result) {
     DeviceIssuedTokens t = result.tokens();
     PosDevice d = result.device();
@@ -492,10 +499,12 @@ public final class PosWebMapper {
   }
 
   public static PosSyncChangesResponse toChangesResponse(ChangesBatch batch) {
+    SiteRow site = batch.site();
     return new PosSyncChangesResponse(
         batch.schemaVersion(),
         batch.nextCursor(),
-        batch.operations().stream().map(PosWebMapper::toChangeOperation).toList());
+        batch.operations().stream().map(PosWebMapper::toChangeOperation).toList(),
+        new PosBootstrapSiteResponse(site.id(), site.name(), site.address(), site.currency()));
   }
 
   private static PosSyncChangeOperationResponse toChangeOperation(ChangeOperation op) {

@@ -104,11 +104,15 @@ class PosSyncPipeline(private val context: Context) {
         }
 
         // Pulls catalog changes or bootstrap snapshot so catalog freshness is not blocked by outbox errors.
+        // A pending device rename is pushed first so a bootstrap snapshot cannot restore the old server name.
+        var deviceNameSynced = true
         return try {
+            deviceNameSynced = provisioning.pushPendingDeviceName(api)
             val current = db.syncDao().state() ?: state
             val localIncomplete = db.productDao().count() == 0 || db.userDao().count() == 0
             if (current.changesCursor == null || localIncomplete) {
                 provisioning.applyBootstrap(api.bootstrap(), acceptedResults)
+                if (!deviceNameSynced) provisioning.reapplyPendingDeviceName()
             } else {
                 provisioning.applyChanges(api.changes(current.changesCursor), acceptedResults)
             }
@@ -137,6 +141,7 @@ class PosSyncPipeline(private val context: Context) {
                 PosSyncErrorPolicy.requiresBootstrap(e) -> {
                     try {
                         provisioning.applyBootstrap(session.authenticatedApi(baseUrl).bootstrap(), acceptedResults)
+                        if (!deviceNameSynced) provisioning.reapplyPendingDeviceName()
                         val latestState = db.syncDao().state() ?: state
                         db.syncDao().saveState(latestState.copy(lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
                         PosSyncNowOutcome.SUCCESS
