@@ -463,6 +463,15 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         )
     }
 
+    // Queues a duplicate of the newest ticket in the open shift. Returns its folio, or null when the shift has no sales.
+    fun reprintLatestTicket(): String? {
+        val operations = database.operationsDao()
+        val shift = operations.activeShift() ?: return null
+        val sale = operations.salesForShift(shift.id).firstOrNull() ?: return null
+        requestReprint(sale.id)
+        return sale.folio
+    }
+
     // Cancels only a cash sale from the active shift and records the full audit trail.
     fun cancelCashSale(sale: SaleEntity, manager: LocalUserEntity, pin: String, reason: String): Boolean {
         if (sale.status == "CANCELLED" || sale.paymentMethod != PaymentMethod.CASH.name || reason.isBlank()) return false

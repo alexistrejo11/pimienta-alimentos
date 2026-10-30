@@ -64,6 +64,7 @@ internal fun Sale(
     var completedFolio by rememberSaveable { mutableStateOf<String?>(null) }
     var pending by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
+    var reprintBusy by remember { mutableStateOf(false) }
     var paymentMethodDraft by rememberSaveable { mutableStateOf(PaymentMethod.CASH) }
     var tenderedDraft by rememberSaveable { mutableStateOf("") }
     var devicesOpen by rememberSaveable { mutableStateOf(false) }
@@ -430,6 +431,22 @@ internal fun Sale(
                 onSyncNow = ::syncCatalogNow,
                 syncBusy = syncBusy,
                 createProductEnabled = !createProductBusy,
+                reprintBusy = reprintBusy,
+                // Reprints the newest ticket of the open shift without opening manager history.
+                onReprintLastTicket = {
+                    if (reprintBusy) return@StatusBar
+                    reprintBusy = true
+                    scope.launch {
+                        val folio = withContext(Dispatchers.IO) { repository.reprintLatestTicket() }
+                        if (folio == null) {
+                            feedbackHost.showSnackbar("No hay un ticket en este turno.")
+                        } else {
+                            PrintWorker.enqueue(context)
+                            feedbackHost.showSnackbar("Último ticket $folio enviado a la impresora.")
+                        }
+                        reprintBusy = false
+                    }
+                },
             )
             SaleCompleted(completedFolio) { folio ->
                 if (completedFolio == folio) completedFolio = null

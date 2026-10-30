@@ -60,6 +60,7 @@ class Phase1ComposeTest {
         }
 
         composeRule.onNodeWithText("Acciones ▼").performClick()
+        composeRule.onNodeWithText("Último ticket").assertIsDisplayed()
         composeRule.onNodeWithText("Dispositivos").assertIsDisplayed()
         composeRule.onNodeWithText("Panel Manager").assertIsDisplayed()
     }
