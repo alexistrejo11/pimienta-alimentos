@@ -139,7 +139,7 @@ internal fun DiscountAuthorization(
                         interactionSource = targetInteraction,
                         label = { Text("Monto a cobrar") },
                         singleLine = true,
-                        colors = catalogFieldColors(),
+                        colors = formFieldColors(),
                     )
                 }
                 DiscountQuoteSummary(mode, gross, accepted)

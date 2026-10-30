@@ -87,11 +87,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-// Local tablet toggles that do not come from server policy sync.
+// Local tablet toggles and display settings that do not come from server policy sync.
 @Composable
-internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
+internal fun ConfigPanel(
+    repository: PosRepository,
+    modifier: Modifier = Modifier,
+    dark: Boolean = true,
+    onTheme: (Boolean) -> Unit = {},
+) {
     var kitchenTicketFilter by remember { mutableStateOf(repository.kitchenTicketPrintFilterEnabled()) }
     var uppercaseNames by remember { mutableStateOf(repository.salesCardNamesUppercase()) }
+    var showSku by remember { mutableStateOf(repository.salesCardShowSku()) }
     var highSaleThreshold by remember { mutableStateOf<Long?>(null) }
     var highChangeThreshold by remember { mutableStateOf<Long?>(null) }
     var policyLoaded by remember { mutableStateOf(false) }
@@ -133,6 +139,28 @@ internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             DeviceNameSettings(repository)
+            SettingsBlock("Apariencia") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onTheme(!dark) },
+                ) {
+                    Checkbox(
+                        checked = dark,
+                        onCheckedChange = { checked -> onTheme(checked) },
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Column {
+                        Text("Tema oscuro (Workspace)", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Apariencia oscura recomendada para la jornada en caja. Desactiva para usar el tema claro.",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             SettingsBlock("Tickets e impresión") {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -181,6 +209,33 @@ internal fun ConfigPanel(repository: PosRepository, modifier: Modifier) {
                 PosButton("Administrar dispositivos", { devicesOpen = true }, modifier = Modifier.fillMaxWidth())
             }
             SettingsBlock("Ventas") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showSku = !showSku
+                            repository.setSalesCardShowSku(showSku)
+                        },
+                ) {
+                    Checkbox(
+                        checked = showSku,
+                        onCheckedChange = { checked ->
+                            showSku = checked
+                            repository.setSalesCardShowSku(checked)
+                        },
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Column {
+                        Text("Mostrar SKU / Código de proveedor en el catálogo", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Solo esta tablet",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -274,7 +329,7 @@ private fun DeviceNameSettings(repository: PosRepository) {
                 capitalization = KeyboardCapitalization.Sentences,
                 keyboardType = KeyboardType.Text,
             ),
-            colors = catalogFieldColors(),
+            colors = formFieldColors(),
         )
         if (message != null) {
             Text(

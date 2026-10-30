@@ -88,6 +88,7 @@ internal fun CatalogPanel(
     hideBarcoded: Boolean = false,
     onToggleHideBarcoded: (() -> Unit)? = null,
     uppercaseNames: Boolean = false,
+    showSku: Boolean = true,
 ) {
     val categoryListState = rememberLazyListState()
     val selectedIndex = remember(categories, selectedCategory) {
@@ -178,7 +179,7 @@ internal fun CatalogPanel(
                             OpenProductTile(cat, uppercaseNames) { onOpenAmountCategory(cat) }
                         }
                     } else {
-                        items(products, key = { it.id }) { ProductTile(it, uppercaseNames) { onProduct(it) } }
+                        items(products, key = { it.id }) { ProductTile(it, uppercaseNames, showSku) { onProduct(it) } }
                     }
                 }
             }
@@ -196,32 +197,47 @@ internal fun tileName(name: String, uppercase: Boolean): String =
 internal fun OpenProductTile(category: String, uppercaseNames: Boolean = false, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 104.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 88.dp),
         shape = MaterialTheme.shapes.small,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ),
-        contentPadding = PaddingValues(12.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Text(tileName("$category (Abierto)", uppercaseNames), style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            Column {
-                Text("Capturar precio", fontWeight = FontWeight.Bold)
-            }
+            Text(
+                text = tileName("$category (Abierto)", uppercaseNames),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "Capturar precio",
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
 
-
-// Shows product price in one compact, high-target catalog tile.
+// Shows product price in a compact catalog tile that adapts its height and spacing when SKU is omitted.
 @Composable
-internal fun ProductTile(product: ProductEntity, uppercaseNames: Boolean = false, onClick: () -> Unit) {
+internal fun ProductTile(
+    product: ProductEntity,
+    uppercaseNames: Boolean = false,
+    showSku: Boolean = true,
+    onClick: () -> Unit,
+) {
     val unavailable = !product.available
+    val skuText = if (showSku) {
+        product.sku.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
+    } else null
+    val hasSku = skuText != null
+    val minHeight = if (hasSku || unavailable) 100.dp else 88.dp
 
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 104.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = minHeight),
         enabled = !unavailable,
         shape = MaterialTheme.shapes.small,
         colors = ButtonDefaults.buttonColors(
@@ -230,18 +246,33 @@ internal fun ProductTile(product: ProductEntity, uppercaseNames: Boolean = false
             disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
-        contentPadding = PaddingValues(12.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Text(tileName(product.name, uppercaseNames), style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            Column {
-                Text(Money.format(Money.fromCatalog(product.price)), fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = tileName(product.name, uppercaseNames),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = Money.format(Money.fromCatalog(product.price)),
+                    fontWeight = FontWeight.Bold,
+                )
                 if (unavailable) {
-                    Text("No disponible", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
-                }
-                product.sku.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }?.let { sku ->
                     Text(
-                        text = sku,
+                        text = "No disponible",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                if (skuText != null) {
+                    Text(
+                        text = skuText,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

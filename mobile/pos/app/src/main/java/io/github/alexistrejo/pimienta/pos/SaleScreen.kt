@@ -72,6 +72,7 @@ internal fun Sale(
     val manager = remember(managerId, users) { users.firstOrNull { it.id == managerId } }
     // Re-read after leaving the manager panel, where Configuración can change it.
     val uppercaseNames = remember(managerId) { repository.salesCardNamesUppercase() }
+    val showSku = remember(managerId) { repository.salesCardShowSku() }
     var discountAmountCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
     var discountModeName by rememberSaveable { mutableStateOf<String?>(null) }
     var discountTargetCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -393,6 +394,8 @@ internal fun Sale(
                 products = products,
                 pendingEvents = pending,
                 repository = repository,
+                dark = dark,
+                onTheme = onTheme,
                 onReturnToSale = { managerId = null },
                 onShiftClosed = {
                     managerId = null
@@ -410,8 +413,6 @@ internal fun Sale(
                 cashier = cashier,
                 pending = pending,
                 syncLabel = if (policy?.stockless == true) salesOnlySyncLabel(pending) else inventorySyncLabel(syncState, pending),
-                dark = dark,
-                onTheme = onTheme,
                 landscape = landscape,
                 openManager = { managerAccessRequested = true },
                 openDevices = { devicesOpen = true },
@@ -560,6 +561,7 @@ internal fun Sale(
                                 hideBarcoded = hideBarcodedProducts,
                                 onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
                                 uppercaseNames = uppercaseNames,
+                                showSku = showSku,
                             )
 
                             CatalogSplitDivider(
@@ -636,6 +638,7 @@ internal fun Sale(
                         hideBarcoded = hideBarcodedProducts,
                         onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
                         uppercaseNames = uppercaseNames,
+                        showSku = showSku,
                     )
                 } else {
                     CartPanel(

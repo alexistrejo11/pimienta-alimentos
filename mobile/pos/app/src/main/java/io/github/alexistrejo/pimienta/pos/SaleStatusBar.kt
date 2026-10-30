@@ -82,8 +82,6 @@ internal fun StatusBar(
     cashier: String,
     pending: Int,
     syncLabel: String,
-    dark: Boolean,
-    onTheme: (Boolean) -> Unit,
     landscape: Boolean,
     openManager: () -> Unit,
     openDevices: () -> Unit,
@@ -160,7 +158,6 @@ internal fun StatusBar(
                     PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
                     PosButton("Dispositivos", openDevices, contentPadding = headerBtnPadding)
                     PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
-                    PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
                 }
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),

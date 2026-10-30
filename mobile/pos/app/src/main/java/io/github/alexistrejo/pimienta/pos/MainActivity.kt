@@ -293,6 +293,8 @@ private fun PosApp(scanner: BarcodeScanner, dark: Boolean, onTheme: (Boolean) ->
                     products = state.products,
                     pendingEvents = state.pendingEventsCount,
                     repository = repository,
+                    dark = dark,
+                    onTheme = onTheme,
                     onReturnToSale = { standaloneManagerId = null },
                     onShiftClosed = {
                         coordinator.onShiftClosed()

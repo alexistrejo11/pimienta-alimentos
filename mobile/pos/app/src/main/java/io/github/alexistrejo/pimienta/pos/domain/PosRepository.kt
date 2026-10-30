@@ -143,6 +143,10 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun setSalesCardNamesUppercase(enabled: Boolean) {
         localPreferences.setSalesCardNamesUppercase(enabled)
     }
+    fun salesCardShowSku(): Boolean = localPreferences.salesCardShowSku()
+    fun setSalesCardShowSku(enabled: Boolean) {
+        localPreferences.setSalesCardShowSku(enabled)
+    }
     // Effective site high-sale threshold from the cached policy; null when the site disabled it.
     fun highSaleWarningCentavos(): Long? = HighSaleWarning.thresholdCentavos(database.syncProjectionDao().policy())
     // Effective site high-change threshold from the cached policy; null when the site disabled it.
