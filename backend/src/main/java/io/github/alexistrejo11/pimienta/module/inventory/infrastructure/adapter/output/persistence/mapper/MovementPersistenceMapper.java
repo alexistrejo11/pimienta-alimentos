@@ -7,7 +7,6 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.ItemRe
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.StorageLocationRepository;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.InventoryMovementJpaEntity;
 
-import java.math.BigDecimal;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,7 +32,7 @@ public class MovementPersistenceMapper {
         domain.getDestinationLocation() != null ? domain.getDestinationLocation().getId() : null);
     e.setTransactionId(domain.getTransactionId());
     e.setQuantity(domain.getQuantity());
-    e.setUnitCost(domain.getUnitCost() != null ? domain.getUnitCost() : BigDecimal.ZERO);
+    e.setUnitCost(domain.getUnitCost());
     e.setType(domain.getType());
     e.setDirection(domain.getDirection());
     e.setExitReason(domain.getExitReason());

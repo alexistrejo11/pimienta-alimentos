@@ -19,6 +19,8 @@ public record CreateTaskCommand(
     List<ChecklistDraft> checklistLines) {
 
   public CreateTaskCommand {
+    priority = priority != null ? priority : Task.Priority.MEDIUM;
+    initialStatus = initialStatus != null ? initialStatus : Task.Status.PENDING;
     checklistLines = checklistLines != null ? checklistLines : List.of();
   }
 }

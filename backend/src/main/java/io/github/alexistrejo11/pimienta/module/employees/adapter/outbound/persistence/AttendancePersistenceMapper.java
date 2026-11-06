@@ -5,6 +5,7 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.Atten
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Attendance;
 
 import java.time.LocalDateTime;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public class AttendancePersistenceMapper {
 
@@ -22,8 +23,8 @@ public class AttendancePersistenceMapper {
     e.setCheckInTime(domain.getCheckInTime());
     e.setCheckOutTime(domain.getCheckOutTime());
     e.setStatus(domain.getStatus());
-    e.setCheckInEvidencePhotoUrl(blankToNull(domain.getCheckInEvidencePhotoUrl()));
-    e.setCheckOutEvidencePhotoUrl(blankToNull(domain.getCheckOutEvidencePhotoUrl()));
+    e.setCheckInEvidencePhotoUrl(Strings.blankToNull(domain.getCheckInEvidencePhotoUrl()));
+    e.setCheckOutEvidencePhotoUrl(Strings.blankToNull(domain.getCheckOutEvidencePhotoUrl()));
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
@@ -41,8 +42,8 @@ public class AttendancePersistenceMapper {
         e.getId(),
         e.getEmployeeId(),
         e.getHeadquarterId(),
-        nullToEmpty(e.getCheckInEvidencePhotoUrl()),
-        nullToEmpty(e.getCheckOutEvidencePhotoUrl()),
+        Strings.nullToEmpty(e.getCheckInEvidencePhotoUrl()),
+        Strings.nullToEmpty(e.getCheckOutEvidencePhotoUrl()),
         e.getWorkDate(),
         e.getCheckInTime(),
         e.getCheckOutTime(),
@@ -53,15 +54,5 @@ public class AttendancePersistenceMapper {
         e.getVersion());
   }
 
-  private static String blankToNull(String s) {
-    if (s == null) {
-      return null;
-    }
-    String t = s.trim();
-    return t.isEmpty() ? null : t;
-  }
 
-  private static String nullToEmpty(String s) {
-    return s != null ? s : "";
-  }
 }

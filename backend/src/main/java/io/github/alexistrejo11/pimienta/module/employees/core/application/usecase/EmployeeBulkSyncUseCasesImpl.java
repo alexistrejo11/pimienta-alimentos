@@ -151,28 +151,26 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
     var employment = e.getEmployment();
     var pay = e.getCompensation();
     var benefits = e.getBenefits();
-    return EmployeeExportRow.builder()
-        .id(e.getId())
-        .firstName(personal.firstName())
-        .lastName(personal.lastName())
-        .email(personal.email())
-        .phone(personal.phone())
-        .address(personal.address())
-        .curp(ids.curp())
-        .rfc(ids.rfc())
-        .nss(ids.nss())
-        .clabe(ids.clabe())
-        .position(employment.position())
-        .department(employment.department())
-        .status(e.getStatus())
-        .contractType(employment.contractType().name())
-        .workShift(employment.workShift().name())
-        .salaryPerWeek(pay.salaryPerWeek() != null ? pay.salaryPerWeek().toPlainString() : "")
-        .bonuses(pay.bonuses() != null ? pay.bonuses().toPlainString() : "")
-        .foodVouchers(pay.foodVouchers() != null ? pay.foodVouchers().toPlainString() : "")
-        .integrationFactor(
-            benefits.integrationFactor() != null ? benefits.integrationFactor().toPlainString() : "")
-        .build();
+    return new EmployeeExportRow(
+        e.getId(),
+        personal.firstName(),
+        personal.lastName(),
+        personal.email(),
+        personal.phone(),
+        personal.address(),
+        ids.curp(),
+        ids.rfc(),
+        ids.nss(),
+        ids.clabe(),
+        employment.position(),
+        employment.department(),
+        e.getStatus(),
+        employment.contractType().name(),
+        employment.workShift().name(),
+        pay.salaryPerWeek() != null ? pay.salaryPerWeek().toPlainString() : "",
+        pay.bonuses() != null ? pay.bonuses().toPlainString() : "",
+        pay.foodVouchers() != null ? pay.foodVouchers().toPlainString() : "",
+        benefits.integrationFactor() != null ? benefits.integrationFactor().toPlainString() : "");
   }
 
   private PlannedEmployeeRow planRow(EmployeeImportRow row) {
@@ -231,26 +229,25 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
   private static RegisterEmployeeParams buildRegisterParamsForBulk(
       EmployeeImportRow row, ContractType contractType, WorkShift workShift) {
     String email = row.email() != null && !row.email().isBlank() ? row.email().trim() : null;
-    return RegisterEmployeeParams.builder()
-        .firstName(row.firstName().trim())
-        .lastName(row.lastName().trim())
-        .email(email)
-        .phone(nz(row.phone(), ""))
-        .address(nz(row.address(), ""))
-        .curp(nz(row.curp(), ""))
-        .rfc(nz(row.rfc(), ""))
-        .nss(nz(row.nss(), ""))
-        .clabe(nz(row.clabe(), ""))
-        .employeeNumber("")
-        .position(nz(row.position(), ""))
-        .department(nz(row.department(), ""))
-        .contractType(contractType)
-        .workShift(workShift)
-        .salaryPerWeek(row.salaryPerWeek() != null ? row.salaryPerWeek() : BigDecimal.ZERO)
-        .birthDate(null)
-        .onboardingPhase(EmployeeOnboardingPhase.DRAFT)
-        .photo(null)
-        .build();
+    return new RegisterEmployeeParams(
+        row.firstName().trim(),
+        row.lastName().trim(),
+        email,
+        nz(row.phone(), ""),
+        nz(row.address(), ""),
+        nz(row.curp(), ""),
+        nz(row.rfc(), ""),
+        nz(row.nss(), ""),
+        nz(row.clabe(), ""),
+        "",
+        nz(row.position(), ""),
+        nz(row.department(), ""),
+        contractType,
+        workShift,
+        row.salaryPerWeek() != null ? row.salaryPerWeek() : BigDecimal.ZERO,
+        null,
+        EmployeeOnboardingPhase.DRAFT,
+        null);
   }
 
   private static SpreadsheetBulkImportRowError rowError(EmployeeImportRow row, String message) {
@@ -268,26 +265,26 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
     BigDecimal bonuses = row.bonuses() != null ? row.bonuses() : pay.bonuses();
     BigDecimal food = row.foodVouchers() != null ? row.foodVouchers() : pay.foodVouchers();
     BigDecimal integration = row.integrationFactor() != null ? row.integrationFactor() : benefits.integrationFactor();
-    return UpdateEmployeeParams.builder()
-        .id(row.id())
-        .firstName(nz(row.firstName(), e.getPersonal().firstName()))
-        .lastName(nz(row.lastName(), e.getPersonal().lastName()))
-        .email(nz(row.email(), e.getPersonal().email()))
-        .phone(nz(row.phone(), e.getPersonal().phone()))
-        .address(nz(row.address(), e.getPersonal().address()))
-        .curp(nz(row.curp(), e.getOfficialIds().curp()))
-        .rfc(nz(row.rfc(), e.getOfficialIds().rfc()))
-        .nss(nz(row.nss(), e.getOfficialIds().nss()))
-        .clabe(nz(row.clabe(), e.getOfficialIds().clabe()))
-        .position(nz(row.position(), e.getEmployment().position()))
-        .department(nz(row.department(), e.getEmployment().department()))
-        .contractType(contractType)
-        .workShift(workShift)
-        .salaryPerWeek(salary)
-        .bonuses(bonuses)
-        .foodVouchers(food)
-        .integrationFactor(integration)
-        .build();
+    return new UpdateEmployeeParams(
+        row.id(),
+        nz(row.firstName(), e.getPersonal().firstName()),
+        nz(row.lastName(), e.getPersonal().lastName()),
+        null,
+        nz(row.email(), e.getPersonal().email()),
+        nz(row.phone(), e.getPersonal().phone()),
+        nz(row.address(), e.getPersonal().address()),
+        nz(row.curp(), e.getOfficialIds().curp()),
+        nz(row.rfc(), e.getOfficialIds().rfc()),
+        nz(row.nss(), e.getOfficialIds().nss()),
+        nz(row.clabe(), e.getOfficialIds().clabe()),
+        nz(row.position(), e.getEmployment().position()),
+        nz(row.department(), e.getEmployment().department()),
+        contractType,
+        workShift,
+        salary,
+        bonuses,
+        food,
+        integration);
   }
 
   private static String nz(String fromRow, String existing) {

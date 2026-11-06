@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Repository
 public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository {
@@ -60,8 +61,8 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
       StockPolicy stockPolicy,
       Boolean hasBarcode,
       Pageable pageable) {
-    String searchTerm = blankToNull(search);
-    String category = blankToNull(saleCategory);
+    String searchTerm = Strings.blankToNull(search);
+    String category = Strings.blankToNull(saleCategory);
     CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 
     CriteriaQuery<HeadquarterItemJpaEntity> cq = cb.createQuery(HeadquarterItemJpaEntity.class);
@@ -152,9 +153,6 @@ public class HeadquarterItemRepositoryImpl implements HeadquarterItemRepository 
     return parts.toArray(Predicate[]::new);
   }
 
-  private static String blankToNull(String value) {
-    return value == null || value.isBlank() ? null : value.strip();
-  }
 
   @Override
   public List<HeadquarterItem> findAllByHeadquarterId(long headquarterId) {

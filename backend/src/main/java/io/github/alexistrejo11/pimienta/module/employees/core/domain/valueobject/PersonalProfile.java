@@ -1,10 +1,8 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject;
 
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 import java.time.LocalDate;
 
-import lombok.Builder;
-
-@Builder
 public record PersonalProfile(
     String firstName,
     String lastName,
@@ -16,132 +14,56 @@ public record PersonalProfile(
     String nationality) {
 
   public PersonalProfile {
-    firstName = blankToEmpty(firstName);
-    lastName = blankToEmpty(lastName);
-    email = blankToEmpty(email);
-    phone = blankToEmpty(phone);
-    address = blankToEmpty(address);
-    nationality = nationality != null && !nationality.isBlank() ? nationality.trim() : "Mexicana";
+    firstName = Strings.nullToEmpty(firstName);
+    lastName = Strings.nullToEmpty(lastName);
+    email = Strings.nullToEmpty(email);
+    phone = Strings.nullToEmpty(phone);
+    address = Strings.nullToEmpty(address);
+    String cleanedNationality = Strings.nullToEmpty(nationality);
+    nationality = cleanedNationality.isEmpty() ? "Mexicana" : cleanedNationality;
   }
 
   public static PersonalProfile empty() {
-    return PersonalProfile.builder()
-        .firstName("")
-        .lastName("")
-        .photoUrl("")
-        .email("")
-        .phone("")
-        .address("")
-        .birthDate(null)
-        .nationality("Mexicana")
-        .build();
+    return new PersonalProfile("", "", "", "", "", "", null, "Mexicana");
   }
 
   public PersonalProfile setFirstName(String firstName) {
-    return PersonalProfile.builder()
-        .firstName(firstName)
-        .lastName(this.lastName)
-        .photoUrl(this.photoUrl)
-        .email(this.email)
-        .phone(this.phone)
-        .address(this.address)
-        .birthDate(this.birthDate)
-        .nationality(this.nationality)
-        .build();
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 
   public PersonalProfile setLastName(String lastName) {
-    return PersonalProfile.builder()
-        .firstName(this.firstName)
-        .lastName(lastName)
-        .photoUrl(this.photoUrl)
-        .email(this.email)
-        .phone(this.phone)
-        .address(this.address)
-        .birthDate(this.birthDate)
-        .nationality(this.nationality)
-        .build();
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 
   public PersonalProfile setEmail(String email) {
-    return PersonalProfile.builder()
-        .firstName(this.firstName)
-        .lastName(this.lastName)
-        .photoUrl(this.photoUrl)
-        .email(email)
-        .phone(this.phone)
-        .address(this.address)
-        .birthDate(this.birthDate)
-        .nationality(this.nationality)
-        .build();
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 
   public PersonalProfile setPhone(String phone) {
-    return PersonalProfile.builder()
-        .firstName(this.firstName)
-        .lastName(this.lastName)
-        .photoUrl(this.photoUrl)
-        .email(this.email)
-        .phone(phone)
-        .address(this.address)
-        .birthDate(this.birthDate)
-        .nationality(this.nationality)
-        .build();
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 
   public PersonalProfile setAddress(String address) {
-    return PersonalProfile.builder()
-        .firstName(this.firstName)
-        .lastName(this.lastName)
-        .photoUrl(this.photoUrl)
-        .email(this.email)
-        .phone(this.phone)
-        .address(blankToEmpty(address))
-        .birthDate(this.birthDate)
-        .nationality(this.nationality)
-        .build();
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 
   public PersonalProfile setBirthDate(LocalDate birthDate) {
-    return PersonalProfile.builder()
-        .firstName(this.firstName)
-        .lastName(this.lastName)
-        .photoUrl(this.photoUrl)
-        .email(this.email)
-        .phone(this.phone)
-        .address(this.address)
-        .birthDate(birthDate)
-        .nationality(this.nationality)
-        .build();
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 
   public PersonalProfile setNationality(String nationality) {
-    return PersonalProfile.builder()
-        .firstName(this.firstName)
-        .lastName(this.lastName)
-        .photoUrl(this.photoUrl)
-        .email(this.email)
-        .phone(this.phone)
-        .address(this.address)
-        .birthDate(this.birthDate)
-        .nationality(nationality)
-        .build();
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 
   public PersonalProfile setPhotoUrl(String photoUrl) {
-    return PersonalProfile.builder()
-        .firstName(this.firstName)
-        .lastName(this.lastName)
-        .photoUrl(photoUrl)
-        .email(this.email)
-        .phone(this.phone)
-        .address(this.address)
-        .birthDate(this.birthDate)
-        .nationality(this.nationality)
-        .build();
-  }
-
-  private static String blankToEmpty(String s) {
-    return s != null ? s.trim() : "";
+    return new PersonalProfile(
+        firstName, lastName, photoUrl, email, phone, address, birthDate, nationality);
   }
 }

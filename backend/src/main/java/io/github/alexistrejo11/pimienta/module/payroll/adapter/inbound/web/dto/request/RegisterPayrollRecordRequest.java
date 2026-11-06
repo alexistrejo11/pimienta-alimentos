@@ -5,10 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import lombok.Builder;
 
 @Schema(name = "RegisterPayrollRecordRequest", description = "Payload to create payroll record for an employee.")
-@Builder
 public record RegisterPayrollRecordRequest(
     @NotNull @Schema(description = "Employee id.", example = "101")
     Long employeeId,

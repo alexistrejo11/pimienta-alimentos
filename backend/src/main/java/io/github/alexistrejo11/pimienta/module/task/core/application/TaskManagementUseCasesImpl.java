@@ -75,20 +75,17 @@ public class TaskManagementUseCasesImpl implements TaskManagementUseCases {
         command.createdById(),
         checklistCount);
 
-    Task.Priority p = command.priority() != null ? command.priority() : Task.Priority.MEDIUM;
-    Task.Status s = command.initialStatus() != null ? command.initialStatus() : Task.Status.PENDING;
-
     Task created =
         Task.builder()
             .withTitle(command.title())
             .withDescription(command.description() != null ? command.description() : "")
-            .withPriority(p)
+            .withPriority(command.priority())
             .withDueDate(command.dueDate())
             .withHeadquarterId(command.headquarterId())
             .withProjectId(command.projectId())
             .withOpportunityId(command.opportunityId())
             .withCreatedById(command.createdById())
-            .withStatus(s)
+            .withStatus(command.initialStatus())
             .withChecklistDrafts(command.checklistLines())
             .register();
 

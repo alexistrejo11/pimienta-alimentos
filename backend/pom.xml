@@ -47,18 +47,10 @@
 	<properties>
 		<java.version>25</java.version>
 		<poi.version>5.4.1</poi.version>
-		<!-- JDK 25 needs Lombok >= 1.18.40; also register Lombok as compiler APT explicitly -->
-		<lombok.version>1.18.42</lombok.version>
 	</properties>
 
 	<!-- Dependencies -->
 	<dependencies>
-		<!-- Spring Boot Data Redis Reactive -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis-reactive</artifactId>
-		</dependency>
-
 		<!-- Spring Boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -167,13 +159,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Lombok: version from spring-boot-dependencies (1.18.x, JDK 25–compatible with Boot 4.0.5) -->
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<scope>provided</scope>
-		</dependency>
-
 		<!-- Apache POI (.xlsx) -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -193,13 +178,6 @@
 			<groupId>io.github.cdimascio</groupId>
 			<artifactId>dotenv-java</artifactId>
 			<version>3.2.0</version>
-		</dependency>
-
-		<!-- Spring Boot Data Redis Reactive Test -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis-reactive-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 
 		<!-- Spring Boot Web MVC Test -->
@@ -238,19 +216,6 @@
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<annotationProcessorPaths>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-							<version>${lombok.version}</version>
-						</path>
-					</annotationProcessorPaths>
-				</configuration>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>

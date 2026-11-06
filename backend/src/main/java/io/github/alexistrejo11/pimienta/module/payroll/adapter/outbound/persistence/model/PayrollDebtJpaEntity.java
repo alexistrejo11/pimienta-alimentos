@@ -10,9 +10,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
@@ -22,9 +19,6 @@ import lombok.NoArgsConstructor;
       @Index(name = "idx_payroll_debts_settled", columnList = "settled"),
       @Index(name = "idx_payroll_debts_deleted_at", columnList = "deleted_at")
     })
-@Builder(toBuilder = true)
-@NoArgsConstructor
-@AllArgsConstructor
 public class PayrollDebtJpaEntity extends BaseJpaEntity {
 
   @Id

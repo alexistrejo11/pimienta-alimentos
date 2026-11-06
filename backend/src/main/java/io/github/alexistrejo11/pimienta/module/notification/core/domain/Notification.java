@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 /**
  * Outbound notification payload. Persistence is optional; use cases build instances and hand them
@@ -144,17 +145,17 @@ public final class Notification {
     }
 
     public SafeBuilder recipientEmail(String recipientEmail) {
-      n.recipientEmail = blankToNull(recipientEmail);
+      n.recipientEmail = Strings.blankToNull(recipientEmail);
       return this;
     }
 
     public SafeBuilder recipientPhone(String recipientPhone) {
-      n.recipientPhone = blankToNull(recipientPhone);
+      n.recipientPhone = Strings.blankToNull(recipientPhone);
       return this;
     }
 
     public SafeBuilder recipientDisplayName(String recipientDisplayName) {
-      n.recipientDisplayName = blankToNull(recipientDisplayName);
+      n.recipientDisplayName = Strings.blankToNull(recipientDisplayName);
       return this;
     }
 
@@ -164,17 +165,17 @@ public final class Notification {
     }
 
     public SafeBuilder subject(String subject) {
-      n.subject = blankToNull(subject);
+      n.subject = Strings.blankToNull(subject);
       return this;
     }
 
     public SafeBuilder body(String body) {
-      n.body = blankToNull(body);
+      n.body = Strings.blankToNull(body);
       return this;
     }
 
     public SafeBuilder templateId(String templateId) {
-      n.templateId = blankToNull(templateId);
+      n.templateId = Strings.blankToNull(templateId);
       return this;
     }
 
@@ -188,7 +189,7 @@ public final class Notification {
     }
 
     public SafeBuilder correlationId(String correlationId) {
-      n.correlationId = blankToNull(correlationId);
+      n.correlationId = Strings.blankToNull(correlationId);
       return this;
     }
 
@@ -198,7 +199,7 @@ public final class Notification {
     }
 
     public SafeBuilder locale(String locale) {
-      n.locale = blankToNull(locale);
+      n.locale = Strings.blankToNull(locale);
       return this;
     }
 
@@ -208,7 +209,7 @@ public final class Notification {
     }
 
     public SafeBuilder lastError(String lastError) {
-      n.lastError = blankToNull(lastError);
+      n.lastError = Strings.blankToNull(lastError);
       return this;
     }
 
@@ -248,12 +249,6 @@ public final class Notification {
     }
   }
 
-  private static String blankToNull(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.trim();
-  }
 
   @Override
   public boolean equals(Object o) {

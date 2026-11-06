@@ -10,6 +10,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Component
 public class EmployeeSpreadsheetGeneratorImpl implements EmployeeSpreadsheetGenerator {
@@ -33,26 +34,26 @@ public class EmployeeSpreadsheetGeneratorImpl implements EmployeeSpreadsheetGene
         } else {
           dataRow.createCell(c++).setCellValue("");
         }
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.firstName()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.lastName()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.email()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.phone()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.address()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.curp()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.rfc()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.nss()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.clabe()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.position()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.department()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.firstName()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.lastName()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.email()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.phone()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.address()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.curp()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.rfc()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.nss()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.clabe()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.position()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.department()));
         dataRow
             .createCell(c++)
             .setCellValue(row.status() != null ? row.status().name() : "");
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.contractType()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.workShift()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.salaryPerWeek()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.bonuses()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.foodVouchers()));
-        dataRow.createCell(c).setCellValue(nullToEmpty(row.integrationFactor()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.contractType()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.workShift()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.salaryPerWeek()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.bonuses()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.foodVouchers()));
+        dataRow.createCell(c).setCellValue(Strings.nullToEmpty(row.integrationFactor()));
       }
       sheet.setColumnHidden(0, true);
       workbook.write(out);
@@ -60,7 +61,4 @@ public class EmployeeSpreadsheetGeneratorImpl implements EmployeeSpreadsheetGene
     }
   }
 
-  private static String nullToEmpty(String s) {
-    return s != null ? s : "";
-  }
 }

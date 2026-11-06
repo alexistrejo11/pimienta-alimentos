@@ -5,9 +5,7 @@ import io.github.alexistrejo11.pimienta.module.payroll.core.domain.enums.Payroll
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import lombok.Builder;
 
-@Builder
 public record PayrollPaymentResponse(
     Long id,
     Long employeeId,

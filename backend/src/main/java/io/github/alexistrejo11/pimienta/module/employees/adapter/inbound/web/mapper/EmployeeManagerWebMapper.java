@@ -15,6 +15,7 @@ import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.request.UpdateEmployeeRequest;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public final class EmployeeManagerWebMapper {
 
@@ -23,67 +24,60 @@ public final class EmployeeManagerWebMapper {
   public static EmployeeListItemResponse toListItem(
       Employee employee, EmployeePhotoUrlPresenter photoPresenter) {
     String rawPhoto = employee.getPersonal().photoUrl();
-    return EmployeeListItemResponse.builder()
-        .id(employee.getId())
-        .fullName(employee.getPersonal().firstName() + " " + employee.getPersonal().lastName())
-        .photoUrl(
-            photoPresenter.presentProfile(
-                rawPhoto, employee.getPersonal().firstName(), employee.getPersonal().lastName()))
-        .email(employee.getPersonal().email())
-        .department(employee.getEmployment().department())
-        .position(employee.getEmployment().position())
-        .status(employee.getStatus())
-        .hireDate(employee.getEmployment().hireDate())
-        .build();
+    return new EmployeeListItemResponse(
+        employee.getId(),
+        employee.getPersonal().firstName() + " " + employee.getPersonal().lastName(),
+        photoPresenter.presentProfile(
+            rawPhoto, employee.getPersonal().firstName(), employee.getPersonal().lastName()),
+        employee.getPersonal().email(),
+        employee.getEmployment().department(),
+        employee.getEmployment().position(),
+        employee.getStatus(),
+        employee.getEmployment().hireDate());
   }
 
   public static EmployeeResponse toResponse(
       Employee employee, EmployeePhotoUrlPresenter photoPresenter) {
     String rawPhoto = employee.getPersonal().photoUrl();
-    return EmployeeResponse.builder()
-        .id(employee.getId())
-        .firstName(employee.getPersonal().firstName())
-        .lastName(employee.getPersonal().lastName())
-        .photoUrl(
-            photoPresenter.presentProfile(
-                rawPhoto, employee.getPersonal().firstName(), employee.getPersonal().lastName()))
-        .email(employee.getPersonal().email())
-        .phone(employee.getPersonal().phone())
-        .address(employee.getPersonal().address())
-        .birthDate(employee.getPersonal().birthDate())
-        .nationality(employee.getPersonal().nationality())
-        .curp(employee.getOfficialIds().curp())
-        .rfc(employee.getOfficialIds().rfc())
-        .nss(employee.getOfficialIds().nss())
-        .clabe(employee.getOfficialIds().clabe())
-        .employeeNumber(employee.getOfficialIds().employeeNumber())
-        .position(employee.getEmployment().position())
-        .department(employee.getEmployment().department())
-        .contractType(employee.getEmployment().contractType())
-        .workShift(employee.getEmployment().workShift())
-        .hireDate(employee.getEmployment().hireDate())
-        .terminationDate(employee.getEmployment().terminationDate())
-        .status(employee.getStatus())
-        .salaryPerWeek(employee.getCompensation().salaryPerWeek())
-        .bonuses(employee.getCompensation().bonuses())
-        .foodVouchers(employee.getCompensation().foodVouchers())
-        .integrationFactor(employee.getBenefits().integrationFactor())
-        .imssWorkerType(employee.getBenefits().imssWorkerType())
-        .imssSalaryType(employee.getBenefits().imssSalaryType())
-        .christmasBonusDays(employee.getBenefits().christmasBonusDays())
-        .vacationDays(employee.getBenefits().vacationDays())
-        .vacationPremiumPercent(employee.getBenefits().vacationPremiumPercent())
-        .createdAt(employee.getCreatedAt())
-        .updatedAt(employee.getUpdatedAt())
-        .build();
+    return new EmployeeResponse(
+        employee.getId(),
+        employee.getPersonal().firstName(),
+        employee.getPersonal().lastName(),
+        photoPresenter.presentProfile(
+            rawPhoto, employee.getPersonal().firstName(), employee.getPersonal().lastName()),
+        employee.getPersonal().email(),
+        employee.getPersonal().phone(),
+        employee.getPersonal().address(),
+        employee.getPersonal().birthDate(),
+        employee.getPersonal().nationality(),
+        employee.getOfficialIds().curp(),
+        employee.getOfficialIds().rfc(),
+        employee.getOfficialIds().nss(),
+        employee.getOfficialIds().clabe(),
+        employee.getOfficialIds().employeeNumber(),
+        employee.getEmployment().position(),
+        employee.getEmployment().department(),
+        employee.getEmployment().contractType(),
+        employee.getEmployment().workShift(),
+        employee.getEmployment().hireDate(),
+        employee.getEmployment().terminationDate(),
+        employee.getStatus(),
+        employee.getCompensation().salaryPerWeek(),
+        employee.getCompensation().bonuses(),
+        employee.getCompensation().foodVouchers(),
+        employee.getBenefits().integrationFactor(),
+        employee.getBenefits().imssWorkerType(),
+        employee.getBenefits().imssSalaryType(),
+        employee.getBenefits().christmasBonusDays(),
+        employee.getBenefits().vacationDays(),
+        employee.getBenefits().vacationPremiumPercent(),
+        employee.getCreatedAt(),
+        employee.getUpdatedAt());
   }
 
   public static EmployeeStatisticsResponse toStatisticsResponse(EmployeeStatistics statistics) {
-    return EmployeeStatisticsResponse.builder()
-        .total(statistics.total())
-        .active(statistics.active())
-        .notActive(statistics.notActive())
-        .build();
+    return new EmployeeStatisticsResponse(
+        statistics.total(), statistics.active(), statistics.notActive());
   }
 
   public static EmployeeSummaryResponse toSummaryResponse(EmployeeSummary summary) {
@@ -91,73 +85,58 @@ public final class EmployeeManagerWebMapper {
         summary.headcountByDepartment().stream()
             .map(
                 row ->
-                    DepartmentHeadcountResponse.builder()
-                        .department(row.department())
-                        .headcount(row.headcount())
-                        .build())
+                    new DepartmentHeadcountResponse(row.department(), row.headcount()))
             .toList();
-    return EmployeeSummaryResponse.builder()
-        .totalNotDeleted(summary.totalNotDeleted())
-        .headcountByDepartment(rows)
-        .build();
+    return new EmployeeSummaryResponse(summary.totalNotDeleted(), rows);
   }
 
   public static RegisterEmployeeParams toRegisterParams(
       RegisterEmployeeRequest request, MultipartFile photo) {
-    String email = blankToNull(request.email());
-    return RegisterEmployeeParams.builder()
-        .firstName(request.firstName().trim())
-        .lastName(request.lastName().trim())
-        .email(email != null ? email.toLowerCase() : null)
-        .phone(blankToNull(request.phone()))
-        .address(blankToNull(request.address()))
-        .curp(blankToNull(request.curp()))
-        .rfc(blankToNull(request.rfc()))
-        .nss(blankToNull(request.nss()))
-        .clabe(blankToNull(request.clabe()))
-        .employeeNumber(blankToNull(request.employeeNumber()))
-        .position(blankToNull(request.position()))
-        .department(blankToNull(request.department()))
-        .contractType(request.contractType())
-        .workShift(request.workShift())
-        .salaryPerWeek(request.salaryPerWeek())
-        .birthDate(request.birthDate())
-        .onboardingPhase(request.onboardingPhase())
-        .photo(photo)
-        .build();
+    String email = Strings.blankToNull(request.email());
+    return new RegisterEmployeeParams(
+        request.firstName().trim(),
+        request.lastName().trim(),
+        email != null ? email.toLowerCase() : null,
+        Strings.blankToNull(request.phone()),
+        Strings.blankToNull(request.address()),
+        Strings.blankToNull(request.curp()),
+        Strings.blankToNull(request.rfc()),
+        Strings.blankToNull(request.nss()),
+        Strings.blankToNull(request.clabe()),
+        Strings.blankToNull(request.employeeNumber()),
+        Strings.blankToNull(request.position()),
+        Strings.blankToNull(request.department()),
+        request.contractType(),
+        request.workShift(),
+        request.salaryPerWeek(),
+        request.birthDate(),
+        request.onboardingPhase(),
+        photo);
   }
 
   public static UpdateEmployeeParams toUpdateParams(
       Long id, UpdateEmployeeRequest request, MultipartFile photo) {
-    String email = blankToNull(request.email());
-    return UpdateEmployeeParams.builder()
-        .id(id)
-        .firstName(request.firstName().trim())
-        .lastName(request.lastName().trim())
-        .photo(photo)
-        .email(email != null ? email.toLowerCase() : null)
-        .phone(blankToNull(request.phone()))
-        .address(blankToNull(request.address()))
-        .curp(blankToNull(request.curp()))
-        .rfc(blankToNull(request.rfc()))
-        .nss(blankToNull(request.nss()))
-        .clabe(blankToNull(request.clabe()))
-        .position(blankToNull(request.position()))
-        .department(blankToNull(request.department()))
-        .contractType(request.contractType())
-        .workShift(request.workShift())
-        .salaryPerWeek(request.salaryPerWeek())
-        .bonuses(request.bonuses())
-        .foodVouchers(request.foodVouchers())
-        .integrationFactor(request.integrationFactor())
-        .build();
+    String email = Strings.blankToNull(request.email());
+    return new UpdateEmployeeParams(
+        id,
+        request.firstName().trim(),
+        request.lastName().trim(),
+        photo,
+        email != null ? email.toLowerCase() : null,
+        Strings.blankToNull(request.phone()),
+        Strings.blankToNull(request.address()),
+        Strings.blankToNull(request.curp()),
+        Strings.blankToNull(request.rfc()),
+        Strings.blankToNull(request.nss()),
+        Strings.blankToNull(request.clabe()),
+        Strings.blankToNull(request.position()),
+        Strings.blankToNull(request.department()),
+        request.contractType(),
+        request.workShift(),
+        request.salaryPerWeek(),
+        request.bonuses(),
+        request.foodVouchers(),
+        request.integrationFactor());
   }
 
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.trim();
-    return t.isEmpty() ? null : t;
-  }
 }

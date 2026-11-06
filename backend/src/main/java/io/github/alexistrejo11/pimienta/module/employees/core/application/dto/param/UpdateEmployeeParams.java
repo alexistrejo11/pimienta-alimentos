@@ -4,7 +4,6 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.Contr
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.WorkShift;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Employee;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.BenefitsProfile;
-import lombok.Builder;
 
 import java.math.BigDecimal;
 
@@ -14,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
  * Partial update: each component is applied only when non-null; null keeps the
  * employee's current value.
  */
-@Builder
 public record UpdateEmployeeParams(
     Long id,
     String firstName,

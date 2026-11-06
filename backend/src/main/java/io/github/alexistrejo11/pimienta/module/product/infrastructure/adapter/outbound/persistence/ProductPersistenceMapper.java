@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.product.infrastructure.adapter.o
 
 import io.github.alexistrejo11.pimienta.module.product.core.domain.Product;
 import io.github.alexistrejo11.pimienta.module.product.infrastructure.adapter.outbound.persistence.entity.ProductJpaEntity;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public final class ProductPersistenceMapper {
 
@@ -12,11 +13,11 @@ public final class ProductPersistenceMapper {
     if (domain.getId() != null && domain.getId() > 0) {
       entity.setId(domain.getId());
     }
-    entity.setSku(blankToNull(domain.getSku()));
+    entity.setSku(Strings.blankToNull(domain.getSku()));
     entity.setName(domain.getName());
-    entity.setDescription(blankToNull(domain.getDescription()));
+    entity.setDescription(Strings.blankToNull(domain.getDescription()));
     entity.setUnit(domain.getUnit());
-    entity.setBarcode(blankToNull(domain.getBarcode()));
+    entity.setBarcode(Strings.blankToNull(domain.getBarcode()));
     entity.setStatus(domain.getStatus());
     entity.setInventoryItemId(domain.getInventoryItemId());
     entity.setCreatedAt(domain.getCreatedAt());
@@ -43,10 +44,4 @@ public final class ProductPersistenceMapper {
         .reconstruct();
   }
 
-  private static String blankToNull(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.strip();
-  }
 }

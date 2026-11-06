@@ -2,10 +2,8 @@ package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dt
 
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
 import java.time.LocalDate;
-import lombok.Builder;
 
 /** Paginated listing projection (lighter than {@link EmployeeResponse}). */
-@Builder
 public record EmployeeListItemResponse(
         Long id,
         String fullName,

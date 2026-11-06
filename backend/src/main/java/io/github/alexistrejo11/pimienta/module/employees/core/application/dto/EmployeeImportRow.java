@@ -2,10 +2,7 @@ package io.github.alexistrejo11.pimienta.module.employees.core.application.dto;
 
 import java.math.BigDecimal;
 
-import lombok.Builder;
-
 /** Fila importada; enums como texto crudo en {@code *Raw}. */
-@Builder
 public record EmployeeImportRow(
                 int excelRowNumber,
                 Long id,

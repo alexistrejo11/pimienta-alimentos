@@ -6,6 +6,11 @@ import org.springframework.http.HttpStatus;
 public class ForbiddenException extends PimientaException {
 
   public ForbiddenException(String clientMessage, Map<String, Object> context, String logDetails) {
-    super(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, clientMessage, context, logDetails, null);
+    this(ErrorCode.FORBIDDEN, clientMessage, context, logDetails);
+  }
+
+  public ForbiddenException(
+      ErrorCode errorCode, String clientMessage, Map<String, Object> context, String logDetails) {
+    super(errorCode, HttpStatus.FORBIDDEN, clientMessage, context, logDetails, null);
   }
 }

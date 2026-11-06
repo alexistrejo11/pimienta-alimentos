@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.task.infrastructure.adapter.out.
 import io.github.alexistrejo11.pimienta.module.task.core.domain.Task;
 import java.util.ArrayList;
 import java.util.List;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 final class TaskPersistenceMapper {
 
@@ -13,8 +14,8 @@ final class TaskPersistenceMapper {
     if (domain.getId() != null && domain.getId() > 0) {
       e.setId(domain.getId());
     }
-    e.setTitle(blankToNull(domain.getTitle()));
-    e.setDescription(blankToNull(domain.getDescription()));
+    e.setTitle(Strings.blankToNull(domain.getTitle()));
+    e.setDescription(Strings.blankToNull(domain.getDescription()));
     e.setStatus(domain.getStatusOrNull());
     e.setPriority(domain.getPriorityOrNull());
     e.setAssignedToId(domain.getAssignedToId());
@@ -82,12 +83,6 @@ final class TaskPersistenceMapper {
     return s != null ? s : "";
   }
 
-  private static String blankToNull(String s) {
-    if (s == null || s.isBlank()) {
-      return null;
-    }
-    return s.strip();
-  }
 
   private static java.time.LocalDateTime now() {
     return java.time.LocalDateTime.now();

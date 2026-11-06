@@ -10,13 +10,14 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Repository
 public class InventoryGlobalSummaryRepositoryImpl implements InventoryGlobalSummaryRepository {
   private final InventoryJpaRepository repository;
   public InventoryGlobalSummaryRepositoryImpl(InventoryJpaRepository repository) { this.repository = repository; }
   public Page<InventoryGlobalSummary> search(String search, ItemCategory category, InventoryStatus status, java.math.BigDecimal minCost, java.math.BigDecimal maxCost, List<Long> hqs, Pageable pageable) {
-    return repository.searchGlobalSummary(blankToNull(search), category == null ? null : category.name(), status == null ? null : status.name(), minCost, maxCost, hqs == null, hqBinding(hqs), pageable).map(row -> new InventoryGlobalSummary(row.getItemId(), row.getSku(), row.getName(), ItemCategory.valueOf(row.getCategory()), row.getHeadquarterId(), row.getHeadquarterName(), row.getAvailableQuantity(), row.getTotalQuantity(), row.getUnitCost(), row.getTotalValue(), InventoryStatus.valueOf(row.getStatus())));
+    return repository.searchGlobalSummary(Strings.blankToNull(search), category == null ? null : category.name(), status == null ? null : status.name(), minCost, maxCost, hqs == null, hqBinding(hqs), pageable).map(row -> new InventoryGlobalSummary(row.getItemId(), row.getSku(), row.getName(), ItemCategory.valueOf(row.getCategory()), row.getHeadquarterId(), row.getHeadquarterName(), row.getAvailableQuantity(), row.getTotalQuantity(), row.getUnitCost(), row.getTotalValue(), InventoryStatus.valueOf(row.getStatus())));
   }
 
   @Override
@@ -48,5 +49,4 @@ public class InventoryGlobalSummaryRepositoryImpl implements InventoryGlobalSumm
     return value == null ? 0 : value;
   }
 
-  private static String blankToNull(String value) { return value == null || value.isBlank() ? null : value.strip(); }
 }

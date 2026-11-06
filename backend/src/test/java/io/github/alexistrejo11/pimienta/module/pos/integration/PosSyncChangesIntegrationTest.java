@@ -15,8 +15,8 @@ import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.HeadquarterItem;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
-import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosChangeLogJpaEntity;
-import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosChangeLogSpringDataRepository;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outbound.persistence.entity.PosChangeLogJpaEntity;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outbound.persistence.repository.PosChangeLogSpringDataRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;

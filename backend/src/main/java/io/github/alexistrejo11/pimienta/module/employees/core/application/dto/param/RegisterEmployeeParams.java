@@ -10,7 +10,6 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.Employment;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.OfficialIdentifiers;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.PersonalProfile;
-import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
  * Application parameters for employee self-registration / onboarding draft.
  * Assembles the aggregate via.
  */
-@Builder
 public record RegisterEmployeeParams(
                 String firstName,
                 String lastName,
@@ -50,24 +48,24 @@ public record RegisterEmployeeParams(
                                 : EmployeeStatus.DRAFT;
 
                 String safeEmail = email != null ? email.strip() : null;
-                PersonalProfile personal = PersonalProfile.builder()
-                                .firstName(firstName)
-                                .lastName(lastName)
-                                .photoUrl(photoUrl)
-                                .email(safeEmail != null ? safeEmail : "")
-                                .phone(phone != null ? phone : "")
-                                .address(address != null ? address : "")
-                                .birthDate(birthDate)
-                                .nationality("Mexicana")
-                                .build();
+                PersonalProfile personal =
+                    new PersonalProfile(
+                        firstName,
+                        lastName,
+                        photoUrl,
+                        safeEmail != null ? safeEmail : "",
+                        phone != null ? phone : "",
+                        address != null ? address : "",
+                        birthDate,
+                        "Mexicana");
 
-                OfficialIdentifiers officialIds = OfficialIdentifiers.builder()
-                                .curp(curp != null ? curp : "")
-                                .rfc(rfc != null ? rfc : "")
-                                .nss(nss != null ? nss : "")
-                                .clabe(clabe != null ? clabe : "")
-                                .employeeNumber(employeeNumber != null ? employeeNumber : "")
-                                .build();
+                OfficialIdentifiers officialIds =
+                    new OfficialIdentifiers(
+                        curp != null ? curp : "",
+                        rfc != null ? rfc : "",
+                        nss != null ? nss : "",
+                        clabe != null ? clabe : "",
+                        employeeNumber != null ? employeeNumber : "");
 
                 Employment employment = new Employment(
                                 position != null ? position : "",

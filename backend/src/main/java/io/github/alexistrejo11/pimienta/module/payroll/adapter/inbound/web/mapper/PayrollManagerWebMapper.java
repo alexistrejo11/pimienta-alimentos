@@ -25,16 +25,15 @@ public final class PayrollManagerWebMapper {
   private PayrollManagerWebMapper() {}
 
   public static RegisterPayrollPaymentCommand toCommand(RegisterPayrollPaymentRequest request) {
-    return RegisterPayrollPaymentCommand.builder()
-        .employeeId(request.employeeId())
-        .frequency(request.frequency())
-        .workedDaysStart(request.workedDaysStart())
-        .workedDaysEnd(request.workedDaysEnd())
-        .grossAmount(request.grossAmount())
-        .netAmount(request.netAmount())
-        .destinationAccount(request.destinationAccount())
-        .transactionId(request.transactionId())
-        .build();
+    return new RegisterPayrollPaymentCommand(
+        request.employeeId(),
+        request.frequency(),
+        request.workedDaysStart(),
+        request.workedDaysEnd(),
+        request.grossAmount(),
+        request.netAmount(),
+        request.destinationAccount(),
+        request.transactionId());
   }
 
   public static RegisterPayrollAdjustmentCommand toCommand(
@@ -47,80 +46,74 @@ public final class PayrollManagerWebMapper {
   }
 
   public static RegisterPayrollRecordCommand toCommand(RegisterPayrollRecordRequest request) {
-    return RegisterPayrollRecordCommand.builder()
-        .employeeId(request.employeeId())
-        .periodId(request.periodId())
-        .workedDaysStart(request.workedDaysStart())
-        .workedDaysEnd(request.workedDaysEnd())
-        .grossAmount(request.grossAmount())
-        .build();
+    return new RegisterPayrollRecordCommand(
+        request.employeeId(),
+        request.periodId(),
+        request.workedDaysStart(),
+        request.workedDaysEnd(),
+        request.grossAmount());
   }
 
   public static PayrollPaymentResponse toPaymentResponse(PayrollPayment payment) {
-    return PayrollPaymentResponse.builder()
-        .id(payment.getId())
-        .employeeId(payment.getEmployeeId())
-        .frequency(payment.getFrequency())
-        .workedDaysStart(payment.getWorkedDaysStart())
-        .workedDaysEnd(payment.getWorkedDaysEnd())
-        .grossAmount(payment.getGrossAmount())
-        .netAmount(payment.getNetAmount())
-        .destinationAccount(payment.getDestinationAccount())
-        .transactionId(payment.getTransactionId())
-        .status(payment.getStatus())
-        .pendingAmount(payment.getPendingAmount())
-        .createdAt(payment.getCreatedAt() != null ? payment.getCreatedAt().toInstant(ZoneOffset.UTC) : null)
-        .build();
+    return new PayrollPaymentResponse(
+        payment.getId(),
+        payment.getEmployeeId(),
+        payment.getFrequency(),
+        payment.getWorkedDaysStart(),
+        payment.getWorkedDaysEnd(),
+        payment.getGrossAmount(),
+        payment.getNetAmount(),
+        payment.getDestinationAccount(),
+        payment.getTransactionId(),
+        payment.getStatus(),
+        payment.getPendingAmount(),
+        payment.getCreatedAt() != null ? payment.getCreatedAt().toInstant(ZoneOffset.UTC) : null);
   }
 
   public static PayrollSummaryResponse toSummaryResponse(PayrollSummary summary) {
-    return PayrollSummaryResponse.builder()
-        .from(summary.getFrom())
-        .to(summary.getTo())
-        .employeesPaid(summary.getEmployeesPaid())
-        .totalGross(summary.getTotalGross())
-        .totalNet(summary.getTotalNet())
-        .totalDiscounts(summary.getTotalDiscounts())
-        .totalBonuses(summary.getTotalBonuses())
-        .totalDebt(summary.getTotalDebt())
-        .build();
+    return new PayrollSummaryResponse(
+        summary.getFrom(),
+        summary.getTo(),
+        summary.getEmployeesPaid(),
+        summary.getTotalGross(),
+        summary.getTotalNet(),
+        summary.getTotalDiscounts(),
+        summary.getTotalBonuses(),
+        summary.getTotalDebt());
   }
 
   public static PayrollDebtResponse toDebtResponse(PayrollDebt debt) {
-    return PayrollDebtResponse.builder()
-        .id(debt.getId())
-        .employeeId(debt.getEmployeeId())
-        .payrollRecordId(debt.getPayrollRecordId())
-        .amountOwed(debt.getAmountOwed())
-        .reason(debt.getReason())
-        .settled(debt.isSettled())
-        .createdAt(debt.getCreatedAt() != null ? debt.getCreatedAt().toInstant(ZoneOffset.UTC) : null)
-        .settledAt(debt.getSettledAt() != null ? debt.getSettledAt().toInstant(ZoneOffset.UTC) : null)
-        .build();
+    return new PayrollDebtResponse(
+        debt.getId(),
+        debt.getEmployeeId(),
+        debt.getPayrollRecordId(),
+        debt.getAmountOwed(),
+        debt.getReason(),
+        debt.isSettled(),
+        debt.getCreatedAt() != null ? debt.getCreatedAt().toInstant(ZoneOffset.UTC) : null,
+        debt.getSettledAt() != null ? debt.getSettledAt().toInstant(ZoneOffset.UTC) : null);
   }
 
   public static PayrollPeriodResponse toPeriodResponse(PayrollPeriod period) {
-    return PayrollPeriodResponse.builder()
-        .id(period.getId())
-        .frequency(period.getFrequency())
-        .startDate(period.getStartDate())
-        .endDate(period.getEndDate())
-        .status(period.getStatus())
-        .build();
+    return new PayrollPeriodResponse(
+        period.getId(),
+        period.getFrequency(),
+        period.getStartDate(),
+        period.getEndDate(),
+        period.getStatus());
   }
 
   public static PayrollRecordResponse toRecordResponse(PayrollRecord record) {
-    return PayrollRecordResponse.builder()
-        .id(record.getId())
-        .employeeId(record.getEmployeeId())
-        .periodId(record.getPeriodId())
-        .workedDaysStart(record.getWorkedDaysStart())
-        .workedDaysEnd(record.getWorkedDaysEnd())
-        .grossAmount(record.getGrossAmount())
-        .totalDiscounts(record.getTotalDiscounts())
-        .totalBonuses(record.getTotalBonuses())
-        .netAmount(record.getNetAmount())
-        .status(record.getStatus())
-        .build();
+    return new PayrollRecordResponse(
+        record.getId(),
+        record.getEmployeeId(),
+        record.getPeriodId(),
+        record.getWorkedDaysStart(),
+        record.getWorkedDaysEnd(),
+        record.getGrossAmount(),
+        record.getTotalDiscounts(),
+        record.getTotalBonuses(),
+        record.getNetAmount(),
+        record.getStatus());
   }
 }

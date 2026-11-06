@@ -16,9 +16,9 @@ import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Ac
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.enums.Role;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaEntity;
 import io.github.alexistrejo11.pimienta.module.account.user.infrastructure.adapter.out.persistence.UserJpaRepository;
-import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.entity.PosEnrollmentCodeJpaEntity;
-import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosDeviceSpringDataRepository;
-import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosEnrollmentCodeSpringDataRepository;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outbound.persistence.entity.PosEnrollmentCodeJpaEntity;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outbound.persistence.repository.PosDeviceSpringDataRepository;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outbound.persistence.repository.PosEnrollmentCodeSpringDataRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;

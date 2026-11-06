@@ -1,19 +1,12 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.domain.exception;
 
 import io.github.alexistrejo11.pimienta.shared.exception.ErrorCode;
-import io.github.alexistrejo11.pimienta.shared.exception.PimientaException;
+import io.github.alexistrejo11.pimienta.shared.exception.UnauthorizedException;
 import java.util.Map;
-import org.springframework.http.HttpStatus;
 
-public class InvalidDeviceRefreshTokenException extends PimientaException {
+public class InvalidDeviceRefreshTokenException extends UnauthorizedException {
 
   public InvalidDeviceRefreshTokenException(String message) {
-    super(
-        ErrorCode.INVALID_DEVICE_REFRESH_TOKEN,
-        HttpStatus.UNAUTHORIZED,
-        message,
-        Map.of(),
-        message,
-        null);
+    super(ErrorCode.INVALID_DEVICE_REFRESH_TOKEN, message, Map.of(), message);
   }
 }
