@@ -36,7 +36,7 @@ discovery.relabel "pimienta" {
 loki.source.docker "pimienta" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.pimienta.output
-  labels     = { job = "pimienta", environment = "local" }
+  labels     = { job = "pimienta", environment = coalesce(sys.env("DEPLOY_ENV"), "local") }
   forward_to = [loki.process.application.receiver]
 }
 
@@ -45,15 +45,17 @@ loki.source.docker "pimienta" {
 loki.process "application" {
   stage.json {
     expressions = {
-      level  = "level",
-      source = "source",
+      level   = "level",
+      source  = "source",
+      channel = "channel",
     }
   }
 
   stage.labels {
     values = {
-      level  = "level",
-      source = "source",
+      level   = "level",
+      source  = "source",
+      channel = "channel",
     }
   }
 

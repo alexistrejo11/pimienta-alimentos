@@ -69,6 +69,10 @@ class PosDatabaseInstrumentedTest {
   repeat(205){logger.record("debug","test-event","event-$it")}
   Assert.assertEquals(200,db.operationsDao().telemetryCount())
   Assert.assertEquals(50,db.operationsDao().pendingTelemetry(50).size)
+  Assert.assertTrue(db.operationsDao().pendingTelemetry(200).all { it.traceId == null })
+  val traced="550e8400-e29b-41d4-a716-446655440000"
+  logger.record("ERROR","traced","with-id", traceId = traced)
+  Assert.assertEquals(traced, db.operationsDao().pendingTelemetry(200).single { it.eventType == "traced" }.traceId)
   }
 
   // Verifies that authorization evidence survives Room persistence for one open line.

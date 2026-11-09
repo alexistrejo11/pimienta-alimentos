@@ -26,7 +26,7 @@
       "type": "logs",
       "targets": [
         {
-          "expr": "{service=\"backend\", source=\"web-client\"}",
+          "expr": "{service=\"backend\", channel=\"web-client\"}",
           "refId": "A"
         }
       ]

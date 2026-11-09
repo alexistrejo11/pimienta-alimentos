@@ -108,4 +108,28 @@ class ReleaseCheckerTest {
             val outcome = checker().check(server.url("/").toString(), force = true)
             assertTrue(outcome is ReleaseCheckOutcome.Failed)
         }
+
+    @Test
+    fun defaultApiSendsTraceId() =
+        runBlocking {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(
+                        """{"versionName":"2.2.9","versionCode":5,"url":"https://example.test/app.apk","expiresInSeconds":86400}""",
+                    )
+                    .addHeader("Content-Type", "application/json"),
+            )
+            val outcome =
+                ReleaseChecker(cache = cache, localVersionCode = 4, nowMillis = { now })
+                    .check(server.url("/").toString(), force = true)
+            assertTrue(outcome is ReleaseCheckOutcome.UpdateAvailable)
+            val traceId = server.takeRequest().getHeader("X-Trace-Id")
+            assertTrue(
+                traceId != null &&
+                    traceId.matches(
+                        Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
+                    ),
+            )
+        }
 }

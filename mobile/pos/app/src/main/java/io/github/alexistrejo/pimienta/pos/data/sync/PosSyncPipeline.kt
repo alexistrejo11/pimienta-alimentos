@@ -127,7 +127,7 @@ class PosSyncPipeline(private val context: Context) {
             )
             if (eventsError != null) PosSyncNowOutcome.RETRY else PosSyncNowOutcome.SUCCESS
         } catch (e: HttpException) {
-            recordDiagnostic("ERROR", "sync_http_failure", "POS sync HTTP ${e.code()}")
+            recordDiagnostic("ERROR", "sync_http_failure", "POS sync HTTP ${e.code()}", traceIdOf(e))
             if (e.code() != 401 && e.code() != 403) {
                 val retrying = (db.syncDao().state() ?: state).copy(status = "RETRYING")
                 uploadTelemetry(api, device.id, device.siteId, retrying)
@@ -158,7 +158,7 @@ class PosSyncPipeline(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            recordDiagnostic("ERROR", "sync_failure", "POS sync ${e.javaClass.simpleName}")
+            recordDiagnostic("ERROR", "sync_failure", "POS sync ${e.javaClass.simpleName}", traceIdOf(e))
             val retrying = (db.syncDao().state() ?: state).copy(status = "RETRYING")
             uploadTelemetry(api, device.id, device.siteId, retrying)
             val latestState = db.syncDao().state() ?: state
@@ -241,15 +241,15 @@ class PosSyncPipeline(private val context: Context) {
 
     private fun rejectAlone(event: OutboxEventEntity, e: HttpException) {
         db.syncDao().markRejected(event.id, "HTTP ${e.code()}: ${e.message()}")
-        recordDiagnostic("ERROR", "sync_event_rejected", "POS event ${event.type} seq=${event.sequence} id=${event.id} rejected with HTTP ${e.code()}")
+        recordDiagnostic("ERROR", "sync_event_rejected", "POS event ${event.type} seq=${event.sequence} id=${event.id} rejected with HTTP ${e.code()}", traceIdOf(e))
     }
 
     private fun retryRemaining(events: List<OutboxEventEntity>, message: String) {
         events.forEach { db.syncDao().markFailedRetryable(it.id, System.currentTimeMillis() + backoff(1), message) }
     }
 
-    private fun recordDiagnostic(level: String, type: String, message: String) {
-        runCatching { telemetryLogger.record(level, type, message) }
+    private fun recordDiagnostic(level: String, type: String, message: String, traceId: String? = null) {
+        runCatching { telemetryLogger.record(level, type, message, traceId = traceId) }
     }
 
     private suspend fun uploadTelemetry(api: DeviceApi, deviceId: String, siteId: String?, state: SyncStateEntity) {
@@ -259,7 +259,7 @@ class PosSyncPipeline(private val context: Context) {
             val oldest = db.operationsDao().oldestPendingEventAt()?.let { ((now - it).coerceAtLeast(0) / 1000) } ?: 0
             val batch = TelemetryBatchRequest(
                 events = rows.map {
-                    TelemetryLogDto(it.schemaVersion, it.eventType, it.level, it.message, it.stack, Instant.ofEpochMilli(it.occurredAtEpochMillis).toString())
+                    TelemetryLogDto(it.schemaVersion, it.eventType, it.level, it.message, it.stack, Instant.ofEpochMilli(it.occurredAtEpochMillis).toString(), it.traceId)
                 },
                 health = TelemetryHealthDto(state.status, db.operationsDao().pendingEventCount(), oldest, BuildConfig.VERSION_NAME),
             )

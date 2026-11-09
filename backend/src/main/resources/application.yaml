@@ -130,6 +130,7 @@ pimienta:
       - X-RateLimit-Limit-Endpoint
       - X-RateLimit-Remaining-Endpoint
       - Retry-After
+      - X-Trace-Id
     allow-credentials: true
     max-age-seconds: 3600
   security:
@@ -157,7 +158,6 @@ logging:
   structured:
     format:
       console: logstash
-      file: logstash
     json:
       add:
         service: backend

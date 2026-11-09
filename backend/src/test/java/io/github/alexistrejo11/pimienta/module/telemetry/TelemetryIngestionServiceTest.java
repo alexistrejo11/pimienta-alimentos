@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import io.github.alexistrejo11.pimienta.config.security.DeviceAuthenticationContext;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.MDC;
 
 class TelemetryIngestionServiceTest {
 
@@ -30,6 +31,20 @@ class TelemetryIngestionServiceTest {
         .tag("source", "web")
         .counter()
         .count());
+  }
+
+  @Test
+  void webTraceIdSwapsMdcOnlyForTheLogCall() {
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    TelemetryIngestionService service = new TelemetryIngestionService(registry, mock(PosHealthSnapshotRepository.class));
+    MDC.put("traceId", "ingestion-id");
+    try {
+      service.ingestWeb(new WebTelemetryEventRequest(
+          1, "unhandled_exception", "ERROR", "failure", null, "/app", "dev", "client-trace-id", null, null));
+      assertEquals("ingestion-id", MDC.get("traceId"));
+    } finally {
+      MDC.remove("traceId");
+    }
   }
 
   @Test

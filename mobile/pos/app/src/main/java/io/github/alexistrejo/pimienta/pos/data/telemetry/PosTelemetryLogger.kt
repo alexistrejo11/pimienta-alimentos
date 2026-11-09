@@ -9,7 +9,7 @@ private const val MAX_TELEMETRY_EVENTS = 200
 // Stores safe, bounded diagnostics in the active Room database.
 class PosTelemetryLogger(private val database: PosDatabase) {
     // Adds one diagnostic event and removes the oldest excess entries.
-    fun record(level: String, eventType: String, message: String, stack: String? = null) {
+    fun record(level: String, eventType: String, message: String, stack: String? = null, traceId: String? = null) {
         val now = System.currentTimeMillis()
         database.operationsDao().insertTelemetry(
             TelemetryEventEntity(
@@ -20,6 +20,7 @@ class PosTelemetryLogger(private val database: PosDatabase) {
                 stack = stack?.let { clean(it, 12000) },
                 occurredAtEpochMillis = now,
                 createdAtEpochMillis = now,
+                traceId = traceId?.let { clean(it, 120) },
             ),
         )
         database.operationsDao().trimTelemetry(MAX_TELEMETRY_EVENTS)

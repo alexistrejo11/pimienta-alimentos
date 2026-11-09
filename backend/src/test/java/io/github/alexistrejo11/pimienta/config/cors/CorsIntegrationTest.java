@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.config.cors;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -47,7 +48,9 @@ class CorsIntegrationTest {
                 .header(HttpHeaders.ORIGIN, PRODUCTION_WEB_ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"cors-it@mail.com\",\"password\":\"x\"}"))
-        .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, PRODUCTION_WEB_ORIGIN));
+        .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, PRODUCTION_WEB_ORIGIN))
+        .andExpect(
+            header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, containsString("X-Trace-Id")));
   }
 
   @Test

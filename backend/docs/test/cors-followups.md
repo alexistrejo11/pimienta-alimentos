@@ -5,3 +5,7 @@
 - Production `https://api.pimienta-alimentos.com` returned **403** `Invalid CORS request` for every `Origin` (including `https://pimienta-alimentos.com`). Same request without `Origin` reached login (401 invalid credentials). Cause: `pimienta.cors.allowed-origins: ${PIMIENTA_CORS_ALLOWED_ORIGINS}` bound the comma-separated env value as **one** origin string, so Spring matched none.
 - `OriginLists` now splits/trims/strips quotes. Production compose still needs `PIMIENTA_CORS_ALLOWED_ORIGINS` to include `https://pimienta-alimentos.com` (and www if that host is served).
 - Cloudflare beacon `ERR_BLOCKED_BY_CLIENT` and `runtime.lastError` on the login page are browser extensions, not API CORS.
+
+## Notes from `X-Trace-Id` expose-header pass (2026-11-09)
+
+- No extra follow-ups from this pass. `Access-Control-Expose-Headers` includes `X-Trace-Id` from `pimienta.cors.exposed-headers` in `application.yaml`.

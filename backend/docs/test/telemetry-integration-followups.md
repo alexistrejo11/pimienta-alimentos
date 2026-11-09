@@ -11,3 +11,7 @@
 - Staff `MANAGER` JWTs can ingest web telemetry; device JWTs cannot. Public anonymous browser events remain intentionally disabled.
 - Local Grafana dashboards and Prometheus alert rules are development-only. Production still needs private scrape of the management port, auth, TLS, and retention.
 - No extra follow-ups from the ingestion integration pass beyond the existing snapshot-retention note.
+
+## Notes from POS `traceId` ingestion pass (2026-11-09)
+
+- No extra follow-ups from this pass. Optional event `traceId` is accepted on schema version 1; omitting it still returns 200.

@@ -32,9 +32,9 @@ Local interfaces:
 - Loki: http://localhost:3100
 - Alloy: http://localhost:12345
 
-Grafana scrapes `api:8080/actuator/prometheus`. Alloy tails stdout only from the Compose `api` and `web` services, stamps `service=backend` or `service=web-ssr`, and forwards JSON logs to Loki. Only Grafana, Prometheus, Loki, and Alloy are exposed on localhost; none is reachable from another machine by default.
+Grafana scrapes `api:8000/actuator/prometheus`. Alloy tails stdout only from the Compose `api` and `web` services, stamps `service=backend` or `service=web-ssr`, and forwards JSON logs to Loki. Only Grafana, Prometheus, Loki, and Alloy are exposed on localhost; none is reachable from another machine by default.
 
-Grafana is provisioned with Backend, Browser, POS Fleet, and Telemetry Ingestion dashboards. After a staff login, a browser error should appear under `{source="web-client"}`. POS events appear under `{source="pos-client"}` after a device sync (or a retrying sync).
+Grafana is provisioned with Backend, Browser, POS Fleet, and Telemetry Ingestion dashboards. After a staff login, a browser error should appear under `{service="backend", channel="web-client"}`. POS events appear under `{service="backend", channel="pos-client"}` after a device sync (or a retrying sync).
 
 Stop the stack without removing data:
 
