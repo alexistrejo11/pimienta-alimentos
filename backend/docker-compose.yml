@@ -67,10 +67,13 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
+    expose:
+      - "8081"
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: dev
       API_PORT: "8000"
+      MANAGEMENT_PORT: "8081"
       POSTGRES_DB: pimienta_alimentos
       POSTGRES_USER: pimienta_dba
       POSTGRES_PASSWORD: pimienta_dba
@@ -108,7 +111,7 @@ services:
       localstack:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/actuator/health >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/actuator/health >/dev/null"]
       interval: 15s
       timeout: 5s
       start_period: 4m

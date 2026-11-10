@@ -1,0 +1,22 @@
+name: pimienta-observability-cloud
+
+services:
+  alloy:
+    image: grafana/alloy:v1.10.2
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=127.0.0.1:12345
+    env_file:
+      - .env.cloud
+    volumes:
+      - ./alloy/config.cloud.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - pimienta-net
+    restart: unless-stopped
+
+networks:
+  pimienta-net:
+    name: ${DOCKER_NETWORK:-pimienta-net}
+    external: true

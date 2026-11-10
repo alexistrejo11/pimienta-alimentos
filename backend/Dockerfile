@@ -15,7 +15,7 @@ RUN addgroup -S spring -g 1001 \
 COPY --from=build /workspace/target/*.jar /app/app.jar
 
 USER spring:spring
-EXPOSE 8027
+EXPOSE 8080 8081
 
 ENV SPRING_PROFILES_ACTIVE=prod
 

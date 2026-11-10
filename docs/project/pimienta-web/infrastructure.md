@@ -9,12 +9,12 @@ flowchart LR
   Commit[Push to main] --> Build[Install and build Angular]
   Build --> Image[Build Docker image]
   Image --> Ghcr[Publish to GHCR]
-  Ghcr --> Access[SSH through Cloudflare Access]
-  Access --> Server[Remote Docker Compose service]
+  Ghcr --> Ssh[SSH to EC2]
+  Ssh --> Server[Compose service web]
   Server --> Site[https://pimienta-alimentos.com]
 ```
 
-Pull requests and pushes to `main` that change `web/` run the production build. A successful push to `main` publishes `latest` and commit-tagged images to GHCR, then the remote server pulls and recreates only the web service through Cloudflare Access.
+Pull requests and pushes to `main` that change `web/` run the production build. A successful push to `main` publishes `latest` and commit-tagged images to GHCR, then the deploy job SSHs to the EC2 host and recreates only the `web` service. Host layout, Caddy, and Compose are in [deploy.md](../pimienta-alimentos/deploy.md).
 
 ## Local Development
 

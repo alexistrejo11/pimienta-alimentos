@@ -1,0 +1,105 @@
+// EC2: stdout from Compose services api and web → Grafana Cloud Logs.
+// Metrics: scrape Actuator on the internal management port → Grafana Cloud Metrics.
+// Do not label traceId. It stays in the JSON body.
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "pimienta" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = coalesce(sys.env("ALLOY_SERVICE_KEEP_REGEX"), "^(api|web)$")
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "^api$"
+    replacement   = "backend"
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "^web$"
+    replacement   = "web-ssr"
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "pimienta" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.pimienta.output
+  labels     = { job = "pimienta", environment = coalesce(sys.env("DEPLOY_ENV"), "prod") }
+  forward_to = [loki.process.application.receiver]
+}
+
+// Labels service and environment come from Docker/Compose, not from JSON service
+// (audit events reuse that field for the Spring application name).
+loki.process "application" {
+  stage.json {
+    expressions = {
+      level   = "level",
+      source  = "source",
+      channel = "channel",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level   = "level",
+      source  = "source",
+      channel = "channel",
+    }
+  }
+
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+loki.write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GCLOUD_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GCLOUD_LOKI_USERNAME")
+      password = sys.env("GCLOUD_RW_API_KEY")
+    }
+  }
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GCLOUD_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GCLOUD_PROM_USERNAME")
+      password = sys.env("GCLOUD_RW_API_KEY")
+    }
+  }
+}
+
+prometheus.scrape "pimienta_backend" {
+  targets = [
+    {
+      __address__ = coalesce(sys.env("BACKEND_MGMT_TARGET"), "api:8081"),
+      service     = "backend",
+      environment = coalesce(sys.env("DEPLOY_ENV"), "prod"),
+    },
+  ]
+
+  job_name        = "pimienta-backend"
+  metrics_path    = "/actuator/prometheus"
+  scheme          = "http"
+  scrape_interval = "15s"
+  scrape_timeout  = "10s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}

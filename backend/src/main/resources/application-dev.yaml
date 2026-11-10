@@ -17,19 +17,15 @@ spring:
       enabled: true
 
 management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env,beans,mappings,prometheus
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: always
-    env:
-      enabled: true
-    beans:
-      enabled: true
-    mappings:
-      enabled: true
 
 aws:
   s3:

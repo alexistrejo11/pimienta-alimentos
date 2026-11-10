@@ -11,12 +11,12 @@ flowchart LR
   Commit[Push to main] --> Test[Maven tests]
   Test --> Image[Build Docker image]
   Image --> Ghcr[Publish to GHCR]
-  Ghcr --> Access[SSH through Cloudflare Access]
-  Access --> Server[Remote Docker Compose API service]
+  Ghcr --> Ssh[SSH to EC2]
+  Ssh --> Server[Compose service api]
   Server --> Api[https://api.pimienta-alimentos.com]
 ```
 
-Pull requests and changes to `main` under `backend/` run Maven tests. After a successful push to `main`, GitHub Actions publishes both `latest` and commit-tagged images to GHCR. The deploy job connects through Cloudflare Access, pulls the image, recreates only the API service, and removes only unused images for that service.
+Pull requests and changes to `main` under `backend/` run Maven tests. After a successful push to `main`, GitHub Actions publishes both `latest` and commit-tagged images to GHCR. The deploy job SSHs to the EC2 host, pulls the image, recreates only the `api` service, and removes unused images for that repository. Host layout, Caddy, and Compose are in [deploy.md](../pimienta-alimentos/deploy.md).
 
 ## Local Environment
 

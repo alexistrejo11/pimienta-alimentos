@@ -13,13 +13,13 @@ flowchart LR
   API -->|structured stdout logs| Alloy[Grafana Alloy]
   WebSSR[Angular SSR Node process] -->|structured stdout logs| Alloy
   Alloy --> Loki[Loki]
-  Prometheus -->|pull /actuator/prometheus| API
+  Prometheus -->|pull api:8081/actuator/prometheus| API
   API -->|aggregated POS health metrics| Prometheus
   Grafana --> Prometheus
   Grafana --> Loki
 ```
 
-Prometheus pulls only targets controlled by Pimienta infrastructure. The API exposes Micrometer metrics at `/actuator/prometheus`; the endpoint is reachable only from the observability network or the trusted reverse proxy, never publicly from the Internet.
+Local Prometheus, or Grafana Alloy on EC2, scrapes Micrometer metrics at `/actuator/prometheus` on the API management port `8081` inside the Docker network. In the `dev` and `prod` profiles that port is not the public API port. The reverse proxy does not route it, and it is not reachable from the Internet.
 
 Browsers and POS tablets are clients, not scrape targets. They push telemetry to the API. The API validates and normalizes each event, then emits it as structured server log output. Grafana Alloy collects that output and writes it to Loki. Loki is not exposed to browsers or POS devices.
 
@@ -34,9 +34,9 @@ Telemetry routes are operational transport, not business mutations, so they are 
 
 ## Local and Production Topology
 
-The repository contains `observability/` as a local-development Docker Compose stack with Prometheus, Loki, Grafana, Alloy, provisioning, and example dashboards. It creates or joins the shared `pimienta-net` Docker network used by the local backend and web services.
+Local development runs the full stack in `observability/compose.yaml`: Prometheus, Loki, Grafana, and Alloy on the shared `pimienta-net` network. Prometheus scrapes `api:8081`. Alloy only forwards container stdout to local Loki.
 
-Production runs a separate observability instance with its own persistent volumes, TLS, access control, credentials, retention policy, and backups. Local configuration is versioned as a reproducible development environment; production values and secrets are supplied by deployment infrastructure and are never committed.
+EC2 runs only Alloy, via `observability/compose.cloud.yaml`. Alloy tails container stdout to Grafana Cloud Logs and remote-writes the `8081` scrape to Grafana Cloud Metrics. Prometheus, Loki, and Grafana containers are not run on EC2. Cloud credentials stay in `.env.cloud`, which is not committed. The tracked template is `.env.cloud.example`.
 
 ## Logs
 
@@ -68,7 +68,7 @@ POS logs cover unexpected errors, retrying or blocked synchronization, enrollmen
 
 ## Metrics
 
-Prometheus collects standard Spring Boot, JVM, HTTP server, database-pool, and process metrics from Actuator. The API also exposes bounded custom metrics for POS and telemetry ingestion, including:
+The scraper (local Prometheus, or Alloy on EC2) collects standard Spring Boot, JVM, HTTP server, database-pool, and process metrics from Actuator on port `8081`. The API also exposes bounded custom metrics for POS and telemetry ingestion, including:
 
 - received telemetry batches and rejected payloads (`pimienta_telemetry_events_received_total`, `pimienta_telemetry_events_rejected_total`);
 - POS devices by synchronization health state (`pimienta_pos_devices{state}`);

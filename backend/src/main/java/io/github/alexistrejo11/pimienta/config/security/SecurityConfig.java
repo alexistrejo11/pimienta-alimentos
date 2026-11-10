@@ -38,7 +38,9 @@ public class SecurityConfig {
       "/actuator/health",
       "/actuator/health/**",
       "/actuator/info",
-      // Scraped by Prometheus on the Docker network (same port as API in prod).
+      // Same-port runs only (test profile, and any start without dev/prod).
+      // In dev/prod, Actuator is on the management port; this chain is not installed
+      // there. Exposure is health,info,prometheus, and 8081 must not be published.
       "/actuator/prometheus"
   };
 

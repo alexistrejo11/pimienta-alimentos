@@ -32,7 +32,7 @@ Local interfaces:
 - Loki: http://localhost:3100
 - Alloy: http://localhost:12345
 
-Grafana scrapes `api:8000/actuator/prometheus`. Alloy tails stdout only from the Compose `api` and `web` services, stamps `service=backend` or `service=web-ssr`, and forwards JSON logs to Loki. Only Grafana, Prometheus, Loki, and Alloy are exposed on localhost; none is reachable from another machine by default.
+Prometheus scrapes `api:8081/actuator/prometheus`. That is the API container's management port. It is not published on the host, and it is not on the public API port. Alloy tails stdout only from the Compose `api` and `web` services, stamps `service=backend` or `service=web-ssr`, and forwards JSON logs to Loki. Grafana, Prometheus, Loki, and Alloy are bound to `127.0.0.1` only.
 
 Grafana is provisioned with Backend, Browser, POS Fleet, and Telemetry Ingestion dashboards. After a staff login, a browser error should appear under `{service="backend", channel="web-client"}`. POS events appear under `{service="backend", channel="pos-client"}` after a device sync (or a retrying sync).
 
@@ -47,3 +47,20 @@ Reset local observability data:
 ```sh
 docker compose down -v
 ```
+
+## EC2 / Grafana Cloud
+
+Production EC2 runs Alloy only. Do not start `compose.yaml` there. That file runs Prometheus, Loki, and Grafana.
+
+1. The API container uses the `prod` profile. Actuator listens on `8081`, and that port is not in Compose `ports`.
+2. The API service name on the Docker network must be `api`, and the web service `web`. If either name differs, set `ALLOY_SERVICE_KEEP_REGEX`.
+3. Copy the example env file and fill the Grafana Cloud URLs and credentials. Set `DOCKER_NETWORK` when the API network is not `pimienta-net`.
+4. Start Alloy only:
+
+```sh
+cd observability
+cp .env.cloud.example .env.cloud
+docker compose --env-file .env.cloud -f compose.cloud.yaml up -d
+```
+
+5. In Grafana Cloud, confirm a log stream `{service="backend"}` or `{service="web-ssr"}`, and a metric `up{job="pimienta-backend"}`. `alerts.yml` applies to local Prometheus only. Cloud alerts are configured in Grafana, not by this repo.
