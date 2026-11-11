@@ -54,3 +54,7 @@ Non-fatal behaviors, consistency gaps, and product decisions to revisit. **Resol
 
 - Staff `POST /headquarters/{id}/pos-products` now uses the same role matcher as `pos-catalog` (ADMIN, DIRECTOR, MANAGER, EMPLOYEE) plus `HeadquarterAccessService`. Before this, the route fell through to ADMIN-only `anyRequest`.
 - No extra follow-ups from this pass.
+
+## POS catalog candidates (2026-11-11)
+
+- `GET .../pos-catalog/candidates` returns every active product not already on that headquarter. `posCatalog_candidates_returnsOnlySellableUnassignedItems` now asserts the product this test created, because `PosSyncConcurrencyIntegrationTest` commits rows into the shared H2 database and GitHub Actions can run that class first.

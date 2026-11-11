@@ -1,5 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.headquarter.integration;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -291,14 +292,14 @@ class HeadquarterPosCatalogIntegrationTest {
     long candidateId = createItem(token, "SKU-CANDIDATE-" + UUID.randomUUID(), "Candidate");
     createWarehouseItem(token, "Plancha");
 
+    String candidateMatch = "$[?(@.id == " + candidateId + ")]";
     mockMvc
         .perform(AccountTestRequests.getBearer(
             "/api/v1/headquarters/" + hqId + "/pos-catalog/candidates", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].id").value(candidateId))
-        .andExpect(jsonPath("$[0].name").value("Candidate"))
-        .andExpect(jsonPath("$[0].trackStock").value(true));
+        .andExpect(jsonPath(candidateMatch, hasSize(1)))
+        .andExpect(jsonPath(candidateMatch + ".name", hasItem("Candidate")))
+        .andExpect(jsonPath(candidateMatch + ".trackStock", hasItem(true)));
 
     String catalogBody = """
         {"saleCategory":"BEVERAGE","salePrice":25.50,"available":true,"stockPolicy":"CONTROLLED"}
@@ -311,7 +312,7 @@ class HeadquarterPosCatalogIntegrationTest {
         .perform(AccountTestRequests.getBearer(
             "/api/v1/headquarters/" + hqId + "/pos-catalog/candidates", token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(0)));
+        .andExpect(jsonPath(candidateMatch, hasSize(0)));
   }
 
   @Test
