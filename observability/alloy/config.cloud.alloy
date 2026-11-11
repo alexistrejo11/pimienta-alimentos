@@ -10,6 +10,12 @@ discovery.relabel "pimienta" {
   targets = discovery.docker.containers.targets
 
   rule {
+    source_labels = ["__meta_docker_network_name"]
+    regex         = coalesce(sys.env("DOCKER_NETWORK"), "pimienta-net")
+    action        = "keep"
+  }
+
+  rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     regex         = coalesce(sys.env("ALLOY_SERVICE_KEEP_REGEX"), "^(api|web)$")
     action        = "keep"
