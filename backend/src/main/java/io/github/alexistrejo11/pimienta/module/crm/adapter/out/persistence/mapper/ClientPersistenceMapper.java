@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.crm.adapter.out.persistence.mapp
 
 import io.github.alexistrejo11.pimienta.module.crm.adapter.out.persistence.model.ClientJpaEntity;
 import io.github.alexistrejo11.pimienta.module.crm.core.domain.Client;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public final class ClientPersistenceMapper {
 
@@ -25,7 +26,7 @@ public final class ClientPersistenceMapper {
       e.setId(domain.getId());
     }
     e.setName(domain.getName());
-    e.setCompanyName(blankToNull(domain.getCompanyName()));
+    e.setCompanyName(Strings.blankToNull(domain.getCompanyName()));
     e.setCreatedAt(domain.getCreatedAt());
     e.setUpdatedAt(domain.getUpdatedAt());
     e.setDeletedAt(domain.getDeletedAt());
@@ -33,10 +34,4 @@ public final class ClientPersistenceMapper {
     return e;
   }
 
-  private static String blankToNull(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.trim();
-  }
 }

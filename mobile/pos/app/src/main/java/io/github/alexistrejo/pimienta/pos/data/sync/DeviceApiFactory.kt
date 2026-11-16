@@ -40,6 +40,7 @@ internal object DeviceApiFactory {
     fun create(baseUrl: String, tokenProvider: () -> String?): DeviceApi {
         val client = OkHttpClient.Builder()
             .addInterceptor(timezoneInterceptor())
+            .addInterceptor(traceIdInterceptor())
             .addInterceptor(Interceptor { chain ->
                 val token = tokenProvider()
                 val request = chain.request().newBuilder()
@@ -55,6 +56,7 @@ internal object DeviceApiFactory {
     fun createUnauthenticated(baseUrl: String): DeviceApi {
         val client = OkHttpClient.Builder()
             .addInterceptor(timezoneInterceptor())
+            .addInterceptor(traceIdInterceptor())
             .build()
         return buildRetrofit(normalize(baseUrl), client).create(DeviceApi::class.java)
     }

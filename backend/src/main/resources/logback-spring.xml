@@ -1,45 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="pimienta"/>
-    <property name="LOG_PATH" value="${LOG_PATH:-logs}" />
-    <property name="APP_NAME" value="${SPRING_APPLICATION_NAME:-pimienta-backend}" />
 
-    <!-- JSON on stdout and rolling files so Promtail can scrape Docker logs or LOG_PATH later. -->
+    <!-- JSON on stdout so Alloy can scrape Docker logs. -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
             <format>logstash</format>
         </encoder>
     </appender>
 
-    <appender name="FILE_APP" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/${APP_NAME}.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/${APP_NAME}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
-            <format>logstash</format>
-        </encoder>
-    </appender>
-
-    <appender name="FILE_AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/${APP_NAME}-audit.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/${APP_NAME}-audit.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
-            <maxHistory>90</maxHistory>
-        </rollingPolicy>
-        <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
-            <format>logstash</format>
-        </encoder>
-    </appender>
-
     <logger name="audit" level="INFO" additivity="false">
-        <appender-ref ref="FILE_AUDIT" />
         <appender-ref ref="CONSOLE" />
     </logger>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE_APP" />
     </root>
 </configuration>

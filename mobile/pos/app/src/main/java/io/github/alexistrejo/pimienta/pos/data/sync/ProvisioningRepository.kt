@@ -25,7 +25,7 @@ class ProvisioningRepository(private val context: Context, private val provider:
     // enrollment, and bootstrap/delta responsibilities; it never builds a Retrofit client itself.
     private val session = context.deviceSession()
     private val json = DeviceApiFactory.json()
-    private val prefs = context.getSharedPreferences("pos-device-config", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(DEVICE_CONFIG_PREFS, Context.MODE_PRIVATE)
 
     fun baseUrl(): String? = db.syncDao().state()?.baseUrl
 
@@ -100,6 +100,8 @@ class ProvisioningRepository(private val context: Context, private val provider:
             val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()
             db.syncDao().saveState(current.copy(baseUrl = baseUrl, status = "ENROLLED", lastError = null))
         }
+        // The name just enrolled is the source of truth; drop a rename that never reached the server.
+        prefs.edit().remove(PENDING_DEVICE_NAME_KEY).apply()
         // Catalog import can fail independently; tokens/device are already persisted for SyncWorker retry.
         try {
             applyBootstrap(session.authenticatedApi(baseUrl).bootstrap())
@@ -269,18 +271,83 @@ class ProvisioningRepository(private val context: Context, private val provider:
                         "upsert" -> {
                             val site = op.data?.let { json.decodeFromJsonElement(SiteDto.serializer(), it).toSite() }
                                 ?: throw IllegalArgumentException("Site upsert has no payload")
-                            db.siteDao().insert(site)
+                            writeSite(site)
                         }
                         else -> throw IllegalArgumentException("Unsupported site operation: ${op.op}")
                     }
                     else -> throw IllegalArgumentException("Unsupported POS change entity: ${op.entity}")
                 }
             }
+            // Live site snapshot rides beside the cursor. Older servers omit it.
+            changes.site?.let { writeSite(it.toSite()) }
             val current = db.syncDao().state() ?: io.github.alexistrejo.pimienta.pos.data.local.entity.SyncStateEntity()
             db.syncDao().saveState(current.copy(changesCursor = changes.nextCursor, lastSuccessfulAtEpochMillis = System.currentTimeMillis(), lastError = null, status = "ONLINE"))
             syncedEvents.forEach { db.syncDao().markSynced(it.eventId, it.status, it.incidentId, it.message) }
         }
     }
+    // Writes one site row. A different id clears the previous row; the same id uses REPLACE.
+    private fun writeSite(site: SiteEntity) {
+        val staged = linkedMapOf<String, SiteEntity>()
+        db.siteDao().current()?.let { staged[it.id] = it }
+        applySiteRow(staged, site)
+        if (siteWritePlan(db.siteDao().current()?.id, site.id) == SiteWrite.ClearThenReplace) {
+            db.siteDao().clear()
+        }
+        db.siteDao().insert(staged.getValue(site.id))
+    }
+
+    // Name currently waiting for PATCH /devices/me. Null when the server already has it.
+    fun pendingDeviceName(): String? =
+        prefs.getString(PENDING_DEVICE_NAME_KEY, null)?.trim()?.takeIf { it.isNotEmpty() }
+
+    /**
+     * Saves the name in Room immediately, keeps it pending, and tries the device PATCH.
+     * A network or server failure leaves the pending name for the next sync.
+     */
+    internal suspend fun renameDevice(rawName: String): DeviceRenameResult {
+        val name = normalizeDeviceName(rawName) ?: return DeviceRenameResult.Invalid
+        val device = db.operationsDao().device() ?: return DeviceRenameResult.Invalid
+        if (name == device.name && pendingDeviceName() == null) return DeviceRenameResult.Synced
+        db.operationsDao().insertDevice(localDeviceAfterRename(device, name))
+        prefs.edit().putString(PENDING_DEVICE_NAME_KEY, name).apply()
+        return pushPendingRename { api -> api.renameDevice(RenameDeviceRequest(name)) }
+    }
+
+    // Sync entry point. True when nothing is pending or the server accepted the name.
+    suspend fun pushPendingDeviceName(api: DeviceApi): Boolean {
+        val pending = pendingDeviceName() ?: return true
+        return try {
+            confirmDeviceName(api.renameDevice(RenameDeviceRequest(pending)).deviceName)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    // Puts the unsynced name back after a bootstrap snapshot overwrote the device row.
+    fun reapplyPendingDeviceName() {
+        val pending = pendingDeviceName() ?: return
+        val device = db.operationsDao().device() ?: return
+        db.operationsDao().insertDevice(deviceAfterBootstrap(device, device.name, pending))
+    }
+
+    private suspend fun pushPendingRename(call: suspend (DeviceApi) -> DeviceMeResponse): DeviceRenameResult {
+        val pending = pendingDeviceName() ?: return DeviceRenameResult.Synced
+        return callDevice { api -> call(api) }.fold(
+            onSuccess = { me ->
+                confirmDeviceName(me.deviceName.ifBlank { pending })
+                DeviceRenameResult.Synced
+            },
+            onFailure = { DeviceRenameResult.Pending },
+        )
+    }
+
+    private fun confirmDeviceName(canonical: String) {
+        prefs.edit().remove(PENDING_DEVICE_NAME_KEY).apply()
+        val device = db.operationsDao().device() ?: return
+        db.operationsDao().insertDevice(deviceAfterConfirmedRename(device, canonical))
+    }
+
     private fun PoliciesDto.toEntity(siteId: String) = PosPolicyEntity(
         siteId = siteId,
         allowNegativeStock = true,

@@ -9,6 +9,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Component
 public class OpportunitySpreadsheetGeneratorImpl implements OpportunitySpreadsheetGenerator {
@@ -32,19 +33,19 @@ public class OpportunitySpreadsheetGeneratorImpl implements OpportunitySpreadshe
         } else {
           dataRow.createCell(c++).setCellValue("");
         }
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.title()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.description()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.contactName()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.contactEmail()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.contactPhone()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.companyName()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.companyLocation()));
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.industry()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.title()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.description()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.contactName()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.contactEmail()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.contactPhone()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.companyName()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.companyLocation()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.industry()));
         dataRow
             .createCell(c++)
             .setCellValue(row.estimatedValue() != null ? row.estimatedValue().doubleValue() : 0);
         dataRow.createCell(c++).setCellValue(row.probabilityPercent());
-        dataRow.createCell(c++).setCellValue(nullToEmpty(row.source()));
+        dataRow.createCell(c++).setCellValue(Strings.nullToEmpty(row.source()));
         if (row.expectedCloseDate() != null) {
           dataRow.createCell(c++).setCellValue(row.expectedCloseDate().toString());
         } else {
@@ -55,7 +56,7 @@ public class OpportunitySpreadsheetGeneratorImpl implements OpportunitySpreadshe
         } else {
           dataRow.createCell(c++).setCellValue("");
         }
-        dataRow.createCell(c).setCellValue(nullToEmpty(row.status()));
+        dataRow.createCell(c).setCellValue(Strings.nullToEmpty(row.status()));
       }
       sheet.setColumnHidden(0, true);
       workbook.write(out);
@@ -63,7 +64,4 @@ public class OpportunitySpreadsheetGeneratorImpl implements OpportunitySpreadshe
     }
   }
 
-  private static String nullToEmpty(String s) {
-    return s != null ? s : "";
-  }
 }

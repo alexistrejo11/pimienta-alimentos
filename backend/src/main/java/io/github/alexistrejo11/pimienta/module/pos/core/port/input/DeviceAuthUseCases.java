@@ -1,6 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.port.input;
 
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.EnrollDeviceCommand;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.command.RenameDeviceCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.DeviceTokenIssuer.DeviceIssuedTokens;
 import java.util.Map;
@@ -20,4 +21,6 @@ public interface DeviceAuthUseCases {
   DeviceIssuedTokens refresh(String refreshToken);
 
   DeviceMeResult me(UUID deviceId);
+
+  DeviceMeResult rename(UUID deviceId, RenameDeviceCommand command);
 }

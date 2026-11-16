@@ -140,7 +140,7 @@ public class InventoryMovement extends BaseDomain<Long> {
     m.sourceLocation = source;
     m.destinationLocation = destination;
     m.quantity = quantity;
-    m.unitCost = unitCost;
+    m.unitCost = unitCost != null ? unitCost : BigDecimal.ZERO;
     m.type = type;
     m.direction = direction;
     m.exitReason = exitReason;
@@ -183,7 +183,7 @@ public class InventoryMovement extends BaseDomain<Long> {
   }
 
   public BigDecimal getUnitCost() {
-    return unitCost;
+    return unitCost != null ? unitCost : BigDecimal.ZERO;
   }
 
   public InventoryMovementType getType() {
@@ -243,7 +243,7 @@ public class InventoryMovement extends BaseDomain<Long> {
   }
 
   public void setUnitCost(BigDecimal unitCost) {
-    this.unitCost = unitCost;
+    this.unitCost = unitCost != null ? unitCost : BigDecimal.ZERO;
   }
 
   public void setType(InventoryMovementType type) {

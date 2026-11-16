@@ -2,9 +2,7 @@ package io.github.alexistrejo11.pimienta.module.payroll.adapter.inbound.web.dto.
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import lombok.Builder;
 
-@Builder
 public record PayrollDebtResponse(
     Long id,
     Long employeeId,

@@ -56,7 +56,7 @@
       "type": "logs",
       "targets": [
         {
-          "expr": "{service=\"backend\", source=\"pos-client\"}",
+          "expr": "{service=\"backend\", channel=\"pos-client\"}",
           "refId": "A"
         }
       ]

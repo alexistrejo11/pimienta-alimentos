@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.Oper
 import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.outbound.persistence.entity.OperatingExpenseJpaEntity;
 import java.util.ArrayList;
 import java.util.List;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public final class OperatingExpensePersistenceMapper {
 
@@ -35,7 +36,7 @@ public final class OperatingExpensePersistenceMapper {
     entity.setAmount(domain.getAmount());
     entity.setCategory(domain.getCategory());
     entity.setConcept(domain.getConcept());
-    entity.setNotes(blankToNull(domain.getNotes()));
+    entity.setNotes(Strings.blankToNull(domain.getNotes()));
     entity.setOccurredOn(domain.getOccurredOn());
     entity.setRecordedByUserId(domain.getRecordedByUserId());
     entity.setAttachmentKeys(new ArrayList<>(domain.getAttachmentKeys()));
@@ -45,10 +46,4 @@ public final class OperatingExpensePersistenceMapper {
     entity.setVersion(domain.getVersion());
   }
 
-  private static String blankToNull(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.strip();
-  }
 }

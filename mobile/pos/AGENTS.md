@@ -4,6 +4,8 @@ Early **Kotlin + Jetpack Compose** point-of-sale for school cafeterias. Single G
 
 - Native Android only (not KMP).
 - Do not add DI, Room, or networking unless the task asks for them.
+- Device API OkHttp clients (enroll, sync, telemetry, release check) send `X-Trace-Id`. APK downloads do not.
+- Room `telemetry_event.traceId` is nullable TEXT added in migration 20→21.
 - Product intent (Spanish) lives in [docs/product/](docs/product/README.md). Do not invent MVP rules that contradict those docs.
 
 ## Comments (beginner-friendly)

@@ -7,4 +7,8 @@ import java.util.List;
 public record PosSyncChangesResponse(
     @Schema(example = "1") int schemaVersion,
     @Schema(example = "cursor-hq-42-v1847") String nextCursor,
-    List<PosSyncChangeOperationResponse> operations) {}
+    List<PosSyncChangeOperationResponse> operations,
+    @Schema(
+            description =
+                "Live site name, address, and currency. Sent on every batch and ignored by older clients. Not part of the cursor.")
+        PosBootstrapSiteResponse site) {}

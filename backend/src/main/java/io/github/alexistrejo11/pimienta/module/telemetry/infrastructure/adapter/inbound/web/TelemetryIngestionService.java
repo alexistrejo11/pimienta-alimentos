@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 /** Normalizes client reports into safe structured logs and bounded metrics. */
@@ -37,7 +38,7 @@ public class TelemetryIngestionService {
     for (PosTelemetryLogRequest event : batch.events()) {
       meterRegistry.counter("pimienta.telemetry.events.received", "source", "pos").increment();
       logEvent("pos-client", event.schemaVersion(), event.eventType(), event.level(), event.message(), event.stack(),
-          event.occurredAt(), device.deviceId().toString(), device.headquarterId(), null, null, null);
+          event.occurredAt(), device.deviceId().toString(), device.headquarterId(), null, null, event.traceId());
     }
     PosTelemetryHealthRequest health = batch.health();
     if (health != null) {
@@ -61,20 +62,31 @@ public class TelemetryIngestionService {
 
   private void logEvent(String channel, int schemaVersion, String eventType, String level, String message, String stack,
       String occurredAt, String deviceId, Long siteId, String route, String release, String traceId) {
-    var event = log.atLevel(org.slf4j.event.Level.valueOf(level.toUpperCase(Locale.ROOT)))
-        .addKeyValue("channel", channel)
-        .addKeyValue("schemaVersion", schemaVersion)
-        .addKeyValue("eventType", clean(eventType, 40))
-         // The structured encoder already owns the reserved `message` field.
-         .addKeyValue("clientMessage", clean(message, MAX_TEXT_LENGTH));
-    if (stack != null && !stack.isBlank()) event = event.addKeyValue("stack", clean(stack, 12000));
-    if (occurredAt != null) event = event.addKeyValue("occurredAt", clean(occurredAt, 500));
-    if (deviceId != null) event = event.addKeyValue("deviceId", deviceId);
-    if (siteId != null) event = event.addKeyValue("siteId", siteId);
-    if (route != null) event = event.addKeyValue("route", clean(route, 200));
-    if (release != null) event = event.addKeyValue("release", clean(release, 80));
-    if (traceId != null) event = event.addKeyValue("clientTraceId", clean(traceId, 120));
-    event.log("client_telemetry");
+    String ingestionTraceId = MDC.get("traceId");
+    if (traceId != null && !traceId.isBlank()) {
+      MDC.put("traceId", clean(traceId, 120));
+    }
+    try {
+      var event = log.atLevel(org.slf4j.event.Level.valueOf(level.toUpperCase(Locale.ROOT)))
+          .addKeyValue("channel", channel)
+          .addKeyValue("schemaVersion", schemaVersion)
+          .addKeyValue("eventType", clean(eventType, 40))
+           // The structured encoder already owns the reserved `message` field.
+           .addKeyValue("clientMessage", clean(message, MAX_TEXT_LENGTH));
+      if (stack != null && !stack.isBlank()) event = event.addKeyValue("stack", clean(stack, 12000));
+      if (occurredAt != null) event = event.addKeyValue("occurredAt", clean(occurredAt, 500));
+      if (deviceId != null) event = event.addKeyValue("deviceId", deviceId);
+      if (siteId != null) event = event.addKeyValue("siteId", siteId);
+      if (route != null) event = event.addKeyValue("route", clean(route, 200));
+      if (release != null) event = event.addKeyValue("release", clean(release, 80));
+      event.log("client_telemetry");
+    } finally {
+      if (ingestionTraceId == null) {
+        MDC.remove("traceId");
+      } else {
+        MDC.put("traceId", ingestionTraceId);
+      }
+    }
   }
 
   private static String clean(String value, int maxLength) {

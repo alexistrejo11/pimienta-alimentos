@@ -8,6 +8,11 @@ public class BusinessValidationException extends PimientaException {
 
   public BusinessValidationException(
       String clientMessage, Map<String, Object> context, String logDetails) {
-    super(ErrorCode.VALIDATION_FAILED, HttpStatus.BAD_REQUEST, clientMessage, context, logDetails, null);
+    this(ErrorCode.VALIDATION_FAILED, clientMessage, context, logDetails);
+  }
+
+  public BusinessValidationException(
+      ErrorCode errorCode, String clientMessage, Map<String, Object> context, String logDetails) {
+    super(errorCode, HttpStatus.BAD_REQUEST, clientMessage, context, logDetails, null);
   }
 }

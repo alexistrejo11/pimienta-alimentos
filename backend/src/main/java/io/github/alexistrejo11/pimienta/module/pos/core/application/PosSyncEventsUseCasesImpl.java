@@ -44,6 +44,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Service
 public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
@@ -414,7 +415,7 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
                 line.subtotalCentavos(),
                 parseStockPolicy(line.stockPolicy()),
                 line.soldWhileUnavailable(),
-                blankToNull(line.rawBarcode()),
+                Strings.blankToNull(line.rawBarcode()),
                 line.authorizedByOperatorId(),
                 line.authorizedAt(),
                 line.unitCostCentavos()));
@@ -536,15 +537,9 @@ public class PosSyncEventsUseCasesImpl implements PosSyncEventsUseCases {
     }
   }
 
-  private static String blankToNull(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.strip();
-  }
 
   private static String limit(String value, int max) {
-    String trimmed = blankToNull(value);
+    String trimmed = Strings.blankToNull(value);
     if (trimmed == null || trimmed.length() <= max) {
       return trimmed;
     }

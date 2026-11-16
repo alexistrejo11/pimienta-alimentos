@@ -98,6 +98,8 @@ internal fun ManagerPanel(
     products: List<ProductEntity>,
     pendingEvents: Int,
     repository: PosRepository,
+    dark: Boolean = true,
+    onTheme: (Boolean) -> Unit = {},
     onReturnToSale: () -> Unit,
     onShiftClosed: () -> Unit = {}
 ) {
@@ -122,7 +124,7 @@ internal fun ManagerPanel(
     val scope = rememberCoroutineScope()
     LaunchedEffect(effectiveShift?.id, refreshToken) { summary = withContext(Dispatchers.IO) { repository.dailySummary() } }
 
-    val sectionContent = remember {
+    val sectionContent = remember(dark, onTheme) {
         movableContentOf { modifier: Modifier ->
             ManagerSectionContent(
                 section = section,
@@ -133,6 +135,8 @@ internal fun ManagerPanel(
                 pendingEvents = pendingEvents,
                 summary = summary,
                 repository = repository,
+                dark = dark,
+                onTheme = onTheme,
                 refresh = { refreshToken++ },
                 onShiftClosed = onShiftClosed,
                 modifier = modifier,
@@ -220,13 +224,27 @@ private fun ManagerCompactNav(selected: ManagerSection, choose: (ManagerSection)
 
 // Routes each Manager area while preserving the local session.
 @Composable
-private fun ManagerSectionContent(section: ManagerSection, shift: ShiftEntity?, manager: LocalUserEntity, users: List<LocalUserEntity>, products: List<ProductEntity>, pendingEvents: Int, summary: DashboardSummary?, repository: PosRepository, refresh: () -> Unit, onShiftClosed: () -> Unit, modifier: Modifier) {
+private fun ManagerSectionContent(
+    section: ManagerSection,
+    shift: ShiftEntity?,
+    manager: LocalUserEntity,
+    users: List<LocalUserEntity>,
+    products: List<ProductEntity>,
+    pendingEvents: Int,
+    summary: DashboardSummary?,
+    repository: PosRepository,
+    dark: Boolean,
+    onTheme: (Boolean) -> Unit,
+    refresh: () -> Unit,
+    onShiftClosed: () -> Unit,
+    modifier: Modifier
+) {
     when (section) {
         ManagerSection.DASHBOARD -> DashboardPanel(summary, pendingEvents, modifier)
         ManagerSection.Z_CLOSE -> if (shift != null) ZClosePanel(shift, manager, users, summary, repository, refresh, onShiftClosed, modifier)
         ManagerSection.HISTORY -> if (shift != null) HistoryPanel(shift, manager, repository, refresh, modifier)
         ManagerSection.PRODUCTS -> ProductsPanel(products, repository, modifier)
-        ManagerSection.CONFIG -> ConfigPanel(repository, modifier)
+        ManagerSection.CONFIG -> ConfigPanel(repository = repository, modifier = modifier, dark = dark, onTheme = onTheme)
         ManagerSection.STATUS -> StatusPanel(pendingEvents, repository, modifier)
     }
 }

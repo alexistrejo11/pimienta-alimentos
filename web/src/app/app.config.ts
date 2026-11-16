@@ -10,6 +10,7 @@ import { apiLoggingInterceptor } from './core/http/api-logging.interceptor';
 import { authSessionInterceptor } from './core/http/auth-session.interceptor';
 import { authTokenInterceptor } from './core/http/auth-token.interceptor';
 import { timezoneInterceptor } from './core/http/timezone.interceptor';
+import { traceIdInterceptor } from './core/http/trace-id.interceptor';
 import { CentralErrorHandler } from './core/telemetry/web-telemetry.service';
 
 registerLocaleData(localeEsMx);
@@ -21,7 +22,13 @@ export const appConfig: ApplicationConfig = {
     { provide: ErrorHandler, useClass: CentralErrorHandler },
     provideHttpClient(
       withFetch(),
-      withInterceptors([timezoneInterceptor, authSessionInterceptor, authTokenInterceptor, apiLoggingInterceptor]),
+      withInterceptors([
+        traceIdInterceptor,
+        timezoneInterceptor,
+        authSessionInterceptor,
+        authTokenInterceptor,
+        apiLoggingInterceptor,
+      ]),
     ),
     provideRouter(
       routes,

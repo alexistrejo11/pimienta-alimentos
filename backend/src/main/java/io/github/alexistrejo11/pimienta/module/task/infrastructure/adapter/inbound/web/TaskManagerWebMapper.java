@@ -42,12 +42,10 @@ public final class TaskManagerWebMapper {
         drafts.add(new ChecklistDraft(line.description(), line.displayOrder()));
       }
     }
-    Task.Priority priority =
-        request.priority() != null ? request.priority() : Task.Priority.MEDIUM;
     return new CreateTaskCommand(
         request.title(),
         request.description(),
-        priority,
+        request.priority(),
         request.dueDate(),
         request.headquarterId(),
         request.projectId(),

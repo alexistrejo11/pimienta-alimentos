@@ -14,10 +14,8 @@ RUN addgroup -S spring -g 1001 \
 
 COPY --from=build /workspace/target/*.jar /app/app.jar
 
-RUN mkdir -p /app/logs && chown -R spring:spring /app
-
 USER spring:spring
-EXPOSE 8027
+EXPOSE 8080 8081
 
 ENV SPRING_PROFILES_ACTIVE=prod
 

@@ -99,3 +99,10 @@ No extra follow-ups from this pass.
 - `discount_authorized_by_role` was removed from `V23` before that migration shipped. The authorizer column is `discount_authorized_by_operator_id` only.
 
 No extra follow-ups from this pass.
+
+## 2026-10-29 — Live site on changes and device rename
+
+- `GET /pos/sync/changes` always includes `site`. It is not a change-log operation, so a headquarter rename already stored is visible on the next delta without a backfill row. Older POS builds that ignore unknown JSON keys keep syncing.
+- `PATCH /pos/devices/me` updates only the authenticated device. Tokens, `visibleCode`, and site stay put. Blank or whitespace-only names, and names longer than 40 characters, return 400 `VALIDATION_FAILED` and do not persist. A revoked device returns 403 `POS_DEVICE_REVOKED`.
+
+No extra follow-ups from this pass.

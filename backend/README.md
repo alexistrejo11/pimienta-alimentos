@@ -59,6 +59,8 @@ hardcoded in `docker-compose.yml` so a production `backend/.env` is not used:
 docker compose up --build
 ```
 
+Profiles `dev` (this Compose file) and `prod` (the image) serve Actuator on port `8081` (`MANAGEMENT_PORT`). The API port is `API_PORT`: `8000` in this Compose file, and `8080` when `API_PORT` is unset. Compose publishes only `8000:8000`. Port `8081` is `expose` only, so other containers on the Docker network can open it and the host cannot. `GET /health` on the API port is the public health route. `/actuator/health` is on `8081`.
+
 Production-shaped run on this machine (JAR via `Dockerfile`, reads `.env`,
 joins `infra_central_network` / `shared_app_network`):
 
@@ -89,9 +91,9 @@ appropriate. Never commit `.env`, credentials, JWT secrets, or private keys.
 ## Production Delivery
 
 The backend workflow runs tests, publishes the container image to GHCR, and
-deploys it to the production host through Cloudflare Access after a successful
-push to `main`. Production configuration is supplied by the deployment
-environment.
+deploys it to the production EC2 host over SSH after a successful push to
+`main`. Production configuration is supplied by the host `.env`. Host layout
+is in `docs/project/pimienta-alimentos/deploy.md`.
 
 ## Documentation
 

@@ -1,7 +1,10 @@
 package io.github.alexistrejo11.pimienta.module.pos.core.application;
 
+import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquarter;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.PosOperationalConfig;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.exception.HeadquarterNotFoundException;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterItemRepository;
+import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosOperator;
@@ -11,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.pos.core.domain.exception.PosSync
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.OperatorRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.Policies;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.ProductRow;
+import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncBootstrapUseCases.SiteRow;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.input.PosSyncChangesUseCases;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosDeviceRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository;
@@ -29,6 +33,7 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
   private static final int MAX_BATCH_SIZE = 500;
 
   private final PosDeviceRepository deviceRepository;
+  private final HeadquarterRepository headquarterRepository;
   private final HeadquarterItemRepository headquarterItemRepository;
   private final PosOperatorRepository operatorRepository;
   private final PosOperationalConfigRepository posOperationalConfigRepository;
@@ -37,12 +42,14 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
 
   public PosSyncChangesUseCasesImpl(
       PosDeviceRepository deviceRepository,
+      HeadquarterRepository headquarterRepository,
       HeadquarterItemRepository headquarterItemRepository,
       PosOperatorRepository operatorRepository,
       PosOperationalConfigRepository posOperationalConfigRepository,
       PosSyncCatalogProjector projector,
       PosChangeLogRepository changeLogRepository) {
     this.deviceRepository = deviceRepository;
+    this.headquarterRepository = headquarterRepository;
     this.headquarterItemRepository = headquarterItemRepository;
     this.operatorRepository = operatorRepository;
     this.posOperationalConfigRepository = posOperationalConfigRepository;
@@ -81,7 +88,25 @@ public class PosSyncChangesUseCasesImpl implements PosSyncChangesUseCases {
     List<ChangeOperation> operations = entries.stream().map(entry -> project(hqId, entry)).toList();
     long nextSequence = entries.isEmpty() ? cursor.sequence() : entries.get(entries.size() - 1).sequence();
     return new ChangesBatch(
-        SCHEMA_VERSION, PosSyncCursor.of(hqId, nextSequence).format(), operations);
+        SCHEMA_VERSION,
+        PosSyncCursor.of(hqId, nextSequence).format(),
+        operations,
+        currentSite(hqId));
+  }
+
+  // Same live site projection as bootstrap: name and address from the headquarter, currency from config.
+  private SiteRow currentSite(long hqId) {
+    Headquarter hq =
+        headquarterRepository
+            .findById(hqId)
+            .orElseThrow(() -> new HeadquarterNotFoundException(hqId));
+    String currency =
+        posOperationalConfigRepository
+            .findByHeadquarterId(hqId)
+            .map(PosOperationalConfig::getCurrency)
+            .filter(c -> c != null && !c.isBlank())
+            .orElse("MXN");
+    return new SiteRow(String.valueOf(hq.getId()), hq.getName(), hq.getAddress(), currency);
   }
 
   private ChangeOperation project(long hqId, PosChangeLogRepository.PosChangeLogEntry entry) {

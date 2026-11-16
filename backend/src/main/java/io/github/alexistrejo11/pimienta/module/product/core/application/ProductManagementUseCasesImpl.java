@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Service
 public class ProductManagementUseCasesImpl implements ProductManagementUseCases {
@@ -69,7 +70,7 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
   @Override
   @Transactional
   public Product create(CreateProductCommand command) {
-    String barcode = blankToNull(command.barcode());
+    String barcode = Strings.blankToNull(command.barcode());
     assertBarcodeUnique(barcode, null);
 
     Long inventoryItemId = null;
@@ -94,7 +95,7 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
   @Transactional
   public Product update(long id, UpdateProductCommand command) {
     Product existing = getById(id);
-    String barcode = blankToNull(command.barcode());
+    String barcode = Strings.blankToNull(command.barcode());
     String nextName = command.name() == null ? "" : command.name().strip();
     boolean identityChanged =
         !existing.getName().equals(nextName) || !Objects.equals(existing.getBarcode(), barcode);
@@ -140,7 +141,7 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
     Item item =
         Item.create(
             name,
-            description != null ? description : "",
+            description,
             BigDecimal.ZERO,
             ItemCategory.FINISHED_GOOD,
             ItemUnit.valueOf(unit.name()),
@@ -186,10 +187,4 @@ public class ProductManagementUseCasesImpl implements ProductManagementUseCases 
     }
   }
 
-  private static String blankToNull(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.strip();
-  }
 }

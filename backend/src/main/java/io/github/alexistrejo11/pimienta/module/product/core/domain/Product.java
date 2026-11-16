@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.product.core.domain;
 
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 import java.time.LocalDateTime;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 /**
  * Sale catalog row. The SKU is assigned by the database on insert. Stock, when tracked, is the
@@ -199,7 +200,7 @@ public class Product extends BaseDomain<Long> {
       product.name = name != null ? name.strip() : "";
       product.description = description != null ? description : "";
       product.unit = unit != null ? unit : Unit.PIECE;
-      product.barcode = blankToNull(barcode);
+      product.barcode = Strings.blankToNull(barcode);
       product.status = status != null ? status : Status.ACTIVE;
       product.inventoryItemId = inventoryItemId;
       product.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
@@ -221,11 +222,5 @@ public class Product extends BaseDomain<Long> {
       return product;
     }
 
-    private static String blankToNull(String value) {
-      if (value == null || value.isBlank()) {
-        return null;
-      }
-      return value.strip();
-    }
   }
 }

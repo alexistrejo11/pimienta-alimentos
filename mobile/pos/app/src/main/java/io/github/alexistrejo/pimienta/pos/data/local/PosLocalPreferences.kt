@@ -20,9 +20,17 @@ class PosLocalPreferences(context: Context) {
         prefs.edit().putBoolean(KEY_SALES_CARD_NAMES_UPPERCASE, enabled).apply()
     }
 
+    // When true, catalog tiles show product SKU / supplier code below the price.
+    fun salesCardShowSku(): Boolean = prefs.getBoolean(KEY_SALES_CARD_SHOW_SKU, true)
+
+    fun setSalesCardShowSku(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SALES_CARD_SHOW_SKU, enabled).apply()
+    }
+
     private companion object {
         const val PREFS = "pos-local-prefs"
         const val KEY_KITCHEN_TICKET_PRINT_FILTER = "kitchen_ticket_print_filter"
         const val KEY_SALES_CARD_NAMES_UPPERCASE = "sales_card_names_uppercase"
+        const val KEY_SALES_CARD_SHOW_SKU = "sales_card_show_sku"
     }
 }

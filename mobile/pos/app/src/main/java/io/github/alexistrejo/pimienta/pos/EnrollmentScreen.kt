@@ -68,7 +68,7 @@ internal fun EnrollmentScreen(
                     capitalization = KeyboardCapitalization.Sentences,
                     keyboardType = KeyboardType.Text,
                 ),
-                colors = catalogFieldColors(),
+                colors = formFieldColors(),
             )
             if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
             PosButton(

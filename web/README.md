@@ -54,8 +54,9 @@ npm test
 ## Production Delivery
 
 The web workflow builds the application, publishes a container image to GHCR,
-and deploys the matching image to the production host through Cloudflare
-Access. The workflow runs for relevant changes merged into `main`.
+and deploys the matching image to the production EC2 host over SSH. The
+workflow runs for relevant changes merged into `main`. Host layout is in
+`docs/project/pimienta-alimentos/deploy.md`.
 
 ## Documentation
 

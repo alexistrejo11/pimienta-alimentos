@@ -24,8 +24,6 @@ class Phase1ComposeTest {
                     cashier = "Cajera",
                     pending = 0,
                     syncLabel = "Inventario sincronizado hace 0 min",
-                    dark = true,
-                    onTheme = {},
                     landscape = false,
                     openManager = {},
                     openDevices = {},
@@ -49,8 +47,6 @@ class Phase1ComposeTest {
                     cashier = "Cajera",
                     pending = 0,
                     syncLabel = "Inventario sincronizado hace 0 min",
-                    dark = true,
-                    onTheme = {},
                     landscape = false,
                     openManager = {},
                     openDevices = {},
@@ -64,6 +60,7 @@ class Phase1ComposeTest {
         }
 
         composeRule.onNodeWithText("Acciones ▼").performClick()
+        composeRule.onNodeWithText("Último ticket").assertIsDisplayed()
         composeRule.onNodeWithText("Dispositivos").assertIsDisplayed()
         composeRule.onNodeWithText("Panel Manager").assertIsDisplayed()
     }

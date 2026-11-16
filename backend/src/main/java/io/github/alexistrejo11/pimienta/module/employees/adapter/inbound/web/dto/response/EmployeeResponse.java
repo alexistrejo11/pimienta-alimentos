@@ -8,9 +8,7 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.WorkS
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import lombok.Builder;
 
-@Builder
 public record EmployeeResponse(
         Long id,
         String firstName,

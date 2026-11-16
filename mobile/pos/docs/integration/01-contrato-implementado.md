@@ -24,8 +24,9 @@ abiertos; ver [../implementation/00-estado-actual.md](../implementation/00-estad
 | `POST /api/v1/pos/devices/enroll` | Canjear código de un solo uso de 10 min por identidad de tablet, sede y tokens. |
 | `POST /api/v1/pos/devices/refresh` | Rotar refresh token. El access dura 15 min; refresh 180 días (semestre), máximo 365. |
 | `GET /api/v1/pos/devices/me` | Consultar estado, sede, versión mínima y schemas soportados. |
+| `PATCH /api/v1/pos/devices/me` | Renombrar el dispositivo autenticado. No rota tokens ni cambia `visibleCode` ni sede. |
 | `GET /api/v1/pos/sync/bootstrap` | Descargar snapshot plano y atómico de la sede. |
-| `GET /api/v1/pos/sync/changes?cursor=` | Descargar `upsert`/`deactivate`; cursor ajeno o inválido devuelve 409 y exige bootstrap. |
+| `GET /api/v1/pos/sync/changes?cursor=` | Descargar `upsert`/`deactivate` y la sede viva; cursor ajeno o inválido devuelve 409 y exige bootstrap. |
 | `POST /api/v1/pos/sync/events` | Enviar lote ordenado por secuencia y recibir resultado individual. |
 | `POST /api/v1/pos/sync/products` | Alta síncrona de un producto vendible en la sede del dispositivo. JWT de tablet; sede del claim. |
 | `PUT /api/v1/pos/sync/products/{itemId}` | Renombra el artículo maestro. No cambia precio ni política de stock. |
@@ -40,6 +41,16 @@ siga `AUTHORIZED` o esté `REVOKED`: rota el refresh, conserva la sede y
 `lastDeviceSequence`. Si ya estaba autorizado, el código visible no cambia.
 Un código de otra sede responde **409** `POS_ENROLLMENT_HEADQUARTER_MISMATCH`
 y no mueve la tablet.
+
+### Renombre del dispositivo
+
+`PATCH /api/v1/pos/devices/me` con JWT de dispositivo (`typ=device`,
+`scope=pos:sync`). Body: `{ "deviceName": "Caja 1" }`. El nombre se recorta;
+vacío o de más de 40 caracteres → **400** `VALIDATION_FAILED`. El id sale del
+token: un dispositivo no puede renombrar a otro. Actualiza `device_name` y
+`updated_at`. La respuesta es `DeviceMeResponse`. No rota access ni refresh,
+no cambia `visibleCode` ni la sede. Dispositivo revocado → **403**
+`POS_DEVICE_REVOKED`. Un JWT de staff → **403**.
 
 ### Alta de producto desde caja
 
@@ -81,6 +92,14 @@ Se aplica por completo dentro de una transacción Room. Los hechos locales,
 turnos, tickets, impresión y outbox no se borran ni se regeneran. En deltas,
 la app guarda `nextCursor` solo después de aplicar todo el lote. Un cambio de
 catálogo no modifica snapshots de ventas ni un carrito activo.
+
+Cada respuesta de `changes` incluye además `site` (`id`, `name`, `address`,
+`currency`), leído en vivo igual que el bootstrap: nombre y dirección de
+`Headquarter`, moneda de la configuración operativa de la sede (`MXN` si no
+hay). No forma parte del cursor ni del change log. Un cambio de nombre o
+dirección ya guardado llega en el siguiente delta, aunque no haya operaciones
+de catálogo. El `schemaVersion` no cambia. Un cliente que ignore campos
+desconocidos sigue sincronizando. `site` no es una operación `upsert`.
 
 ### Política de producto abierto
 

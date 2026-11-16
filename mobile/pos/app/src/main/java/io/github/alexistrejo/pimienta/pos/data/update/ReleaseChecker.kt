@@ -1,7 +1,9 @@
 package io.github.alexistrejo.pimienta.pos.data.update
 
+import io.github.alexistrejo.pimienta.pos.data.sync.traceIdInterceptor
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -72,11 +74,16 @@ class ReleaseChecker(
             return if (trimmed.endsWith("/")) trimmed else "$trimmed/"
         }
 
-        private fun defaultApi(baseUrl: String): PosReleaseApi =
-            Retrofit.Builder()
+        private fun defaultApi(baseUrl: String): PosReleaseApi {
+            val client = OkHttpClient.Builder()
+                .addInterceptor(traceIdInterceptor())
+                .build()
+            return Retrofit.Builder()
                 .baseUrl(normalizeBaseUrl(baseUrl))
+                .client(client)
                 .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
                 .build()
                 .create(PosReleaseApi::class.java)
+        }
     }
 }

@@ -13,6 +13,7 @@
 *.env.development.local
 *.env.test.local
 *.env.production.local
+.env.cloud
 
 # Mobile (Android / Gradle)
 mobile/**/.gradle/

@@ -14,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.PersonalProfile;
 
 import java.math.BigDecimal;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public class EmployeePersistenceMapper {
 
@@ -29,23 +30,23 @@ public class EmployeePersistenceMapper {
     EmployeePersonalEmbeddable p = e.getPersonal();
     p.setFirstName(domain.getPersonal().firstName());
     p.setLastName(domain.getPersonal().lastName());
-    p.setPhotoUrl(blankToNull(domain.getPersonal().photoUrl()));
-    p.setEmail(blankToNull(domain.getPersonal().email()));
-    p.setPhone(blankToNull(domain.getPersonal().phone()));
-    p.setAddress(blankToNull(domain.getPersonal().address()));
+    p.setPhotoUrl(Strings.blankToNull(domain.getPersonal().photoUrl()));
+    p.setEmail(Strings.blankToNull(domain.getPersonal().email()));
+    p.setPhone(Strings.blankToNull(domain.getPersonal().phone()));
+    p.setAddress(Strings.blankToNull(domain.getPersonal().address()));
     p.setBirthDate(domain.getPersonal().birthDate());
-    p.setNationality(blankToNull(domain.getPersonal().nationality()));
+    p.setNationality(Strings.blankToNull(domain.getPersonal().nationality()));
 
     EmployeeOfficialIdsEmbeddable o = e.getOfficialIds();
-    o.setCurp(blankToNull(domain.getOfficialIds().curp()));
-    o.setRfc(blankToNull(domain.getOfficialIds().rfc()));
-    o.setNss(blankToNull(domain.getOfficialIds().nss()));
-    o.setClabe(blankToNull(domain.getOfficialIds().clabe()));
-    o.setEmployeeNumber(blankToNull(domain.getOfficialIds().employeeNumber()));
+    o.setCurp(Strings.blankToNull(domain.getOfficialIds().curp()));
+    o.setRfc(Strings.blankToNull(domain.getOfficialIds().rfc()));
+    o.setNss(Strings.blankToNull(domain.getOfficialIds().nss()));
+    o.setClabe(Strings.blankToNull(domain.getOfficialIds().clabe()));
+    o.setEmployeeNumber(Strings.blankToNull(domain.getOfficialIds().employeeNumber()));
 
     EmployeeEmploymentEmbeddable em = e.getEmployment();
-    em.setPosition(blankToNull(domain.getEmployment().position()));
-    em.setDepartment(blankToNull(domain.getEmployment().department()));
+    em.setPosition(Strings.blankToNull(domain.getEmployment().position()));
+    em.setDepartment(Strings.blankToNull(domain.getEmployment().department()));
     em.setContractType(domain.getEmployment().contractType());
     em.setWorkShift(domain.getEmployment().workShift());
     em.setHireDate(domain.getEmployment().hireDate());
@@ -156,11 +157,4 @@ public class EmployeePersistenceMapper {
         row.getVacationPremiumPercent());
   }
 
-  private static String blankToNull(String s) {
-    if (s == null) {
-      return null;
-    }
-    String t = s.trim();
-    return t.isEmpty() ? null : t;
-  }
 }

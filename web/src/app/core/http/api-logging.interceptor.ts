@@ -69,7 +69,7 @@ export const apiLoggingInterceptor: HttpInterceptorFn = (
             req.method,
             reqSummary.path.split('?')[0],
             err.status,
-            parsed.traceId ?? readTraceId(err),
+            req.headers.get('X-Trace-Id') || parsed.traceId || readTraceId(err),
           );
         }
       }

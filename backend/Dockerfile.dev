@@ -3,13 +3,13 @@
 FROM maven:3.9-eclipse-temurin-25-alpine
 WORKDIR /workspace
 
-RUN apk add --no-cache inotify-tools
+RUN apk add --no-cache inotify-tools curl
 
 COPY pom.xml .
 COPY src ./src
 COPY docker/dev-run.sh /usr/local/bin/dev-run.sh
 RUN chmod +x /usr/local/bin/dev-run.sh
 
-EXPOSE 8027
+EXPOSE 8080 8081
 
 CMD ["dev-run.sh"]

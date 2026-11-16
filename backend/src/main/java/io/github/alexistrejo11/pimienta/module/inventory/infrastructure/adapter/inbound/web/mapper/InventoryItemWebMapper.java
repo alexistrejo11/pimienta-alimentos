@@ -7,7 +7,6 @@ import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.ItemStockSettingsRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.request.ItemUpdateRequest;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.inbound.web.dto.response.ItemResponse;
-import java.math.BigDecimal;
 
 public final class InventoryItemWebMapper {
 
@@ -17,12 +16,12 @@ public final class InventoryItemWebMapper {
     Item item =
         Item.create(
             request.name(),
-            request.description() != null ? request.description() : "",
-            request.costPrice() != null ? request.costPrice() : BigDecimal.ZERO,
+            request.description(),
+            request.costPrice(),
             request.category(),
             request.unit(),
-            request.reorderPoint() != null ? request.reorderPoint() : 0,
-            request.reorderQuantity() != null ? request.reorderQuantity() : 0);
+            request.reorderPoint(),
+            request.reorderQuantity());
     item.setBrand(request.brand());
     return item;
   }

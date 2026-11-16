@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.contract.adapter.out.persistence.
 import io.github.alexistrejo11.pimienta.module.contract.core.domain.Contract;
 import java.util.Objects;
 import org.springframework.stereotype.Component;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Component
 public final class ContractPersistenceMapper {
@@ -54,9 +55,9 @@ public final class ContractPersistenceMapper {
     e.setTermKind(domain.getTermKindOrNull());
     e.setEffectiveStart(domain.getEffectiveStart());
     e.setEffectiveEnd(domain.getEffectiveEnd());
-    e.setDocumentUrl(blankToNull(domain.getDocumentUrl()));
-    e.setTermsAndConditions(blankToNull(domain.getTermsAndConditions()));
-    e.setReferenceCode(blankToNull(domain.getReferenceCode()));
+    e.setDocumentUrl(Strings.blankToNull(domain.getDocumentUrl()));
+    e.setTermsAndConditions(Strings.blankToNull(domain.getTermsAndConditions()));
+    e.setReferenceCode(Strings.blankToNull(domain.getReferenceCode()));
     e.setRenewalCycleMonths(domain.getRenewalCycleMonths());
     e.setAgreedValue(domain.getAgreedValue());
     e.setCurrencyCode(currencyToPersist(domain.getCurrencyCode()));
@@ -73,12 +74,6 @@ public final class ContractPersistenceMapper {
     return s != null ? s : "";
   }
 
-  private static String blankToNull(String s) {
-    if (s == null || s.isBlank()) {
-      return null;
-    }
-    return s.strip();
-  }
 
   private static String currencyToPersist(String code) {
     if (code == null || code.isBlank()) {

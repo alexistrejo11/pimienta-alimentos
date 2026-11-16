@@ -13,4 +13,5 @@ public record PosTelemetryLogRequest(
     @NotBlank @Pattern(regexp = "ERROR|WARN|INFO") String level,
     @NotBlank @Size(max = 2000) String message,
     @Size(max = 12000) String stack,
-    @Size(max = 500) String occurredAt) {}
+    @Size(max = 500) String occurredAt,
+    @Size(max = 120) String traceId) {}

@@ -99,3 +99,19 @@ internal fun catalogFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
 )
 
+// Provides standard outlined field colors with a visible border for form text inputs and settings.
+@Composable
+internal fun formFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+    disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+    cursorColor = MaterialTheme.colorScheme.primary,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+)
+

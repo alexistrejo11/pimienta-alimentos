@@ -9,17 +9,20 @@ import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inboun
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosDeviceEnroll;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosDeviceMe;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosDeviceRefresh;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.doc.DocPosDeviceRename;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceEnrollRequest;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceEnrollResponse;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceMeResponse;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceRefreshRequest;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.DeviceTokenPairResponse;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.dto.RenameDeviceRequest;
 import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.inbound.web.mapper.PosWebMapper;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimit;
 import io.github.alexistrejo11.pimienta.shared.ratelimit.RateLimitProfile;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,5 +61,15 @@ public class DeviceAuthController {
   @DocPosDeviceMe
   public DeviceMeResponse me(@AuthenticationPrincipal DeviceAuthenticationContext device) {
     return PosWebMapper.toMeResponse(deviceAuthUseCases.me(device.deviceId()));
+  }
+
+  @PatchMapping("/me")
+  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
+  @DocPosDeviceRename
+  public DeviceMeResponse rename(
+      @AuthenticationPrincipal DeviceAuthenticationContext device,
+      @Valid @RequestBody RenameDeviceRequest request) {
+    return PosWebMapper.toMeResponse(
+        deviceAuthUseCases.rename(device.deviceId(), PosWebMapper.toRenameCommand(request)));
   }
 }

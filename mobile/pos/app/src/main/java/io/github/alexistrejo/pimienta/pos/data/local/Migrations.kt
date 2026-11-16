@@ -285,4 +285,11 @@ object Migrations {
             )
         }
     }
+
+    // Adds optional correlation id for queued telemetry without rewriting existing rows.
+    val V20_TO_V21 = object : Migration(20, 21) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `telemetry_event` ADD COLUMN `traceId` TEXT")
+        }
+    }
 }

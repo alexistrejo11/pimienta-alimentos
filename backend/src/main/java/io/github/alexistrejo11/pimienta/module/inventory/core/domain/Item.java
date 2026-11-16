@@ -78,16 +78,16 @@ public class Item extends BaseDomain<Long> {
       BigDecimal costPrice,
       ItemCategory category,
       ItemUnit unit,
-      int reorderPoint,
-      int reorderQuantity) {
+      Integer reorderPoint,
+      Integer reorderQuantity) {
     Item item = new Item();
     item.name = name;
-    item.description = description;
-    item.costPrice = costPrice;
+    item.description = description != null ? description : "";
+    item.costPrice = costPrice != null ? costPrice : BigDecimal.ZERO;
     item.category = category;
     item.unit = unit;
-    item.reorderPoint = reorderPoint;
-    item.reorderQuantity = reorderQuantity;
+    item.reorderPoint = reorderPoint != null ? reorderPoint : 0;
+    item.reorderQuantity = reorderQuantity != null ? reorderQuantity : 0;
     item.status = ItemStatus.ACTIVE;
     item.createdAt = LocalDateTime.now();
     item.updatedAt = item.createdAt;

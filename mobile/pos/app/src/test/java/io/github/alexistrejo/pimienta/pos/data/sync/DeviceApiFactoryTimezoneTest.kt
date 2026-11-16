@@ -6,12 +6,17 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
 // Confirms enroll/refresh and authenticated sync clients send the device zone.
 class DeviceApiFactoryTimezoneTest {
+    private val uuid =
+        Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
     private lateinit var server: MockWebServer
 
     @Before
@@ -28,13 +33,19 @@ class DeviceApiFactoryTimezoneTest {
     @Test
     fun authenticatedClientSendsDeviceZoneAndBearer() = runBlocking {
         server.enqueue(changesOk())
+        server.enqueue(changesOk())
         val api = DeviceApiFactory.create(server.url("/").toString()) { "access-token" }
 
         api.changes("cursor")
+        api.changes("cursor")
 
-        val recorded = server.takeRequest()
-        assertEquals(ZoneId.systemDefault().id, recorded.getHeader("X-Timezone"))
-        assertEquals("Bearer access-token", recorded.getHeader("Authorization"))
+        val first = server.takeRequest()
+        val second = server.takeRequest()
+        assertEquals(ZoneId.systemDefault().id, first.getHeader("X-Timezone"))
+        assertEquals("Bearer access-token", first.getHeader("Authorization"))
+        assertTrue(first.getHeader("X-Trace-Id")!!.matches(uuid))
+        assertTrue(second.getHeader("X-Trace-Id")!!.matches(uuid))
+        assertNotEquals(first.getHeader("X-Trace-Id"), second.getHeader("X-Trace-Id"))
     }
 
     @Test
@@ -47,6 +58,7 @@ class DeviceApiFactoryTimezoneTest {
         val recorded = server.takeRequest()
         assertEquals(ZoneId.systemDefault().id, recorded.getHeader("X-Timezone"))
         assertNull(recorded.getHeader("Authorization"))
+        assertTrue(recorded.getHeader("X-Trace-Id")!!.matches(uuid))
     }
 
     private fun changesOk(): MockResponse =

@@ -16,7 +16,7 @@ import io.github.alexistrejo11.pimienta.module.inventory.core.port.input.PosSale
 import io.github.alexistrejo11.pimienta.module.inventory.core.port.output.InventoryRepository;
 import io.github.alexistrejo11.pimienta.module.product.core.port.output.ProductRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.port.output.PosChangeLogRepository;
-import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.output.persistence.repository.PosChangeLogSpringDataRepository;
+import io.github.alexistrejo11.pimienta.module.pos.infrastructure.adapter.outbound.persistence.repository.PosChangeLogSpringDataRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;

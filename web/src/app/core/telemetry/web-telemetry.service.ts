@@ -27,6 +27,7 @@ export class WebTelemetryService {
   reportError(error: unknown, eventType = 'unhandled_exception'): void {
     if (!isPlatformBrowser(this.platformId)) return;
     const normalized = normalizeError(error);
+    const traceId = crypto.randomUUID();
     this.send({
       schemaVersion: 1,
       eventType,
@@ -35,6 +36,7 @@ export class WebTelemetryService {
       stack: normalized.stack,
       route: window.location.pathname,
       release: WEB_RELEASE,
+      traceId,
       userAgent: truncateUserAgent(navigator.userAgent),
       occurredAt: new Date().toISOString(),
     });
@@ -60,10 +62,13 @@ export class WebTelemetryService {
     if (!accessToken) return;
 
     // Telemetry is best effort and must never affect the user operation.
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (payload.traceId) {
+      headers['X-Trace-Id'] = payload.traceId;
+    }
+
     this.bareHttp
-      .post(`${API_BASE_URL}/telemetry/web/events`, payload, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
+      .post(`${API_BASE_URL}/telemetry/web/events`, payload, { headers })
       .subscribe({ error: () => undefined });
   }
 }

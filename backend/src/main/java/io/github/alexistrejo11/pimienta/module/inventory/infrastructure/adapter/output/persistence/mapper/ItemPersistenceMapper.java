@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter
 import io.github.alexistrejo11.pimienta.module.inventory.core.domain.Item;
 import io.github.alexistrejo11.pimienta.module.inventory.infrastructure.adapter.output.persistence.entity.ItemJpaEntity;
 import java.math.BigDecimal;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public final class ItemPersistenceMapper {
 
@@ -14,10 +15,10 @@ public final class ItemPersistenceMapper {
       entity.setId(domain.getId());
     }
     entity.setName(domain.getName());
-    entity.setDescription(blankToNull(domain.getDescription()));
+    entity.setDescription(Strings.blankToNull(domain.getDescription()));
     entity.setCategory(domain.getCategory());
     entity.setUnit(domain.getUnit());
-    entity.setBrand(blankToNull(domain.getBrand()));
+    entity.setBrand(Strings.blankToNull(domain.getBrand()));
     entity.setCostPrice(nz(domain.getCostPrice()));
     entity.setReorderPoint(domain.getReorderPoint());
     entity.setReorderQuantity(domain.getReorderQuantity());
@@ -54,10 +55,4 @@ public final class ItemPersistenceMapper {
     return value != null ? value : BigDecimal.ZERO;
   }
 
-  private static String blankToNull(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.strip();
-  }
 }

@@ -84,6 +84,7 @@ import androidx.room.PrimaryKey
     val stack: String? = null,
     val occurredAtEpochMillis: Long,
     val createdAtEpochMillis: Long = occurredAtEpochMillis,
+    val traceId: String? = null,
 )
 
 // Keeps a durable print request and the latest delivery diagnostic.

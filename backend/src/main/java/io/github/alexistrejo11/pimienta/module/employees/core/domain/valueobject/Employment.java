@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobjec
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.ContractType;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.WorkShift;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 import java.time.LocalDate;
 
@@ -19,8 +20,8 @@ public record Employment(
     EmployeeStatus status) {
 
   public Employment {
-    position = position != null ? position.trim() : "";
-    department = department != null ? department.trim() : "";
+    position = Strings.nullToEmpty(position);
+    department = Strings.nullToEmpty(department);
     contractType = contractType != null ? contractType : ContractType.UNDEFINED;
     workShift = workShift != null ? workShift : WorkShift.UNDEFINED;
     status = status != null ? status : EmployeeStatus.UNDEFINED;

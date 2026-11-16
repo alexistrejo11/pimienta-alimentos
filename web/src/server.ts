@@ -5,17 +5,37 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import express from 'express';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
+const TRACE_ID_HEADER = 'X-Trace-Id';
+const CANONICAL_UUID =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+type TraceStore = { traceId: string };
+
+const als = new AsyncLocalStorage<TraceStore>();
+(globalThis as Record<symbol, unknown>)[Symbol.for('pimienta.traceAls')] = als;
+
+function acceptedTraceId(header: string | string[] | undefined): string {
+  const raw = Array.isArray(header) ? header[0] : header;
+  const trimmed = raw?.trim();
+  if (trimmed && CANONICAL_UUID.test(trimmed)) {
+    return trimmed;
+  }
+  return crypto.randomUUID();
+}
 
 function logJson(level: string, message: string, extra: Record<string, unknown> = {}): void {
+  const traceId = als.getStore()?.traceId;
   const line = JSON.stringify({
     '@timestamp': new Date().toISOString(),
     level,
     service: 'web-ssr',
     source: 'application',
     message,
+    ...(traceId ? { traceId } : {}),
     ...extra,
   });
   if (level === 'ERROR') {
@@ -98,19 +118,23 @@ app.use(
  * Handle all other requests by rendering the Angular application.
  */
 app.use((req, res, next) => {
-  angularApp
-    .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
-    .catch((error: unknown) => {
-      logJson('ERROR', 'ssr_render_failed', {
-        method: req.method,
-        path: req.path,
-        cause: error instanceof Error ? error.message : 'unknown',
+  const traceId = acceptedTraceId(req.headers['x-trace-id']);
+  res.setHeader(TRACE_ID_HEADER, traceId);
+  als.run({ traceId }, () => {
+    angularApp
+      .handle(req)
+      .then((response) =>
+        response ? writeResponseToNodeResponse(response, res) : next(),
+      )
+      .catch((error: unknown) => {
+        logJson('ERROR', 'ssr_render_failed', {
+          method: req.method,
+          path: req.path,
+          cause: error instanceof Error ? error.message : 'unknown',
+        });
+        next(error);
       });
-      next(error);
-    });
+  });
 });
 
 /**

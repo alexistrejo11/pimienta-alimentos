@@ -17,6 +17,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @Service
 public class NotificationDispatchUseCasesImpl implements NotificationDispatchUseCases {
@@ -54,9 +55,9 @@ public class NotificationDispatchUseCasesImpl implements NotificationDispatchUse
     Map<String, String> templateVars = Map.of(
         "newUserId", String.valueOf(event.newUserId()),
         "newUserEmail", event.newUserEmail(),
-        "newUserFirstName", nullToEmpty(event.newUserFirstName()),
-        "newUserLastName", nullToEmpty(event.newUserLastName()),
-        "newUserPhone", nullToEmpty(event.newUserPhone()));
+        "newUserFirstName", Strings.nullToEmpty(event.newUserFirstName()),
+        "newUserLastName", Strings.nullToEmpty(event.newUserLastName()),
+        "newUserPhone", Strings.nullToEmpty(event.newUserPhone()));
 
     for (AdminRecipient admin : admins) {
       dispatchToAdmin(admin, correlationId, subject, body, templateVars, event.newUserId());
@@ -140,17 +141,14 @@ public class NotificationDispatchUseCasesImpl implements NotificationDispatchUse
         + " Email: "
         + event.newUserEmail()
         + ", name: "
-        + nullToEmpty(event.newUserFirstName())
+        + Strings.nullToEmpty(event.newUserFirstName())
         + " "
-        + nullToEmpty(event.newUserLastName())
+        + Strings.nullToEmpty(event.newUserLastName())
         + ", phone: "
-        + nullToEmpty(event.newUserPhone())
+        + Strings.nullToEmpty(event.newUserPhone())
         + ", userId: "
         + event.newUserId()
         + ".";
   }
 
-  private static String nullToEmpty(String value) {
-    return value == null ? "" : value;
-  }
 }

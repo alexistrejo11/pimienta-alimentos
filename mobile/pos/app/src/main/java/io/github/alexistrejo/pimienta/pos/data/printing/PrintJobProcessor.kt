@@ -2,6 +2,7 @@ package io.github.alexistrejo.pimienta.pos.data.printing
 
 import io.github.alexistrejo.pimienta.pos.data.local.PosDatabase
 import io.github.alexistrejo.pimienta.pos.data.local.entity.PrintJobEntity
+import io.github.alexistrejo.pimienta.pos.data.local.entity.SaleEntity
 import io.github.alexistrejo.pimienta.pos.domain.WithdrawalLabels
 import io.github.alexistrejo.pimienta.pos.hardware.EscPosEncoder
 import io.github.alexistrejo.pimienta.pos.hardware.PrintFailure
@@ -110,19 +111,13 @@ class PrintJobProcessor(
                 val sale = dao.sale(job.saleId) ?: return PrintResult.Failed(PrintFailure.UNSUPPORTED)
                 val site = database.siteDao().current()
                 val isCash = sale.paymentMethod == "CASH"
-                TicketDocument(
-                    title = "Ticket de compra",
-                    folio = sale.folio,
-                    occurredAt = Instant.ofEpochMilli(sale.confirmedAtEpochMillis),
+                saleTicket(
+                    sale = sale,
                     lines = dao.linesForSale(sale.id).map { PrintableLine(it.productName, it.quantity.toString(), it.subtotalCentavos) },
-                    totalCentavos = sale.totalCentavos,
-                    paymentLabel = spanishPaymentLabel(sale.paymentMethod),
-                    duplicate = job.duplicate,
                     siteName = site?.name,
                     siteAddress = site?.address,
-                    discountCentavos = sale.discountCentavos,
-                    tenderedCentavos = if (isCash) sale.tenderedCentavos else null,
-                    changeCentavos = if (isCash) sale.changeCentavos else null,
+                    duplicate = job.duplicate,
+                    isCash = isCash,
                 )
             }
             "CASH_WITHDRAWAL" -> {
@@ -215,3 +210,26 @@ class PrintJobProcessor(
         }
     }
 }
+
+// Sale ticket built at print time from the site row currently in Room.
+internal fun saleTicket(
+    sale: SaleEntity,
+    lines: List<PrintableLine>,
+    siteName: String?,
+    siteAddress: String?,
+    duplicate: Boolean,
+    isCash: Boolean,
+): TicketDocument = TicketDocument(
+    title = "Ticket de compra",
+    folio = sale.folio,
+    occurredAt = Instant.ofEpochMilli(sale.confirmedAtEpochMillis),
+    lines = lines,
+    totalCentavos = sale.totalCentavos,
+    paymentLabel = spanishPaymentLabel(sale.paymentMethod),
+    duplicate = duplicate,
+    siteName = siteName,
+    siteAddress = siteAddress,
+    discountCentavos = sale.discountCentavos,
+    tenderedCentavos = if (isCash) sale.tenderedCentavos else null,
+    changeCentavos = if (isCash) sale.changeCentavos else null,
+)

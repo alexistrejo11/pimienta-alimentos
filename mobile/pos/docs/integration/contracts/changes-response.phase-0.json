@@ -18,5 +18,11 @@
         "highChangeWarningCentavos": 100000
       }
     }
-  ]
+  ],
+  "site": {
+    "id": "42",
+    "name": "CNA",
+    "address": "Calle 1",
+    "currency": "MXN"
+  }
 }

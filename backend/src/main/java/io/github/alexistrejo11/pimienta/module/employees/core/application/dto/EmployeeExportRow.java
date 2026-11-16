@@ -1,9 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.application.dto;
 
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
-import lombok.Builder;
 
-@Builder
 public record EmployeeExportRow(
                 Long id,
                 String firstName,

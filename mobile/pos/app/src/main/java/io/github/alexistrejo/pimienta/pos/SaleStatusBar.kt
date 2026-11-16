@@ -82,8 +82,6 @@ internal fun StatusBar(
     cashier: String,
     pending: Int,
     syncLabel: String,
-    dark: Boolean,
-    onTheme: (Boolean) -> Unit,
     landscape: Boolean,
     openManager: () -> Unit,
     openDevices: () -> Unit,
@@ -97,6 +95,8 @@ internal fun StatusBar(
     onSyncNow: () -> Unit = {},
     syncBusy: Boolean = false,
     createProductEnabled: Boolean = true,
+    onReprintLastTicket: () -> Unit = {},
+    reprintBusy: Boolean = false,
 ) {
     var expanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val headerBtnPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -155,12 +155,13 @@ internal fun StatusBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
+                    // Keep this row alphabetical by the idle label so cashiers can scan it.
                     PosButton("Agregar producto", onCreateProduct, enabled = createProductEnabled, contentPadding = headerBtnPadding)
-                    PosButton(if (syncBusy) "Sincronizando…" else "Sincronizar", onSyncNow, enabled = !syncBusy, contentPadding = headerBtnPadding)
-                    PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
                     PosButton("Dispositivos", openDevices, contentPadding = headerBtnPadding)
                     PosButton("Panel Manager", openManager, contentPadding = headerBtnPadding)
-                    PosButton(if (dark) "Tema claro" else "Tema oscuro", { onTheme(!dark) }, contentPadding = headerBtnPadding)
+                    PosButton("Sangría", openWithdrawal, enabled = withdrawalEnabled, contentPadding = headerBtnPadding)
+                    PosButton(if (syncBusy) "Sincronizando…" else "Sincronizar", onSyncNow, enabled = !syncBusy, contentPadding = headerBtnPadding)
+                    PosButton(if (reprintBusy) "Imprimiendo…" else "Último ticket", onReprintLastTicket, enabled = !reprintBusy, contentPadding = headerBtnPadding)
                 }
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),

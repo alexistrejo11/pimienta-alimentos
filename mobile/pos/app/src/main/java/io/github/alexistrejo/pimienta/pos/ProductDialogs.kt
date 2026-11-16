@@ -129,7 +129,7 @@ internal fun CreatePosProductDialog(
                     interactionSource = nameInteraction,
                     label = { Text("Nombre") },
                     singleLine = true,
-                    colors = catalogFieldColors(),
+                    colors = formFieldColors(),
                 )
                 Text("Categoría", style = MaterialTheme.typography.labelLarge)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -147,7 +147,7 @@ internal fun CreatePosProductDialog(
                     label = { Text("Código de barras (opcional)") },
                     singleLine = true,
                     readOnly = lockedBarcode != null,
-                    colors = catalogFieldColors(),
+                    colors = formFieldColors(),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Switch(checked = controlled, onCheckedChange = { controlled = it })
@@ -244,7 +244,7 @@ internal fun EditPosProductDialog(
                     label = { Text("Nombre") },
                     singleLine = true,
                     enabled = !busy,
-                    colors = catalogFieldColors(),
+                    colors = formFieldColors(),
                 )
                 OutlinedTextField(
                     value = barcode,
@@ -257,7 +257,7 @@ internal fun EditPosProductDialog(
                     supportingText = { Text("Opcional. Vacío significa que no tiene código de empaque.") },
                     singleLine = true,
                     enabled = !busy,
-                    colors = catalogFieldColors(),
+                    colors = formFieldColors(),
                 )
                 Text("Categoría", style = MaterialTheme.typography.labelLarge)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

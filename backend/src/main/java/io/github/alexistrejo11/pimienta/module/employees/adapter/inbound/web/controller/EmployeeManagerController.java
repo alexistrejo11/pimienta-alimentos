@@ -65,6 +65,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 @RestController
 @RequestMapping(BASE + "/employees")
@@ -115,7 +116,7 @@ public class EmployeeManagerController {
       @RequestParam(required = false) String department,
       @RequestParam(required = false) String q,
       @ParameterObject @ModelAttribute PageableRequest pageable) {
-    EmployeeSearchCriteria criteria = new EmployeeSearchCriteria(status, blankToNull(department), blankToNull(q));
+    EmployeeSearchCriteria criteria = new EmployeeSearchCriteria(status, Strings.blankToNull(department), Strings.blankToNull(q));
     Page<Employee> employees = employeeManagementUseCases.search(criteria, pageable.toPageable());
     return PagedResponse.map(
         employees, e -> EmployeeManagerWebMapper.toListItem(e, employeePhotoUrlPresenter));
@@ -140,7 +141,7 @@ public class EmployeeManagerController {
       @RequestParam(required = false) String q,
       @ParameterObject @ModelAttribute PageableRequest pageable)
       throws IOException {
-    EmployeeSearchCriteria criteria = new EmployeeSearchCriteria(status, blankToNull(department), blankToNull(q));
+    EmployeeSearchCriteria criteria = new EmployeeSearchCriteria(status, Strings.blankToNull(department), Strings.blankToNull(q));
     byte[] bytes = employeeBulkSyncUseCases.exportEmployees(criteria, pageable.toPageable());
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=empleados_reporte.xlsx")
@@ -265,11 +266,4 @@ public class EmployeeManagerController {
     return EmployeeManagerWebMapper.toResponse(registered, employeePhotoUrlPresenter);
   }
 
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String trimmed = value.trim();
-    return trimmed.isEmpty() ? null : trimmed;
-  }
 }

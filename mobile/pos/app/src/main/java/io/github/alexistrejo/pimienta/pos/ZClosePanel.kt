@@ -334,7 +334,7 @@ private fun ZCloseDialog(
                                 .onFocusChanged { if (it.isFocused) forceRejectionReasonKeyboard() },
                             interactionSource = rejectionReasonInteraction,
                             label = { Text("Motivo si se devuelve a corrección") },
-                            colors = catalogFieldColors(),
+                            colors = formFieldColors(),
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

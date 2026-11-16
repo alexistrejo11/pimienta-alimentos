@@ -64,6 +64,7 @@ internal fun Sale(
     var completedFolio by rememberSaveable { mutableStateOf<String?>(null) }
     var pending by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
+    var reprintBusy by remember { mutableStateOf(false) }
     var paymentMethodDraft by rememberSaveable { mutableStateOf(PaymentMethod.CASH) }
     var tenderedDraft by rememberSaveable { mutableStateOf("") }
     var devicesOpen by rememberSaveable { mutableStateOf(false) }
@@ -72,6 +73,7 @@ internal fun Sale(
     val manager = remember(managerId, users) { users.firstOrNull { it.id == managerId } }
     // Re-read after leaving the manager panel, where Configuración can change it.
     val uppercaseNames = remember(managerId) { repository.salesCardNamesUppercase() }
+    val showSku = remember(managerId) { repository.salesCardShowSku() }
     var discountAmountCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
     var discountModeName by rememberSaveable { mutableStateOf<String?>(null) }
     var discountTargetCentavos by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -393,6 +395,8 @@ internal fun Sale(
                 products = products,
                 pendingEvents = pending,
                 repository = repository,
+                dark = dark,
+                onTheme = onTheme,
                 onReturnToSale = { managerId = null },
                 onShiftClosed = {
                     managerId = null
@@ -410,8 +414,6 @@ internal fun Sale(
                 cashier = cashier,
                 pending = pending,
                 syncLabel = if (policy?.stockless == true) salesOnlySyncLabel(pending) else inventorySyncLabel(syncState, pending),
-                dark = dark,
-                onTheme = onTheme,
                 landscape = landscape,
                 openManager = { managerAccessRequested = true },
                 openDevices = { devicesOpen = true },
@@ -429,6 +431,22 @@ internal fun Sale(
                 onSyncNow = ::syncCatalogNow,
                 syncBusy = syncBusy,
                 createProductEnabled = !createProductBusy,
+                reprintBusy = reprintBusy,
+                // Reprints the newest ticket of the open shift without opening manager history.
+                onReprintLastTicket = {
+                    if (reprintBusy) return@StatusBar
+                    reprintBusy = true
+                    scope.launch {
+                        val folio = withContext(Dispatchers.IO) { repository.reprintLatestTicket() }
+                        if (folio == null) {
+                            feedbackHost.showSnackbar("No hay un ticket en este turno.")
+                        } else {
+                            PrintWorker.enqueue(context)
+                            feedbackHost.showSnackbar("Último ticket $folio enviado a la impresora.")
+                        }
+                        reprintBusy = false
+                    }
+                },
             )
             SaleCompleted(completedFolio) { folio ->
                 if (completedFolio == folio) completedFolio = null
@@ -560,6 +578,7 @@ internal fun Sale(
                                 hideBarcoded = hideBarcodedProducts,
                                 onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
                                 uppercaseNames = uppercaseNames,
+                                showSku = showSku,
                             )
 
                             CatalogSplitDivider(
@@ -636,6 +655,7 @@ internal fun Sale(
                         hideBarcoded = hideBarcodedProducts,
                         onToggleHideBarcoded = { hideBarcodedProducts = !hideBarcodedProducts },
                         uppercaseNames = uppercaseNames,
+                        showSku = showSku,
                     )
                 } else {
                     CartPanel(

@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Map;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 /**
  * Business contract aggregate: null-tolerant in persistence; getters expose
@@ -248,15 +249,15 @@ public class Contract extends BaseDomain<Long> {
   }
 
   public void setDocumentUrl(String documentUrl) {
-    this.documentUrl = blankToNull(documentUrl);
+    this.documentUrl = Strings.blankToNull(documentUrl);
   }
 
   public void setTermsAndConditions(String termsAndConditions) {
-    this.termsAndConditions = blankToNull(termsAndConditions);
+    this.termsAndConditions = Strings.blankToNull(termsAndConditions);
   }
 
   public void setReferenceCode(String referenceCode) {
-    this.referenceCode = blankToNull(referenceCode);
+    this.referenceCode = Strings.blankToNull(referenceCode);
   }
 
   public void setAgreedValue(BigDecimal agreedValue) {
@@ -358,17 +359,17 @@ public class Contract extends BaseDomain<Long> {
     }
 
     public SafeBuilder DocumentUrl(String documentUrl) {
-      this.documentUrl = blankToNull(documentUrl);
+      this.documentUrl = Strings.blankToNull(documentUrl);
       return this;
     }
 
     public SafeBuilder TermsAndConditions(String termsAndConditions) {
-      this.termsAndConditions = blankToNull(termsAndConditions);
+      this.termsAndConditions = Strings.blankToNull(termsAndConditions);
       return this;
     }
 
     public SafeBuilder ReferenceCode(String referenceCode) {
-      this.referenceCode = blankToNull(referenceCode);
+      this.referenceCode = Strings.blankToNull(referenceCode);
       return this;
     }
 
@@ -658,13 +659,6 @@ public class Contract extends BaseDomain<Long> {
     }
   }
 
-  private static String blankToNull(String s) {
-    if (s == null) {
-      return null;
-    }
-    var t = s.strip();
-    return t.isEmpty() ? null : t;
-  }
 
   private static String normalizeCurrency(String currencyCode) {
     if (currencyCode == null) {

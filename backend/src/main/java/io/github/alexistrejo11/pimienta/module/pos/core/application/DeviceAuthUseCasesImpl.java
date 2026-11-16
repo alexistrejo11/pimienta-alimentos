@@ -6,6 +6,7 @@ import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.exception
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.PosOperationalConfigRepository;
 import io.github.alexistrejo11.pimienta.module.pos.core.application.command.EnrollDeviceCommand;
+import io.github.alexistrejo11.pimienta.module.pos.core.application.command.RenameDeviceCommand;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosDevice;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.PosEnrollmentCode;
 import io.github.alexistrejo11.pimienta.module.pos.core.domain.enums.PosDeviceStatus;
@@ -143,6 +144,20 @@ public class DeviceAuthUseCasesImpl implements DeviceAuthUseCases {
   @Transactional
   public DeviceIssuedTokens refresh(String refreshToken) {
     return deviceTokenIssuer.refresh(refreshToken);
+  }
+
+  @Override
+  @Transactional
+  public DeviceMeResult rename(UUID deviceId, RenameDeviceCommand command) {
+    PosDevice device =
+        deviceRepository.findById(deviceId).orElseThrow(() -> new PosDeviceNotFoundException(deviceId));
+    if (device.isRevoked()) {
+      throw new PosDeviceRevokedException(deviceId);
+    }
+    device.setDeviceName(command.deviceName());
+    device.touch();
+    deviceRepository.save(device);
+    return me(deviceId);
   }
 
   @Override

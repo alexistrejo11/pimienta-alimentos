@@ -1,6 +1,6 @@
 # Profile: prod — Flyway migrations, schema validate, real AWS S3, tight actuator.
-# Actuator shares server.port (API_PORT). Do not set management.server.port to the
-# same value — that starts a second connector and breaks /actuator on the public port.
+# Actuator listens on management.server.port (default 8081), not API_PORT.
+# Do not publish 8081. An equal management port does not isolate Actuator.
 spring:
   flyway:
     enabled: true
@@ -14,6 +14,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:

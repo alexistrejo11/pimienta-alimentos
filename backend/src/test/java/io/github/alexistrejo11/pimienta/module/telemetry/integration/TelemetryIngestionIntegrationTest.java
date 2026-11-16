@@ -110,6 +110,32 @@ class TelemetryIngestionIntegrationTest {
         .andExpect(jsonPath("$.accepted").value(1));
   }
 
+  @Test
+  void posBatch_deviceJwt_withTraceId_isAccepted() throws Exception {
+    String deviceToken = enrollDeviceAccessToken();
+    mockMvc
+        .perform(
+            AccountTestRequests.postJsonBearer(
+                "/api/v1/pos/telemetry/events",
+                deviceToken,
+                """
+                {
+                  "events": [
+                    {
+                      "schemaVersion": 1,
+                      "eventType": "sync_failure",
+                      "level": "ERROR",
+                      "message": "retrying",
+                      "occurredAt": "2026-01-01T00:00:00Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  ]
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.accepted").value(1));
+  }
+
   private static String webEventJson() {
     return """
         {

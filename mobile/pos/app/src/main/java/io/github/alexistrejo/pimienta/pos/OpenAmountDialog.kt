@@ -110,7 +110,7 @@ internal fun OpenAmountDialog(
                     label = { Text("Concepto (opcional)") },
                     placeholder = { Text("Ej. 5 cucharas") },
                     singleLine = true,
-                    colors = catalogFieldColors(),
+                    colors = formFieldColors(),
                 )
                 Text("Descripción generada", style = MaterialTheme.typography.labelLarge)
                 Text(

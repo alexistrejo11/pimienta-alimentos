@@ -143,6 +143,10 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
     fun setSalesCardNamesUppercase(enabled: Boolean) {
         localPreferences.setSalesCardNamesUppercase(enabled)
     }
+    fun salesCardShowSku(): Boolean = localPreferences.salesCardShowSku()
+    fun setSalesCardShowSku(enabled: Boolean) {
+        localPreferences.setSalesCardShowSku(enabled)
+    }
     // Effective site high-sale threshold from the cached policy; null when the site disabled it.
     fun highSaleWarningCentavos(): Long? = HighSaleWarning.thresholdCentavos(database.syncProjectionDao().policy())
     // Effective site high-change threshold from the cached policy; null when the site disabled it.
@@ -457,6 +461,15 @@ class PosRepository(private val provider: PosDatabaseProvider, private val mode:
         database.operationsDao().insertPrintJob(
             PrintJobEntity(UUID.randomUUID().toString(), documentId, "PENDING", true, System.currentTimeMillis(), documentType)
         )
+    }
+
+    // Queues a duplicate of the newest ticket in the open shift. Returns its folio, or null when the shift has no sales.
+    fun reprintLatestTicket(): String? {
+        val operations = database.operationsDao()
+        val shift = operations.activeShift() ?: return null
+        val sale = operations.salesForShift(shift.id).firstOrNull() ?: return null
+        requestReprint(sale.id)
+        return sale.folio
     }
 
     // Cancels only a cash sale from the active shift and records the full audit trail.

@@ -16,7 +16,6 @@ import {
 } from '../../../core/operating-expenses/business-date';
 import { OperatingExpenseService } from '../../../core/operating-expenses/expense.service';
 import { dailyExpenseBars, type DailyExpenseBar } from '../../../core/operating-expenses/expense-summary-bars';
-import { HeadquarterLookupService } from '../../../core/headquarters/headquarter-lookup.service';
 import { operatingExpenseCategoryLabel } from '../../../core/i18n/enum-labels';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
 import {
@@ -49,11 +48,9 @@ interface ReceiptPreview {
     ListSearchFieldComponent,
   ],
   templateUrl: './gastos-page.html',
-  styles: ['.expense-table { min-width: 0; }'],
 })
 export class OperatingExpensesPageComponent implements OnInit {
   private readonly expenses = inject(OperatingExpenseService);
-  private readonly hqLookup = inject(HeadquarterLookupService);
   readonly session = inject(SessionContextService);
 
   readonly loading = signal(true);
@@ -88,7 +85,6 @@ export class OperatingExpensesPageComponent implements OnInit {
   readonly canManageOperatingExpenses = this.session.canManageOperatingExpenses;
 
   ngOnInit(): void {
-    void this.hqLookup.ensureLoaded();
     this.session.ensureLoaded().subscribe({
       next: () => {
         if (!this.canManageOperatingExpenses()) {
@@ -123,10 +119,6 @@ export class OperatingExpensesPageComponent implements OnInit {
     return this.session.assignedHeadquarterIds().length > 1;
   }
 
-  showSedeColumn(): boolean {
-    return this.selectedHeadquarterId == null;
-  }
-
   pageTitle(): string {
     return this.canManageOperatingExpenses() ? 'Gastos Operativos' : 'Gastos operativos de hoy';
   }
@@ -134,10 +126,6 @@ export class OperatingExpensesPageComponent implements OnInit {
   pageSubtitle(): string {
     if (this.canManageOperatingExpenses()) return 'Costos de operación por sede';
     return `Solo los gastos operativos de hoy (${formatIsoDate(businessToday(new Date(), clientZone()))})`;
-  }
-
-  headquarterLabel(id: number): string {
-    return this.hqLookup.name(id);
   }
 
   dailyBars(): DailyExpenseBar[] {

@@ -21,11 +21,12 @@ import java.lang.annotation.Target;
     summary = "POS sync changes (deltas)",
     description =
         "Incremental master download since the opaque changes cursor from bootstrap. "
-            + "Returns upsert/deactivate operations for products, operators, and policies. "
+            + "Returns upsert/deactivate operations for products, operators, and policies, "
+            + "plus a live site snapshot (name, address, currency) that is not part of the cursor. "
             + "Invalid or cross-site cursor → 409 (re-bootstrap). Requires device JWT.")
 @ApiResponse(
     responseCode = "200",
-    description = "Delta batch with nextCursor.",
+    description = "Delta batch with nextCursor and the current site.",
     content =
         @Content(
             mediaType = "application/json",
