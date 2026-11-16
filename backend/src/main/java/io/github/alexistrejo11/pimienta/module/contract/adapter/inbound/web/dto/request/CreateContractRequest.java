@@ -29,7 +29,7 @@ public record CreateContractRequest(
     @NotNull
         @Schema(
             description =
-                "Tipo de contrato según la contraparte: EMPLOYEE, SUPPLIER, CUSTOMER, PARTNER, OTHER.",
+                "Tipo de contrato según la contraparte: EMPLOYEE, SUPPLIER, CUSTOMER, PARTNER, INSTITUTIONAL, OTHER.",
             example = "SUPPLIER")
     ContractCategory category,
     @Schema(

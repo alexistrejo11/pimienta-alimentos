@@ -1,6 +1,6 @@
 # Pimienta Alimentos
 
-Operations software for **Pimienta Alimentos** (food company): public site, staff workspace, REST API, and a school-cafeteria POS in early development. The former CRM module has been retired.
+Operations software for **Pimienta Alimentos** (food company): public site, staff workspace, REST API, and a school-cafeteria POS in early development. The former CRM module has been retired; convocatorias live in `module.opportunity` (see [`opportunity-plan.md`](opportunity-plan.md)).
 
 ## Apps
 

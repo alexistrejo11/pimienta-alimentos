@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
 import type {
+  ChangeEmployeeStatusRequest,
   EmployeeListItemResponse,
   EmployeeResponse,
   EmployeeSearchParams,
@@ -12,6 +13,7 @@ import type {
   RegisterEmployeeRequest,
   UpdateEmployeeRequest,
 } from '../model/employee/employee.dto';
+import type { EmployeeStatus } from '../model/employee/employee.enums';
 import type { PagedResponse } from '../model/common/pagination';
 import type {
   AttendanceResponse,
@@ -97,6 +99,12 @@ export class EmployeeService {
       form.append('photo', photo);
     }
     return this.http.put<EmployeeResponse>(`${this.base}/${id}`, form);
+  }
+
+  /** Actualiza estado laboral (PATCH /api/v1/employees/:id/status). */
+  changeStatus(id: number, status: EmployeeStatus): Observable<EmployeeResponse> {
+    const body: ChangeEmployeeStatusRequest = { status };
+    return this.http.patch<EmployeeResponse>(`${this.base}/${id}/status`, body);
   }
 
   // ── Asistencia (por empleado) ──────────────────────────────────────────────

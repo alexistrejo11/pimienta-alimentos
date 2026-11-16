@@ -91,6 +91,20 @@ const erpChildren: Routes = [
       import('./pages/app/contratos/contratos-page').then((m) => m.ContratosPageComponent),
   },
   {
+    path: 'convocatorias',
+    loadComponent: () =>
+      import('./pages/app/convocatorias/convocatorias-page').then(
+        (m) => m.ConvocatoriasPageComponent,
+      ),
+  },
+  {
+    path: 'convocatorias/:id',
+    loadComponent: () =>
+      import('./pages/app/convocatorias/convocatoria-detail-page').then(
+        (m) => m.ConvocatoriaDetailPageComponent,
+      ),
+  },
+  {
     path: 'archivos',
     loadComponent: () =>
       import('./pages/app/archivos/archivos-page').then((m) => m.ArchivosPageComponent),

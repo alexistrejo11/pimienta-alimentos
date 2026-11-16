@@ -1,17 +1,19 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.application.usecase;
 
+import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
+import io.github.alexistrejo11.pimienta.module.employees.core.application.command.ChangeEmployeeStatusCommand;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.RegisterEmployeeParams;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.UpdateEmployeeParams;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.query.EmployeeSearchCriteria;
+import io.github.alexistrejo11.pimienta.module.employees.core.application.storage.EmployeeStorageNaming;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeStatistics;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeSummary;
+import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.exception.EmployeeNotFoundException;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Employee;
-import io.github.alexistrejo11.pimienta.module.employees.core.application.storage.EmployeeStorageNaming;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.input.EmployeeManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.output.EmployeeRepository;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.output.EmployeeStorageService;
-
 import java.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,11 +105,12 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
   @Transactional
   public Employee register(RegisterEmployeeParams params) {
     log.info(
-        "register employee start contractType={} workShift={} department={} onboardingPhase={}",
+        "register employee start contractType={} workShift={} department={} status={} hireDate={}",
         params.contractType(),
         params.workShift(),
         params.department(),
-        params.onboardingPhase());
+        params.status(),
+        params.hireDate());
 
     String photoUrl = null;
     if (params.photo() != null && !params.photo().isEmpty()) {
@@ -115,7 +118,6 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
       photoUrl = storageService.uploadEmployeePhoto(params.photo(), segment);
     }
 
-    // NOTE: If photo is null will be sett a default img by default
     Employee created = params.toEmployee(photoUrl);
     Employee saved = employeeRepository.save(created);
 
@@ -125,42 +127,10 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
 
   @Override
   @Transactional
-  public Employee activateEmploymentAfterContract(Long employeeId, LocalDate hireDate) {
-    log.info(
-        "activate employment after contract start employeeId={} hireDate={}",
-        employeeId,
-        hireDate);
-
-    Employee employee = getById(employeeId);
-    employee.activateEmploymentAfterSignedContract(hireDate);
-
-    Employee saved = employeeRepository.save(employee);
-
-    log.info("activate employment after contract complete employeeId={}", saved.getId());
-    return saved;
-  }
-
-  @Override
-  @Transactional
-  public Employee submitForContract(Long id) {
-    log.info("submit employee for contract start employeeId={}", id);
-
-    Employee employee = getById(id);
-    employee.submitForContractRegistration();
-
-    Employee saved = employeeRepository.save(employee);
-
-    log.info("submit employee for contract complete employeeId={}", saved.getId());
-    return saved;
-  }
-
-  @Override
-  @Transactional
   public Employee update(Long id, UpdateEmployeeParams params) {
     log.info("update employee start employeeId={}", id);
     Employee employee = getById(id);
 
-    // Update photo if provided
     String photoUrl = null;
     if (params.photo() != null && !params.photo().isEmpty()) {
       String existing = employee.getPersonal().photoUrl();
@@ -177,7 +147,6 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
       log.debug("photo set for employeeId={}", id);
     }
 
-    // Apply partial merge of the rest of the fields
     params.applyPartialMerge(employee, photoUrl);
     employee.touch();
     Employee saved = employeeRepository.save(employee);
@@ -187,30 +156,26 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
   }
 
   @Override
-  public Employee terminate(Long id) {
-    log.info("terminate employee start employeeId={}", id);
-    Employee employee = getById(id);
+  @Transactional
+  public Employee changeStatus(ChangeEmployeeStatusCommand command) {
+    log.info(
+        "change employee status start employeeId={} status={}",
+        command.employeeId(),
+        command.status());
 
-    employee.terminate();
+    Employee employee = getById(command.employeeId());
+    applyStatusMutation(employee, command.status());
     Employee saved = employeeRepository.save(employee);
 
-    log.info("terminate employee complete employeeId={}", saved.getId());
+    log.info(
+        "change employee status complete employeeId={} status={}",
+        saved.getId(),
+        saved.getStatus());
     return saved;
   }
 
   @Override
-  public Employee rehire(Long id) {
-    log.info("rehire employee start employeeId={}", id);
-    Employee employee = getById(id);
-
-    employee.rehire();
-    Employee saved = employeeRepository.save(employee);
-
-    log.info("rehire employee complete employeeId={}", saved.getId());
-    return saved;
-  }
-
-  @Override
+  @Transactional
   public void delete(Long id) {
     log.info("delete employee start employeeId={}", id);
     Employee employee = getById(id);
@@ -219,5 +184,22 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
     employeeRepository.save(employee);
 
     log.info("delete employee complete employeeId={}", id);
+  }
+
+  /**
+   * Applies status and side-effects on termination dates. Exit statuses stamp today when
+   * missing; ACTIVE / INACTIVE clear termination date.
+   */
+  private static void applyStatusMutation(Employee employee, EmployeeStatus status) {
+    employee.setStatus(status);
+    switch (status) {
+      case RESIGNED, TERMINATED, DOWN -> {
+        if (employee.getEmployment().terminationDate() == null) {
+          employee.setTerminationDate(LocalDate.now(ClientTimeZones.current()));
+        }
+      }
+      case ACTIVE, INACTIVE -> employee.setTerminationDate(null);
+    }
+    employee.touch();
   }
 }

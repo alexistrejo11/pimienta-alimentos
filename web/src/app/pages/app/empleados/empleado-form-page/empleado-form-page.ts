@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, switchMap, of } from 'rxjs';
 
 import { EmployeeService } from '../../../../core/employees/employee.service';
 import { markFormPristine } from '../../../../core/forms/mark-form-pristine';
@@ -12,7 +12,7 @@ import {
 } from '../../../../core/http/parse-api-error';
 import type {
   ContractType,
-  EmployeeOnboardingPhase,
+  EmployeeStatus,
   WorkShift,
 } from '../../../../core/model/employee/employee.enums';
 import type {
@@ -20,6 +20,7 @@ import type {
   RegisterEmployeeRequest,
   UpdateEmployeeRequest,
 } from '../../../../core/model/employee/employee.dto';
+import { employeeStatusLabel } from '../../../../core/i18n/enum-labels';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 
 const CONTRACT_TYPES: ContractType[] = [
@@ -40,7 +41,13 @@ const WORK_SHIFTS: WorkShift[] = [
   'UNDEFINED',
 ];
 
-const ONBOARDING_PHASES: EmployeeOnboardingPhase[] = ['DRAFT', 'PENDING_CONTRACT'];
+const EMPLOYEE_STATUSES: EmployeeStatus[] = [
+  'ACTIVE',
+  'INACTIVE',
+  'RESIGNED',
+  'TERMINATED',
+  'DOWN',
+];
 
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png']);
@@ -67,7 +74,8 @@ export class EmpleadoFormPageComponent implements OnInit {
 
   readonly contractTypes = CONTRACT_TYPES;
   readonly workShifts = WORK_SHIFTS;
-  readonly onboardingPhases = ONBOARDING_PHASES;
+  readonly employeeStatuses = EMPLOYEE_STATUSES;
+  readonly statusLabel = employeeStatusLabel;
 
   readonly contractTypeLabel: Record<ContractType, string> = {
     INDEFINITE: 'Indefinido',
@@ -87,11 +95,6 @@ export class EmpleadoFormPageComponent implements OnInit {
     UNDEFINED: 'Sin definir',
   };
 
-  readonly onboardingPhaseLabel: Record<EmployeeOnboardingPhase, string> = {
-    DRAFT: 'Borrador',
-    PENDING_CONTRACT: 'Pendiente de contrato',
-  };
-
   readonly form = this.fb.group({
     firstName: ['', [Validators.required, Validators.maxLength(100)]],
     lastName: ['', [Validators.required, Validators.maxLength(100)]],
@@ -109,7 +112,8 @@ export class EmpleadoFormPageComponent implements OnInit {
     workShift: this.fb.control<WorkShift | ''>(''),
     salaryPerWeek: [''],
     birthDate: [''],
-    onboardingPhase: this.fb.control<EmployeeOnboardingPhase | ''>('DRAFT'),
+    hireDate: [''],
+    status: this.fb.control<EmployeeStatus | ''>('INACTIVE'),
     bonuses: [''],
     foodVouchers: [''],
     integrationFactor: [''],
@@ -184,9 +188,17 @@ export class EmpleadoFormPageComponent implements OnInit {
           error: (err: unknown) => this.apiError.set(parseApiError(err)),
         });
     } else {
+      const desiredStatus = this.form.getRawValue().status as EmployeeStatus | '';
       this.service
         .update(id, this.buildUpdateBody(), photo)
-        .pipe(finalize(() => this.loading.set(false)))
+        .pipe(
+          switchMap((updated) =>
+            desiredStatus && desiredStatus !== updated.status
+              ? this.service.changeStatus(id, desiredStatus)
+              : of(updated),
+          ),
+          finalize(() => this.loading.set(false)),
+        )
         .subscribe({
           next: () => {
             markFormPristine(this.form);
@@ -239,6 +251,8 @@ export class EmpleadoFormPageComponent implements OnInit {
       foodVouchers: e.foodVouchers != null ? String(e.foodVouchers) : '',
       integrationFactor: e.integrationFactor != null ? String(e.integrationFactor) : '',
       birthDate: e.birthDate ?? '',
+      hireDate: e.hireDate ?? '',
+      status: e.status ?? 'INACTIVE',
     });
     markFormPristine(this.form);
   }
@@ -274,7 +288,8 @@ export class EmpleadoFormPageComponent implements OnInit {
       workShift: v.workShift || null,
       salaryPerWeek: this.optionalNumber(v.salaryPerWeek),
       birthDate: this.optionalString(v.birthDate),
-      onboardingPhase: v.onboardingPhase || null,
+      hireDate: this.optionalString(v.hireDate),
+      status: (v.status as EmployeeStatus) || 'INACTIVE',
     };
   }
 
@@ -298,6 +313,7 @@ export class EmpleadoFormPageComponent implements OnInit {
       bonuses: this.optionalNumber(v.bonuses),
       foodVouchers: this.optionalNumber(v.foodVouchers),
       integrationFactor: this.optionalNumber(v.integrationFactor),
+      hireDate: this.optionalString(v.hireDate),
     };
   }
 }

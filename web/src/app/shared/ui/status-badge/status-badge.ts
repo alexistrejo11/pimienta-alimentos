@@ -59,15 +59,11 @@ function colorFor(kind: StatusBadgeKind, status: string): string {
 const DEFAULT_COLOR = 'ui-badge-neutral';
 
 const EMPLOYEE_COLORS: Record<string, string> = {
-  DRAFT: 'ui-badge-neutral',
-  PENDING_CONTRACT: 'ui-badge-warning',
   ACTIVE: 'ui-badge-success',
-  SICK: 'ui-badge-warning',
-  ON_VACATION: 'bg-surface-container-high text-on-surface',
-  ON_LEAVE: 'ui-badge-info',
-  TERMINATED: 'ui-badge-danger',
-  FIRED: 'ui-badge-danger',
+  INACTIVE: 'ui-badge-neutral',
   RESIGNED: 'bg-surface-container-high text-on-surface-variant',
+  TERMINATED: 'ui-badge-danger',
+  DOWN: 'ui-badge-warning',
 };
 
 const TASK_COLORS: Record<string, string> = {

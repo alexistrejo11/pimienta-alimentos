@@ -1,6 +1,5 @@
 import type {
   ContractType,
-  EmployeeOnboardingPhase,
   EmployeeStatus,
   ImssSalaryType,
   ImssWorkerType,
@@ -35,7 +34,10 @@ export interface RegisterEmployeeRequest {
   salaryPerWeek?: number | null;
   /** ISO date (yyyy-MM-dd). */
   birthDate?: string | null;
-  onboardingPhase?: EmployeeOnboardingPhase | null;
+  /** ISO date (yyyy-MM-dd). */
+  hireDate?: string | null;
+  /** Defaults to INACTIVE when omitted. */
+  status?: EmployeeStatus | null;
 }
 
 /** PUT /api/v1/employees/:id — solo firstName/lastName obligatorios. */
@@ -57,6 +59,13 @@ export interface UpdateEmployeeRequest {
   bonuses?: number | null;
   foodVouchers?: number | null;
   integrationFactor?: number | null;
+  /** ISO date (yyyy-MM-dd). */
+  hireDate?: string | null;
+}
+
+/** PATCH /api/v1/employees/:id/status */
+export interface ChangeEmployeeStatusRequest {
+  status: EmployeeStatus;
 }
 
 /** PUT …/promote, …/demote */

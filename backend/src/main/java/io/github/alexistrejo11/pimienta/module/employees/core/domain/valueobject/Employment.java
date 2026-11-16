@@ -24,7 +24,7 @@ public record Employment(
     department = Strings.nullToEmpty(department);
     contractType = contractType != null ? contractType : ContractType.UNDEFINED;
     workShift = workShift != null ? workShift : WorkShift.UNDEFINED;
-    status = status != null ? status : EmployeeStatus.UNDEFINED;
+    status = status != null ? status : EmployeeStatus.INACTIVE;
   }
 
   public static Employment empty() {
@@ -35,18 +35,7 @@ public record Employment(
         WorkShift.UNDEFINED,
         null,
         null,
-        EmployeeStatus.UNDEFINED);
-  }
-
-  public Employment terminate(EmployeeStatus status, LocalDate terminationDate) {
-    return new Employment(
-        this.position,
-        this.department,
-        this.contractType,
-        this.workShift,
-        this.hireDate,
-        terminationDate,
-        status);
+        EmployeeStatus.INACTIVE);
   }
 
   public Employment setStatus(EmployeeStatus status) {
@@ -57,7 +46,7 @@ public record Employment(
         this.workShift,
         this.hireDate,
         this.terminationDate,
-        status);
+        status != null ? status : EmployeeStatus.INACTIVE);
   }
 
   public Employment setPosition(String position) {

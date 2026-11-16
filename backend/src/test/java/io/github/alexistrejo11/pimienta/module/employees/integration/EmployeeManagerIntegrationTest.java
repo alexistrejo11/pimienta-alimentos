@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.employees.integration;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -92,7 +93,8 @@ class EmployeeManagerIntegrationTest {
             "López",
             "ok-" + UUID.randomUUID() + "@mail.com",
             "EMP-BLANK",
-            "DRAFT");
+            null,
+            null);
     mockMvc
         .perform(
             AccountTestRequests.postJson("/api/v1/employees", body)
@@ -123,8 +125,7 @@ class EmployeeManagerIntegrationTest {
               "contractType": "FIXED_TERM",
               "workShift": "MORNING",
               "salaryPerWeek": 0,
-              "birthDate": "1985-01-01",
-              "onboardingPhase": "DRAFT"
+              "birthDate": "1985-01-01"
             }
             """
             .formatted(email);
@@ -212,7 +213,7 @@ class EmployeeManagerIntegrationTest {
             .andExpect(jsonPath("$.email").value(email.toLowerCase()))
             .andExpect(jsonPath("$.firstName").value("María"))
             .andExpect(jsonPath("$.lastName").value("López García"))
-            .andExpect(jsonPath("$.status").value("DRAFT"))
+            .andExpect(jsonPath("$.status").value("INACTIVE"))
             .andExpect(jsonPath("$.photoUrl", containsString("ui-avatars.com")))
             .andReturn();
 
@@ -283,54 +284,77 @@ class EmployeeManagerIntegrationTest {
   }
 
   @Test
-  void submitForContract_whenDraft_movesToPendingContract() throws Exception {
+  void changeStatus_directLifecycleMutation() throws Exception {
     String token = obtainAdminToken();
-    String email = "sub-" + UUID.randomUUID() + "@mail.com";
+    String email = "st-" + UUID.randomUUID() + "@mail.com";
     MvcResult reg =
         mockMvc
             .perform(
                 AccountTestRequests.postJson(
-                        "/api/v1/employees", minimalRegisterJson(email, "EMP-SUB-" + uuidSuffix()))
+                        "/api/v1/employees", minimalRegisterJson(email, "EMP-ST-" + uuidSuffix()))
                     .header("Authorization", "Bearer " + token))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.status").value("DRAFT"))
+            .andExpect(jsonPath("$.status").value("INACTIVE"))
             .andReturn();
     long id = extractLongId(reg.getResponse().getContentAsString(), "$.id");
 
     mockMvc
-        .perform(AccountTestRequests.putBearer("/api/v1/employees/" + id + "/submit-for-contract", token))
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/employees/" + id + "/status", token, "{\"status\":\"ACTIVE\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("PENDING_CONTRACT"));
+        .andExpect(jsonPath("$.status").value("ACTIVE"))
+        .andExpect(jsonPath("$.terminationDate").value(nullValue()));
 
     mockMvc
-        .perform(AccountTestRequests.putBearer("/api/v1/employees/" + id + "/submit-for-contract", token))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/employees/" + id + "/status", token, "{\"status\":\"TERMINATED\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("TERMINATED"))
+        .andExpect(jsonPath("$.terminationDate").isNotEmpty());
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/employees/" + id + "/status", token, "{\"status\":\"RESIGNED\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("RESIGNED"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/employees/" + id + "/status", token, "{\"status\":\"DOWN\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("DOWN"));
+
+    mockMvc
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/employees/" + id + "/status", token, "{\"status\":\"INACTIVE\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("INACTIVE"))
+        .andExpect(jsonPath("$.terminationDate").value(nullValue()));
   }
 
   @Test
-  void submitForContract_whenRegisteredAsPending_returns400() throws Exception {
+  void register_withHireDateAndStatus_persistsBoth() throws Exception {
     String token = obtainAdminToken();
-    String email = "sub2-" + UUID.randomUUID() + "@mail.com";
-    String body = registerJson("Pending", "User", email, "EMP-PEND-" + uuidSuffix(), "PENDING_CONTRACT");
-    MvcResult reg =
-        mockMvc
-            .perform(
-                AccountTestRequests.postJson("/api/v1/employees", body)
-                    .header("Authorization", "Bearer " + token))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.status").value("PENDING_CONTRACT"))
-            .andReturn();
-    long id = extractLongId(reg.getResponse().getContentAsString(), "$.id");
+    String email = "hire-" + UUID.randomUUID() + "@mail.com";
+    String body =
+        registerJson("Ana", "Ruiz", email, "EMP-HIRE-" + uuidSuffix(), "ACTIVE", "2024-03-01");
 
     mockMvc
-        .perform(AccountTestRequests.putBearer("/api/v1/employees/" + id + "/submit-for-contract", token))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"));
+        .perform(
+            AccountTestRequests.postJson("/api/v1/employees", body)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.status").value("ACTIVE"))
+        .andExpect(jsonPath("$.hireDate").value("2024-03-01"));
   }
 
   @Test
-  void updateTerminateRehireDelete_flow() throws Exception {
+  void updateChangeStatusDelete_flow() throws Exception {
     String token = obtainAdminToken();
     String email = "flow-" + UUID.randomUUID() + "@mail.com";
     String empNo = "EMP-FLOW-" + uuidSuffix();
@@ -362,7 +386,8 @@ class EmployeeManagerIntegrationTest {
               "salaryPerWeek": 4000.00,
               "bonuses": 100.00,
               "foodVouchers": 50.00,
-              "integrationFactor": 1.10
+              "integrationFactor": 1.10,
+              "hireDate": "2023-06-15"
             }
             """
             .formatted("upd-" + UUID.randomUUID() + "@mail.com");
@@ -373,17 +398,23 @@ class EmployeeManagerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.firstName").value("Updated"))
         .andExpect(jsonPath("$.lastName").value("Worker"))
-        .andExpect(jsonPath("$.department").value("Calidad"));
+        .andExpect(jsonPath("$.department").value("Calidad"))
+        .andExpect(jsonPath("$.hireDate").value("2023-06-15"));
 
     mockMvc
-        .perform(AccountTestRequests.putBearer("/api/v1/employees/" + id + "/terminate", token))
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/employees/" + id + "/status", token, "{\"status\":\"TERMINATED\"}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("TERMINATED"));
 
     mockMvc
-        .perform(AccountTestRequests.putBearer("/api/v1/employees/" + id + "/rehire", token))
+        .perform(
+            AccountTestRequests.patchJsonBearer(
+                "/api/v1/employees/" + id + "/status", token, "{\"status\":\"ACTIVE\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("ACTIVE"));
+        .andExpect(jsonPath("$.status").value("ACTIVE"))
+        .andExpect(jsonPath("$.terminationDate").value(nullValue()));
 
     mockMvc
         .perform(AccountTestRequests.deleteBearer("/api/v1/employees/" + id, token))
@@ -611,7 +642,7 @@ class EmployeeManagerIntegrationTest {
   }
 
   private static String minimalRegisterJson(String email, String employeeNumber) {
-    return registerJson("María", "López García", email, employeeNumber, "DRAFT");
+    return registerJson("María", "López García", email, employeeNumber, null, null);
   }
 
   private static String registerJson(
@@ -619,7 +650,10 @@ class EmployeeManagerIntegrationTest {
       String lastName,
       String email,
       String employeeNumber,
-      String onboardingPhase) {
+      String status,
+      String hireDate) {
+    String statusLine = status != null ? ",\n          \"status\": \"%s\"".formatted(status) : "";
+    String hireLine = hireDate != null ? ",\n          \"hireDate\": \"%s\"".formatted(hireDate) : "";
     return """
         {
           "firstName": "%s",
@@ -637,11 +671,10 @@ class EmployeeManagerIntegrationTest {
           "contractType": "FIXED_TERM",
           "workShift": "MORNING",
           "salaryPerWeek": 3500.00,
-          "birthDate": "1985-01-01",
-          "onboardingPhase": "%s"
+          "birthDate": "1985-01-01"%s%s
         }
         """
-        .formatted(firstName, lastName, email, employeeNumber, onboardingPhase);
+        .formatted(firstName, lastName, email, employeeNumber, statusLine, hireLine);
   }
 
   private static long extractLongId(String json, String jsonPath) {

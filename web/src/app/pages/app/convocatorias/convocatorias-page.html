@@ -1,0 +1,261 @@
+<div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+  <app-page-header
+    title="Convocatorias"
+    subtitle="Oportunidades institucionales: seguimiento simple con estados."
+  />
+
+  <div class="flex flex-wrap items-end gap-3">
+    <div class="min-w-[220px] flex-1">
+      <app-list-search-field
+        [(draft)]="searchDraft"
+        placeholder="Buscar por título o referencia…"
+        (search)="onSearch($event)"
+      />
+    </div>
+    <div>
+      <label
+        class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+        for="opp-status-filter"
+        >Estado</label
+      >
+      <select
+        id="opp-status-filter"
+        class="mt-1 rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+        [value]="statusFilter()"
+        (change)="onStatusChange($any($event.target).value)"
+      >
+        <option value="">Todos</option>
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ opportunityStatusLabel(s) }}</option>
+        }
+      </select>
+    </div>
+    <button
+      type="button"
+      class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-bold text-[var(--color-on-primary)] shadow transition hover:opacity-95"
+      (click)="toggleCreate()"
+      [attr.aria-expanded]="showCreate()"
+    >
+      <span class="material-symbols-outlined text-[20px]" aria-hidden="true">add</span>
+      {{ showCreate() ? 'Cerrar formulario' : 'Nueva convocatoria' }}
+    </button>
+  </div>
+
+  @if (showCreate()) {
+    <section
+      class="ui-panel p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-stone-800 dark:bg-stone-950"
+      aria-labelledby="convocatoria-nueva-titulo"
+    >
+      <h2 id="convocatoria-nueva-titulo" class="font-headline text-lg font-bold text-on-surface">
+        Registrar convocatoria
+      </h2>
+      <p class="mt-1 text-sm text-on-surface-variant">
+        Elige una organización existente o crea una al vuelo. Empieza en estado
+        <strong>Borrador</strong>.
+      </p>
+
+      @if (formError(); as fe) {
+        <p
+          class="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+          role="alert"
+        >
+          {{ fe }}
+        </p>
+      }
+
+      <form class="mt-6 grid gap-4 md:grid-cols-2" [formGroup]="form" (ngSubmit)="submitCreate()">
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-org"
+            >Organización</label
+          >
+          <select
+            id="c-org"
+            formControlName="organizationId"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+          >
+            <option [ngValue]="null">— Crear nueva abajo —</option>
+            @for (org of orgOptions(); track org.id) {
+              <option [ngValue]="org.id">
+                {{ org.name }} ({{ organizationKindLabel(org.kind) }})
+              </option>
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              for="c-new-org"
+              >Nueva organización</label
+            >
+            <input
+              id="c-new-org"
+              type="text"
+              formControlName="newOrgName"
+              class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+              placeholder="Solo si no elegiste una"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              for="c-new-kind"
+              >Tipo</label
+            >
+            <select
+              id="c-new-kind"
+              formControlName="newOrgKind"
+              class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+            >
+              @for (k of kinds; track k) {
+                <option [ngValue]="k">{{ organizationKindLabel(k) }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-title"
+            >Título</label
+          >
+          <input
+            id="c-title"
+            type="text"
+            formControlName="title"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-ref"
+            >Referencia externa</label
+          >
+          <input
+            id="c-ref"
+            type="text"
+            formControlName="externalReference"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-url"
+            >Enlace fuente</label
+          >
+          <input
+            id="c-url"
+            type="url"
+            formControlName="sourceUrl"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-pub"
+            >Publicación</label
+          >
+          <input
+            id="c-pub"
+            type="date"
+            formControlName="publishedOn"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-deadline"
+            >Fecha límite de entrega</label
+          >
+          <input
+            id="c-deadline"
+            type="date"
+            formControlName="submissionDeadline"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+          />
+        </div>
+        <div class="md:col-span-2">
+          <label
+            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+            for="c-notes"
+            >Notas</label
+          >
+          <textarea
+            id="c-notes"
+            rows="2"
+            formControlName="notes"
+            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/25"
+          ></textarea>
+        </div>
+
+        <div class="md:col-span-2 flex flex-wrap gap-3">
+          <button
+            type="submit"
+            class="rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-bold text-[var(--color-on-primary)] disabled:opacity-60"
+            [disabled]="saving()"
+          >
+            {{ saving() ? 'Guardando…' : 'Crear convocatoria' }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg bg-surface-container-high px-4 py-2.5 text-sm font-semibold text-on-surface"
+            (click)="cancelCreate()"
+            [disabled]="saving()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <app-data-state [loading]="loading()" [error]="error()" (retry)="reloadList()">
+    @if (items().length === 0) {
+      <p class="text-sm text-on-surface-variant">No hay convocatorias con estos filtros.</p>
+    } @else {
+      <div class="overflow-x-auto rounded-xl bg-surface-container-lowest shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <table class="min-w-full text-left text-sm">
+          <thead class="bg-surface-container text-xs uppercase tracking-wide text-on-surface-variant">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Título</th>
+              <th class="px-4 py-3 font-semibold">Organización</th>
+              <th class="px-4 py-3 font-semibold">Estado</th>
+              <th class="px-4 py-3 font-semibold">Límite</th>
+              <th class="px-4 py-3 font-semibold"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr class="border-t border-outline-variant/15">
+                <td class="px-4 py-3 font-medium text-on-surface">{{ item.title }}</td>
+                <td class="px-4 py-3 text-on-surface-variant">
+                  {{ orgName(item.organizationId) }}
+                </td>
+                <td class="px-4 py-3">{{ opportunityStatusLabel(item.status) }}</td>
+                <td class="px-4 py-3 text-on-surface-variant">
+                  {{ item.submissionDeadline || '—' }}
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <a
+                    class="font-semibold text-primary hover:underline"
+                    [routerLink]="['/app/erp/convocatorias', item.id]"
+                    >Abrir</a
+                  >
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </app-data-state>
+</div>

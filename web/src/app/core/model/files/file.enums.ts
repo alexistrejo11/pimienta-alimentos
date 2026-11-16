@@ -9,6 +9,7 @@ export const FILE_MODULE_OPTIONS: { value: string; label: string }[] = [
   { value: 'contracts', label: 'Contratos' },
   { value: 'tasks', label: 'Tareas' },
   { value: 'headquarters', label: 'Sedes' },
+  { value: 'opportunity', label: 'Convocatorias' },
 ];
 
 export const FILE_CATEGORY_LABELS: Record<FileCategory, string> = {

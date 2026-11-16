@@ -3,7 +3,6 @@ package io.github.alexistrejo11.pimienta.module.contract.core.application;
 import io.github.alexistrejo11.pimienta.module.contract.core.application.command.CreateContractCommand;
 import io.github.alexistrejo11.pimienta.module.contract.core.application.command.UpdateContractCommand;
 import io.github.alexistrejo11.pimienta.module.contract.core.domain.Contract;
-import io.github.alexistrejo11.pimienta.module.contract.core.domain.enums.ContractCategory;
 import io.github.alexistrejo11.pimienta.module.contract.core.domain.exception.ContractNotFoundException;
 import io.github.alexistrejo11.pimienta.module.contract.core.port.ContractManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.contract.core.port.ContractRepository;
@@ -93,10 +92,6 @@ public class ContractManagementUseCasesImpl implements ContractManagementUseCase
         .register();
 
     Contract saved = contractRepository.save(contract);
-    if (saved.getCategory() == ContractCategory.EMPLOYEE && saved.getEmployeeId() != null) {
-      employeeManagementUseCases.activateEmploymentAfterContract(
-          saved.getEmployeeId(), saved.getEffectiveStart());
-    }
 
     log.info("create contract complete contractId={}", saved.getId());
     return saved;

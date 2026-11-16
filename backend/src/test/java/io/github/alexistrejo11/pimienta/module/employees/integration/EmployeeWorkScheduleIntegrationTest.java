@@ -178,19 +178,10 @@ class EmployeeWorkScheduleIntegrationTest {
   }
 
   private static String minimalRegisterJson(String email, String employeeNumber) {
-    return registerJson("María", "López García", email, employeeNumber, "DRAFT");
-  }
-
-  private static String registerJson(
-      String firstName,
-      String lastName,
-      String email,
-      String employeeNumber,
-      String onboardingPhase) {
     return """
         {
-          "firstName": "%s",
-          "lastName": "%s",
+          "firstName": "María",
+          "lastName": "López García",
           "email": "%s",
           "phone": "+52 55 1234 5678",
           "address": "Av. Reforma 123, CDMX",
@@ -204,11 +195,10 @@ class EmployeeWorkScheduleIntegrationTest {
           "contractType": "FIXED_TERM",
           "workShift": "MORNING",
           "salaryPerWeek": 3500.00,
-          "birthDate": "1985-01-01",
-          "onboardingPhase": "%s"
+          "birthDate": "1985-01-01"
         }
         """
-        .formatted(firstName, lastName, email, employeeNumber, onboardingPhase);
+        .formatted(email, employeeNumber);
   }
 
   private static long extractLongId(String json, String jsonPath) {

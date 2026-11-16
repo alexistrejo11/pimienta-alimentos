@@ -16,20 +16,13 @@ export type WorkShift =
   | 'REMOTE'
   | 'UNDEFINED';
 
-/** Mirrors {@link io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeStatus}. */
+/** Mirrors {@link io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus}. */
 export type EmployeeStatus =
-  | 'DRAFT'
-  | 'PENDING_CONTRACT'
   | 'ACTIVE'
-  | 'SICK'
-  | 'ON_VACATION'
-  | 'ON_LEAVE'
+  | 'INACTIVE'
+  | 'RESIGNED'
   | 'TERMINATED'
-  | 'FIRED'
-  | 'RESIGNED';
-
-/** Mirrors {@link io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeOnboardingPhase}. */
-export type EmployeeOnboardingPhase = 'DRAFT' | 'PENDING_CONTRACT';
+  | 'DOWN';
 
 /** Mirrors {@link io.github.alexistrejo11.pimienta.module.employees.core.domain.ImssSalaryType}. */
 export type ImssSalaryType = 'FIXED' | 'VARIABLE' | 'MIXED';

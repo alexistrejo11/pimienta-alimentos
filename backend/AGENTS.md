@@ -1,6 +1,6 @@
 # Backend (Spring API)
 
-Production operations API for Pimienta Alimentos: auth, employees, contracts, inventory, payroll, tasks, headquarters, files, notifications. The POS Device API is implemented; its canonical cross-app contract and Android plan live in `../mobile/pos/docs/integration/`.
+Production operations API for Pimienta Alimentos: auth, employees, contracts, inventory, payroll, tasks, headquarters, files, notifications, organizations/opportunities (convocatorias). The POS Device API is implemented; its canonical cross-app contract and Android plan live in `../mobile/pos/docs/integration/`. Plan: `../opportunity-plan.md`.
 
 - **Stack:** Java 25, Spring Boot 4, `/api/v1`, PostgreSQL + Flyway, Redis, JWT, S3.
 - **Package:** `io.github.alexistrejo11.pimienta.module.<boundedContext>`

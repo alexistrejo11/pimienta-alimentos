@@ -131,6 +131,26 @@ export function contractCategoryLabel(category: string): string {
   return CONTRACT_CATEGORY_LABELS[category] ?? category;
 }
 
+export function opportunityStatusLabel(status: string): string {
+  return OPPORTUNITY_STATUS_LABELS[status] ?? status;
+}
+
+export function organizationKindLabel(kind: string): string {
+  return ORGANIZATION_KIND_LABELS[kind] ?? kind;
+}
+
+export function requirementCategoryLabel(category: string): string {
+  return REQUIREMENT_CATEGORY_LABELS[category] ?? category;
+}
+
+export function requirementStatusLabel(status: string): string {
+  return REQUIREMENT_STATUS_LABELS[status] ?? status;
+}
+
+export function proposalKindLabel(kind: string): string {
+  return PROPOSAL_KIND_LABELS[kind] ?? kind;
+}
+
 const ACCOUNT_STATUS_LABELS: Record<string, string> = {
   PENDING_APPROVAL: 'Pendiente de aprobación',
   ACTIVE: 'Activa',
@@ -154,15 +174,11 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const EMPLOYEE_STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Borrador',
-  PENDING_CONTRACT: 'Pendiente de contrato',
   ACTIVE: 'Activo',
-  SICK: 'Incapacitado',
-  ON_VACATION: 'Vacaciones',
-  ON_LEAVE: 'Permiso',
-  TERMINATED: 'Baja',
-  FIRED: 'Despedido',
-  RESIGNED: 'Renunció',
+  INACTIVE: 'Inactivo',
+  RESIGNED: 'Renuncia',
+  TERMINATED: 'Despedido',
+  DOWN: 'Baja',
 };
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
@@ -318,4 +334,49 @@ const CONTRACT_CATEGORY_LABELS: Record<string, string> = {
   EMPLOYEE: 'Colaborador',
   PARTNER: 'Socio',
   OTHER: 'Otro',
+  INSTITUTIONAL: 'Institucional',
+};
+
+const OPPORTUNITY_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Borrador',
+  UNDER_REVIEW: 'En revisión',
+  PREPARING: 'En preparación',
+  SUBMITTED: 'Enviada',
+  WON: 'Ganada',
+  LOST: 'Perdida',
+  ABANDONED: 'Abandonada',
+  CANCELLED: 'Cancelada',
+  UNDEFINED: 'Sin definir',
+};
+
+const ORGANIZATION_KIND_LABELS: Record<string, string> = {
+  PUBLIC_INSTITUTION: 'Institución pública',
+  PRIVATE_COMPANY: 'Empresa privada',
+  OTHER: 'Otro',
+  UNDEFINED: 'Sin definir',
+};
+
+const REQUIREMENT_CATEGORY_LABELS: Record<string, string> = {
+  ADMINISTRATIVE: 'Administrativo',
+  LEGAL: 'Legal',
+  TECHNICAL: 'Técnico',
+  ECONOMIC: 'Económico',
+  OTHER: 'Otro',
+  UNDEFINED: 'Sin definir',
+};
+
+const REQUIREMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente',
+  IN_PROGRESS: 'En progreso',
+  DONE: 'Hecho',
+  BLOCKED: 'Bloqueado',
+  WAIVED: 'Exento',
+  UNDEFINED: 'Sin definir',
+};
+
+const PROPOSAL_KIND_LABELS: Record<string, string> = {
+  TECHNICAL: 'Técnica',
+  ECONOMIC: 'Económica',
+  COMBINED: 'Combinada',
+  UNDEFINED: 'Sin definir',
 };

@@ -1,12 +1,12 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.application.usecase;
 
+import io.github.alexistrejo11.pimienta.module.employees.core.application.command.ChangeEmployeeStatusCommand;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.EmployeeExportRow;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.EmployeeImportRow;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.RegisterEmployeeParams;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.UpdateEmployeeParams;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.query.EmployeeSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.ContractType;
-import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeOnboardingPhase;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.WorkShift;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Employee;
@@ -222,8 +222,8 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
     if (desired == null || desired.equals(employee.getStatus())) {
       return;
     }
-    employee.setStatus(desired);
-    employeeRepository.save(employee);
+    employeeManagementUseCases.changeStatus(
+        new ChangeEmployeeStatusCommand(employee.getId(), desired));
   }
 
   private static RegisterEmployeeParams buildRegisterParamsForBulk(
@@ -246,7 +246,8 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
         workShift,
         row.salaryPerWeek() != null ? row.salaryPerWeek() : BigDecimal.ZERO,
         null,
-        EmployeeOnboardingPhase.DRAFT,
+        null,
+        EmployeeStatus.INACTIVE,
         null);
   }
 
@@ -284,7 +285,8 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
         salary,
         bonuses,
         food,
-        integration);
+        integration,
+        e.getEmployment().hireDate());
   }
 
   private static String nz(String fromRow, String existing) {
@@ -313,7 +315,12 @@ public class EmployeeBulkSyncUseCasesImpl implements EmployeeBulkSyncUseCases {
         .toUpperCase(Locale.ROOT)
         .replace(' ', '_')
         .replace('-', '_');
-    return EmployeeStatus.valueOf(s);
+    return switch (s) {
+      case "DRAFT", "PENDING_CONTRACT", "SICK", "ON_VACATION", "ON_LEAVE", "UNDEFINED" ->
+          EmployeeStatus.INACTIVE;
+      case "FIRED" -> EmployeeStatus.TERMINATED;
+      default -> EmployeeStatus.valueOf(s);
+    };
   }
 
   private static final class PlannedEmployeeRow {

@@ -1,18 +1,15 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.domain.model;
 
-import io.github.alexistrejo11.pimienta.config.web.ClientTimeZones;
-import io.github.alexistrejo11.pimienta.module.employees.core.domain.exception.EmployeeInvalidOnboardingStateException;
+import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.BenefitsProfile;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.Compensation;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.Employment;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.OfficialIdentifiers;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.PersonalProfile;
-import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.*;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 public class Employee extends BaseDomain<Long> {
 
@@ -34,92 +31,6 @@ public class Employee extends BaseDomain<Long> {
     this.deletedAt = null;
   }
 
-  // ─── Status Transitions ───
-
-  public void terminate() {
-    this.employment = getEmployment().terminate(EmployeeStatus.TERMINATED, LocalDate.now(ClientTimeZones.current()));
-    touch();
-  }
-
-  public void fire() {
-    this.employment = getEmployment().terminate(EmployeeStatus.FIRED, LocalDate.now(ClientTimeZones.current()));
-    touch();
-  }
-
-  public void resign() {
-    this.employment = getEmployment().terminate(EmployeeStatus.RESIGNED, LocalDate.now(ClientTimeZones.current()));
-    touch();
-  }
-
-  public void sick() {
-    this.employment = getEmployment().terminate(EmployeeStatus.SICK, LocalDate.now(ClientTimeZones.current()));
-    touch();
-  }
-
-  public void onVacation() {
-    this.employment = getEmployment().terminate(EmployeeStatus.ON_VACATION, LocalDate.now(ClientTimeZones.current()));
-    touch();
-  }
-
-  public void onLeave() {
-    this.employment = getEmployment().terminate(EmployeeStatus.ON_LEAVE, LocalDate.now(ClientTimeZones.current()));
-    touch();
-  }
-
-  public void activate() {
-    this.employment = getEmployment().setStatus(EmployeeStatus.ACTIVE);
-    touch();
-  }
-
-  /** Reactivate employment: active status and no termination date. */
-
-  public void rehire() {
-    this.employment = getEmployment().setStatus(EmployeeStatus.ACTIVE);
-    touch();
-  }
-
-  /**
-   * Effective contract when there is already a signed contract; only
-   * in onboarding states.
-   */
-  public void activateEmploymentAfterSignedContract(LocalDate hireDate) {
-    Employment em = getEmployment();
-    EmployeeStatus st = em.status();
-    if (st != EmployeeStatus.DRAFT && st != EmployeeStatus.PENDING_CONTRACT) {
-      throw new EmployeeInvalidOnboardingStateException(
-          "Only onboarding employees can be activated with a contract.",
-          Map.of("status", st.name(), "employeeId", id != null ? id : 0L),
-          "activateEmploymentAfterSignedContract invalid status=" + st + " id=" + id);
-    }
-
-    LocalDate effective = hireDate != null ? hireDate : LocalDate.now(ClientTimeZones.current());
-    this.employment = new Employment(
-        em.position(),
-        em.department(),
-        em.contractType(),
-        em.workShift(),
-        effective,
-        null,
-        EmployeeStatus.ACTIVE);
-    touch();
-
-  }
-
-  /** Go from draft to pending contract. */
-
-  public void submitForContractRegistration() {
-    Employment em = getEmployment();
-    if (em.status() != EmployeeStatus.DRAFT) {
-      throw new EmployeeInvalidOnboardingStateException(
-          "Only draft registrations can be submitted for contract.",
-          Map.of("status", em.status().name()),
-          "submitForContractRegistration expected DRAFT");
-    }
-    this.employment = em.setStatus(EmployeeStatus.PENDING_CONTRACT);
-    touch();
-
-  }
-
   public void markAsDeleted() {
     this.deletedAt = LocalDateTime.now();
     touch();
@@ -128,9 +39,6 @@ public class Employee extends BaseDomain<Long> {
   public void touch() {
     this.updatedAt = LocalDateTime.now();
   }
-
-  // Safe getters
-  // (returning deafults if some setter or builder replaces the default values)
 
   public PersonalProfile getPersonal() {
     return personal != null ? personal : PersonalProfile.empty();
@@ -154,11 +62,8 @@ public class Employee extends BaseDomain<Long> {
 
   public EmployeeStatus getStatus() {
     Employment em = getEmployment();
-    return em.status() != null ? em.status() : EmployeeStatus.UNDEFINED;
+    return em.status() != null ? em.status() : EmployeeStatus.INACTIVE;
   }
-
-  // Setters
-  // (setting defaults if the value is null)
 
   public void setPersonal(PersonalProfile personal) {
     this.personal = personal != null ? personal : PersonalProfile.empty();
@@ -180,8 +85,17 @@ public class Employee extends BaseDomain<Long> {
     this.benefits = benefits != null ? benefits : BenefitsProfile.legalDefaults();
   }
 
+  /** Direct status write; application layer owns termination-date side effects. */
   public void setStatus(EmployeeStatus status) {
-    this.employment = getEmployment().setStatus(status != null ? status : EmployeeStatus.UNDEFINED);
+    this.employment = getEmployment().setStatus(status != null ? status : EmployeeStatus.INACTIVE);
+  }
+
+  public void setHireDate(LocalDate hireDate) {
+    this.employment = getEmployment().setHireDate(hireDate);
+  }
+
+  public void setTerminationDate(LocalDate terminationDate) {
+    this.employment = getEmployment().setTerminationDate(terminationDate);
   }
 
   public static class SafeBuilder {
@@ -237,7 +151,7 @@ public class Employee extends BaseDomain<Long> {
     }
 
     public SafeBuilder withDeletedAt(LocalDateTime deletedAt) {
-      this.deletedAt = deletedAt != null ? deletedAt : null;
+      this.deletedAt = deletedAt;
       return this;
     }
 

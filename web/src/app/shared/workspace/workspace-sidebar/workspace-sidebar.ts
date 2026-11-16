@@ -53,6 +53,12 @@ export const ERP_NAVIGATION: readonly WorkspaceNavSection[] = [
       { label: 'Nómina', icon: 'payments', route: `${ERP_PATH}/nomina`, roles: ADMIN_ONLY },
       { label: 'Asistencia', icon: 'today', route: `${ERP_PATH}/asistencia`, roles: ADMIN_ONLY },
       { label: 'Contratos', icon: 'contract', route: `${ERP_PATH}/contratos`, roles: ADMIN_ONLY },
+      {
+        label: 'Convocatorias',
+        icon: 'assignment',
+        route: `${ERP_PATH}/convocatorias`,
+        roles: ADMIN_ONLY,
+      },
     ],
   },
   {
