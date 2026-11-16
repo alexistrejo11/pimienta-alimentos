@@ -18,9 +18,5 @@ public record TaskListItemResponse(
     LocalDateTime dueDate,
     @Schema(example = "1")
     Long headquarterId,
-    @Schema(example = "10")
-    Long projectId,
-    @Schema(example = "500")
-    Long opportunityId,
     @Schema(example = "33.33")
     double progressPercent) {}

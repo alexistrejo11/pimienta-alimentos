@@ -11,7 +11,6 @@ import io.github.alexistrejo11.pimienta.module.account.user.core.application.com
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.entities.User;
 import io.github.alexistrejo11.pimienta.module.account.user.core.domain.exceptions.UserNotFoundException;
 import io.github.alexistrejo11.pimienta.module.account.user.core.port.output.UserRepository;
-import io.github.alexistrejo11.pimienta.module.crm.core.port.output.ProjectRepository;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.output.EmployeeRepository;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import io.github.alexistrejo11.pimienta.module.task.core.port.TaskRepository;
@@ -22,19 +21,16 @@ public class ProfileUseCasesImpl implements ProfileUseCases {
 
   private final UserRepository userRepository;
   private final EmployeeRepository employeeRepository;
-  private final ProjectRepository projectRepository;
   private final HeadquarterRepository headquarterRepository;
   private final TaskRepository taskRepository;
 
   public ProfileUseCasesImpl(
       UserRepository userRepository,
       EmployeeRepository employeeRepository,
-      ProjectRepository projectRepository,
       HeadquarterRepository headquarterRepository,
       TaskRepository taskRepository) {
     this.userRepository = userRepository;
     this.employeeRepository = employeeRepository;
-    this.projectRepository = projectRepository;
     this.headquarterRepository = headquarterRepository;
     this.taskRepository = taskRepository;
   }
@@ -48,20 +44,14 @@ public class ProfileUseCasesImpl implements ProfileUseCases {
         .orElseThrow(() -> new UserNotFoundException(userId));
 
     int totalActiveEmployees = safeInt(employeeRepository.countActive());
-    int totalActiveProjects = safeInt(projectRepository.countActive());
     int totalActiveHeadquarters = safeInt(headquarterRepository.countActive());
-    int totalActivePersonalTasks = safeInt(taskRepository.countOpenPersonalTasks());
-    int totalPendingPersonalTasks = safeInt(taskRepository.countPendingPersonalTasks());
-    int totalActiveEmployeesTasks = safeInt(taskRepository.countOpenWorkTasks());
-    int totalEmployeePending = safeInt(taskRepository.countPendingWorkTasks());
+    int totalOpenTasks = safeInt(taskRepository.countOpenTasks());
+    int totalPendingTasks = safeInt(taskRepository.countPendingTasks());
     var dashboard = new UserManagerDashboard(
         totalActiveEmployees,
-        totalActiveProjects,
         totalActiveHeadquarters,
-        totalActivePersonalTasks,
-        totalPendingPersonalTasks,
-        totalActiveEmployeesTasks,
-        totalEmployeePending);
+        totalOpenTasks,
+        totalPendingTasks);
 
     log.info("getDashboard complete userId={}", userId);
     return dashboard;

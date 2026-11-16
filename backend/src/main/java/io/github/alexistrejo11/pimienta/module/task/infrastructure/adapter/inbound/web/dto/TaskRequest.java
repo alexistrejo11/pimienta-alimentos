@@ -27,10 +27,6 @@ public record TaskRequest(
     LocalDateTime dueDate,
     @Schema(description = "Headquarter scope (optional).", example = "1")
     Long headquarterId,
-    @Schema(description = "Project scope (optional).", example = "10")
-    Long projectId,
-    @Schema(description = "CRM opportunity scope (optional).", example = "500")
-    Long opportunityId,
     @Schema(description = "Actor who created the task (optional).", example = "42")
     Long createdById,
     @Valid @Schema(description = "Optional checklist lines.")

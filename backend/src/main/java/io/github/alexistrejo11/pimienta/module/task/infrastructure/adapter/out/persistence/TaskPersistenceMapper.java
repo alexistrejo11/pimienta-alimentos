@@ -25,8 +25,6 @@ final class TaskPersistenceMapper {
     e.setCompletedAt(domain.getCompletedAt());
     e.setDueDate(domain.getDueDate());
     e.setHeadquarterId(domain.getHeadquarterId());
-    e.setProjectId(domain.getProjectId());
-    e.setOpportunityId(domain.getOpportunityId());
     List<ChecklistItemJson> jsonItems = new ArrayList<>();
     for (Task.ChecklistItem item : domain.getChecklist()) {
       jsonItems.add(
@@ -69,8 +67,6 @@ final class TaskPersistenceMapper {
         .withCompletedAt(e.getCompletedAt())
         .withDueDate(e.getDueDate())
         .withHeadquarterId(e.getHeadquarterId())
-        .withProjectId(e.getProjectId())
-        .withOpportunityId(e.getOpportunityId())
         .withChecklistItems(items)
         .withCreatedAt(e.getCreatedAt())
         .withUpdatedAt(e.getUpdatedAt())

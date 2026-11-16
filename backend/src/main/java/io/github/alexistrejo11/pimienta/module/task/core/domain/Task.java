@@ -47,8 +47,6 @@ public class Task extends BaseDomain<Long> {
   private LocalDateTime completedAt;
   private LocalDateTime dueDate;
   private Long headquarterId;
-  private Long projectId;
-  private Long opportunityId;
   private List<ChecklistItem> checklist = new ArrayList<>();
 
   private Task() {
@@ -133,14 +131,6 @@ public class Task extends BaseDomain<Long> {
     return headquarterId;
   }
 
-  public Long getProjectId() {
-    return projectId;
-  }
-
-  public Long getOpportunityId() {
-    return opportunityId;
-  }
-
   public List<ChecklistItem> getChecklist() {
     return Collections.unmodifiableList(new ArrayList<>(checklist));
   }
@@ -189,14 +179,6 @@ public class Task extends BaseDomain<Long> {
     this.headquarterId = headquarterId;
   }
 
-  public void setProjectId(Long projectId) {
-    this.projectId = projectId;
-  }
-
-  public void setOpportunityId(Long opportunityId) {
-    this.opportunityId = opportunityId;
-  }
-
   /** Replaces checklist content (does not bump version; caller should {@link #touch()}). */
   public void setChecklist(List<ChecklistItem> items) {
     this.checklist = items != null ? new ArrayList<>(items) : new ArrayList<>();
@@ -215,8 +197,6 @@ public class Task extends BaseDomain<Long> {
     private LocalDateTime completedAt;
     private LocalDateTime dueDate;
     private Long headquarterId;
-    private Long projectId;
-    private Long opportunityId;
     private final List<ChecklistItem> checklistDraft = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -283,16 +263,6 @@ public class Task extends BaseDomain<Long> {
       return this;
     }
 
-    public SafeBuilder withProjectId(Long projectId) {
-      this.projectId = projectId;
-      return this;
-    }
-
-    public SafeBuilder withOpportunityId(Long opportunityId) {
-      this.opportunityId = opportunityId;
-      return this;
-    }
-
     public SafeBuilder withChecklistDrafts(List<ChecklistDraft> lines) {
       checklistDraft.clear();
       if (lines == null) {
@@ -347,8 +317,6 @@ public class Task extends BaseDomain<Long> {
       t.completedAt = completedAt;
       t.dueDate = dueDate;
       t.headquarterId = headquarterId;
-      t.projectId = projectId;
-      t.opportunityId = opportunityId;
       t.checklist = new ArrayList<>(checklistDraft);
       t.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
       t.updatedAt = updatedAt != null ? updatedAt : t.createdAt;
@@ -372,8 +340,6 @@ public class Task extends BaseDomain<Long> {
       t.completedAt = completedAt;
       t.dueDate = dueDate;
       t.headquarterId = headquarterId;
-      t.projectId = projectId;
-      t.opportunityId = opportunityId;
       t.checklist = new ArrayList<>(checklistDraft);
       LocalDateTime now = LocalDateTime.now();
       t.createdAt = createdAt != null ? createdAt : now;

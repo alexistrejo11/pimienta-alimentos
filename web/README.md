@@ -14,7 +14,7 @@ deployment is performed by GitHub Actions after changes are merged into `main`.
 - Public company and service information
 - Legal and quality pages
 - Staff authentication and role-aware workspace
-- Employee, CRM, task, contract, payroll, and headquarters views
+- Employee, task, contract, payroll, and headquarters views
 - POS administration, catalog, devices, incidents, and reports
 - Public Android POS download through the backend release endpoint
 - Server-side rendering and prerendered public routes

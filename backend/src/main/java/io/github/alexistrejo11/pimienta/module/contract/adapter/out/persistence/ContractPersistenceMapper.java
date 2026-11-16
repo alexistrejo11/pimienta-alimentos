@@ -19,8 +19,6 @@ public final class ContractPersistenceMapper {
         .Description(text(entity.getDescription()))
         .Category(entity.getCategory())
         .EmployeeId(entity.getEmployeeId())
-        .OpportunityId(entity.getOpportunityId())
-        .ProjectId(entity.getProjectId())
         .TermKind(entity.getTermKind())
         .EffectiveStart(entity.getEffectiveStart())
         .EffectiveEnd(entity.getEffectiveEnd())
@@ -50,8 +48,6 @@ public final class ContractPersistenceMapper {
     e.setDescription(text(domain.getDescription()));
     e.setCategory(domain.getCategoryOrNull());
     e.setEmployeeId(domain.getEmployeeId());
-    e.setOpportunityId(domain.getOpportunityId());
-    e.setProjectId(domain.getProjectId());
     e.setTermKind(domain.getTermKindOrNull());
     e.setEffectiveStart(domain.getEffectiveStart());
     e.setEffectiveEnd(domain.getEffectiveEnd());

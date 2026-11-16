@@ -40,18 +40,6 @@ import java.lang.annotation.Target;
       example = "1",
       schema = @Schema(type = "integer", format = "int64")),
   @Parameter(
-      name = "projectId",
-      in = ParameterIn.QUERY,
-      description = "Filter by project id.",
-      example = "10",
-      schema = @Schema(type = "integer", format = "int64")),
-  @Parameter(
-      name = "opportunityId",
-      in = ParameterIn.QUERY,
-      description = "Filter by CRM opportunity id.",
-      example = "500",
-      schema = @Schema(type = "integer", format = "int64")),
-  @Parameter(
       name = "employeeId",
       in = ParameterIn.QUERY,
       description = "Filter by assignee (employee) id.",

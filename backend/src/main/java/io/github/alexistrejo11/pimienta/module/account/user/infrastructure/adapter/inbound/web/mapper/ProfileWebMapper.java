@@ -24,11 +24,8 @@ public final class ProfileWebMapper {
   public static UserDashboardResponse toDashboardResponse(UserManagerDashboard dashboard) {
     return new UserDashboardResponse(
         dashboard.totalActiveEmployees(),
-        dashboard.totalActiveProjects(),
         dashboard.totalActiveHeadquarters(),
-        dashboard.totalActivePersonalTasks(),
-        dashboard.totalPendingPersonalTasks(),
-        dashboard.totalActiveEmployeesTasks(),
-        dashboard.totalEmployeePending());
+        dashboard.totalOpenTasks(),
+        dashboard.totalPendingTasks());
   }
 }

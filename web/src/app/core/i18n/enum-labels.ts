@@ -127,20 +127,8 @@ export function taskStatusLabel(status: string): string {
   return TASK_STATUS_LABELS[status] ?? status;
 }
 
-export function opportunityStatusLabel(status: string): string {
-  return OPPORTUNITY_STATUS_LABELS[status] ?? status;
-}
-
-export function projectStatusLabel(status: string): string {
-  return PROJECT_STATUS_LABELS[status] ?? status;
-}
-
 export function contractCategoryLabel(category: string): string {
   return CONTRACT_CATEGORY_LABELS[category] ?? category;
-}
-
-export function milestoneStatusLabel(status: string): string {
-  return MILESTONE_STATUS_LABELS[status] ?? status;
 }
 
 const ACCOUNT_STATUS_LABELS: Record<string, string> = {
@@ -313,33 +301,6 @@ const TASK_STATUS_LABELS: Record<string, string> = {
   DELAYED: 'Retrasada',
   ON_HOLD: 'En espera',
   FAILED: 'Fallida',
-};
-
-const OPPORTUNITY_STATUS_LABELS: Record<string, string> = {
-  NEW: 'Nueva',
-  DISCOVERY: 'Exploración',
-  PROPOSAL: 'Propuesta',
-  NEGOTIATION: 'Negociación',
-  WON: 'Ganada',
-  LOST: 'Perdida',
-  ABANDONED: 'Abandonada',
-};
-
-const PROJECT_STATUS_LABELS: Record<string, string> = {
-  PLANNING: 'Planeación',
-  ACTIVE: 'Activo',
-  ON_HOLD: 'En pausa',
-  COMPLETED: 'Completado',
-  CANCELLED: 'Cancelado',
-  ARCHIVED: 'Archivado',
-};
-
-const MILESTONE_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Pendiente',
-  IN_PROGRESS: 'En progreso',
-  COMPLETED: 'Completado',
-  DELAYED: 'Retrasado',
-  CANCELLED: 'Cancelado',
 };
 
 const OPERATING_EXPENSE_CATEGORY_LABELS: Record<string, string> = {

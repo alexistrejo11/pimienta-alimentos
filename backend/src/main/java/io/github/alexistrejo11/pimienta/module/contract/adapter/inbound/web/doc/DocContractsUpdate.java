@@ -53,8 +53,6 @@ import java.lang.annotation.Target;
                         "description": "Incluye anexo de logística inversa.",
                         "category": "SUPPLIER",
                         "employeeId": null,
-                        "opportunityId": 5001,
-                        "projectId": 88,
                         "termKind": "FIXED_TERM",
                         "effectiveStart": "2025-05-01",
                         "effectiveEnd": "2026-10-31",

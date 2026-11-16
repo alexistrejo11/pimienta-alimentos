@@ -1,6 +1,6 @@
 ## Overview
 
-The API is a modular Spring Boot monolith with ports-and-adapters structure. Its bounded contexts are account, contract, CRM, employees, files, headquarters, inventory, notifications, payroll, POS, and tasks.
+The API is a modular Spring Boot monolith with ports-and-adapters structure. Its bounded contexts are account, contract, employees, files, headquarters, inventory, notifications, payroll, POS, and tasks.
 
 Each context keeps domain state separate from application workflows. HTTP controllers validate and translate requests into commands or queries; application use cases coordinate the workflow through input and output ports; persistence and external integrations are adapters.
 

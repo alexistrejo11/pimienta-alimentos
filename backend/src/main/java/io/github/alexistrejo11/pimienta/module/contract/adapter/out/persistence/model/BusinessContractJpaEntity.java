@@ -21,8 +21,6 @@ import java.time.LocalDateTime;
     name = "business_contracts",
     indexes = {
       @Index(name = "idx_business_contracts_employee_id", columnList = "employee_id"),
-      @Index(name = "idx_business_contracts_opportunity_id", columnList = "opportunity_id"),
-      @Index(name = "idx_business_contracts_project_id", columnList = "project_id"),
       @Index(name = "idx_business_contracts_reference_code", columnList = "reference_code"),
       @Index(name = "idx_business_contracts_deleted_at", columnList = "deleted_at")
     })
@@ -44,12 +42,6 @@ public class BusinessContractJpaEntity extends BaseJpaEntity {
 
   @Column(name = "employee_id")
   private Long employeeId;
-
-  @Column(name = "opportunity_id")
-  private Long opportunityId;
-
-  @Column(name = "project_id")
-  private Long projectId;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "term_kind", length = 32)
@@ -123,22 +115,6 @@ public class BusinessContractJpaEntity extends BaseJpaEntity {
 
   public void setEmployeeId(Long employeeId) {
     this.employeeId = employeeId;
-  }
-
-  public Long getOpportunityId() {
-    return opportunityId;
-  }
-
-  public void setOpportunityId(Long opportunityId) {
-    this.opportunityId = opportunityId;
-  }
-
-  public Long getProjectId() {
-    return projectId;
-  }
-
-  public void setProjectId(Long projectId) {
-    this.projectId = projectId;
   }
 
   public ContractTermKind getTermKind() {

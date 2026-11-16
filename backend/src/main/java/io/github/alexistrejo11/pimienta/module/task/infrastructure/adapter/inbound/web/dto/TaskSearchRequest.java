@@ -14,12 +14,6 @@ public class TaskSearchRequest extends PageableRequest {
   @Schema(description = "Filter by headquarter id.", example = "1")
   private Long headquarterId;
 
-  @Schema(description = "Filter by project id.", example = "10")
-  private Long projectId;
-
-  @Schema(description = "Filter by CRM opportunity id.", example = "500")
-  private Long opportunityId;
-
   @Schema(description = "Filter by assignee (employee) id.", example = "7")
   private Long employeeId;
 
@@ -32,22 +26,6 @@ public class TaskSearchRequest extends PageableRequest {
 
   public void setHeadquarterId(Long headquarterId) {
     this.headquarterId = headquarterId;
-  }
-
-  public Long getProjectId() {
-    return projectId;
-  }
-
-  public void setProjectId(Long projectId) {
-    this.projectId = projectId;
-  }
-
-  public Long getOpportunityId() {
-    return opportunityId;
-  }
-
-  public void setOpportunityId(Long opportunityId) {
-    this.opportunityId = opportunityId;
   }
 
   public Long getEmployeeId() {

@@ -37,7 +37,7 @@ import org.springframework.http.MediaType;
       name = "module",
       in = ParameterIn.QUERY,
       required = true,
-      description = "Module slug that owns this resource file (e.g. `inventory`, `crm`, `payroll`).",
+      description = "Module slug that owns this resource file (e.g. `inventory`, `payroll`, `contracts`).",
       schema = @Schema(type = "string", example = "inventory")),
   @Parameter(
       name = "entityType",

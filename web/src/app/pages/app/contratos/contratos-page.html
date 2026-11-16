@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
   <app-page-header
     title="Contratos"
-    subtitle="Acuerdos con colaboradores, clientes y proveedores; vinculación con empleados, oportunidades y proyectos."
+    subtitle="Acuerdos con colaboradores, clientes y proveedores."
   />
 
   <div class="flex flex-wrap items-center gap-3">
@@ -124,42 +124,6 @@
             </select>
           </div>
         }
-
-        <div class="md:col-span-2">
-          <label
-            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
-            for="c-opp"
-            >Oportunidad CRM (opcional)</label
-          >
-          <select
-            id="c-opp"
-            formControlName="opportunityId"
-            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
-          >
-            <option [ngValue]="null">Sin vínculo</option>
-            @for (o of opportunityOptions(); track o.id) {
-              <option [ngValue]="o.id">{{ opportunityLabel(o) }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="md:col-span-2">
-          <label
-            class="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
-            for="c-proj"
-            >Proyecto CRM (opcional)</label
-          >
-          <select
-            id="c-proj"
-            formControlName="projectId"
-            class="mt-1 w-full rounded-lg border border-outline-variant/20 bg-surface-container px-3 py-2 text-sm text-on-surface focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary/25"
-          >
-            <option [ngValue]="null">Sin vínculo</option>
-            @for (p of projectOptions(); track p.id) {
-              <option [ngValue]="p.id">{{ projectLabel(p) }}</option>
-            }
-          </select>
-        </div>
 
         <div>
           <label
@@ -335,18 +299,7 @@
                   <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">{{
                     employeeName(c.employeeId)
                   }}</span>
-                }
-                @if (c.opportunityId != null) {
-                  <span class="mr-2 inline-block rounded bg-surface-container px-2 py-0.5">{{
-                    opportunityName(c.opportunityId)
-                  }}</span>
-                }
-                @if (c.projectId != null) {
-                  <span class="inline-block rounded bg-surface-container px-2 py-0.5">{{
-                    projectName(c.projectId)
-                  }}</span>
-                }
-                @if (c.employeeId == null && c.opportunityId == null && c.projectId == null) {
+                } @else {
                   —
                 }
               </td>

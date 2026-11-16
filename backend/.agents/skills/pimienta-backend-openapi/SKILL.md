@@ -49,7 +49,7 @@ description: >-
 
 Place these in **`…adapter.inbound.web.doc`** next to the controller package.
 
-**Examples in-repo**: `module/account/.../web/doc`, `module/contract/.../web/doc`, **`module/crm/.../web/doc`** (`DocOpportunities`, `DocProjects`, `DocProjectMilestones`, plus one `Doc*` per endpoint).
+**Examples in-repo**: `module/account/.../web/doc`, `module/contract/.../web/doc`, `module/task/.../web/doc` (one `Doc*` per endpoint).
 
 ## Roles and JWT
 

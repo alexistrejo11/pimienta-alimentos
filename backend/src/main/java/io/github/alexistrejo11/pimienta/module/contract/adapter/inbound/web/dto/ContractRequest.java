@@ -13,8 +13,6 @@ public record ContractRequest(
     String description,
     @NotNull ContractCategory category,
     Long employeeId,
-    Long opportunityId,
-    Long projectId,
     @NotNull ContractTermKind termKind,
     @NotNull LocalDate effectiveStart,
     LocalDate effectiveEnd,

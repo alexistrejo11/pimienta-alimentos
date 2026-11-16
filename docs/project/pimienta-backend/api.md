@@ -59,7 +59,6 @@ The standard paginated response contains `items` and `metadata`:
 | GET | `/api/v1/users/me` | Read the current staff profile. | required |
 | GET, POST, PUT, DELETE | `/api/v1/employees` | Manage employees and related HR workflows. | required |
 | GET, POST, PUT, DELETE | `/api/v1/contracts` | Manage employment contracts and renewals. | required |
-| GET, POST, PUT, DELETE | `/api/v1/opportunities`, `/api/v1/projects` | Manage CRM opportunities and projects. | required |
 | GET, POST, PUT, DELETE | `/api/v1/tasks` | Manage operational tasks, assignments, and checklists. | required |
 | GET, POST, PUT, DELETE | `/api/v1/headquarters` | Manage company locations and their POS settings. | required |
 | GET, POST, PUT, DELETE | `/api/v1/inventory/*` | Manage items, locations, stock, movements, and transactions. | required |

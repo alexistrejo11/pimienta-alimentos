@@ -11,8 +11,6 @@ import { TaskService } from '../../../../core/tasks/task.service';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header';
 import { HeadquarterSelectComponent } from '../../../../shared/ui/headquarter-select/headquarter-select';
 import { EmployeeSelectComponent } from '../../../../shared/ui/employee-select/employee-select';
-import { OpportunitySelectComponent } from '../../../../shared/ui/opportunity-select/opportunity-select';
-import { ProjectSelectComponent } from '../../../../shared/ui/project-select/project-select';
 import { ApiFormErrorComponent } from '../../../../shared/ui/api-form-error/api-form-error';
 
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT', 'UNDEFINED'];
@@ -26,8 +24,6 @@ const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT', 'UNDEFINE
     PageHeaderComponent,
     HeadquarterSelectComponent,
     EmployeeSelectComponent,
-    OpportunitySelectComponent,
-    ProjectSelectComponent,
     ApiFormErrorComponent,
   ],
   templateUrl: './tarea-form-page.html',
@@ -54,8 +50,6 @@ export class TareaFormPageComponent {
     priority: this.fb.nonNullable.control<TaskPriority>('MEDIUM'),
     dueDate: [''],
     headquarterId: this.fb.control<number | null>(null),
-    projectId: this.fb.control<number | null>(null),
-    opportunityId: this.fb.control<number | null>(null),
     createdById: this.fb.control<number | null>(null),
     checklistText: [''],
   });
@@ -110,12 +104,6 @@ export class TareaFormPageComponent {
 
     if (v.headquarterId != null && v.headquarterId > 0) {
       body.headquarterId = v.headquarterId;
-    }
-    if (v.projectId != null && v.projectId > 0) {
-      body.projectId = v.projectId;
-    }
-    if (v.opportunityId != null && v.opportunityId > 0) {
-      body.opportunityId = v.opportunityId;
     }
     if (v.createdById != null && v.createdById > 0) {
       body.createdById = v.createdById;

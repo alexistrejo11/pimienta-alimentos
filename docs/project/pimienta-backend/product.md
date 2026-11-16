@@ -11,7 +11,7 @@ Pimienta Alimentos needs consistent operational records that staff can trust acr
 
 ## Scope
 
-**In scope:** staff access, users, employees, attendance, schedules, contracts, CRM, inventory, payroll, tasks, locations, files, notifications, and POS administration and synchronization.
+**In scope:** staff access, users, employees, attendance, schedules, contracts, inventory, payroll, tasks, locations, files, notifications, and POS administration and synchronization.
 
 **Out of scope:** public web presentation, POS screen interaction, payment processing, delivery logistics, and unverified POS hardware integrations.
 

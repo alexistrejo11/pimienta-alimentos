@@ -12,8 +12,6 @@ public record CreateTaskCommand(
     Task.Priority priority,
     LocalDateTime dueDate,
     Long headquarterId,
-    Long projectId,
-    Long opportunityId,
     Long createdById,
     Task.Status initialStatus,
     List<ChecklistDraft> checklistLines) {

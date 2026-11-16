@@ -17,25 +17,14 @@ public final class TaskManagerWebMapper {
 
   private TaskManagerWebMapper() {}
 
-  public static CreateTaskCommand toCreateCommandForOpportunity(
-      TaskRequest request, Long opportunityId) {
-    return buildCreateCommand(request, opportunityId);
-  }
-
   public static TaskSearchCriteria toCriteria(TaskSearchRequest request) {
     return new TaskSearchCriteria(
         request.getHeadquarterId(),
-        request.getProjectId(),
-        request.getOpportunityId(),
         request.getEmployeeId(),
         request.getStatus());
   }
 
-  static CreateTaskCommand toCreateCommand(TaskRequest request) {
-    return buildCreateCommand(request, request.opportunityId());
-  }
-
-  private static CreateTaskCommand buildCreateCommand(TaskRequest request, Long opportunityId) {
+  public static CreateTaskCommand toCreateCommand(TaskRequest request) {
     List<ChecklistDraft> drafts = new ArrayList<>();
     if (request.checklist() != null) {
       for (ChecklistLineRequest line : request.checklist()) {
@@ -48,8 +37,6 @@ public final class TaskManagerWebMapper {
         request.priority(),
         request.dueDate(),
         request.headquarterId(),
-        request.projectId(),
-        opportunityId,
         request.createdById(),
         Task.Status.PENDING,
         drafts);
@@ -78,8 +65,6 @@ public final class TaskManagerWebMapper {
         task.getCompletedAt(),
         task.getDueDate(),
         task.getHeadquarterId(),
-        task.getProjectId(),
-        task.getOpportunityId(),
         checklist,
         task.getProgressPercentage(),
         task.getCreatedAt(),
@@ -95,8 +80,6 @@ public final class TaskManagerWebMapper {
         task.getAssignedToId(),
         task.getDueDate(),
         task.getHeadquarterId(),
-        task.getProjectId(),
-        task.getOpportunityId(),
         task.getProgressPercentage());
   }
 }

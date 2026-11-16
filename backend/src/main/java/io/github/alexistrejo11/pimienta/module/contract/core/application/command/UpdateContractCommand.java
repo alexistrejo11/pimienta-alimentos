@@ -10,8 +10,6 @@ public record UpdateContractCommand(
     String description,
     ContractCategory category,
     Long employeeId,
-    Long opportunityId,
-    Long projectId,
     ContractTermKind termKind,
     LocalDate effectiveStart,
     LocalDate effectiveEnd,

@@ -88,16 +88,6 @@
           [value]="form.controls.headquarterId.value"
           (valueChange)="onHeadquarterChange($event)"
         />
-        <app-project-select
-          label="Proyecto (opcional)"
-          [value]="form.controls.projectId.value"
-          (valueChange)="form.controls.projectId.setValue($event)"
-        />
-        <app-opportunity-select
-          label="Oportunidad (opcional)"
-          [value]="form.controls.opportunityId.value"
-          (valueChange)="form.controls.opportunityId.setValue($event)"
-        />
         <app-employee-select
           label="Creador (opcional)"
           nullLabel="Sin asignar"

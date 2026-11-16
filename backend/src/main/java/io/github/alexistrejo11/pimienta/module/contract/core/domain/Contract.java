@@ -23,8 +23,6 @@ public class Contract extends BaseDomain<Long> {
   private String description;
   private ContractCategory category;
   private Long employeeId;
-  private Long opportunityId;
-  private Long projectId;
   private ContractTermKind termKind;
   private LocalDate effectiveStart;
   private LocalDate effectiveEnd;
@@ -147,14 +145,6 @@ public class Contract extends BaseDomain<Long> {
     return employeeId;
   }
 
-  public Long getOpportunityId() {
-    return opportunityId;
-  }
-
-  public Long getProjectId() {
-    return projectId;
-  }
-
   public ContractTermKind getTermKind() {
     return termKind != null ? termKind : ContractTermKind.UNDEFINED;
   }
@@ -228,14 +218,6 @@ public class Contract extends BaseDomain<Long> {
     this.employeeId = employeeId;
   }
 
-  public void setOpportunityId(Long opportunityId) {
-    this.opportunityId = opportunityId;
-  }
-
-  public void setProjectId(Long projectId) {
-    this.projectId = projectId;
-  }
-
   public void setTermKind(ContractTermKind termKind) {
     this.termKind = termKind;
   }
@@ -290,8 +272,6 @@ public class Contract extends BaseDomain<Long> {
     private String description;
     private ContractCategory category;
     private Long employeeId;
-    private Long opportunityId;
-    private Long projectId;
     private ContractTermKind termKind;
     private LocalDate effectiveStart;
     private LocalDate effectiveEnd;
@@ -330,16 +310,6 @@ public class Contract extends BaseDomain<Long> {
 
     public SafeBuilder EmployeeId(Long employeeId) {
       this.employeeId = employeeId;
-      return this;
-    }
-
-    public SafeBuilder OpportunityId(Long opportunityId) {
-      this.opportunityId = opportunityId;
-      return this;
-    }
-
-    public SafeBuilder ProjectId(Long projectId) {
-      this.projectId = projectId;
       return this;
     }
 
@@ -426,8 +396,6 @@ public class Contract extends BaseDomain<Long> {
       c.description = description != null ? description : "";
       c.category = category;
       c.employeeId = employeeId;
-      c.opportunityId = opportunityId;
-      c.projectId = projectId;
       c.termKind = termKind;
       c.effectiveStart = effectiveStart;
       c.effectiveEnd = effectiveEnd;
@@ -456,8 +424,6 @@ public class Contract extends BaseDomain<Long> {
       c.description = description != null ? description : "";
       c.category = category;
       c.employeeId = employeeId;
-      c.opportunityId = opportunityId;
-      c.projectId = projectId;
       c.termKind = termKind;
       c.effectiveStart = effectiveStart;
       c.effectiveEnd = effectiveEnd;
@@ -492,8 +458,6 @@ public class Contract extends BaseDomain<Long> {
       c.description = description != null ? description : "";
       c.category = category;
       c.employeeId = employeeId;
-      c.opportunityId = opportunityId;
-      c.projectId = projectId;
       c.termKind = termKind;
       c.effectiveStart = effectiveStart;
       c.effectiveEnd = effectiveEnd;
@@ -550,7 +514,7 @@ public class Contract extends BaseDomain<Long> {
     }
     validateTermDates(b.termKind, b.effectiveStart, b.effectiveEnd);
     validateMonetaryPair(b.agreedValue, b.currencyCode);
-    validateRelationshipIds(b.category, b.employeeId, b.opportunityId, b.projectId);
+    validateRelationshipIds(b.category, b.employeeId);
   }
 
   private static void validateRevision(SafeBuilder b) {
@@ -580,11 +544,10 @@ public class Contract extends BaseDomain<Long> {
     }
     validateTermDates(b.termKind, b.effectiveStart, b.effectiveEnd);
     validateMonetaryPair(b.agreedValue, b.currencyCode);
-    validateRelationshipIds(b.category, b.employeeId, b.opportunityId, b.projectId);
+    validateRelationshipIds(b.category, b.employeeId);
   }
 
-  private static void validateRelationshipIds(
-      ContractCategory category, Long employeeId, Long opportunityId, Long projectId) {
+  private static void validateRelationshipIds(ContractCategory category, Long employeeId) {
     if (category == ContractCategory.EMPLOYEE) {
       if (employeeId == null) {
         throw new ContractRuleViolationException(
@@ -597,18 +560,6 @@ public class Contract extends BaseDomain<Long> {
           "Only employment contracts may reference an employee.",
           Map.of("category", category.name()),
           "employeeId set for non-EMPLOYEE category");
-    }
-    if (opportunityId != null && opportunityId <= 0) {
-      throw new ContractRuleViolationException(
-          "When set, opportunity id must be positive.",
-          Map.of("opportunityId", opportunityId),
-          "invalid opportunityId");
-    }
-    if (projectId != null && projectId <= 0) {
-      throw new ContractRuleViolationException(
-          "When set, project id must be positive.",
-          Map.of("projectId", projectId),
-          "invalid projectId");
     }
   }
 

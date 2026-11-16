@@ -34,10 +34,6 @@ public record UpdateContractRequest(
         description = "Empleado vinculado; obligatorio si `category` es EMPLOYEE.",
         example = "101")
     Long employeeId,
-    @Schema(description = "Oportunidad CRM (opcional).", example = "5001")
-    Long opportunityId,
-    @Schema(description = "Proyecto (opcional).", example = "88")
-    Long projectId,
     @NotNull
         @Schema(description = "Plazo: FIXED_TERM o INDEFINITE.", example = "FIXED_TERM")
     ContractTermKind termKind,

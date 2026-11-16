@@ -39,7 +39,7 @@ Older modules may use `adapter/` instead of `infrastructure/adapter/`, or `outbo
 ## Naming
 
 - Use cases: **`ThingManagementUseCases`** / **`ThingManagementUseCasesImpl`** (also `*BulkSyncUseCases`).
-- New writes: prefer **`*Command`** under `core/application/command` (avoid new domain `*Params`; legacy CRM/inventory may still use `*Params` or nested command records — do not spread that).
+- New writes: prefer **`*Command`** under `core/application/command` (avoid new domain `*Params`; some inventory code still uses `*Params` or nested command records — do not spread that).
 - Web: **`ThingController`**, **`ThingWebMapper`**, DTOs with `@Schema`.
 - Persistence: **`ThingJpaEntity`**, **`ThingSpringDataRepository`**, **`ThingPersistenceMapper`**.
 - Persistence mappers: prefer **`blankToNull`** / `*OrNull` for optional strings/enums when writing JPA (task/contract/headquarter style). Some inventory mappers skip this — follow the gold style on new code.
@@ -73,7 +73,7 @@ Older modules may use `adapter/` instead of `infrastructure/adapter/`, or `outbo
 - Exceptions (edit **`SecurityConfig`** only for these):
   - **Public**: auth, health, swagger, POS device enroll/refresh/APK.
       - **`/api/v1/users/me/**`** and **`POST /api/v1/telemetry/web/events`**: any staff JWT (`staffJwtOnly`).
-  - **`/api/v1/pos/admin/**`** and HQ **`pos-settings` / `pos-catalog`**: `ADMIN`, `DIRECTOR`, `MANAGER`, or `EMPLOYEE` (HQ scope via `HeadquarterAccessService`). Sales, product, summary, and shift-close reports: `ADMIN` or `DIRECTOR`. Device revoke: `ADMIN` only. ERP (`clients`, `employees`, `contracts`, `payroll`, `tasks`, CRM): `ADMIN` only.
+  - **`/api/v1/pos/admin/**`** and HQ **`pos-settings` / `pos-catalog`**: `ADMIN`, `DIRECTOR`, `MANAGER`, or `EMPLOYEE` (HQ scope via `HeadquarterAccessService`). Sales, product, summary, and shift-close reports: `ADMIN` or `DIRECTOR`. Device revoke: `ADMIN` only. ERP (`employees`, `contracts`, `payroll`, `tasks`): `ADMIN` only.
   - **Device** `/api/v1/pos/**`: `SCOPE_pos:sync`.
 - Unauthenticated secured call → **401**; authenticated without permission → **403**.
 - Client-facing error **`message`** is Spanish (`ClientErrorMessages` + `i18n/messages_es.properties`). Domain / logs stay English. Wire `errorCode` and enum names stay English.

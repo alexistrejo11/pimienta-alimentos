@@ -46,14 +46,6 @@ export const ERP_NAVIGATION: readonly WorkspaceNavSection[] = [
     ],
   },
   {
-    id: 'crm',
-    label: 'CRM',
-    items: [
-      { label: 'Oportunidades', icon: 'trending_up', route: `${ERP_PATH}/crm/oportunidades`, roles: ADMIN_ONLY },
-      { label: 'Proyectos', icon: 'folder_open', route: `${ERP_PATH}/crm/proyectos`, roles: ADMIN_ONLY },
-    ],
-  },
-  {
     id: 'people',
     label: 'Personas',
     items: [

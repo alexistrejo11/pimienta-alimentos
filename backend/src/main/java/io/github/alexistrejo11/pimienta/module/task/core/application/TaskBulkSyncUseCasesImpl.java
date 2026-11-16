@@ -60,10 +60,8 @@ public class TaskBulkSyncUseCasesImpl implements TaskBulkSyncUseCases {
     TaskSearchCriteria effective = criteria != null ? criteria : TaskSearchCriteria.empty();
 
     log.debug(
-        "export tasks start headquarterId={} projectId={} opportunityId={} assignedToId={} status={}",
+        "export tasks start headquarterId={} assignedToId={} status={}",
         effective.headquarterId(),
-        effective.projectId(),
-        effective.opportunityId(),
         effective.assignedToId(),
         effective.status());
 
@@ -163,8 +161,6 @@ public class TaskBulkSyncUseCasesImpl implements TaskBulkSyncUseCases {
                   row.title().trim(),
                   "",
                   Task.Priority.MEDIUM,
-                  null,
-                  null,
                   null,
                   null,
                   null,

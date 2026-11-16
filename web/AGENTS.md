@@ -1,6 +1,6 @@
 # Web (Angular)
 
-Public marketing/legal site plus authenticated staff workspace (empleados, CRM, tareas, sedes, contratos, archivos, nómina). UI copy is mostly Spanish.
+Public marketing/legal site plus authenticated staff workspace (empleados, tareas, sedes, contratos, archivos, nómina). UI copy is mostly Spanish.
 
 - **Stack:** Angular 21, standalone, zoneless, SSR, Tailwind CSS v4.
 - **Layout:** `src/app/pages/` (routes) and `src/app/core/` (HTTP services, models). No `features/` folder.

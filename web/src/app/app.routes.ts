@@ -33,10 +33,6 @@ const erpChildren: Routes = [
     data: { access: { roles: ADMIN } },
   },
   {
-    path: 'clients',
-    loadComponent: () => import('./pages/clients/clients-page').then((m) => m.ClientsPageComponent),
-  },
-  {
     path: 'tasks',
     loadComponent: () => import('./pages/app/tasks/tasks-page').then((m) => m.TasksPageComponent),
   },
@@ -71,64 +67,6 @@ const erpChildren: Routes = [
     path: 'empleados',
     loadComponent: () =>
       import('./pages/app/empleados/empleados-page').then((m) => m.EmpleadosPageComponent),
-  },
-  {
-    path: 'crm/oportunidades/nueva',
-    loadComponent: () =>
-      import('./pages/app/crm/oportunidades/oportunidad-form-page/oportunidad-form-page').then(
-        (m) => m.OportunidadFormPageComponent,
-      ),
-    canDeactivate: [dirtyFormGuard],
-  },
-  {
-    path: 'crm/oportunidades/:id/editar',
-    loadComponent: () =>
-      import('./pages/app/crm/oportunidades/oportunidad-form-page/oportunidad-form-page').then(
-        (m) => m.OportunidadFormPageComponent,
-      ),
-    canDeactivate: [dirtyFormGuard],
-  },
-  {
-    path: 'crm/oportunidades/:id',
-    loadComponent: () =>
-      import('./pages/app/crm/oportunidades/oportunidad-detail/oportunidad-detail-page').then(
-        (m) => m.OportunidadDetailPageComponent,
-      ),
-  },
-  {
-    path: 'crm/oportunidades',
-    loadComponent: () =>
-      import('./pages/app/crm/oportunidades/oportunidades-page').then(
-        (m) => m.OportunidadesPageComponent,
-      ),
-  },
-  {
-    path: 'crm/proyectos/nuevo',
-    loadComponent: () =>
-      import('./pages/app/crm/proyectos/proyecto-form-page/proyecto-form-page').then(
-        (m) => m.ProyectoFormPageComponent,
-      ),
-    canDeactivate: [dirtyFormGuard],
-  },
-  {
-    path: 'crm/proyectos/:id/editar',
-    loadComponent: () =>
-      import('./pages/app/crm/proyectos/proyecto-form-page/proyecto-form-page').then(
-        (m) => m.ProyectoFormPageComponent,
-      ),
-    canDeactivate: [dirtyFormGuard],
-  },
-  {
-    path: 'crm/proyectos/:id',
-    loadComponent: () =>
-      import('./pages/app/crm/proyectos/proyecto-detail/proyecto-detail-page').then(
-        (m) => m.ProyectoDetailPageComponent,
-      ),
-  },
-  {
-    path: 'crm/proyectos',
-    loadComponent: () =>
-      import('./pages/app/crm/proyectos/proyectos-page').then((m) => m.ProyectosPageComponent),
   },
   {
     path: 'tareas/nueva',
@@ -417,7 +355,6 @@ const legacyAppRedirects: Routes = [
   { path: 'proveedores', redirectTo: 'ops/proveedores' },
   { path: 'gastos-operativos', redirectTo: 'ops/gastos-operativos' },
   { path: 'pos', redirectTo: 'ops/pos' },
-  { path: 'crm', redirectTo: 'erp/crm' },
   { path: 'empleados', redirectTo: 'erp/empleados' },
   { path: 'tareas', redirectTo: 'erp/tareas' },
   { path: 'nomina', redirectTo: 'erp/nomina' },
@@ -425,7 +362,6 @@ const legacyAppRedirects: Routes = [
   { path: 'archivos', redirectTo: 'erp/archivos' },
   { path: 'usuarios', redirectTo: 'erp/usuarios' },
   { path: 'asistencia', redirectTo: 'erp/asistencia' },
-  { path: 'clients', redirectTo: 'erp/clients' },
   { path: 'tasks', redirectTo: 'erp/tasks' },
 ];
 

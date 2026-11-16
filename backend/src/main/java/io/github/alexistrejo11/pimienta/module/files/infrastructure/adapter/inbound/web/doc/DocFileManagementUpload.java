@@ -46,7 +46,7 @@ import org.springframework.http.MediaType;
       name = "module",
       in = ParameterIn.QUERY,
       required = false,
-      description = "Module slug — **required when `category = RESOURCE`** (e.g. `inventory`, `crm`).",
+      description = "Module slug — **required when `category = RESOURCE`** (e.g. `inventory`, `payroll`).",
       schema = @Schema(type = "string", example = "inventory")),
   @Parameter(
       name = "entityType",

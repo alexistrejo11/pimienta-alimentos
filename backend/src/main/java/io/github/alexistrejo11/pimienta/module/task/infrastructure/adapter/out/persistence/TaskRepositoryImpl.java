@@ -3,7 +3,6 @@ package io.github.alexistrejo11.pimienta.module.task.infrastructure.adapter.out.
 import io.github.alexistrejo11.pimienta.module.task.core.application.query.TaskSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.task.core.domain.Task;
 import io.github.alexistrejo11.pimienta.module.task.core.port.TaskRepository;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,52 +37,15 @@ public class TaskRepositoryImpl implements TaskRepository {
   }
 
   @Override
-  public long countByOpportunityId(long opportunityId) {
-    return jpaRepository.countByOpportunityIdAndDeletedAtIsNull(opportunityId);
-  }
-
-  @Override
-  public long countOpenByOpportunityId(long opportunityId) {
-    return jpaRepository.countByOpportunityIdAndDeletedAtIsNullAndStatusNotIn(
-        opportunityId, List.of(Task.Status.COMPLETED, Task.Status.CANCELLED));
-  }
-
-  @Override
-  public long countByProjectId(long projectId) {
-    return jpaRepository.countByProjectIdAndDeletedAtIsNull(projectId);
-  }
-
-  @Override
-  public long countOpenByProjectId(long projectId) {
-    return jpaRepository.countByProjectIdAndDeletedAtIsNullAndStatusNotIn(
-        projectId, List.of(Task.Status.COMPLETED, Task.Status.CANCELLED));
-  }
-
-  @Override
-  public long countOpenPersonalTasks() {
+  public long countOpenTasks() {
     return count(
-        Specification.where(TaskSpecifications.personalNotDeleted())
-            .and(TaskSpecifications.statusOpen()));
+        Specification.where(TaskSpecifications.notDeleted()).and(TaskSpecifications.statusOpen()));
   }
 
   @Override
-  public long countPendingPersonalTasks() {
+  public long countPendingTasks() {
     return count(
-        Specification.where(TaskSpecifications.personalNotDeleted())
-            .and(TaskSpecifications.statusPending()));
-  }
-
-  @Override
-  public long countOpenWorkTasks() {
-    return count(
-        Specification.where(TaskSpecifications.workNotDeleted())
-            .and(TaskSpecifications.statusOpen()));
-  }
-
-  @Override
-  public long countPendingWorkTasks() {
-    return count(
-        Specification.where(TaskSpecifications.workNotDeleted())
+        Specification.where(TaskSpecifications.notDeleted())
             .and(TaskSpecifications.statusPending()));
   }
 

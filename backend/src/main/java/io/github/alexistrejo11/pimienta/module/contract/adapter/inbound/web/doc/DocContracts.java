@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
     description =
         """
         Business agreements (employment, supplier, customer, …). Requires `Authorization: Bearer \
-        <access_token>`. Typical operators: **ADMIN**, **MANAGER**. Related entities (employee, \
-        opportunity, project) are validated when IDs are supplied. Domain rules may return \
+        <access_token>`. Typical operators: **ADMIN**, **MANAGER**. An employee id is validated \
+        when supplied. Domain rules may return \
         `CONTRACT_NOT_FOUND` or validation errors (`errorCode` in `ApiErrorResponse`).""")
 public @interface DocContracts {}

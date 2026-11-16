@@ -52,7 +52,7 @@ export class ArchivosPageComponent implements OnInit {
 
   // ── Filtros ───────────────────────────────────────────────────────────────
   filterCategory: FileCategory | '' = '';
-  filterModule = 'crm';
+  filterModule = 'employees';
   filterEntityType = '';
   filterEntityId = '';
   filterName = '';
@@ -62,7 +62,7 @@ export class ArchivosPageComponent implements OnInit {
 
   // ── Upload form ─────────────────────────────────────────────────────────────
   uploadCategory: FileCategory = 'COMPANY';
-  uploadModule = 'crm';
+  uploadModule = 'employees';
   uploadDescription = '';
   selectedFile: File | null = null;
 
@@ -101,7 +101,7 @@ export class ArchivosPageComponent implements OnInit {
     this.showUpload.set(false);
     this.selectedFile = null;
     this.uploadCategory = 'COMPANY';
-    this.uploadModule = 'crm';
+    this.uploadModule = 'employees';
     this.uploadDescription = '';
     this.uploadError.set(null);
     this.uploadSuccess.set(null);
