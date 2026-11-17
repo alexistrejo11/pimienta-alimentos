@@ -9,3 +9,7 @@ dist
 .angular
 coverage
 .cursor
+e2e
+playwright-report
+test-results
+blob-report
