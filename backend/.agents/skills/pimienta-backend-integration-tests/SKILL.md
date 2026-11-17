@@ -44,7 +44,7 @@ This is **in addition** to merging passing tests.
 
 **Status codes:**
 
-- No JWT / invalid auth on secured endpoint → assert **`401 Unauthorized`** (see `PimientaAuthenticationEntryPoint` and existing HQ/inventory/CRM ITs).
+- No JWT / invalid auth on secured endpoint → assert **`401 Unauthorized`** (see `PimientaAuthenticationEntryPoint` and existing HQ/inventory ITs).
 - Authenticated but lacking role → **`403 Forbidden`**.
 - Do **not** assert 403 for “missing bearer” on normal `/api/v1/**` CRUD.
 

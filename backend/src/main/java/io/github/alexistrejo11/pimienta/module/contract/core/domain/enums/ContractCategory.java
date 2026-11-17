@@ -10,6 +10,8 @@ public enum ContractCategory {
   CUSTOMER,
   PARTNER,
   OTHER,
+  /** Awarded institutional convocatoria / concession. */
+  INSTITUTIONAL,
   /** Sentinel when the value is absent in persistence or not yet set. */
   UNDEFINED
 }

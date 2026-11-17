@@ -2,7 +2,7 @@
 
 - Public pages communicate the company profile, services, commitments, quality and hygiene practices, and legal information.
 - Authentication provides sign-in and registration before access to the staff workspace.
-- The workspace groups dashboard, employees, CRM opportunities and projects, payroll, tasks, locations, contracts, and files.
+- The workspace groups dashboard, employees, payroll, tasks, locations, contracts, and files.
 
 ## POS Central
 

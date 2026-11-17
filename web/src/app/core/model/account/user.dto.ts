@@ -31,12 +31,9 @@ export interface UpdateProfileRequest {
 /** GET /api/v1/users/me/dashboard — métricas para el panel del gestor. */
 export interface UserDashboardResponse {
   totalActiveEmployees: number;
-  totalActiveProjects: number;
   totalActiveHeadquarters: number;
-  totalActivePersonalTasks: number;
-  totalPendingPersonalTasks: number;
-  totalActiveEmployeesTasks: number;
-  totalEmployeePending: number;
+  totalOpenTasks: number;
+  totalPendingTasks: number;
 }
 
 /** GET /api/v1/users/management/statistics */

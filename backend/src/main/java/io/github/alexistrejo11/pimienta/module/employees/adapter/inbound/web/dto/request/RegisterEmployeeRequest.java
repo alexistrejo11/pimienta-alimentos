@@ -1,7 +1,7 @@
 package io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.request;
 
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.ContractType;
-import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeOnboardingPhase;
+import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.WorkShift;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -12,10 +12,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Alta onboarding: parte **`employee`** (`multipart/form-data`, JSON UTF‑8); el servidor también
+ * Alta: parte **`employee`** (`multipart/form-data`, JSON UTF‑8); el servidor también
  * tolera esa parte etiquetada como binario ({@code application/octet-stream}). Alternativa opcional:
  * mismo cuerpo con {@code POST} {@code application/json}. Solo **firstName** y **lastName** son
- * obligatorios; el resto puede omitirse o ir null.
+ * obligatorios; el resto puede omitirse o ir null. Status defaults to {@code INACTIVE}.
  */
 @Schema(
     name = "RegisterEmployeeRequest",
@@ -66,7 +66,9 @@ public record RegisterEmployeeRequest(
         BigDecimal salaryPerWeek,
     @Schema(description = "Date of birth (optional).", example = "1985-01-01", type = "string", format = "date")
         LocalDate birthDate,
+    @Schema(description = "Hire date (optional).", example = "2024-01-15", type = "string", format = "date")
+        LocalDate hireDate,
     @Schema(
             description =
-                "Onboarding phase (optional): DRAFT or PENDING_CONTRACT. Defaults to DRAFT when omitted.")
-        EmployeeOnboardingPhase onboardingPhase) {}
+                "Initial status (optional). Defaults to INACTIVE when omitted. Values: ACTIVE, INACTIVE, RESIGNED, TERMINATED, DOWN.")
+        EmployeeStatus status) {}

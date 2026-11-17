@@ -29,10 +29,6 @@ public record ContractResponse(
     ContractCategory category,
     @Schema(description = "Empleado vinculado (solo EMPLOYEE).", example = "101")
     Long employeeId,
-    @Schema(description = "Oportunidad CRM.", example = "5001")
-    Long opportunityId,
-    @Schema(description = "Proyecto.", example = "88")
-    Long projectId,
     @Schema(
         description = "Tipo de plazo: FIXED_TERM, INDEFINITE, o UNDEFINED si no hay dato.",
         example = "FIXED_TERM")

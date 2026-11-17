@@ -55,12 +55,12 @@ initials-based avatar.
 
 ---
 
-## 7. CRM clients — no list API for project `clientId`
+## 7. CRM clients — retired with the CRM module
 
-**Type:** missing  
-**Status:** **RESOLVED (2026-09-11)**
+**Type:** removed  
+**Status:** **RETIRED**
 
-Added `GET/POST /api/v1/clients` and `app-client-select` on project create form.
+The CRM client API and `app-client-select` were removed with the CRM module.
 
 ---
 
@@ -74,4 +74,4 @@ Added `GET/POST /api/v1/clients` and `app-client-select` on project create form.
 | 4 | Slot IDs in schedule response | limitation | N/A |
 | 5 | Evidence photo thumbnails | limitation | frontend only |
 | 6 | Pagination in today modal | limitation | deferred |
-| 7 | CRM clients API | missing | resolved |
+| 7 | CRM clients API | removed | retired |

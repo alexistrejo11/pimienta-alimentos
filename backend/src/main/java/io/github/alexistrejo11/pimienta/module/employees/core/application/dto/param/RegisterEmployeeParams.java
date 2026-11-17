@@ -1,7 +1,6 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param;
 
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.ContractType;
-import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeOnboardingPhase;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.WorkShift;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Employee;
@@ -18,76 +17,76 @@ import java.time.LocalDateTime;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Application parameters for employee self-registration / onboarding draft.
- * Assembles the aggregate via.
+ * Application parameters for employee registration.
+ * Assembles the aggregate via {@link #toEmployee(String)}.
  */
 public record RegisterEmployeeParams(
-                String firstName,
-                String lastName,
-                String email,
-                String phone,
-                String address,
-                String curp,
-                String rfc,
-                String nss,
-                String clabe,
-                String employeeNumber,
-                String position,
-                String department,
-                ContractType contractType,
-                WorkShift workShift,
-                BigDecimal salaryPerWeek,
-                LocalDate birthDate,
-                EmployeeOnboardingPhase onboardingPhase,
-                MultipartFile photo) {
+    String firstName,
+    String lastName,
+    String email,
+    String phone,
+    String address,
+    String curp,
+    String rfc,
+    String nss,
+    String clabe,
+    String employeeNumber,
+    String position,
+    String department,
+    ContractType contractType,
+    WorkShift workShift,
+    BigDecimal salaryPerWeek,
+    LocalDate birthDate,
+    LocalDate hireDate,
+    EmployeeStatus status,
+    MultipartFile photo) {
 
-        public Employee toEmployee(String photoUrl) {
-                LocalDateTime now = LocalDateTime.now();
-                EmployeeStatus initialStatus = onboardingPhase != null
-                                ? onboardingPhase.toEmploymentStatus()
-                                : EmployeeStatus.DRAFT;
+  public Employee toEmployee(String photoUrl) {
+    LocalDateTime now = LocalDateTime.now();
+    EmployeeStatus initialStatus = status != null ? status : EmployeeStatus.INACTIVE;
 
-                String safeEmail = email != null ? email.strip() : null;
-                PersonalProfile personal =
-                    new PersonalProfile(
-                        firstName,
-                        lastName,
-                        photoUrl,
-                        safeEmail != null ? safeEmail : "",
-                        phone != null ? phone : "",
-                        address != null ? address : "",
-                        birthDate,
-                        "Mexicana");
+    String safeEmail = email != null ? email.strip() : null;
+    PersonalProfile personal =
+        new PersonalProfile(
+            firstName,
+            lastName,
+            photoUrl,
+            safeEmail != null ? safeEmail : "",
+            phone != null ? phone : "",
+            address != null ? address : "",
+            birthDate,
+            "Mexicana");
 
-                OfficialIdentifiers officialIds =
-                    new OfficialIdentifiers(
-                        curp != null ? curp : "",
-                        rfc != null ? rfc : "",
-                        nss != null ? nss : "",
-                        clabe != null ? clabe : "",
-                        employeeNumber != null ? employeeNumber : "");
+    OfficialIdentifiers officialIds =
+        new OfficialIdentifiers(
+            curp != null ? curp : "",
+            rfc != null ? rfc : "",
+            nss != null ? nss : "",
+            clabe != null ? clabe : "",
+            employeeNumber != null ? employeeNumber : "");
 
-                Employment employment = new Employment(
-                                position != null ? position : "",
-                                department != null ? department : "",
-                                contractType != null ? contractType : ContractType.UNDEFINED,
-                                workShift != null ? workShift : WorkShift.UNDEFINED,
-                                null,
-                                null,
-                                initialStatus);
+    Employment employment =
+        new Employment(
+            position != null ? position : "",
+            department != null ? department : "",
+            contractType != null ? contractType : ContractType.UNDEFINED,
+            workShift != null ? workShift : WorkShift.UNDEFINED,
+            hireDate,
+            null,
+            initialStatus);
 
-                BigDecimal weekly = salaryPerWeek != null ? salaryPerWeek : BigDecimal.ZERO;
-                Compensation compensation = Compensation.baseline(weekly);
+    BigDecimal weekly = salaryPerWeek != null ? salaryPerWeek : BigDecimal.ZERO;
+    Compensation compensation = Compensation.baseline(weekly);
 
-                return Employee.builder()
-                                .withPersonal(personal)
-                                .withOfficialIds(officialIds)
-                                .withEmployment(employment)
-                                .withCompensation(compensation)
-                                .withBenefits(BenefitsProfile.legalDefaults())
-                                .withCreatedAt(now)
-                                .withUpdatedAt(now)
-                                .withDeletedAt(null)
-                                .build();
-        }
+    return Employee.builder()
+        .withPersonal(personal)
+        .withOfficialIds(officialIds)
+        .withEmployment(employment)
+        .withCompensation(compensation)
+        .withBenefits(BenefitsProfile.legalDefaults())
+        .withCreatedAt(now)
+        .withUpdatedAt(now)
+        .withDeletedAt(null)
+        .build();
+  }
 }

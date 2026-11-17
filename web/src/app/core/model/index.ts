@@ -14,11 +14,6 @@ export * from './headquarter/headquarter.dto';
 export * from './task/task.enums';
 export * from './task/task.dto';
 
-export * from './crm/crm.enums';
-export * from './crm/opportunity.dto';
-export * from './crm/project.dto';
-export * from './crm/project-milestone.dto';
-
 export * from './payroll/payroll.enums';
 export * from './payroll/payroll.dto';
 

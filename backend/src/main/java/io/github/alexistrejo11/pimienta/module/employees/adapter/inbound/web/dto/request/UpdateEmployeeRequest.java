@@ -8,10 +8,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Update body: only **firstName** and **lastName** are required. Other fields may be null
  * (unchanged) or set. Empty optional identity strings should be omitted/null, not {@code ""}.
+ * Status is changed via {@code PATCH /employees/{id}/status}.
  */
 @Schema(name = "UpdateEmployeeRequest", description = "Update employee; only firstName and lastName required.")
 public record UpdateEmployeeRequest(
@@ -31,4 +33,6 @@ public record UpdateEmployeeRequest(
     @Positive BigDecimal salaryPerWeek,
     BigDecimal bonuses,
     BigDecimal foodVouchers,
-    BigDecimal integrationFactor) {}
+    BigDecimal integrationFactor,
+    @Schema(description = "Hire date (optional).", example = "2024-01-15", type = "string", format = "date")
+        LocalDate hireDate) {}

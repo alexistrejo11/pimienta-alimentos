@@ -3,8 +3,6 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { finalize } from 'rxjs';
 
 import { ContractService } from '../../../core/contracts/contract.service';
-import { CrmLookupService } from '../../../core/crm/crm-lookup.service';
-import { CrmService } from '../../../core/crm/crm.service';
 import { EmployeeLookupService } from '../../../core/employees/employee-lookup.service';
 import { EmployeeService } from '../../../core/employees/employee.service';
 import { parseApiError, type ParsedApiError } from '../../../core/http/parse-api-error';
@@ -12,13 +10,11 @@ import { contractCategoryLabel, employeeStatusLabel } from '../../../core/i18n/e
 import type { ContractCategory, ContractTermKind } from '../../../core/model/contract/contract.enums';
 import type { ContractResponse, CreateOrUpdateContractRequest } from '../../../core/model/contract/contract.dto';
 import type { EmployeeListItemResponse } from '../../../core/model/employee/employee.dto';
-import type { OpportunityResponse } from '../../../core/model/crm/opportunity.dto';
-import type { ProjectResponse } from '../../../core/model/crm/project.dto';
 import { DataStateComponent } from '../../../shared/ui/data-state/data-state';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header';
 
 /**
- * Contratos comerciales y laborales: listado y alta enlazando empleados, oportunidades o proyectos.
+ * Contratos comerciales y laborales: listado y alta, con vínculo opcional a un empleado.
  */
 @Component({
   selector: 'app-contratos-page',
@@ -29,9 +25,7 @@ import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header'
 export class ContratosPageComponent implements OnInit {
   private readonly contracts = inject(ContractService);
   private readonly employees = inject(EmployeeService);
-  private readonly crm = inject(CrmService);
   private readonly employeeLookup = inject(EmployeeLookupService);
-  private readonly crmLookup = inject(CrmLookupService);
   private readonly fb = inject(FormBuilder);
 
   readonly loading = signal(true);
@@ -42,8 +36,6 @@ export class ContratosPageComponent implements OnInit {
   readonly showCreate = signal(false);
 
   readonly employeeOptions = signal<EmployeeListItemResponse[]>([]);
-  readonly opportunityOptions = signal<OpportunityResponse[]>([]);
-  readonly projectOptions = signal<ProjectResponse[]>([]);
   readonly contractCategoryLabel = contractCategoryLabel;
   readonly employeeStatusLabel = employeeStatusLabel;
 
@@ -52,8 +44,6 @@ export class ContratosPageComponent implements OnInit {
     description: [''],
     category: this.fb.nonNullable.control<ContractCategory>('SUPPLIER'),
     employeeId: this.fb.control<number | null>(null),
-    opportunityId: this.fb.control<number | null>(null),
-    projectId: this.fb.control<number | null>(null),
     termKind: this.fb.nonNullable.control<ContractTermKind>('INDEFINITE'),
     effectiveStart: ['', Validators.required],
     effectiveEnd: [''],
@@ -67,22 +57,12 @@ export class ContratosPageComponent implements OnInit {
 
   ngOnInit(): void {
     void this.employeeLookup.ensureLoaded();
-    void this.crmLookup.ensureOpportunitiesLoaded();
-    void this.crmLookup.ensureProjectsLoaded();
     this.loadRelationOptions();
     this.reloadList();
   }
 
   employeeName(id: number): string {
     return this.employeeLookup.name(id);
-  }
-
-  opportunityName(id: number): string {
-    return this.crmLookup.opportunityName(id);
-  }
-
-  projectName(id: number): string {
-    return this.crmLookup.projectName(id);
   }
 
   toggleCreate(): void {
@@ -124,14 +104,6 @@ export class ContratosPageComponent implements OnInit {
       next: (p) => this.employeeOptions.set(p.items),
       error: () => this.employeeOptions.set([]),
     });
-    this.crm.listOpportunities({ page: 0, size: 50 }).subscribe({
-      next: (p) => this.opportunityOptions.set(p.items),
-      error: () => this.opportunityOptions.set([]),
-    });
-    this.crm.listProjects({ page: 0, size: 50 }).subscribe({
-      next: (p) => this.projectOptions.set(p.items),
-      error: () => this.projectOptions.set([]),
-    });
   }
 
   submitCreate(): void {
@@ -159,8 +131,6 @@ export class ContratosPageComponent implements OnInit {
       description: v.description.trim() || null,
       category: v.category,
       employeeId: v.category === 'EMPLOYEE' ? v.employeeId : null,
-      opportunityId: v.opportunityId ?? null,
-      projectId: v.projectId ?? null,
       termKind: v.termKind,
       effectiveStart: v.effectiveStart,
       effectiveEnd: v.termKind === 'FIXED_TERM' ? v.effectiveEnd.trim() : null,
@@ -188,8 +158,6 @@ export class ContratosPageComponent implements OnInit {
             description: '',
             category: 'SUPPLIER',
             employeeId: null,
-            opportunityId: null,
-            projectId: null,
             termKind: 'INDEFINITE',
             effectiveStart: '',
             effectiveEnd: '',
@@ -207,11 +175,4 @@ export class ContratosPageComponent implements OnInit {
       });
   }
 
-  opportunityLabel(o: OpportunityResponse): string {
-    return `#${o.id} · ${o.title} (${o.companyName})`;
-  }
-
-  projectLabel(p: ProjectResponse): string {
-    return `#${p.id} · ${p.projectCode} — ${p.projectName}`;
-  }
 }

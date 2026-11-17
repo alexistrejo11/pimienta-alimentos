@@ -384,8 +384,7 @@ class AttendanceIntegrationTest {
               "contractType": "FIXED_TERM",
               "workShift": "MORNING",
               "salaryPerWeek": 3500.00,
-              "birthDate": "1985-01-01",
-              "onboardingPhase": "DRAFT"
+              "birthDate": "1985-01-01"
             }
             """
             .formatted(email, employeeNumber);

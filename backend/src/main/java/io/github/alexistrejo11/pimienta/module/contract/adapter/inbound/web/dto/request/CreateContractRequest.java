@@ -29,7 +29,7 @@ public record CreateContractRequest(
     @NotNull
         @Schema(
             description =
-                "Tipo de contrato según la contraparte: EMPLOYEE, SUPPLIER, CUSTOMER, PARTNER, OTHER.",
+                "Tipo de contrato según la contraparte: EMPLOYEE, SUPPLIER, CUSTOMER, PARTNER, INSTITUTIONAL, OTHER.",
             example = "SUPPLIER")
     ContractCategory category,
     @Schema(
@@ -37,14 +37,6 @@ public record CreateContractRequest(
             "Identificador del empleado; **obligatorio** si `category` es EMPLOYEE; debe omitirse en otros tipos.",
         example = "101")
     Long employeeId,
-    @Schema(
-        description = "Oportunidad CRM vinculada (opcional). Debe existir si se envía.",
-        example = "5001")
-    Long opportunityId,
-    @Schema(
-        description = "Proyecto vinculado (opcional). Debe existir si se envía.",
-        example = "88")
-    Long projectId,
     @NotNull
         @Schema(
             description = "Plazo: FIXED_TERM (con fin) o INDEFINITE (sin fecha de término en sistema).",

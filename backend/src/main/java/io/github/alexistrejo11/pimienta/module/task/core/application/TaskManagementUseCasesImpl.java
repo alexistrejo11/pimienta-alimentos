@@ -31,12 +31,10 @@ public class TaskManagementUseCasesImpl implements TaskManagementUseCases {
     TaskSearchCriteria effective = criteria != null ? criteria : TaskSearchCriteria.empty();
 
     log.debug(
-        "search tasks query start page={} size={} headquarterId={} projectId={} opportunityId={} assignedToId={} status={}",
+        "search tasks query start page={} size={} headquarterId={} assignedToId={} status={}",
         pageable != null ? pageable.getPageNumber() : null,
         pageable != null ? pageable.getPageSize() : null,
         effective.headquarterId(),
-        effective.projectId(),
-        effective.opportunityId(),
         effective.assignedToId(),
         effective.status());
 
@@ -65,13 +63,11 @@ public class TaskManagementUseCasesImpl implements TaskManagementUseCases {
     int checklistCount = command.checklistLines() != null ? command.checklistLines().size() : 0;
 
     log.info(
-        "create task start titleLen={} priority={} initialStatus={} headquarterId={} projectId={} opportunityId={} createdById={} checklistLineCount={}",
+        "create task start titleLen={} priority={} initialStatus={} headquarterId={} createdById={} checklistLineCount={}",
         titleLen,
         command.priority(),
         command.initialStatus(),
         command.headquarterId(),
-        command.projectId(),
-        command.opportunityId(),
         command.createdById(),
         checklistCount);
 
@@ -82,8 +78,6 @@ public class TaskManagementUseCasesImpl implements TaskManagementUseCases {
             .withPriority(command.priority())
             .withDueDate(command.dueDate())
             .withHeadquarterId(command.headquarterId())
-            .withProjectId(command.projectId())
-            .withOpportunityId(command.opportunityId())
             .withCreatedById(command.createdById())
             .withStatus(command.initialStatus())
             .withChecklistDrafts(command.checklistLines())

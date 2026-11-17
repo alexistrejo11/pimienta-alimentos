@@ -12,7 +12,7 @@ Pimienta Alimentos needs one reliable way to run its daily company operations wh
 
 ## Scope
 
-**In scope:** public company information; staff access; employee, attendance, contract, payroll, CRM, task, inventory, file, notification, and location operations; school-cafeteria sales and their central follow-up.
+**In scope:** public company information; staff access; employee, attendance, contract, payroll, task, inventory, file, notification, and location operations; school-cafeteria sales and their central follow-up.
 
 **Out of scope:** customer online ordering and payment gateways, delivery logistics, and unattended hardware operation. The POS hardware integrations remain outside the current verified delivery.
 

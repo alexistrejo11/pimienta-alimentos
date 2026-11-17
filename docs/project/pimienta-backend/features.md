@@ -6,7 +6,7 @@
 
 ## Operations and Commercial Work
 
-- CRM opportunities and projects support pipelines, milestones, tasks, lifecycle actions, summaries, and imports or exports.
+- Tasks support assignment, checklists, status changes, and spreadsheet import or export.
 - Tasks support assignment, status, and checklists.
 - Headquarters records support location management and the POS configuration attached to each site.
 - File resources and company file management provide uploads and time-limited access to stored assets.

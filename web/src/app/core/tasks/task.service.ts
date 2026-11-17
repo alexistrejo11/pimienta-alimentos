@@ -27,8 +27,6 @@ export class TaskService {
       .set('size', params.size ?? 20);
     if (params.status) httpParams = httpParams.set('status', params.status);
     if (params.headquarterId) httpParams = httpParams.set('headquarterId', params.headquarterId);
-    if (params.projectId) httpParams = httpParams.set('projectId', params.projectId);
-    if (params.opportunityId) httpParams = httpParams.set('opportunityId', params.opportunityId);
     return this.http.get<PagedResponse<TaskListItemResponse>>(this.base, { params: httpParams });
   }
 

@@ -6,8 +6,6 @@ export interface CreateOrUpdateContractRequest {
   description?: string | null;
   category: ContractCategory;
   employeeId?: number | null;
-  opportunityId?: number | null;
-  projectId?: number | null;
   termKind: ContractTermKind;
   effectiveStart: string;
   effectiveEnd?: string | null;
@@ -30,8 +28,6 @@ export interface ContractResponse {
   description: string;
   category: ContractCategory;
   employeeId: number | null;
-  opportunityId: number | null;
-  projectId: number | null;
   termKind: ContractTermKind;
   effectiveStart: string;
   effectiveEnd: string | null;

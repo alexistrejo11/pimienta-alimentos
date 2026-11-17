@@ -36,10 +36,6 @@ public record TaskResponse(
     LocalDateTime dueDate,
     @Schema(example = "1")
     Long headquarterId,
-    @Schema(example = "10")
-    Long projectId,
-    @Schema(example = "500")
-    Long opportunityId,
     @Schema(description = "Checklist lines.")
     List<ChecklistItemResponse> checklist,
     @Schema(description = "Completion percentage from checklist.", example = "50.0")

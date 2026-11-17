@@ -3,14 +3,9 @@ package io.github.alexistrejo11.pimienta.module.contract.core.application;
 import io.github.alexistrejo11.pimienta.module.contract.core.application.command.CreateContractCommand;
 import io.github.alexistrejo11.pimienta.module.contract.core.application.command.UpdateContractCommand;
 import io.github.alexistrejo11.pimienta.module.contract.core.domain.Contract;
-import io.github.alexistrejo11.pimienta.module.contract.core.domain.enums.ContractCategory;
 import io.github.alexistrejo11.pimienta.module.contract.core.domain.exception.ContractNotFoundException;
 import io.github.alexistrejo11.pimienta.module.contract.core.port.ContractManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.contract.core.port.ContractRepository;
-import io.github.alexistrejo11.pimienta.module.crm.core.domain.exception.OpportunityNotFoundException;
-import io.github.alexistrejo11.pimienta.module.crm.core.domain.exception.ProjectNotFoundException;
-import io.github.alexistrejo11.pimienta.module.crm.core.port.output.OpportunityRepository;
-import io.github.alexistrejo11.pimienta.module.crm.core.port.output.ProjectRepository;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.input.EmployeeManagementUseCases;
 import java.time.LocalDate;
 import org.slf4j.Logger;
@@ -27,18 +22,12 @@ public class ContractManagementUseCasesImpl implements ContractManagementUseCase
 
   private final ContractRepository contractRepository;
   private final EmployeeManagementUseCases employeeManagementUseCases;
-  private final OpportunityRepository opportunityRepository;
-  private final ProjectRepository projectRepository;
 
   public ContractManagementUseCasesImpl(
       ContractRepository contractRepository,
-      EmployeeManagementUseCases employeeManagementUseCases,
-      OpportunityRepository opportunityRepository,
-      ProjectRepository projectRepository) {
+      EmployeeManagementUseCases employeeManagementUseCases) {
     this.contractRepository = contractRepository;
     this.employeeManagementUseCases = employeeManagementUseCases;
-    this.opportunityRepository = opportunityRepository;
-    this.projectRepository = projectRepository;
   }
 
   @Override
@@ -74,27 +63,23 @@ public class ContractManagementUseCasesImpl implements ContractManagementUseCase
   @Transactional
   public Contract create(CreateContractCommand command) {
     log.info(
-        "create contract start category={} employeeId={} opportunityId={} projectId={} termKind={} "
+        "create contract start category={} employeeId={} termKind={} "
             + "effectiveStart={} effectiveEnd={} currencyCode={} renewalCycleMonths={}",
         command.category(),
         command.employeeId(),
-        command.opportunityId(),
-        command.projectId(),
         command.termKind(),
         command.effectiveStart(),
         command.effectiveEnd(),
         command.currencyCode(),
         command.renewalCycleMonths());
 
-    validateRelatedEntities(command.employeeId(), command.opportunityId(), command.projectId());
+    validateRelatedEntities(command.employeeId());
 
     Contract contract = Contract.builder()
         .Name(command.name())
         .Description(command.description())
         .Category(command.category())
         .EmployeeId(command.employeeId())
-        .OpportunityId(command.opportunityId())
-        .ProjectId(command.projectId())
         .TermKind(command.termKind())
         .EffectiveStart(command.effectiveStart())
         .EffectiveEnd(command.effectiveEnd())
@@ -107,10 +92,6 @@ public class ContractManagementUseCasesImpl implements ContractManagementUseCase
         .register();
 
     Contract saved = contractRepository.save(contract);
-    if (saved.getCategory() == ContractCategory.EMPLOYEE && saved.getEmployeeId() != null) {
-      employeeManagementUseCases.activateEmploymentAfterContract(
-          saved.getEmployeeId(), saved.getEffectiveStart());
-    }
 
     log.info("create contract complete contractId={}", saved.getId());
     return saved;
@@ -120,15 +101,13 @@ public class ContractManagementUseCasesImpl implements ContractManagementUseCase
   @Transactional
   public Contract update(Long id, UpdateContractCommand command) {
     log.info(
-        "update contract start contractId={} category={} employeeId={} opportunityId={} projectId={} termKind={}",
+        "update contract start contractId={} category={} employeeId={} termKind={}",
         id,
         command.category(),
         command.employeeId(),
-        command.opportunityId(),
-        command.projectId(),
         command.termKind());
 
-    validateRelatedEntities(command.employeeId(), command.opportunityId(), command.projectId());
+    validateRelatedEntities(command.employeeId());
 
     Contract existing = getById(id);
     Contract revised = Contract.builder()
@@ -136,8 +115,6 @@ public class ContractManagementUseCasesImpl implements ContractManagementUseCase
         .Description(command.description() == null ? existing.getDescription() : command.description())
         .Category(command.category() == null ? existing.getCategory() : command.category())
         .EmployeeId(command.employeeId() == null ? existing.getEmployeeId() : command.employeeId())
-        .OpportunityId(command.opportunityId() == null ? existing.getOpportunityId() : command.opportunityId())
-        .ProjectId(command.projectId() == null ? existing.getProjectId() : command.projectId())
         .TermKind(command.termKind() == null ? existing.getTermKind() : command.termKind())
         .EffectiveStart(command.effectiveStart() == null ? existing.getEffectiveStart() : command.effectiveStart())
         .EffectiveEnd(command.effectiveEnd() == null ? existing.getEffectiveEnd() : command.effectiveEnd())
@@ -196,19 +173,9 @@ public class ContractManagementUseCasesImpl implements ContractManagementUseCase
     return saved;
   }
 
-  private void validateRelatedEntities(Long employeeId, Long opportunityId, Long projectId) {
+  private void validateRelatedEntities(Long employeeId) {
     if (employeeId != null) {
       employeeManagementUseCases.getById(employeeId);
-    }
-    if (opportunityId != null) {
-      opportunityRepository
-          .findById(opportunityId)
-          .orElseThrow(() -> new OpportunityNotFoundException(opportunityId));
-    }
-    if (projectId != null) {
-      projectRepository
-          .findById(projectId)
-          .orElseThrow(() -> new ProjectNotFoundException(projectId));
     }
   }
 }

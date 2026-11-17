@@ -4,7 +4,8 @@ export type ContractCategory =
   | 'SUPPLIER'
   | 'CUSTOMER'
   | 'PARTNER'
-  | 'OTHER';
+  | 'OTHER'
+  | 'INSTITUTIONAL';
 
 /** Mirrors backend {@code ContractTermKind}. */
 export type ContractTermKind = 'FIXED_TERM' | 'INDEFINITE';

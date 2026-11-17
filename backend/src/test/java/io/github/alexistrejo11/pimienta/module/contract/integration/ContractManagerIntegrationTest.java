@@ -164,12 +164,13 @@ class ContractManagerIntegrationTest {
   }
 
   @Test
-  void createContract_domain_opportunityNotFound_returns404() throws Exception {
+  void createContract_ignoresRetiredCrmIds() throws Exception {
     String token = obtainAccessToken();
     ObjectNode n = JSON.createObjectNode();
     n.put("name", "IT opp " + UUID.randomUUID());
     n.put("category", "SUPPLIER");
     n.put("opportunityId", 9_999_999_999L);
+    n.put("projectId", 9_999_999_999L);
     n.put("termKind", "FIXED_TERM");
     n.put("effectiveStart", "2025-01-01");
     n.put("effectiveEnd", "2026-01-01");
@@ -179,8 +180,9 @@ class ContractManagerIntegrationTest {
         .perform(
             AccountTestRequests.postJson("/api/v1/contracts", JSON.writeValueAsString(n))
                 .header("Authorization", "Bearer " + token))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.errorCode").value("OPPORTUNITY_NOT_FOUND"));
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.opportunityId").doesNotExist())
+        .andExpect(jsonPath("$.projectId").doesNotExist());
   }
 
   @Test

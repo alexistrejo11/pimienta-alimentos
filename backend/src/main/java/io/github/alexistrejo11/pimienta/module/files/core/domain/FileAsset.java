@@ -13,7 +13,7 @@ import java.util.UUID;
 public class FileAsset extends BaseDomain<UUID> {
 
   private FileCategory category;
-  /** Owning module slug for {@link FileCategory#RESOURCE}, e.g. {@code inventory}, {@code crm}. */
+  /** Owning module slug for {@link FileCategory#RESOURCE}, e.g. {@code inventory}, {@code payroll}. */
   private String module;
   /** Optional domain entity-type tag within the module, e.g. {@code inventory-item}. */
   private String entityType;

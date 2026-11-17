@@ -1,6 +1,6 @@
 import type { TaskPriority, TaskStatus } from './task.enums';
 
-/** POST /api/v1/tasks, POST …/opportunities/:id/tasks, … */
+/** POST /api/v1/tasks */
 export interface ChecklistLineRequest {
   description: string;
   displayOrder: number;
@@ -12,8 +12,6 @@ export interface TaskRequest {
   priority: TaskPriority;
   dueDate?: string | null;
   headquarterId?: number | null;
-  projectId?: number | null;
-  opportunityId?: number | null;
   createdById?: number | null;
   checklist?: ChecklistLineRequest[] | null;
 }
@@ -21,8 +19,6 @@ export interface TaskRequest {
 /** GET /api/v1/tasks — query params (ModelAttribute) */
 export interface TaskSearchParams {
   headquarterId?: number;
-  projectId?: number;
-  opportunityId?: number;
   employeeId?: number;
   status?: TaskStatus;
   page?: number;
@@ -60,8 +56,6 @@ export interface TaskResponse {
   completedAt: string | null;
   dueDate: string | null;
   headquarterId: number | null;
-  projectId: number | null;
-  opportunityId: number | null;
   checklist: ChecklistItemResponse[];
   progressPercent: number;
   createdAt: string;
@@ -77,7 +71,5 @@ export interface TaskListItemResponse {
   assignedToId: number | null;
   dueDate: string | null;
   headquarterId: number | null;
-  projectId: number | null;
-  opportunityId: number | null;
   progressPercent: number;
 }

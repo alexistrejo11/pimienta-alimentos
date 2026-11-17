@@ -11,7 +11,7 @@ Pimienta Alimentos needs a public place to explain its services and commitments,
 
 ## Scope
 
-**In scope:** public pages; sign-in and registration; staff dashboard; employee, CRM, task, location, contract, payroll, and file workspaces; central POS administration and reporting.
+**In scope:** public pages; sign-in and registration; staff dashboard; employee, task, location, contract, payroll, and file workspaces; central POS administration and reporting.
 
 **Out of scope:** public e-commerce, direct consumer ordering, and independent business rules. The central service remains responsible for shared records and authorization decisions.
 
@@ -22,7 +22,7 @@ Pimienta Alimentos needs a public place to explain its services and commitments,
 - **Public site** - company presentation, services, quality and hygiene information, and legal notices.
 - **Access** - staff sign-in and registration.
 - **Workspace dashboard** - entry point for operational information and permitted actions.
-- **Operations** - employee, CRM, payroll, task, location, contract, and file areas.
+- **Operations** - employee, payroll, task, location, contract, and file areas.
 - **POS central** - catalog, location inventory, devices, enrollment, operators, sales, waste, cuts, incidents, and reports.
 
 **Key journey - POS supervision:** An administrator selects a location, maintains the catalog and device access, then reviews synchronized sales, exceptions, and reports. A manager sees only the locations granted to that role.

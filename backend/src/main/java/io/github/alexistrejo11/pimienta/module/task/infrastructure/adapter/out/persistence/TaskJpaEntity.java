@@ -23,8 +23,6 @@ import org.hibernate.type.SqlTypes;
     indexes = {
       @Index(name = "idx_tasks_assigned_to_id", columnList = "assigned_to_id"),
       @Index(name = "idx_tasks_status", columnList = "status"),
-      @Index(name = "idx_tasks_project_id", columnList = "project_id"),
-      @Index(name = "idx_tasks_opportunity_id", columnList = "opportunity_id"),
       @Index(name = "idx_tasks_headquarter_id", columnList = "headquarter_id"),
       @Index(name = "idx_tasks_due_date", columnList = "due_date"),
       @Index(name = "idx_tasks_deleted_at", columnList = "deleted_at")
@@ -69,12 +67,6 @@ public class TaskJpaEntity extends BaseJpaEntity {
 
   @Column(name = "headquarter_id")
   private Long headquarterId;
-
-  @Column(name = "project_id")
-  private Long projectId;
-
-  @Column(name = "opportunity_id")
-  private Long opportunityId;
 
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "checklist")
@@ -174,22 +166,6 @@ public class TaskJpaEntity extends BaseJpaEntity {
 
   public void setHeadquarterId(Long headquarterId) {
     this.headquarterId = headquarterId;
-  }
-
-  public Long getProjectId() {
-    return projectId;
-  }
-
-  public void setProjectId(Long projectId) {
-    this.projectId = projectId;
-  }
-
-  public Long getOpportunityId() {
-    return opportunityId;
-  }
-
-  public void setOpportunityId(Long opportunityId) {
-    this.opportunityId = opportunityId;
   }
 
   public List<ChecklistItemJson> getChecklist() {

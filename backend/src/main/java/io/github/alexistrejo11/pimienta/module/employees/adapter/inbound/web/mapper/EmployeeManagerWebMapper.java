@@ -110,7 +110,8 @@ public final class EmployeeManagerWebMapper {
         request.workShift(),
         request.salaryPerWeek(),
         request.birthDate(),
-        request.onboardingPhase(),
+        request.hireDate(),
+        request.status(),
         photo);
   }
 
@@ -136,7 +137,8 @@ public final class EmployeeManagerWebMapper {
         request.salaryPerWeek(),
         request.bonuses(),
         request.foodVouchers(),
-        request.integrationFactor());
+        request.integrationFactor(),
+        request.hireDate());
   }
 
 }

@@ -14,30 +14,9 @@ public interface TaskRepository {
 
   Task save(Task task);
 
-  /** Tareas no borradas ligadas a una oportunidad CRM. */
-  long countByOpportunityId(long opportunityId);
+  /** Tareas no borradas que no están COMPLETED ni CANCELLED. */
+  long countOpenTasks();
 
-  /** Excluye COMPLETED y CANCELLED (seguimiento de trabajo pendiente). */
-  long countOpenByOpportunityId(long opportunityId);
-
-  long countByProjectId(long projectId);
-
-  long countOpenByProjectId(long projectId);
-
-  /**
-   * Tareas personales (sin proyecto ni oportunidad), no borradas y aún abiertas (no COMPLETED ni
-   * CANCELLED).
-   */
-  long countOpenPersonalTasks();
-
-  /** Tareas personales en estado PENDING. */
-  long countPendingPersonalTasks();
-
-  /**
-   * Tareas de trabajo (ligadas a proyecto u oportunidad), abiertas (no COMPLETED ni CANCELLED).
-   */
-  long countOpenWorkTasks();
-
-  /** Tareas de trabajo en estado PENDING. */
-  long countPendingWorkTasks();
+  /** Tareas no borradas en estado PENDING. */
+  long countPendingTasks();
 }

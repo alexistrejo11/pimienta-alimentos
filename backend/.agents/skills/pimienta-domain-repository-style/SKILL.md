@@ -77,10 +77,6 @@ orchestration and invariants that belong to application services.
   `TaskPersistenceMapper`, `TaskJpaEntity`, web DTOs with `@Schema`.
 - **Headquarter**: `module/headquarter/core/domain/Headquarter.java`, `HeadquarterUseCasesImpl`,
   `HeadquarterPersistenceMapper`, `HeadquarterJpaEntity`, `doc/DocHeadquarter*.java`.
-- **CRM**: `module/crm/core/domain/Opportunity.java`, `Project.java`, `ProjectMilestone.java` with
-  `SafeBuilder` (`register` / `reconstruct`); transitions in `OpportunityUseCasesImpl`,
-  `ProjectUseCasesImpl`, `ProjectMilestoneUseCasesImpl`; no domain `*Params` records—application
-  commands under `core/application/command` only.
 
 ## Related skill
 

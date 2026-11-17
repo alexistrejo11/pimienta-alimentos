@@ -35,15 +35,15 @@ Estado tras auditoría 2026-09-11:
 
 | Método | Ruta | Uso en web |
 |--------|------|------------|
-| GET | `/api/v1/clients` | `ClientService.list`, `app-client-select` |
-| POST | `/api/v1/clients` | Alta de clientes CRM (futuro) |
+| GET | `/api/v1/clients` | Retired with the CRM module |
+| POST | `/api/v1/clients` | Retired with the CRM module |
 | — | `AttendanceResponse.employeeFullName` | Modales y búsqueda de asistencia |
 
 ## Servicios web añadidos/extendidos
 
 - `EmployeeService.listActive()` → `/employees/active`
-- `ClientService`, `EmployeeLookupService`, `CrmLookupService`, `ClientLookupService`, `PayrollLookupService`
-- Componentes: `app-employee-select`, `app-client-select`, `app-opportunity-select`, `app-project-select`, `app-payroll-period-select`
+- `EmployeeLookupService`, `PayrollLookupService`
+- Componentes: `app-employee-select`, `app-payroll-period-select`
 
 ## Pendientes conocidos
 

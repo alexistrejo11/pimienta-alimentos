@@ -6,12 +6,13 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Emplo
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.BenefitsProfile;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Partial update: each component is applied only when non-null; null keeps the
- * employee's current value.
+ * employee's current value. Status is mutated via {@code changeStatus}, not here.
  */
 public record UpdateEmployeeParams(
     Long id,
@@ -32,7 +33,8 @@ public record UpdateEmployeeParams(
     BigDecimal salaryPerWeek,
     BigDecimal bonuses,
     BigDecimal foodVouchers,
-    BigDecimal integrationFactor) {
+    BigDecimal integrationFactor,
+    LocalDate hireDate) {
 
   /**
    * Merges non-null fields into the aggregate in place (null = leave existing).
@@ -79,6 +81,9 @@ public record UpdateEmployeeParams(
     }
     if (workShift != null) {
       employee.setEmployment(employee.getEmployment().setWorkShift(workShift));
+    }
+    if (hireDate != null) {
+      employee.setHireDate(hireDate);
     }
     if (salaryPerWeek != null) {
       employee.setCompensation(employee.getCompensation().setSalaryPerWeek(salaryPerWeek));

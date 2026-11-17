@@ -55,7 +55,7 @@ export const PROJECTS: ProjectModel[] = [
             icon: "business_center",
             label: "Company Operations",
             description:
-              "One suite covers staff, HR, CRM, payroll, contracts, inventory, and operational work.",
+              "One suite covers staff, HR, payroll, contracts, inventory, and operational work.",
           },
           {
             icon: "point_of_sale",
@@ -149,7 +149,7 @@ export const PROJECTS: ProjectModel[] = [
         name: "Pimienta Alimentos API",
         type: "backend",
         description:
-          "Spring Boot REST API for Pimienta Alimentos operations, including identity, HR, CRM, inventory, payroll, files, notifications, and point-of-sale synchronization.",
+          "Spring Boot REST API for Pimienta Alimentos operations, including identity, HR, inventory, payroll, files, notifications, and point-of-sale synchronization.",
         status: "production",
         docs: {
           product: true,

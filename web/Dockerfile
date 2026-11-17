@@ -5,6 +5,11 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 
+# Playwright is a devDependency. Its postinstall downloads browser binaries
+# that are never copied into the runtime image.
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --prefer-offline --no-audit --no-fund

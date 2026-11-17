@@ -1,7 +1,7 @@
 # Pimienta Alimentos API
 
 Spring Boot REST API for Pimienta Alimentos operations. The service centralizes
-identity, employees, attendance, contracts, CRM, tasks, inventory, payroll,
+identity, employees, attendance, contracts, tasks, inventory, payroll,
 files, notifications, headquarters, and Android POS synchronization.
 
 ## Status
@@ -27,7 +27,6 @@ remain outside the versioned API prefix.
 - JWT authentication and administrator-approved registration
 - Role-based access for administrators and managers
 - Employee profiles, attendance, schedules, photos, and imports
-- CRM opportunities and projects
 - Contracts, tasks, payroll, and notifications
 - Headquarters, inventory, stock, and operational transactions
 - S3-backed file storage

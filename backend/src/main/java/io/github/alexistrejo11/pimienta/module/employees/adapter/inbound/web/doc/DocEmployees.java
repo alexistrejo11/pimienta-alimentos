@@ -15,9 +15,9 @@ import java.lang.annotation.Target;
     name = "HR — Employees",
     description =
         """
-        Employee lifecycle: search, registration, updates, contract submission, termination/rehire, \
-        Excel import/export, and statistics. Requires `Authorization: Bearer <access_token>`. \
-        Reads are available to authenticated staff; create/update/delete/import and lifecycle \
-        mutations require **ROLE_ADMIN**. Not-found responses use `EMPLOYEE_NOT_FOUND` in \
-        `ApiErrorResponse`.""")
+        Employee CRUD: search, registration, updates, direct status changes \
+        (ACTIVE/INACTIVE/RESIGNED/TERMINATED/DOWN), Excel import/export, and statistics. \
+        Requires `Authorization: Bearer <access_token>`. Reads are available to authenticated \
+        staff; create/update/delete/import and status mutations require **ROLE_ADMIN** or \
+        **ROLE_MANAGER**. Not-found responses use `EMPLOYEE_NOT_FOUND` in `ApiErrorResponse`.""")
 public @interface DocEmployees {}

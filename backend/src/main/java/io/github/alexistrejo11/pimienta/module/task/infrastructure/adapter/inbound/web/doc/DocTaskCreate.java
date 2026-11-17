@@ -52,8 +52,6 @@ import java.lang.annotation.Target;
                         "priority": "HIGH",
                         "dueDate": "2026-04-20T18:00:00",
                         "headquarterId": 1,
-                        "projectId": 10,
-                        "opportunityId": 500,
                         "createdById": 3,
                         "checklist": [
                           { "description": "Order packaging", "displayOrder": 0 },

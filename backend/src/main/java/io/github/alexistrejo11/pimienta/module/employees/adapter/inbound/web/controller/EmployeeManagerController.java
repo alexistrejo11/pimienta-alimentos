@@ -4,6 +4,7 @@ import static io.github.alexistrejo11.pimienta.shared.web.ApiPaths.BASE;
 
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.RegisterEmployeeMultipartPayloadReader;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.mapper.UpdateEmployeeMultipartPayloadReader;
+import io.github.alexistrejo11.pimienta.module.employees.core.application.command.ChangeEmployeeStatusCommand;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.RegisterEmployeeParams;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.query.EmployeeSearchCriteria;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeStatistics;
@@ -13,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.employees.core.port.input.Employe
 import io.github.alexistrejo11.pimienta.module.employees.core.port.input.EmployeeManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeSummary;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.EmployeePhotoUrlPresenter;
+import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeChangeStatus;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeDelete;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeExport;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeGetById;
@@ -20,15 +22,13 @@ import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeListActive;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeRegister;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeRegisterJsonHidden;
-import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeRehire;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeSearch;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeStatistics;
-import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeSubmitForContract;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeSummary;
-import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeTerminate;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeUpdate;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployeeUpdateJsonHidden;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.doc.DocEmployees;
+import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.request.ChangeEmployeeStatusRequest;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.response.EmployeeListItemResponse;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.response.EmployeeResponse;
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.response.EmployeeStatisticsResponse;
@@ -54,6 +54,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -187,15 +188,6 @@ public class EmployeeManagerController {
     return registerEmployeeInternal(request, null);
   }
 
-  @PutMapping("/{id}/submit-for-contract")
-  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
-  @DocEmployeeSubmitForContract
-  public EmployeeResponse submitEmployeeForContract(@PathVariable Long id) {
-    Employee employee = employeeManagementUseCases.submitForContract(id);
-    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter);
-  }
-
   @GetMapping("/{id}")
   @RateLimit(profile = RateLimitProfile.READ_HEAVY)
   @DocEmployeeGetById
@@ -232,21 +224,14 @@ public class EmployeeManagerController {
     return EmployeeManagerWebMapper.toResponse(updated, employeePhotoUrlPresenter);
   }
 
-  @PutMapping("/{id}/terminate")
+  @PatchMapping("/{id}/status")
   @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
   @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
-  @DocEmployeeTerminate
-  public EmployeeResponse terminateEmployee(@PathVariable Long id) {
-    Employee employee = employeeManagementUseCases.terminate(id);
-    return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter);
-  }
-
-  @PutMapping("/{id}/rehire")
-  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-  @RateLimit(profile = RateLimitProfile.SENSITIVE_OPERATIONS)
-  @DocEmployeeRehire
-  public EmployeeResponse rehireEmployee(@PathVariable Long id) {
-    Employee employee = employeeManagementUseCases.rehire(id);
+  @DocEmployeeChangeStatus
+  public EmployeeResponse changeEmployeeStatus(
+      @PathVariable Long id, @Valid @RequestBody ChangeEmployeeStatusRequest request) {
+    Employee employee =
+        employeeManagementUseCases.changeStatus(new ChangeEmployeeStatusCommand(id, request.status()));
     return EmployeeManagerWebMapper.toResponse(employee, employeePhotoUrlPresenter);
   }
 

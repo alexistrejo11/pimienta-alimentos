@@ -14,25 +14,11 @@ final class TaskSpecifications {
 
   private TaskSpecifications() {}
 
-  /** Sin proyecto ni oportunidad CRM (tarea personal). */
-  static Specification<TaskJpaEntity> personalNotDeleted() {
-    return (root, query, cb) ->
-        cb.and(
-            cb.isNull(root.get("deletedAt")),
-            cb.isNull(root.get("projectId")),
-            cb.isNull(root.get("opportunityId")));
+  static Specification<TaskJpaEntity> notDeleted() {
+    return (root, query, cb) -> cb.isNull(root.get("deletedAt"));
   }
 
-  /** Ligada a proyecto u oportunidad. */
-  static Specification<TaskJpaEntity> workNotDeleted() {
-    return (root, query, cb) ->
-        cb.and(
-            cb.isNull(root.get("deletedAt")),
-            cb.or(
-                cb.isNotNull(root.get("projectId")), cb.isNotNull(root.get("opportunityId"))));
-  }
-
-  /** Excluye COMPLETED y CANCELLED (alineado con {@code countOpenByProjectId}). */
+  /** Excluye COMPLETED y CANCELLED. */
   static Specification<TaskJpaEntity> statusOpen() {
     return (root, query, cb) -> cb.not(root.get("status").in(CLOSED_STATUSES));
   }
@@ -48,12 +34,6 @@ final class TaskSpecifications {
       if (criteria != null) {
         if (criteria.headquarterId() != null) {
           parts.add(cb.equal(root.get("headquarterId"), criteria.headquarterId()));
-        }
-        if (criteria.projectId() != null) {
-          parts.add(cb.equal(root.get("projectId"), criteria.projectId()));
-        }
-        if (criteria.opportunityId() != null) {
-          parts.add(cb.equal(root.get("opportunityId"), criteria.opportunityId()));
         }
         if (criteria.assignedToId() != null) {
           parts.add(cb.equal(root.get("assignedToId"), criteria.assignedToId()));

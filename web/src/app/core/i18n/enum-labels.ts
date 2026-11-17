@@ -127,20 +127,28 @@ export function taskStatusLabel(status: string): string {
   return TASK_STATUS_LABELS[status] ?? status;
 }
 
-export function opportunityStatusLabel(status: string): string {
-  return OPPORTUNITY_STATUS_LABELS[status] ?? status;
-}
-
-export function projectStatusLabel(status: string): string {
-  return PROJECT_STATUS_LABELS[status] ?? status;
-}
-
 export function contractCategoryLabel(category: string): string {
   return CONTRACT_CATEGORY_LABELS[category] ?? category;
 }
 
-export function milestoneStatusLabel(status: string): string {
-  return MILESTONE_STATUS_LABELS[status] ?? status;
+export function opportunityStatusLabel(status: string): string {
+  return OPPORTUNITY_STATUS_LABELS[status] ?? status;
+}
+
+export function organizationKindLabel(kind: string): string {
+  return ORGANIZATION_KIND_LABELS[kind] ?? kind;
+}
+
+export function requirementCategoryLabel(category: string): string {
+  return REQUIREMENT_CATEGORY_LABELS[category] ?? category;
+}
+
+export function requirementStatusLabel(status: string): string {
+  return REQUIREMENT_STATUS_LABELS[status] ?? status;
+}
+
+export function proposalKindLabel(kind: string): string {
+  return PROPOSAL_KIND_LABELS[kind] ?? kind;
 }
 
 const ACCOUNT_STATUS_LABELS: Record<string, string> = {
@@ -166,15 +174,11 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const EMPLOYEE_STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Borrador',
-  PENDING_CONTRACT: 'Pendiente de contrato',
   ACTIVE: 'Activo',
-  SICK: 'Incapacitado',
-  ON_VACATION: 'Vacaciones',
-  ON_LEAVE: 'Permiso',
-  TERMINATED: 'Baja',
-  FIRED: 'Despedido',
-  RESIGNED: 'Renunció',
+  INACTIVE: 'Inactivo',
+  RESIGNED: 'Renuncia',
+  TERMINATED: 'Despedido',
+  DOWN: 'Baja',
 };
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
@@ -315,33 +319,6 @@ const TASK_STATUS_LABELS: Record<string, string> = {
   FAILED: 'Fallida',
 };
 
-const OPPORTUNITY_STATUS_LABELS: Record<string, string> = {
-  NEW: 'Nueva',
-  DISCOVERY: 'Exploración',
-  PROPOSAL: 'Propuesta',
-  NEGOTIATION: 'Negociación',
-  WON: 'Ganada',
-  LOST: 'Perdida',
-  ABANDONED: 'Abandonada',
-};
-
-const PROJECT_STATUS_LABELS: Record<string, string> = {
-  PLANNING: 'Planeación',
-  ACTIVE: 'Activo',
-  ON_HOLD: 'En pausa',
-  COMPLETED: 'Completado',
-  CANCELLED: 'Cancelado',
-  ARCHIVED: 'Archivado',
-};
-
-const MILESTONE_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Pendiente',
-  IN_PROGRESS: 'En progreso',
-  COMPLETED: 'Completado',
-  DELAYED: 'Retrasado',
-  CANCELLED: 'Cancelado',
-};
-
 const OPERATING_EXPENSE_CATEGORY_LABELS: Record<string, string> = {
   SUPPLIERS_MERCHANDISE: 'Proveedores / Mercancía',
   RENT: 'Renta',
@@ -357,4 +334,49 @@ const CONTRACT_CATEGORY_LABELS: Record<string, string> = {
   EMPLOYEE: 'Colaborador',
   PARTNER: 'Socio',
   OTHER: 'Otro',
+  INSTITUTIONAL: 'Institucional',
+};
+
+const OPPORTUNITY_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Borrador',
+  UNDER_REVIEW: 'En revisión',
+  PREPARING: 'En preparación',
+  SUBMITTED: 'Enviada',
+  WON: 'Ganada',
+  LOST: 'Perdida',
+  ABANDONED: 'Abandonada',
+  CANCELLED: 'Cancelada',
+  UNDEFINED: 'Sin definir',
+};
+
+const ORGANIZATION_KIND_LABELS: Record<string, string> = {
+  PUBLIC_INSTITUTION: 'Institución pública',
+  PRIVATE_COMPANY: 'Empresa privada',
+  OTHER: 'Otro',
+  UNDEFINED: 'Sin definir',
+};
+
+const REQUIREMENT_CATEGORY_LABELS: Record<string, string> = {
+  ADMINISTRATIVE: 'Administrativo',
+  LEGAL: 'Legal',
+  TECHNICAL: 'Técnico',
+  ECONOMIC: 'Económico',
+  OTHER: 'Otro',
+  UNDEFINED: 'Sin definir',
+};
+
+const REQUIREMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente',
+  IN_PROGRESS: 'En progreso',
+  DONE: 'Hecho',
+  BLOCKED: 'Bloqueado',
+  WAIVED: 'Exento',
+  UNDEFINED: 'Sin definir',
+};
+
+const PROPOSAL_KIND_LABELS: Record<string, string> = {
+  TECHNICAL: 'Técnica',
+  ECONOMIC: 'Económica',
+  COMBINED: 'Combinada',
+  UNDEFINED: 'Sin definir',
 };
