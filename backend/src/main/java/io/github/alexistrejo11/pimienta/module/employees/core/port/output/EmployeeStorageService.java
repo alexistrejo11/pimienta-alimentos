@@ -1,16 +1,18 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.port.output;
 
-import org.springframework.web.multipart.MultipartFile;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 
 public interface EmployeeStorageService {
-  /** Persists under {@code …/employee-photos/}; returns the S3 object key (store in DB for delete/presign). */
-  String uploadEmployeePhoto(MultipartFile file, String displayNameSegment);
+  /** Persists under {@code …/employee-photos/{uuid}.webp}. */
+  String uploadEmployeePhoto(ImageUploadPayload file);
 
-  /** Persists under {@code …/attendance-evidence/}; {@code evidenceKind} e.g. {@code check-in}. */
-  String uploadAttendanceEvidencePhoto(
-      MultipartFile file, long employeeId, String displayNameSegment, String evidenceKind);
+  /** Persists under {@code …/attendance-evidence/{employeeId}/{kind}/{uuid}.webp}. */
+  String uploadAttendanceEvidencePhoto(ImageUploadPayload file, long employeeId, String evidenceKind);
 
   void delete(String fileUrlOrKey);
+
+  /** Deletes an object. Failures are logged and do not propagate. */
+  void deleteQuietly(String fileUrlOrKey);
 
   String generatePresignedUrl(String key);
 }

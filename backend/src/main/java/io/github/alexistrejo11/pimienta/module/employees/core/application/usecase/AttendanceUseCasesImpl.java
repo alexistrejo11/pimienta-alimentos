@@ -8,10 +8,8 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.Atten
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.exception.AttendanceAlreadyOpenException;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.exception.AttendanceNotFoundException;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.exception.AttendanceNotOpenForCheckoutException;
-import io.github.alexistrejo11.pimienta.module.employees.core.application.storage.EmployeeStorageNaming;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.exception.EmployeeNotFoundException;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Attendance;
-import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Employee;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.input.AttendanceAutoCloseUseCases;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.input.AttendanceQueryUseCases;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.input.AttendanceTrackingUseCases;
@@ -20,6 +18,7 @@ import io.github.alexistrejo11.pimienta.module.employees.core.port.output.Employ
 import io.github.alexistrejo11.pimienta.module.employees.core.port.output.EmployeeStorageService;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.exception.HeadquarterNotFoundException;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,7 +30,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class AttendanceUseCasesImpl
@@ -46,88 +47,93 @@ public class AttendanceUseCasesImpl
   private final EmployeeRepository employeeRepository;
   private final HeadquarterRepository headquarterRepository;
   private final EmployeeStorageService employeeStorageService;
+  private final TransactionTemplate transactionTemplate;
 
   public AttendanceUseCasesImpl(
       AttendanceRepository attendanceRepository,
       EmployeeRepository employeeRepository,
       HeadquarterRepository headquarterRepository,
-      EmployeeStorageService employeeStorageService) {
+      EmployeeStorageService employeeStorageService,
+      PlatformTransactionManager transactionManager) {
     this.attendanceRepository = attendanceRepository;
     this.employeeRepository = employeeRepository;
     this.headquarterRepository = headquarterRepository;
     this.employeeStorageService = employeeStorageService;
+    this.transactionTemplate = new TransactionTemplate(transactionManager);
   }
 
   @Override
-  @Transactional
   public Attendance startWorkday(StartWorkdayCommand command) {
-    Employee employee =
-        employeeRepository
-            .findById(command.employeeId())
-            .orElseThrow(() -> new EmployeeNotFoundException(command.employeeId()));
-    headquarterRepository
-        .findById(command.headquarterId())
-        .orElseThrow(() -> new HeadquarterNotFoundException(command.headquarterId()));
-
-    if (attendanceRepository
-        .findOpenForEmployeeOnWorkDate(command.employeeId(), command.workDate())
-        .isPresent()) {
-      throw new AttendanceAlreadyOpenException(command.employeeId(), command.workDate());
+    String evidenceKey =
+        uploadEvidence(command.checkInEvidencePhoto(), command.employeeId(), "check-in");
+    try {
+      Attendance saved =
+          transactionTemplate.execute(
+              status -> {
+                employeeRepository
+                    .findById(command.employeeId())
+                    .orElseThrow(() -> new EmployeeNotFoundException(command.employeeId()));
+                headquarterRepository
+                    .findById(command.headquarterId())
+                    .orElseThrow(() -> new HeadquarterNotFoundException(command.headquarterId()));
+                if (attendanceRepository
+                    .findOpenForEmployeeOnWorkDate(command.employeeId(), command.workDate())
+                    .isPresent()) {
+                  throw new AttendanceAlreadyOpenException(command.employeeId(), command.workDate());
+                }
+                Attendance row = Attendance.prepareNew();
+                row.beginWorkday(
+                    command.employeeId(),
+                    command.headquarterId(),
+                    command.workDate(),
+                    utcNow(),
+                    evidenceKey == null ? "" : evidenceKey);
+                return attendanceRepository.save(row);
+              });
+      log.debug(
+          "attendance check-in saved id={} employeeId={} headquarterId={} workDate={}",
+          saved.getId(),
+          saved.getEmployeeId(),
+          saved.getHeadquarterId(),
+          saved.getWorkDate());
+      return saved;
+    } catch (RuntimeException ex) {
+      employeeStorageService.deleteQuietly(evidenceKey);
+      throw ex;
     }
-
-    String checkInEvidenceKey = "";
-    if (command.checkInEvidencePhoto() != null && !command.checkInEvidencePhoto().isEmpty()) {
-      checkInEvidenceKey =
-          employeeStorageService.uploadAttendanceEvidencePhoto(
-              command.checkInEvidencePhoto(),
-              command.employeeId(),
-              EmployeeStorageNaming.displayNameSegment(employee),
-              "check-in");
-    }
-
-    LocalDateTime checkInAt = utcNow();
-    Attendance row = Attendance.prepareNew();
-    row.beginWorkday(
-        command.employeeId(),
-        command.headquarterId(),
-        command.workDate(),
-        checkInAt,
-        checkInEvidenceKey);
-
-    Attendance saved = attendanceRepository.save(row);
-    log.debug(
-        "attendance check-in saved id={} employeeId={} headquarterId={} workDate={}",
-        saved.getId(),
-        saved.getEmployeeId(),
-        saved.getHeadquarterId(),
-        saved.getWorkDate());
-    return saved;
   }
 
   @Override
-  @Transactional
   public Attendance endWorkday(EndWorkdayCommand command) {
-    Employee employee =
-        employeeRepository
-            .findById(command.employeeId())
-            .orElseThrow(() -> new EmployeeNotFoundException(command.employeeId()));
-
-    Attendance open = attendanceRepository
-        .findOpenForEmployeeOnWorkDate(command.employeeId(), command.workDate())
-        .orElseThrow(() -> new AttendanceNotOpenForCheckoutException(command.employeeId(), command.workDate()));
-
-    String checkOutEvidenceKey = "";
-    if (command.checkOutEvidencePhoto() != null && !command.checkOutEvidencePhoto().isEmpty()) {
-      checkOutEvidenceKey =
-          employeeStorageService.uploadAttendanceEvidencePhoto(
-              command.checkOutEvidencePhoto(),
-              command.employeeId(),
-              EmployeeStorageNaming.displayNameSegment(employee),
-              "check-out");
+    String evidenceKey =
+        uploadEvidence(command.checkOutEvidencePhoto(), command.employeeId(), "check-out");
+    try {
+      return transactionTemplate.execute(
+          status -> {
+            employeeRepository
+                .findById(command.employeeId())
+                .orElseThrow(() -> new EmployeeNotFoundException(command.employeeId()));
+            Attendance open =
+                attendanceRepository
+                    .findOpenForEmployeeOnWorkDate(command.employeeId(), command.workDate())
+                    .orElseThrow(
+                        () ->
+                            new AttendanceNotOpenForCheckoutException(
+                                command.employeeId(), command.workDate()));
+            open.completeCheckout(utcNow(), evidenceKey == null ? "" : evidenceKey);
+            return attendanceRepository.save(open);
+          });
+    } catch (RuntimeException ex) {
+      employeeStorageService.deleteQuietly(evidenceKey);
+      throw ex;
     }
+  }
 
-    open.completeCheckout(utcNow(), checkOutEvidenceKey);
-    return attendanceRepository.save(open);
+  private String uploadEvidence(ImageUploadPayload photo, long employeeId, String kind) {
+    if (photo == null || photo.isEmpty()) {
+      return null;
+    }
+    return employeeStorageService.uploadAttendanceEvidencePhoto(photo, employeeId, kind);
   }
 
   @Override

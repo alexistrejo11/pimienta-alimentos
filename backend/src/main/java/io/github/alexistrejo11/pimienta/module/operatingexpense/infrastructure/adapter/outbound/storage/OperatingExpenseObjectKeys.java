@@ -12,7 +12,7 @@ public final class OperatingExpenseObjectKeys {
 
   public static String build(String folder, long headquarterId, LocalDate occurredOn, UUID id) {
     String relative =
-        "operating-expenses/" + headquarterId + "/" + occurredOn.format(YEAR_MONTH) + "/" + id + ".jpg";
+        "operating-expenses/" + headquarterId + "/" + occurredOn.format(YEAR_MONTH) + "/" + id + ".webp";
     if (folder == null || folder.isBlank()) {
       return relative;
     }

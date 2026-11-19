@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 import { Observable, catchError, finalize, shareReplay, switchMap, throwError } from 'rxjs';
 
 import { authTokenStorage } from '../auth/auth-token.storage';
+import { sessionAuthPolicy } from '../auth/session-auth.policy';
 import { API_BASE_URL } from '../config/api.config';
 import type { TokenResponse } from '../model/account/auth.dto';
 
@@ -51,37 +52,13 @@ function clearSessionAndRedirect(router: Router, err: HttpErrorResponse): Observ
   return throwError(() => err);
 }
 
-function readApiErrorCode(err: HttpErrorResponse): string | null {
-  const body = err.error;
-  if (body === null || typeof body !== 'object') {
-    return null;
-  }
-  const code = (body as Record<string, unknown>)['errorCode'];
-  return typeof code === 'string' ? code : null;
-}
-
-/**
- * Spring Security returns {@code 403} (not {@code 401}) when the JWT is missing, invalid, or expired.
- * Only skip refresh when the API explicitly denies permission ({@code errorCode: FORBIDDEN}).
- */
-function shouldAttemptTokenRefresh(err: HttpErrorResponse): boolean {
-  if (err.status === 401) {
-    return true;
-  }
-  if (err.status !== 403) {
-    return false;
-  }
-  return readApiErrorCode(err) !== 'FORBIDDEN';
-}
-
 /**
  * On {@code 401}, or {@code 403} from an unauthenticated session (missing/expired JWT): one refresh via
  * {@code POST /auth/refresh}, then retries the original request once with the new access token.
  * The refresh token is not rotated — it stays valid until logout or JWT expiry.
  *
- * {@code 403} with {@code errorCode: FORBIDDEN} is RBAC and is not retried. If refresh fails, or the
- * retried request is still an auth failure, clears session and sends the user to login. A permission
- * denial on the retry leaves the session in place.
+ * {@code 403} with {@code errorCode: FORBIDDEN} is RBAC and is not retried. Session is cleared only when
+ * refresh/retry proves credentials are invalid — never on network, {@code 5xx}, or permission denial.
  */
 export const authSessionInterceptor: HttpInterceptorFn = (req, next) => {
   const platformId = inject(PLATFORM_ID);
@@ -98,7 +75,7 @@ export const authSessionInterceptor: HttpInterceptorFn = (req, next) => {
       if (!(err instanceof HttpErrorResponse)) {
         return throwError(() => err);
       }
-      if (!shouldAttemptTokenRefresh(err)) {
+      if (!sessionAuthPolicy.shouldAttemptTokenRefresh(err)) {
         return throwError(() => err);
       }
       if (req.context.get(AUTH_RETRY_AFTER_REFRESH)) {
@@ -119,11 +96,19 @@ export const authSessionInterceptor: HttpInterceptorFn = (req, next) => {
           return next(retryReq);
         }),
         catchError((retryErr: unknown) => {
-          // A real permission denial after a successful refresh must not end the session.
-          if (retryErr instanceof HttpErrorResponse && !shouldAttemptTokenRefresh(retryErr)) {
+          if (
+            sessionAuthPolicy.isPermissionDenied(retryErr) ||
+            sessionAuthPolicy.isTransientFailure(retryErr)
+          ) {
             return throwError(() => retryErr);
           }
-          return clearSessionAndRedirect(router, err);
+          if (
+            sessionAuthPolicy.refreshFailureRequiresLogout(retryErr) ||
+            sessionAuthPolicy.shouldAttemptTokenRefresh(retryErr)
+          ) {
+            return clearSessionAndRedirect(router, err);
+          }
+          return throwError(() => retryErr);
         }),
       );
     }),

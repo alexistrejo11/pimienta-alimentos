@@ -15,6 +15,7 @@ import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto
 import io.github.alexistrejo11.pimienta.module.employees.adapter.inbound.web.dto.request.UpdateEmployeeRequest;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploads;
 import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 public final class EmployeeManagerWebMapper {
@@ -112,7 +113,7 @@ public final class EmployeeManagerWebMapper {
         request.birthDate(),
         request.hireDate(),
         request.status(),
-        photo);
+        ImageUploads.fromNullable(photo));
   }
 
   public static UpdateEmployeeParams toUpdateParams(
@@ -122,7 +123,7 @@ public final class EmployeeManagerWebMapper {
         id,
         request.firstName().trim(),
         request.lastName().trim(),
-        photo,
+        ImageUploads.fromNullable(photo),
         email != null ? email.toLowerCase() : null,
         Strings.blankToNull(request.phone()),
         Strings.blankToNull(request.address()),

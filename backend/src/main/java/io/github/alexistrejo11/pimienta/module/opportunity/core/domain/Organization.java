@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.opportunity.core.domain;
 
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.OrganizationKind;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 import java.time.LocalDateTime;
 
 public class Organization extends BaseDomain<Long> {
@@ -54,10 +55,10 @@ public class Organization extends BaseDomain<Long> {
       String contactPhone) {
     this.name = name != null ? name.strip() : "";
     this.kind = kind != null ? kind : OrganizationKind.OTHER;
-    this.notes = blankToNull(notes);
-    this.contactName = blankToNull(contactName);
-    this.contactEmail = blankToNull(contactEmail);
-    this.contactPhone = blankToNull(contactPhone);
+    this.notes = Strings.blankToNull(notes);
+    this.contactName = Strings.blankToNull(contactName);
+    this.contactEmail = Strings.blankToNull(contactEmail);
+    this.contactPhone = Strings.blankToNull(contactPhone);
     touch();
   }
 
@@ -68,14 +69,6 @@ public class Organization extends BaseDomain<Long> {
   public void delete() {
     this.deletedAt = LocalDateTime.now();
     touch();
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 
   public static SafeBuilder builder() {
@@ -154,10 +147,10 @@ public class Organization extends BaseDomain<Long> {
       Organization o = new Organization();
       o.name = name != null ? name.strip() : "";
       o.kind = kind != null ? kind : OrganizationKind.OTHER;
-      o.notes = blankToNull(notes);
-      o.contactName = blankToNull(contactName);
-      o.contactEmail = blankToNull(contactEmail);
-      o.contactPhone = blankToNull(contactPhone);
+      o.notes = Strings.blankToNull(notes);
+      o.contactName = Strings.blankToNull(contactName);
+      o.contactEmail = Strings.blankToNull(contactEmail);
+      o.contactPhone = Strings.blankToNull(contactPhone);
       o.createdAt = LocalDateTime.now();
       o.updatedAt = o.createdAt;
       return o;

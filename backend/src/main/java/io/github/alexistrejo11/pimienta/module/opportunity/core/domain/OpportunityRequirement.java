@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.opportunity.core.domain;
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.RequirementCategory;
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.RequirementStatus;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -72,7 +73,7 @@ public class OpportunityRequirement extends BaseDomain<Long> {
     this.category = category != null ? category : RequirementCategory.OTHER;
     this.mandatory = mandatory;
     this.dueOn = dueOn;
-    this.notes = blankToNull(notes);
+    this.notes = Strings.blankToNull(notes);
     this.sortOrder = sortOrder;
     touch();
   }
@@ -89,14 +90,6 @@ public class OpportunityRequirement extends BaseDomain<Long> {
   public void delete() {
     this.deletedAt = LocalDateTime.now();
     touch();
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 
   public static SafeBuilder builder() {
@@ -191,7 +184,7 @@ public class OpportunityRequirement extends BaseDomain<Long> {
       r.mandatory = mandatory;
       r.status = RequirementStatus.PENDING;
       r.dueOn = dueOn;
-      r.notes = blankToNull(notes);
+      r.notes = Strings.blankToNull(notes);
       r.sortOrder = sortOrder;
       r.createdAt = LocalDateTime.now();
       r.updatedAt = r.createdAt;

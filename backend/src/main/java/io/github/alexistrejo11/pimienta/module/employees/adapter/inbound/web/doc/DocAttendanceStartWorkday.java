@@ -29,7 +29,7 @@ import org.springframework.http.MediaType;
 
         + **`attendance`**: JSON matching **`StartWorkdayRequest`** (`Content-Type`:
           **`application/json`** when possible).
-        + **`checkInEvidencePhoto`** (optional): image (`image/jpeg`, `image/png`, …). The server stores \
+        + **`checkInEvidencePhoto`** (optional): JPEG, PNG, or WebP. The server stores \
         the object in S3 and persists the **object key**; API responses return a **time-limited HTTPS URL**.
 
         Browsers/Swagger may label **`attendance`** as **`application/octet-stream`**; the server parses \

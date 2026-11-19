@@ -1,11 +1,11 @@
 package io.github.alexistrejo11.pimienta.module.operatingexpense.core.port.output;
 
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import java.util.List;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface OperatingExpenseReceiptImages {
 
-  void validateAll(List<MultipartFile> files, int retainedCount);
+  void validateAll(List<ImageUploadPayload> files, int retainedCount);
 
-  byte[] process(MultipartFile file);
+  byte[] process(ImageUploadPayload file);
 }

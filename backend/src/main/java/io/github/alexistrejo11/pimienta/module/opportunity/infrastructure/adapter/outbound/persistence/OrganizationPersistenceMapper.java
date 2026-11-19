@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.opportunity.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.Organization;
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.OrganizationKind;
 import io.github.alexistrejo11.pimienta.module.opportunity.infrastructure.adapter.outbound.persistence.entity.OrganizationJpaEntity;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 final class OrganizationPersistenceMapper {
 
@@ -30,10 +31,10 @@ final class OrganizationPersistenceMapper {
     }
     entity.setName(domain.getName());
     entity.setKind(domain.getKind().name());
-    entity.setNotes(blankToNull(domain.getNotes()));
-    entity.setContactName(blankToNull(domain.getContactName()));
-    entity.setContactEmail(blankToNull(domain.getContactEmail()));
-    entity.setContactPhone(blankToNull(domain.getContactPhone()));
+    entity.setNotes(Strings.blankToNull(domain.getNotes()));
+    entity.setContactName(Strings.blankToNull(domain.getContactName()));
+    entity.setContactEmail(Strings.blankToNull(domain.getContactEmail()));
+    entity.setContactPhone(Strings.blankToNull(domain.getContactPhone()));
     entity.setCreatedAt(domain.getCreatedAt());
     entity.setUpdatedAt(domain.getUpdatedAt());
     entity.setDeletedAt(domain.getDeletedAt());
@@ -49,13 +50,5 @@ final class OrganizationPersistenceMapper {
     } catch (IllegalArgumentException ex) {
       return OrganizationKind.UNDEFINED;
     }
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 }

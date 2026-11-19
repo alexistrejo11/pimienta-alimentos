@@ -1,14 +1,14 @@
 package io.github.alexistrejo11.pimienta.module.files.infrastructure.adapter.out.storage;
 
 import io.github.alexistrejo11.pimienta.module.files.core.port.output.FileStoragePort;
+import io.github.alexistrejo11.pimienta.shared.exception.ObjectStorageException;
 import io.github.alexistrejo11.pimienta.shared.storage.S3PresignService;
-import java.time.Instant;
-import java.util.Map;
+import io.github.alexistrejo11.pimienta.shared.storage.S3WebpUploads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -34,32 +34,22 @@ public class S3FileStorageAdapter implements FileStoragePort {
   }
 
   @Override
-  public String store(MultipartFile file, String s3Key) {
+  public void store(byte[] content, String contentType, String s3Key) {
+    String type =
+        contentType == null || contentType.isBlank() ? "application/octet-stream" : contentType;
+    PutObjectRequest request =
+        PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(s3Key)
+            .contentType(type)
+            .contentLength((long) content.length)
+            .cacheControl(S3WebpUploads.CACHE_CONTROL)
+            .build();
     try {
-      byte[] bytes = file.getBytes();
-      String contentType = file.getContentType() != null
-          ? file.getContentType()
-          : "application/octet-stream";
-
-      PutObjectRequest request = PutObjectRequest.builder()
-          .bucket(bucketName)
-          .key(s3Key)
-          .contentType(contentType)
-          .contentLength((long) bytes.length)
-          .metadata(Map.of(
-              "original-name",
-              file.getOriginalFilename() != null ? file.getOriginalFilename() : "",
-              "uploaded-at",
-              Instant.now().toString()))
-          .build();
-
-      s3Client.putObject(request, RequestBody.fromBytes(bytes));
+      s3Client.putObject(request, RequestBody.fromBytes(content));
       log.info("file stored bucket={} key={}", bucketName, s3Key);
-      return s3Key;
-    } catch (S3Exception e) {
-      throw e;
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to store file in S3: " + s3Key, e);
+    } catch (S3Exception | SdkClientException ex) {
+      throw new ObjectStorageException("file put failed key=" + s3Key, ex);
     }
   }
 
@@ -68,15 +58,25 @@ public class S3FileStorageAdapter implements FileStoragePort {
     try {
       s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(s3Key).build());
       log.info("file deleted bucket={} key={}", bucketName, s3Key);
-    } catch (S3Exception e) {
-      log.warn("S3 delete failed key={} — treating as no-op", s3Key, e);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to delete file from S3: " + s3Key, e);
+    } catch (S3Exception | SdkClientException ex) {
+      log.warn("S3 delete failed key={}", s3Key, ex);
     }
   }
 
   @Override
+  public void deleteQuietly(String s3Key) {
+    if (s3Key == null || s3Key.isBlank()) {
+      return;
+    }
+    delete(s3Key);
+  }
+
+  @Override
   public String presignedDownloadUrl(String s3Key) {
-    return s3PresignService.presign24h(s3Key);
+    try {
+      return s3PresignService.presign24h(s3Key);
+    } catch (S3Exception | SdkClientException ex) {
+      throw new ObjectStorageException("file presign failed key=" + s3Key, ex);
+    }
   }
 }

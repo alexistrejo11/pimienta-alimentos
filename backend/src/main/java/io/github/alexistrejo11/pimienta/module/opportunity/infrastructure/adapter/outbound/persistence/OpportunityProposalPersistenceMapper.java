@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.opportunity.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.OpportunityProposal;
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.ProposalKind;
 import io.github.alexistrejo11.pimienta.module.opportunity.infrastructure.adapter.outbound.persistence.entity.OpportunityProposalJpaEntity;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 final class OpportunityProposalPersistenceMapper {
 
@@ -27,7 +28,7 @@ final class OpportunityProposalPersistenceMapper {
     }
     entity.setOpportunityId(domain.getOpportunityId());
     entity.setKind(domain.getKind().name());
-    entity.setNotes(blankToNull(domain.getNotes()));
+    entity.setNotes(Strings.blankToNull(domain.getNotes()));
     entity.setCreatedAt(domain.getCreatedAt());
     entity.setUpdatedAt(domain.getUpdatedAt());
     entity.setDeletedAt(domain.getDeletedAt());
@@ -43,13 +44,5 @@ final class OpportunityProposalPersistenceMapper {
     } catch (IllegalArgumentException ex) {
       return ProposalKind.UNDEFINED;
     }
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 }

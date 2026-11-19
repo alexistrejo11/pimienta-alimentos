@@ -1,0 +1,32 @@
+<div class="auth-shell flex min-h-screen flex-col">
+  <header class="auth-shell__header">
+    <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6">
+      <a routerLink="/" class="auth-shell__brand">Pimienta Alimentos</a>
+      <span class="auth-shell__tagline">Sistema de Gestión</span>
+    </div>
+  </header>
+  <main class="flex flex-grow items-center justify-center p-6">
+    <div class="auth-card w-full max-w-xl space-y-6 rounded-xl border p-8 text-center md:p-12">
+      <img class="mx-auto h-16 w-auto" alt="Pimienta Alimentos" [src]="logoUrl" />
+      <span class="material-symbols-outlined text-5xl text-primary" aria-hidden="true"
+        >cloud_off</span
+      >
+      <h1 class="auth-card__title">Servicio no disponible</h1>
+      <p class="auth-card__lead">
+        No pudimos conectar con el servidor. Tu sesión se mantiene; intenta de nuevo en unos
+        momentos.
+      </p>
+      @if (errorMessage(); as message) {
+        <p class="text-sm text-error" role="alert">{{ message }}</p>
+      }
+      <button
+        type="button"
+        class="inline-flex rounded-lg bg-primary px-5 py-3 font-bold text-on-primary disabled:opacity-60"
+        [disabled]="retrying()"
+        (click)="retry()"
+      >
+        {{ retrying() ? 'Reintentando…' : 'Reintentar' }}
+      </button>
+    </div>
+  </main>
+</div>

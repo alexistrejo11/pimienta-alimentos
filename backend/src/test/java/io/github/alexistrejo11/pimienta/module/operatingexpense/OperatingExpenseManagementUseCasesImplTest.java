@@ -25,6 +25,8 @@ import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.enum
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.port.output.OperatingExpenseReceiptStorage;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.port.output.OperatingExpenseRepository;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.outbound.image.OperatingExpenseReceiptImageProcessor;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
+import io.github.alexistrejo11.pimienta.shared.infrastructure.image.ImageSanitizer;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.domain.Headquarter;
 import io.github.alexistrejo11.pimienta.module.headquarter.core.port.output.HeadquarterRepository;
 import java.awt.Color;
@@ -42,7 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mock.web.MockMultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class OperatingExpenseManagementUseCasesImplTest {
@@ -62,7 +63,7 @@ class OperatingExpenseManagementUseCasesImplTest {
             expenseRepository,
             headquarterRepository,
             new OperatingExpenseAccessPolicy(headquarterAccess),
-            new OperatingExpenseReceiptImageProcessor(),
+            new OperatingExpenseReceiptImageProcessor(new ImageSanitizer()),
             receiptStorage);
     admin =
         new JwtAuthenticationContext(
@@ -77,7 +78,7 @@ class OperatingExpenseManagementUseCasesImplTest {
   @Test
   void createDeletesNewKeysWhenSaveFails() throws IOException {
     headquarterExists();
-    when(receiptStorage.storeJpeg(any(), anyLong(), any())).thenReturn("operating-expenses/3/2026-10/new.jpg");
+    when(receiptStorage.storeWebp(any(), anyLong(), any())).thenReturn("operating-expenses/3/2026-10/new.webp");
     when(expenseRepository.save(any())).thenThrow(new RuntimeException("db down"));
 
     assertThrows(
@@ -94,7 +95,7 @@ class OperatingExpenseManagementUseCasesImplTest {
                     LocalDate.of(2026, 10, 14),
                     List.of(jpegFile()))));
 
-    verify(receiptStorage).deleteQuietly("operating-expenses/3/2026-10/new.jpg");
+    verify(receiptStorage).deleteQuietly("operating-expenses/3/2026-10/new.webp");
   }
 
   @Test
@@ -113,7 +114,7 @@ class OperatingExpenseManagementUseCasesImplTest {
     headquarterExists();
     when(expenseRepository.findById(9L)).thenReturn(Optional.of(existing));
     when(expenseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-    when(receiptStorage.storeJpeg(any(), anyLong(), any())).thenReturn("operating-expenses/3/2026-10/added.jpg");
+    when(receiptStorage.storeWebp(any(), anyLong(), any())).thenReturn("operating-expenses/3/2026-10/added.webp");
 
     OperatingExpense saved =
         useCases.update(
@@ -129,10 +130,10 @@ class OperatingExpenseManagementUseCasesImplTest {
                 List.of("keep.jpg"),
                 List.of(jpegFile())));
 
-    assertEquals(List.of("keep.jpg", "operating-expenses/3/2026-10/added.jpg"), saved.getAttachmentKeys());
+    assertEquals(List.of("keep.jpg", "operating-expenses/3/2026-10/added.webp"), saved.getAttachmentKeys());
     verify(receiptStorage).deleteQuietly("drop.jpg");
     verify(receiptStorage, never()).deleteQuietly("keep.jpg");
-    verify(receiptStorage, never()).deleteQuietly("operating-expenses/3/2026-10/added.jpg");
+    verify(receiptStorage, never()).deleteQuietly("operating-expenses/3/2026-10/added.webp");
   }
 
   @Test
@@ -198,7 +199,7 @@ class OperatingExpenseManagementUseCasesImplTest {
     assertEquals(2L, summary.topCategory().count());
   }
 
-  private static MockMultipartFile jpegFile() throws IOException {
+  private static ImageUploadPayload jpegFile() throws IOException {
     BufferedImage image = new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB);
     Graphics2D graphics = image.createGraphics();
     graphics.setColor(Color.RED);
@@ -206,6 +207,7 @@ class OperatingExpenseManagementUseCasesImplTest {
     graphics.dispose();
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ImageIO.write(image, "jpg", out);
-    return new MockMultipartFile("attachments", "note.jpg", "image/jpeg", out.toByteArray());
+    byte[] bytes = out.toByteArray();
+    return new ImageUploadPayload(bytes, "image/jpeg", "note.jpg", bytes.length);
   }
 }

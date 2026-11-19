@@ -4,12 +4,14 @@ import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
 import { authTokenStorage } from './auth-token.storage';
+import { SERVICE_UNAVAILABLE_PATH, sessionAuthPolicy } from './session-auth.policy';
 import { SessionContextService } from './session-context.service';
 import { isPendingAccount, postLoginPath, PENDING_PATH } from './workspace-area';
 
 /**
  * Keeps login/register off-limits when a workspace JWT is present.
  * Invalid tokens are cleared so the user can sign in again.
+ * Network / server outages keep tokens and send the user to recovery instead.
  */
 export const guestAuthGuard: CanActivateFn = () => {
   const platformId = inject(PLATFORM_ID);
@@ -32,10 +34,13 @@ export const guestAuthGuard: CanActivateFn = () => {
       }
       return router.createUrlTree([postLoginPath(identity)]);
     }),
-    catchError(() => {
-      authTokenStorage.clear();
-      session.clear();
-      return of(true);
+    catchError((err: unknown) => {
+      if (sessionAuthPolicy.requiresSessionClear(err)) {
+        authTokenStorage.clear();
+        session.clear();
+        return of(true);
+      }
+      return of(router.createUrlTree([SERVICE_UNAVAILABLE_PATH]));
     }),
   );
 };

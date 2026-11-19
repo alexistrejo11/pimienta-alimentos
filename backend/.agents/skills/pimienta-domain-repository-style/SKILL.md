@@ -61,7 +61,7 @@ orchestration and invariants that belong to application services.
   optional text, status-like fields that can be backfilled).
 - Keep **`nullable = false`** where the physical model requires it (`created_at`, `updated_at`,
   `version`, etc.).
-- Mappers should use **`blankToNull`** for strings and **`*OrNull`** for enums when writing to JPA.
+- Mappers and aggregates normalize optional text with **`Strings.blankToNull`** / **`Strings.nullToEmpty`** from `io.github.alexistrejo11.pimienta.shared.util.Strings`. Use **`*OrNull`** for enums when writing to JPA. Do not paste a private `blankToNull`, `nullToEmpty`, or `blankToEmpty`; `ArchitectureRulesTest` rejects those copies outside `Strings`.
 
 ## Validation boundaries
 

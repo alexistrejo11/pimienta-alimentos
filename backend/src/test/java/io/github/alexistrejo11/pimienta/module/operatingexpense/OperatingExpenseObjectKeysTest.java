@@ -13,7 +13,7 @@ class OperatingExpenseObjectKeysTest {
   void prefixesFolderAndUsesOccurredMonth() {
     UUID id = UUID.fromString("11111111-1111-1111-1111-111111111111");
     assertEquals(
-        "test-employees/operating-expenses/4/2026-10/" + id + ".jpg",
+        "test-employees/operating-expenses/4/2026-10/" + id + ".webp",
         OperatingExpenseObjectKeys.build("test-employees/", 4, LocalDate.of(2026, 10, 14), id));
   }
 }

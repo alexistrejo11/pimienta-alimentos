@@ -30,7 +30,7 @@ import org.springframework.http.MediaType;
         """
         Upload a file scoped to a specific module and optional entity (always stored under \
         `pimienta/sources/resources/{module}/{entityId?}/`). `module` is required. \
-        Max file size: **50 MB**. **ROLE_ADMIN** or **ROLE_MANAGER**. \
+        Max file size: **10 MB**. **ROLE_ADMIN** or **ROLE_MANAGER**. \
         Rate limit: **SENSITIVE_OPERATIONS**.""")
 @Parameters({
   @Parameter(
@@ -85,7 +85,7 @@ import org.springframework.http.MediaType;
             schema = @Schema(implementation = FileAssetResponse.class)))
 @ApiResponse(
     responseCode = "400",
-    description = "Empty file, file exceeds 50 MB, or missing `module`.",
+    description = "Empty file, file exceeds 10 MB, or missing `module`.",
     content =
         @Content(
             mediaType = "application/json",

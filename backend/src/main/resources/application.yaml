@@ -100,11 +100,6 @@ pimienta:
       phone: ${PIMIENTA_BOOTSTRAP_ADMIN_PHONE:+520000000001}
   notifications:
     admin-emails: ${PIMIENTA_NOTIFICATIONS_ADMIN_EMAILS:admin@example.com}
-  image:
-    max-width: 800
-    max-height: 600
-    quality: 0.8
-    allowed-formats: jpg, jpeg, png
   rate-limiting:
     enabled: true
   cors:

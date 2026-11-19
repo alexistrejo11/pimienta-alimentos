@@ -1,9 +1,18 @@
-# Local development: Maven + spring-boot:run so DevTools can restart on bind-mounted sources.
+# Local development on Ubuntu Jammy (glibc), same libc as the production runtime.
+# Maven 3.9 comes from the official image because Docker Hub has no Temurin 25 + Jammy Maven tag.
 # Build context: backend/
-FROM maven:3.9-eclipse-temurin-25-alpine
+FROM maven:3.9-eclipse-temurin-25 AS maven
+
+FROM eclipse-temurin:25-jdk-jammy
 WORKDIR /workspace
 
-RUN apk add --no-cache inotify-tools curl
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends inotify-tools curl \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=maven /usr/share/maven /usr/share/maven
+RUN ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+ENV MAVEN_HOME=/usr/share/maven
 
 COPY pom.xml .
 COPY src ./src

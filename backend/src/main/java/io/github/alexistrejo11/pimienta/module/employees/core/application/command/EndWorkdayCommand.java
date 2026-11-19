@@ -1,9 +1,9 @@
 package io.github.alexistrejo11.pimienta.module.employees.core.application.command;
 
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import java.time.LocalDate;
-import org.springframework.web.multipart.MultipartFile;
 
-public record EndWorkdayCommand(long employeeId, LocalDate workDate, MultipartFile checkOutEvidencePhoto) {
+public record EndWorkdayCommand(long employeeId, LocalDate workDate, ImageUploadPayload checkOutEvidencePhoto) {
 
   public EndWorkdayCommand {
     if (workDate == null) {

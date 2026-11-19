@@ -31,7 +31,7 @@ import org.springframework.http.MediaType;
         Upload any company file to S3 (`pimienta/sources/`). \
         Send `multipart/form-data` with the binary `file` part plus query parameters. \
         `category` is required for all uploads; `module` is additionally required when \
-        `category = RESOURCE`. Max file size: **50 MB**. **ROLE_ADMIN** only. \
+        `category = RESOURCE`. Max file size: **10 MB**. **ROLE_ADMIN** only. \
         Rate limit: **SENSITIVE_OPERATIONS**.""")
 @Parameters({
   @Parameter(
@@ -94,7 +94,7 @@ import org.springframework.http.MediaType;
             schema = @Schema(implementation = FileAssetResponse.class)))
 @ApiResponse(
     responseCode = "400",
-    description = "Empty file, file exceeds 50 MB, missing `category`, or missing `module` for RESOURCE.",
+    description = "Empty file, file exceeds 10 MB, missing `category`, or missing `module` for RESOURCE.",
     content =
         @Content(
             mediaType = "application/json",

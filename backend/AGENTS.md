@@ -15,6 +15,7 @@ Quick invariants (detail in that skill):
 - Flyway: `db/migration/V{n}__*.sql`; enums as `VARCHAR` + `ck_*` CHECK — no PG `CREATE TYPE`.
 - Errors: `ErrorCode` + module exception extending `ResourceNotFoundException` / `ConflictException` → `ApiErrorResponse`.
 - Controllers thin: `@Valid` → `*Command` → use case → DTO; `@RateLimit` profiles; new lists use `PagedResponse`.
+- Optional strings: **`Strings.blankToNull`** / **`Strings.nullToEmpty`** in `shared/util/Strings`. Do not copy private `blankToNull`, `nullToEmpty`, or `blankToEmpty`. `ArchitectureRulesTest` fails the build if those helpers are redeclared.
 - Unauthenticated secured calls → **401**; POS contracts → `../mobile/pos/docs/integration/`.
 
 ## Architecture (hexagonal, thin domain)

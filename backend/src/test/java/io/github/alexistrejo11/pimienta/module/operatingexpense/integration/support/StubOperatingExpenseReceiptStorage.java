@@ -33,10 +33,14 @@ public final class StubOperatingExpenseReceiptStorage implements OperatingExpens
   }
 
   @Override
-  public String storeJpeg(byte[] jpeg, long headquarterId, LocalDate occurredOn) {
+  public String storeWebp(byte[] webp, long headquarterId, LocalDate occurredOn) {
     String key = OperatingExpenseObjectKeys.build(folder, headquarterId, occurredOn, UUID.randomUUID());
-    objects.put(key, jpeg);
+    objects.put(key, webp);
     return key;
+  }
+
+  public byte[] bytes(String key) {
+    return objects.get(key);
   }
 
   @Override

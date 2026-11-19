@@ -397,6 +397,13 @@ export const routes: Routes = [
     canActivate: [guestAuthGuard],
   },
   {
+    path: 'auth/servicio-no-disponible',
+    loadComponent: () =>
+      import('./pages/auth/servicio-no-disponible/servicio-no-disponible').then(
+        (m) => m.ServicioNoDisponiblePage,
+      ),
+  },
+  {
     path: 'app',
     canActivate: [workspaceAuthGuard],
     children: [

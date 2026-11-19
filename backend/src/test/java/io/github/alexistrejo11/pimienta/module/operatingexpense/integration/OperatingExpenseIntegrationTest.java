@@ -310,6 +310,18 @@ class OperatingExpenseIntegrationTest {
             .andReturn();
     String added = JsonPath.read(updated.getResponse().getContentAsString(), "$.attachments[1].key");
 
+    org.junit.jupiter.api.Assertions.assertTrue(keep.endsWith(".webp"));
+    byte[] stored = storage.bytes(keep);
+    org.junit.jupiter.api.Assertions.assertTrue(stored.length >= 12);
+    org.junit.jupiter.api.Assertions.assertEquals('R', stored[0]);
+    org.junit.jupiter.api.Assertions.assertEquals('I', stored[1]);
+    org.junit.jupiter.api.Assertions.assertEquals('F', stored[2]);
+    org.junit.jupiter.api.Assertions.assertEquals('F', stored[3]);
+    org.junit.jupiter.api.Assertions.assertEquals('W', stored[8]);
+    org.junit.jupiter.api.Assertions.assertEquals('E', stored[9]);
+    org.junit.jupiter.api.Assertions.assertEquals('B', stored[10]);
+    org.junit.jupiter.api.Assertions.assertEquals('P', stored[11]);
+
     org.junit.jupiter.api.Assertions.assertTrue(storage.contains(keep));
     org.junit.jupiter.api.Assertions.assertTrue(storage.contains(added));
     org.junit.jupiter.api.Assertions.assertFalse(storage.contains(drop));

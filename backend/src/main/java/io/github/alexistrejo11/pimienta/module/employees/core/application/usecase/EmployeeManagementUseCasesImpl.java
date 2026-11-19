@@ -5,7 +5,6 @@ import io.github.alexistrejo11.pimienta.module.employees.core.application.comman
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.RegisterEmployeeParams;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.dto.param.UpdateEmployeeParams;
 import io.github.alexistrejo11.pimienta.module.employees.core.application.query.EmployeeSearchCriteria;
-import io.github.alexistrejo11.pimienta.module.employees.core.application.storage.EmployeeStorageNaming;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeStatistics;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.EmployeeSummary;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.EmployeeStatus;
@@ -14,25 +13,31 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Emplo
 import io.github.alexistrejo11.pimienta.module.employees.core.port.input.EmployeeManagementUseCases;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.output.EmployeeRepository;
 import io.github.alexistrejo11.pimienta.module.employees.core.port.output.EmployeeStorageService;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import java.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCases {
   private static final Logger log = LoggerFactory.getLogger(EmployeeManagementUseCasesImpl.class);
   private final EmployeeRepository employeeRepository;
   private final EmployeeStorageService storageService;
+  private final TransactionTemplate transactionTemplate;
 
   public EmployeeManagementUseCasesImpl(
       EmployeeRepository employeeRepository,
-      EmployeeStorageService storageService) {
+      EmployeeStorageService storageService,
+      PlatformTransactionManager transactionManager) {
     this.employeeRepository = employeeRepository;
     this.storageService = storageService;
+    this.transactionTemplate = new TransactionTemplate(transactionManager);
   }
 
   // -------- Queries --------
@@ -102,7 +107,6 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
   // -------- Commands --------
 
   @Override
-  @Transactional
   public Employee register(RegisterEmployeeParams params) {
     log.info(
         "register employee start contractType={} workShift={} department={} status={} hireDate={}",
@@ -112,48 +116,52 @@ public class EmployeeManagementUseCasesImpl implements EmployeeManagementUseCase
         params.status(),
         params.hireDate());
 
-    String photoUrl = null;
-    if (params.photo() != null && !params.photo().isEmpty()) {
-      String segment = EmployeeStorageNaming.displayNameSegment(params.firstName(), params.lastName());
-      photoUrl = storageService.uploadEmployeePhoto(params.photo(), segment);
+    String photoKey = uploadPhoto(params.photo());
+    try {
+      Employee saved =
+          transactionTemplate.execute(
+              status -> employeeRepository.save(params.toEmployee(photoKey)));
+      log.info("register employee complete employeeId={}", saved.getId());
+      return saved;
+    } catch (RuntimeException ex) {
+      storageService.deleteQuietly(photoKey);
+      throw ex;
     }
-
-    Employee created = params.toEmployee(photoUrl);
-    Employee saved = employeeRepository.save(created);
-
-    log.info("register employee complete employeeId={}", saved.getId());
-    return saved;
   }
 
   @Override
-  @Transactional
   public Employee update(Long id, UpdateEmployeeParams params) {
     log.info("update employee start employeeId={}", id);
-    Employee employee = getById(id);
-
-    String photoUrl = null;
-    if (params.photo() != null && !params.photo().isEmpty()) {
-      String existing = employee.getPersonal().photoUrl();
-      if (existing != null && !existing.isBlank()) {
-        storageService.delete(existing);
+    String photoKey = uploadPhoto(params.photo());
+    try {
+      Updated updated =
+          transactionTemplate.execute(
+              status -> {
+                Employee employee = getById(id);
+                String previous = employee.getPersonal().photoUrl();
+                params.applyPartialMerge(employee, photoKey);
+                employee.touch();
+                return new Updated(employeeRepository.save(employee), previous);
+              });
+      if (photoKey != null && updated.previousKey() != null && !updated.previousKey().isBlank()) {
+        storageService.deleteQuietly(updated.previousKey());
       }
-      String fn = params.firstName() != null ? params.firstName() : employee.getPersonal().firstName();
-      String ln = params.lastName() != null ? params.lastName() : employee.getPersonal().lastName();
-      String segment = EmployeeStorageNaming.displayNameSegment(fn, ln);
-      photoUrl = storageService.uploadEmployeePhoto(params.photo(), segment);
-      log.debug("photo uploaded for employeeId={}", id);
-
-      employee.setPersonal(employee.getPersonal().setPhotoUrl(photoUrl));
-      log.debug("photo set for employeeId={}", id);
+      log.info("update employee complete employeeId={}", updated.employee().getId());
+      return updated.employee();
+    } catch (RuntimeException ex) {
+      storageService.deleteQuietly(photoKey);
+      throw ex;
     }
-
-    params.applyPartialMerge(employee, photoUrl);
-    employee.touch();
-    Employee saved = employeeRepository.save(employee);
-
-    log.info("update employee complete employeeId={}", saved.getId());
-    return saved;
   }
+
+  private String uploadPhoto(ImageUploadPayload photo) {
+    if (photo == null || photo.isEmpty()) {
+      return null;
+    }
+    return storageService.uploadEmployeePhoto(photo);
+  }
+
+  private record Updated(Employee employee, String previousKey) {}
 
   @Override
   @Transactional

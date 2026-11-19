@@ -5,10 +5,9 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.enums.WorkS
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.model.Employee;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.BenefitsProfile;
 
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Partial update: each component is applied only when non-null; null keeps the
@@ -18,7 +17,7 @@ public record UpdateEmployeeParams(
     Long id,
     String firstName,
     String lastName,
-    MultipartFile photo,
+    ImageUploadPayload photo,
     String email,
     String phone,
     String address,

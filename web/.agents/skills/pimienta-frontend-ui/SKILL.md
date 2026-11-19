@@ -3,9 +3,10 @@ name: pimienta-frontend-ui
 description: >-
   Visual UI rules for the Pimienta Alimentos Angular app: Tailwind v4 theme tokens,
   typography (Manrope / Work Sans), Material Symbols, layout and component
-  patterns (auth, marketing, workspace), and Spanish readable UI copy (labels,
-  messages, enums via enum-labels.ts). Apply when styling or building pages,
-  components, or templates in web/src.
+  patterns (auth, marketing, workspace), Spanish readable UI copy (labels,
+  messages, enums via enum-labels.ts), and a colocated spec for each new
+  feature or page section. Apply when styling or building pages, components,
+  or templates in web/src.
 ---
 
 # Pimienta frontend — visual UI conventions
@@ -136,3 +137,7 @@ Auth and marketing may use a single contained panel (`.auth-card`, philosophy bl
 | Page-specific | `*.html` + optional `*.css` |
 
 When adding large new UI surfaces, **mirror existing files** (`pages/auth/login`, `pages/home/home`, workspace pages) before inventing new patterns.
+
+## Tests
+
+Each new feature and each new section of a page includes a colocated `*.spec.ts` in the same change. Assert the section's behavior (render, filters, labels, empty and error states). See **Tests** in `web/AGENTS.md`.

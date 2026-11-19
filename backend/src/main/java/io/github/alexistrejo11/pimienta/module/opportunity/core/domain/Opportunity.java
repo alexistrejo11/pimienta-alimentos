@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.opportunity.core.domain;
 
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.OpportunityStatus;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -88,12 +89,12 @@ public class Opportunity extends BaseDomain<Long> {
       String notes) {
     this.organizationId = organizationId;
     this.title = title != null ? title.strip() : "";
-    this.sourceUrl = blankToNull(sourceUrl);
-    this.externalReference = blankToNull(externalReference);
+    this.sourceUrl = Strings.blankToNull(sourceUrl);
+    this.externalReference = Strings.blankToNull(externalReference);
     this.publishedOn = publishedOn;
     this.submissionDeadline = submissionDeadline;
     this.decisionOn = decisionOn;
-    this.notes = blankToNull(notes);
+    this.notes = Strings.blankToNull(notes);
     touch();
   }
 
@@ -124,14 +125,6 @@ public class Opportunity extends BaseDomain<Long> {
   public void delete() {
     this.deletedAt = LocalDateTime.now();
     touch();
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 
   public static SafeBuilder builder() {
@@ -247,12 +240,12 @@ public class Opportunity extends BaseDomain<Long> {
       o.organizationId = organizationId;
       o.title = title != null ? title.strip() : "";
       o.status = OpportunityStatus.DRAFT;
-      o.sourceUrl = blankToNull(sourceUrl);
-      o.externalReference = blankToNull(externalReference);
+      o.sourceUrl = Strings.blankToNull(sourceUrl);
+      o.externalReference = Strings.blankToNull(externalReference);
       o.publishedOn = publishedOn;
       o.submissionDeadline = submissionDeadline;
       o.decisionOn = decisionOn;
-      o.notes = blankToNull(notes);
+      o.notes = Strings.blankToNull(notes);
       o.createdAt = LocalDateTime.now();
       o.updatedAt = o.createdAt;
       return o;

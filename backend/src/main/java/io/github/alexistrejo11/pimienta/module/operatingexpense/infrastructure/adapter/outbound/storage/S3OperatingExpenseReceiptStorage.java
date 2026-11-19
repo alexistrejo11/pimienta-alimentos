@@ -1,7 +1,9 @@
 package io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.outbound.storage;
 
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.port.output.OperatingExpenseReceiptStorage;
+import io.github.alexistrejo11.pimienta.shared.exception.ObjectStorageException;
 import io.github.alexistrejo11.pimienta.shared.storage.S3PresignService;
+import io.github.alexistrejo11.pimienta.shared.storage.S3WebpUploads;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -9,10 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 public class S3OperatingExpenseReceiptStorage implements OperatingExpenseReceiptStorage {
@@ -37,16 +39,9 @@ public class S3OperatingExpenseReceiptStorage implements OperatingExpenseReceipt
   }
 
   @Override
-  public String storeJpeg(byte[] jpeg, long headquarterId, LocalDate occurredOn) {
+  public String storeWebp(byte[] webp, long headquarterId, LocalDate occurredOn) {
     String key = OperatingExpenseObjectKeys.build(folder, headquarterId, occurredOn, UUID.randomUUID());
-    PutObjectRequest request =
-        PutObjectRequest.builder()
-            .bucket(bucketName)
-            .key(key)
-            .contentType("image/jpeg")
-            .contentLength((long) jpeg.length)
-            .build();
-    s3Client.putObject(request, RequestBody.fromBytes(jpeg));
+    S3WebpUploads.put(s3Client, bucketName, key, webp);
     log.info("expense receipt stored key={}", key);
     return key;
   }
@@ -59,13 +54,17 @@ public class S3OperatingExpenseReceiptStorage implements OperatingExpenseReceipt
     try {
       s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
       log.info("expense receipt deleted key={}", key);
-    } catch (RuntimeException ex) {
+    } catch (S3Exception | SdkClientException ex) {
       log.warn("expense receipt delete failed key={}", key, ex);
     }
   }
 
   @Override
   public String presign(String key) {
-    return s3PresignService.presign(key, PRESIGN_TTL);
+    try {
+      return s3PresignService.presign(key, PRESIGN_TTL);
+    } catch (S3Exception | SdkClientException ex) {
+      throw new ObjectStorageException("expense receipt presign failed key=" + key, ex);
+    }
   }
 }

@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class OperatingExpenseManagementUseCasesImpl implements OperatingExpenseManagementUseCases {
@@ -86,7 +86,7 @@ public class OperatingExpenseManagementUseCasesImpl implements OperatingExpenseM
     long headquarterId = accessPolicy.resolveWriteHeadquarter(principal, command.headquarterId());
     LocalDate occurredOn = accessPolicy.resolveOccurredOn(principal, command.occurredOn());
     requireHeadquarter(headquarterId);
-    List<MultipartFile> files = files(command.attachments());
+    List<ImageUploadPayload> files = files(command.attachments());
     imageProcessor.validateAll(files, 0);
     List<String> uploaded = upload(files, headquarterId, occurredOn);
     try {
@@ -118,7 +118,7 @@ public class OperatingExpenseManagementUseCasesImpl implements OperatingExpenseM
     requireHeadquarter(headquarterId);
     List<String> previous = existing.getAttachmentKeys();
     List<String> retained = retainedKeys(previous, command.retainAttachmentKeys());
-    List<MultipartFile> files = files(command.attachments());
+    List<ImageUploadPayload> files = files(command.attachments());
     imageProcessor.validateAll(files, retained.size());
     List<String> uploaded = upload(files, headquarterId, occurredOn);
     OperatingExpense saved;
@@ -162,12 +162,12 @@ public class OperatingExpenseManagementUseCasesImpl implements OperatingExpenseM
     }
   }
 
-  private List<String> upload(List<MultipartFile> files, long headquarterId, LocalDate occurredOn) {
+  private List<String> upload(List<ImageUploadPayload> files, long headquarterId, LocalDate occurredOn) {
     List<String> uploaded = new ArrayList<>();
     try {
-      for (MultipartFile file : files) {
-        byte[] jpeg = imageProcessor.process(file);
-        uploaded.add(receiptStorage.storeJpeg(jpeg, headquarterId, occurredOn));
+      for (ImageUploadPayload file : files) {
+        byte[] webp = imageProcessor.process(file);
+        uploaded.add(receiptStorage.storeWebp(webp, headquarterId, occurredOn));
       }
       return uploaded;
     } catch (RuntimeException ex) {
@@ -183,7 +183,7 @@ public class OperatingExpenseManagementUseCasesImpl implements OperatingExpenseM
     }
   }
 
-  private static List<MultipartFile> files(List<MultipartFile> attachments) {
+  private static List<ImageUploadPayload> files(List<ImageUploadPayload> attachments) {
     return attachments == null ? List.of() : attachments;
   }
 

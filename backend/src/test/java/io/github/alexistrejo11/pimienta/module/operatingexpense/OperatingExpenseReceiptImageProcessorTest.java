@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.outbound.image.OperatingExpenseReceiptImageProcessor;
 import io.github.alexistrejo11.pimienta.shared.exception.BusinessValidationException;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
+import io.github.alexistrejo11.pimienta.shared.infrastructure.image.ImageSanitizer;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -13,17 +15,15 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
 
 class OperatingExpenseReceiptImageProcessorTest {
 
-  private final OperatingExpenseReceiptImageProcessor processor = new OperatingExpenseReceiptImageProcessor();
+  private final OperatingExpenseReceiptImageProcessor processor =
+      new OperatingExpenseReceiptImageProcessor(new ImageSanitizer());
 
   @BeforeAll
   static void registerReaders() {
@@ -35,17 +35,13 @@ class OperatingExpenseReceiptImageProcessorTest {
     BusinessValidationException empty =
         assertThrows(
             BusinessValidationException.class,
-            () ->
-                processor.validateAll(
-                    List.of(new MockMultipartFile("attachments", "a.jpg", "image/jpeg", new byte[0])),
-                    0));
+            () -> processor.validateAll(List.of(file("image/jpeg", "a.jpg", new byte[0])), 0));
     assertEquals("EMPTY_FILE", empty.context().get("reason"));
 
     byte[] png = png(16, 16, false);
     BusinessValidationException mismatch =
         assertThrows(
-            BusinessValidationException.class,
-            () -> processor.process(file("image/jpeg", "note.jpg", png)));
+            BusinessValidationException.class, () -> processor.process(file("image/jpeg", "note.jpg", png)));
     assertEquals("UNSUPPORTED_TYPE", mismatch.context().get("reason"));
 
     BusinessValidationException huge =
@@ -53,7 +49,11 @@ class OperatingExpenseReceiptImageProcessorTest {
             BusinessValidationException.class,
             () ->
                 processor.validateAll(
-                    List.of(file("image/jpeg", "big.jpg", new byte[(int) OperatingExpenseReceiptImageProcessor.MAX_FILE_BYTES + 1])),
+                    List.of(
+                        file(
+                            "image/jpeg",
+                            "big.jpg",
+                            new byte[(int) OperatingExpenseReceiptImageProcessor.MAX_FILE_BYTES + 1])),
                     0));
     assertEquals("FILE_TOO_LARGE", huge.context().get("reason"));
 
@@ -63,13 +63,11 @@ class OperatingExpenseReceiptImageProcessorTest {
             BusinessValidationException.class,
             () ->
                 processor.validateAll(
-                    List.of(
-                        file("image/jpeg", "a.jpg", new byte[chunk]),
-                        file("image/jpeg", "b.jpg", new byte[chunk])),
+                    List.of(file("image/jpeg", "a.jpg", new byte[chunk]), file("image/jpeg", "b.jpg", new byte[chunk])),
                     0));
     assertEquals("TOTAL_TOO_LARGE", total.context().get("reason"));
 
-    List<MultipartFile> six = new ArrayList<>();
+    List<ImageUploadPayload> six = new ArrayList<>();
     byte[] jpeg = jpeg(8, 8);
     for (int i = 0; i < 6; i++) {
       six.add(file("image/jpeg", "r" + i + ".jpg", jpeg));
@@ -97,31 +95,42 @@ class OperatingExpenseReceiptImageProcessorTest {
 
   @Test
   void flattensTransparentPngOntoWhiteAndAcceptsWebp() throws IOException {
-    byte[] jpeg = processor.process(file("image/png", "clear.png", png(24, 24, true)));
-    assertTrue((jpeg[0] & 0xFF) == 0xFF && (jpeg[1] & 0xFF) == 0xD8);
-    BufferedImage flat = read(jpeg);
+    byte[] webp = processor.process(file("image/png", "clear.png", png(24, 24, true)));
+    assertWebp(webp);
+    BufferedImage flat = read(webp);
     int rgb = flat.getRGB(0, 0);
-    assertTrue((rgb >> 16 & 0xFF) > 250);
-    assertTrue((rgb >> 8 & 0xFF) > 250);
-    assertTrue((rgb & 0xFF) > 250);
+    assertTrue((rgb >> 16 & 0xFF) > 240);
+    assertTrue((rgb >> 8 & 0xFF) > 240);
+    assertTrue((rgb & 0xFF) > 240);
 
-    byte[] webp = webp();
     byte[] converted = processor.process(file("image/webp", "note.webp", webp));
-    assertTrue((converted[0] & 0xFF) == 0xFF && (converted[1] & 0xFF) == 0xD8);
+    assertWebp(converted);
     BufferedImage decoded = read(converted);
     assertTrue(decoded.getWidth() > 0 && decoded.getHeight() > 0);
   }
 
-  private static BufferedImage read(byte[] jpeg) throws IOException {
-    BufferedImage image = ImageIO.read(new ByteArrayInputStream(jpeg));
+  private static void assertWebp(byte[] bytes) {
+    assertTrue(bytes.length >= 12);
+    assertEquals('R', bytes[0]);
+    assertEquals('I', bytes[1]);
+    assertEquals('F', bytes[2]);
+    assertEquals('F', bytes[3]);
+    assertEquals('W', bytes[8]);
+    assertEquals('E', bytes[9]);
+    assertEquals('B', bytes[10]);
+    assertEquals('P', bytes[11]);
+  }
+
+  private static BufferedImage read(byte[] webp) throws IOException {
+    BufferedImage image = ImageIO.read(new ByteArrayInputStream(webp));
     if (image == null) {
       throw new AssertionError("output is not a readable image");
     }
     return image;
   }
 
-  private static MultipartFile file(String type, String name, byte[] bytes) {
-    return new MockMultipartFile("attachments", name, type, bytes);
+  private static ImageUploadPayload file(String type, String name, byte[] bytes) {
+    return new ImageUploadPayload(bytes, type, name, bytes.length);
   }
 
   private static byte[] jpeg(int width, int height) throws IOException {
@@ -153,18 +162,5 @@ class OperatingExpenseReceiptImageProcessorTest {
       throw new AssertionError("png writer missing");
     }
     return out.toByteArray();
-  }
-
-  private static byte[] webp() throws IOException {
-    BufferedImage image = new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB);
-    Graphics2D graphics = image.createGraphics();
-    graphics.setColor(Color.GREEN);
-    graphics.fillRect(0, 0, 8, 8);
-    graphics.dispose();
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    if (ImageIO.write(image, "webp", out) && out.size() > 12) {
-      return out.toByteArray();
-    }
-    return Base64.getDecoder().decode("UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA");
   }
 }

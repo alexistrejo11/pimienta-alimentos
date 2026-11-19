@@ -26,9 +26,13 @@ All **user-visible** text is Spanish and human-readable: labels, buttons, empty 
 - **Listas paginadas** (tablas que llaman la API con `search` en query): usar `app-list-search-field` con borrador local; la petición solo al pulsar **Enter** o **Buscar**. Los `<select>` y fechas pueden recargar al cambiar, usando el término ya aplicado.
 - **Autocompletado** (`app-item-select`, pickers con debounce): mantener debounce + `switchMap` en el control; no usar el patrón Enter/Buscar de listas.
 
+### Tests
+
+Each new feature and each new section of a page ships with a colocated `*.spec.ts` in the same change (Vitest). Page and section specs live next to the page under `src/app/pages/`; helper and service specs live next to the code in `src/app/core/`. Cover what that section does (what it renders, filters, labels, empty and error states). A `should create` smoke test is not enough when the section has behavior.
+
 ## Skills
 
 - [angular-developer](.agents/skills/angular-developer/SKILL.md) — official Angular (signals, CLI, templates, DI)
-- [pimienta-frontend-ui](.agents/skills/pimienta-frontend-ui/SKILL.md) — brand tokens from `src/styles.css` (keep this skill in sync with that file); includes Spanish UI copy rules
+- [pimienta-frontend-ui](.agents/skills/pimienta-frontend-ui/SKILL.md) — brand tokens from `src/styles.css` (keep this skill in sync with that file); includes Spanish UI copy rules and the per-section spec requirement
 
 Skip `angular-new-app`; this application already exists.

@@ -4,6 +4,7 @@ import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.Opportuni
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.RequirementCategory;
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.RequirementStatus;
 import io.github.alexistrejo11.pimienta.module.opportunity.infrastructure.adapter.outbound.persistence.entity.OpportunityRequirementJpaEntity;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 final class OpportunityRequirementPersistenceMapper {
 
@@ -37,7 +38,7 @@ final class OpportunityRequirementPersistenceMapper {
     entity.setMandatory(domain.isMandatory());
     entity.setStatus(domain.getStatus().name());
     entity.setDueOn(domain.getDueOn());
-    entity.setNotes(blankToNull(domain.getNotes()));
+    entity.setNotes(Strings.blankToNull(domain.getNotes()));
     entity.setSortOrder(domain.getSortOrder());
     entity.setCreatedAt(domain.getCreatedAt());
     entity.setUpdatedAt(domain.getUpdatedAt());
@@ -65,13 +66,5 @@ final class OpportunityRequirementPersistenceMapper {
     } catch (IllegalArgumentException ex) {
       return RequirementStatus.UNDEFINED;
     }
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 }

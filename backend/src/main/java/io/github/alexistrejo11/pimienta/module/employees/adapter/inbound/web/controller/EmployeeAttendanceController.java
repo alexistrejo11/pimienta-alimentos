@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.multipart.MultipartFile;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploads;
 
 @RestController
 @RequestMapping(BASE + "/employees")
@@ -164,7 +165,8 @@ public class EmployeeAttendanceController {
     LocalDate workDate =
         request.workDate() != null ? request.workDate() : LocalDate.now(ClientTimeZones.current());
     StartWorkdayCommand command =
-        new StartWorkdayCommand(employeeId, request.headquarterId(), workDate, checkInEvidencePhoto);
+        new StartWorkdayCommand(
+            employeeId, request.headquarterId(), workDate, ImageUploads.fromNullable(checkInEvidencePhoto));
     Attendance saved = attendanceTrackingUseCases.startWorkday(command);
     return attendanceResponsePresenter.toResponse(saved);
   }
@@ -173,7 +175,8 @@ public class EmployeeAttendanceController {
       Long employeeId, EndWorkdayRequest request, MultipartFile checkOutEvidencePhoto) {
     LocalDate workDate =
         request.workDate() != null ? request.workDate() : LocalDate.now(ClientTimeZones.current());
-    EndWorkdayCommand command = new EndWorkdayCommand(employeeId, workDate, checkOutEvidencePhoto);
+    EndWorkdayCommand command =
+        new EndWorkdayCommand(employeeId, workDate, ImageUploads.fromNullable(checkOutEvidencePhoto));
     Attendance saved = attendanceTrackingUseCases.endWorkday(command);
     return attendanceResponsePresenter.toResponse(saved);
   }

@@ -37,7 +37,7 @@ import org.springframework.http.MediaType;
 
         + **`employee`**: JSON matching **`UpdateEmployeeRequest`** (`Content-Type`:
           **`application/json`** when possible).
-        + **`photo`** (optional): image (`image/jpeg`, `image/png`, …).
+        + **`photo`** (optional): JPEG, PNG, or WebP. Stored as `image/webp`.
 
         Browsers/Swagger may label **`employee`** as **`application/octet-stream`**; the server parses
         the bytes as UTF-8 JSON anyway.

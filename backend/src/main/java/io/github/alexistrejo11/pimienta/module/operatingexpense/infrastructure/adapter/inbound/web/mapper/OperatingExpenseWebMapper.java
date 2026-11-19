@@ -14,6 +14,7 @@ import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.a
 import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.inbound.web.dto.OperatingExpenseSearchRequest;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.inbound.web.dto.OperatingExpenseSummaryResponse;
 import io.github.alexistrejo11.pimienta.module.operatingexpense.infrastructure.adapter.inbound.web.dto.UpsertOperatingExpenseRequest;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploads;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,7 +43,7 @@ public final class OperatingExpenseWebMapper {
         request.concept(),
         request.notes(),
         request.occurredOn(),
-        attachments);
+        ImageUploads.listFrom(attachments));
   }
 
   public static UpdateOperatingExpenseCommand toUpdate(
@@ -55,7 +56,7 @@ public final class OperatingExpenseWebMapper {
         request.notes(),
         request.occurredOn(),
         request.retainAttachmentKeys(),
-        attachments);
+        ImageUploads.listFrom(attachments));
   }
 
   public static OperatingExpenseSummaryResponse toSummary(OperatingExpenseSummary summary) {

@@ -1,18 +1,15 @@
 package io.github.alexistrejo11.pimienta.shared.storage;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Locale;
 
-/**
- * Shared helpers for deriving safe, collision-resistant S3 filename stems.
- * Used by both the employee module and the general-purpose file module.
- */
+/** Safe S3 path segments. Object names themselves are UUIDs, not user filenames. */
 public final class StorageFileNaming {
 
   private StorageFileNaming() {}
 
   /**
-   * Returns the lowercase file extension without the leading dot (e.g. {@code "pdf"}).
-   * Falls back to {@code "bin"} when the filename has no dot.
+   * Lowercase extension without the dot. Falls back to {@code bin} when there is no extension
+   * or the suffix is not a short alphanumeric token.
    */
   public static String extension(String originalFilename) {
     if (originalFilename == null || originalFilename.isBlank()) {
@@ -22,35 +19,27 @@ public final class StorageFileNaming {
     if (dot < 0 || dot == originalFilename.length() - 1) {
       return "bin";
     }
-    return originalFilename.substring(dot + 1).toLowerCase();
+    String raw = originalFilename.substring(dot + 1).toLowerCase(Locale.ROOT);
+    if (!raw.matches("[a-z0-9]{1,8}")) {
+      return "bin";
+    }
+    return raw;
   }
 
   /**
-   * Strips characters that are unsafe in S3 keys or URLs and collapses repeated underscores.
-   * Returns {@code "unknown"} for blank input.
+   * Strips characters that are unsafe in S3 keys and collapses repeated underscores.
+   * Returns {@code unknown} for blank input.
    */
   public static String sanitize(String segment) {
     if (segment == null || segment.isBlank()) {
       return "unknown";
     }
-    return segment.strip()
-        .replaceAll("[^a-zA-Z0-9._-]", "_")
-        .replaceAll("_{2,}", "_");
-  }
-
-  /**
-   * Builds a unique suffix: {@code {millis}_{random4digits}}.
-   * Append to a stem to guarantee no overwrite collisions.
-   */
-  public static String uniqueSuffix() {
-    return System.currentTimeMillis() + "_" + ThreadLocalRandom.current().nextInt(10_000);
-  }
-
-  /**
-   * Combines {@link #sanitize(String)} + {@link #uniqueSuffix()} + extension into a filename.
-   * E.g. {@code "invoice_template_1716916800000_3742.xlsx"}.
-   */
-  public static String buildFilename(String displayStem, String originalFilename) {
-    return sanitize(displayStem) + "_" + uniqueSuffix() + "." + extension(originalFilename);
+    String cleaned =
+        segment
+            .strip()
+            .replaceAll("[^a-zA-Z0-9_-]", "_")
+            .replaceAll("_{2,}", "_")
+            .replaceAll("^_+|_+$", "");
+    return cleaned.isBlank() ? "unknown" : cleaned;
   }
 }

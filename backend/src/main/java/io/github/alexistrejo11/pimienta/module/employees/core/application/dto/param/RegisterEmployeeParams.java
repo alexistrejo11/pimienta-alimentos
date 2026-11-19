@@ -10,11 +10,10 @@ import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.OfficialIdentifiers;
 import io.github.alexistrejo11.pimienta.module.employees.core.domain.valueobject.PersonalProfile;
 
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Application parameters for employee registration.
@@ -39,7 +38,7 @@ public record RegisterEmployeeParams(
     LocalDate birthDate,
     LocalDate hireDate,
     EmployeeStatus status,
-    MultipartFile photo) {
+    ImageUploadPayload photo) {
 
   public Employee toEmployee(String photoUrl) {
     LocalDateTime now = LocalDateTime.now();

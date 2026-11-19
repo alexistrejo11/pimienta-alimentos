@@ -4,8 +4,8 @@ import java.time.LocalDate;
 
 public interface OperatingExpenseReceiptStorage {
 
-  /** Stores a processed JPEG and returns the private object key. */
-  String storeJpeg(byte[] jpeg, long headquarterId, LocalDate occurredOn);
+  /** Stores a processed WebP object and returns the private object key. */
+  String storeWebp(byte[] webp, long headquarterId, LocalDate occurredOn);
 
   /** Deletes an object. Failures are logged and do not propagate. */
   void deleteQuietly(String key);

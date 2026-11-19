@@ -2,6 +2,7 @@ package io.github.alexistrejo11.pimienta.module.opportunity.core.domain;
 
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.ProposalKind;
 import io.github.alexistrejo11.pimienta.shared.BaseDomain;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 import java.time.LocalDateTime;
 
 public class OpportunityProposal extends BaseDomain<Long> {
@@ -32,7 +33,7 @@ public class OpportunityProposal extends BaseDomain<Long> {
 
   public void applyDetails(ProposalKind kind, String notes) {
     this.kind = kind != null ? kind : ProposalKind.COMBINED;
-    this.notes = blankToNull(notes);
+    this.notes = Strings.blankToNull(notes);
     touch();
   }
 
@@ -43,14 +44,6 @@ public class OpportunityProposal extends BaseDomain<Long> {
   public void delete() {
     this.deletedAt = LocalDateTime.now();
     touch();
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 
   public static SafeBuilder builder() {
@@ -111,7 +104,7 @@ public class OpportunityProposal extends BaseDomain<Long> {
       OpportunityProposal p = new OpportunityProposal();
       p.opportunityId = opportunityId;
       p.kind = kind != null ? kind : ProposalKind.COMBINED;
-      p.notes = blankToNull(notes);
+      p.notes = Strings.blankToNull(notes);
       p.createdAt = LocalDateTime.now();
       p.updatedAt = p.createdAt;
       return p;

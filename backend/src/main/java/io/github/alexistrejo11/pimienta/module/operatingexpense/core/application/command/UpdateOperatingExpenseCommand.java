@@ -3,8 +3,8 @@ package io.github.alexistrejo11.pimienta.module.operatingexpense.core.applicatio
 import io.github.alexistrejo11.pimienta.module.operatingexpense.core.domain.enums.OperatingExpenseCategory;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import io.github.alexistrejo11.pimienta.shared.image.ImageUploadPayload;
 import java.util.List;
-import org.springframework.web.multipart.MultipartFile;
 
 public record UpdateOperatingExpenseCommand(
     Long headquarterId,
@@ -14,4 +14,4 @@ public record UpdateOperatingExpenseCommand(
     String notes,
     LocalDate occurredOn,
     List<String> retainAttachmentKeys,
-    List<MultipartFile> attachments) {}
+    List<ImageUploadPayload> attachments) {}

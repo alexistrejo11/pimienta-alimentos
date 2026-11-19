@@ -14,5 +14,5 @@ Do **not** invent rules here that are missing from those skills. If they conflic
 - Agregados = **holders de estado** (`BaseDomain` + `SafeBuilder`); workflow en use cases.
 - `register()` / `reconstruct()`; `revise()` solo donde el módulo ya lo tenga (p. ej. Contract).
 - Sin Spring/JPA en `core/domain`. Validación Jakarta en DTOs HTTP.
-- JPA: `nullable = true` en columnas no críticas; mappers con `blankToNull` / `*OrNull` en código nuevo.
+- JPA: `nullable = true` en columnas no críticas; texto opcional con `Strings.blankToNull` / `Strings.nullToEmpty` (`shared/util/Strings`), no un helper privado. Enums con `*OrNull` al escribir JPA.
 - Referencia: `module/employees`, `module/contract`, `module/task`, `module/headquarter`.

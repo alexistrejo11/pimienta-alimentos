@@ -210,6 +210,12 @@
         <artifactId>imageio-webp</artifactId>
         <version>3.12.0</version>
     </dependency>
+    <!-- WebP encode. TwelveMonkeys only decodes. Natives are glibc (see Dockerfile runtime). -->
+    <dependency>
+        <groupId>com.github.usefulness</groupId>
+        <artifactId>webp-imageio</artifactId>
+        <version>0.11.0</version>
+    </dependency>
 
 
 	</dependencies>
@@ -220,6 +226,7 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<argLine>--enable-native-access=ALL-UNNAMED</argLine>
 					<systemPropertyVariables>
 						<user.timezone>UTC</user.timezone>
 					</systemPropertyVariables>

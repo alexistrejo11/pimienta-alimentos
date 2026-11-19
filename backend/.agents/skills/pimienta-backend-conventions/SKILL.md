@@ -19,6 +19,7 @@ Read this **before** writing new backend code. Match the module you edit; prefer
 4. New API errors: add `ErrorCode` + module `*Exception` extending shared base — do not invent ad-hoc JSON.
 5. Controllers: `@RequestMapping("/api/v1/…")`, thin, `@Valid` → command → use case → DTO.
 6. POS Device/Admin API: follow `docs/v2/pos_integration/` + tracker `09-implementation-tracker.md` (do not invent richer DDD).
+7. Blank-to-null and the same kind of string normalization (`null`/blank → `""`, strip): use **`io.github.alexistrejo11.pimienta.shared.util.Strings`** (`blankToNull`, `nullToEmpty`). Do not add a private helper. `ArchitectureRulesTest` fails the build if `blankToNull`, `nullToEmpty`, or `blankToEmpty` is redeclared outside `Strings`.
 
 ## Module layout (hexagonal)
 
@@ -42,7 +43,7 @@ Older modules may use `adapter/` instead of `infrastructure/adapter/`, or `outbo
 - New writes: prefer **`*Command`** under `core/application/command` (avoid new domain `*Params`; some inventory code still uses `*Params` or nested command records — do not spread that).
 - Web: **`ThingController`**, **`ThingWebMapper`**, DTOs with `@Schema`.
 - Persistence: **`ThingJpaEntity`**, **`ThingSpringDataRepository`**, **`ThingPersistenceMapper`**.
-- Persistence mappers: prefer **`blankToNull`** / `*OrNull` for optional strings/enums when writing JPA (task/contract/headquarter style). Some inventory mappers skip this — follow the gold style on new code.
+- Persistence mappers: call **`Strings.blankToNull`** (`io.github.alexistrejo11.pimienta.shared.util.Strings`) for optional strings and **`*OrNull`** for enums when writing JPA (task/contract/headquarter style). Use **`Strings.nullToEmpty`** when the in-memory value must be `""`. Some inventory mappers skip this — follow the gold style on new code. Never declare a private `blankToNull`, `nullToEmpty`, or `blankToEmpty`; `ArchitectureRulesTest.stringHelpersAreNotRedefinedOutsideStrings` fails `./mvnw test` if one is copied.
 
 ## HTTP layer
 

@@ -3,6 +3,7 @@ package io.github.alexistrejo11.pimienta.module.opportunity.infrastructure.adapt
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.Opportunity;
 import io.github.alexistrejo11.pimienta.module.opportunity.core.domain.enums.OpportunityStatus;
 import io.github.alexistrejo11.pimienta.module.opportunity.infrastructure.adapter.outbound.persistence.entity.OpportunityJpaEntity;
+import io.github.alexistrejo11.pimienta.shared.util.Strings;
 
 final class OpportunityPersistenceMapper {
 
@@ -37,12 +38,12 @@ final class OpportunityPersistenceMapper {
     entity.setOrganizationId(domain.getOrganizationId());
     entity.setTitle(domain.getTitle());
     entity.setStatus(domain.getStatus().name());
-    entity.setSourceUrl(blankToNull(domain.getSourceUrl()));
-    entity.setExternalReference(blankToNull(domain.getExternalReference()));
+    entity.setSourceUrl(Strings.blankToNull(domain.getSourceUrl()));
+    entity.setExternalReference(Strings.blankToNull(domain.getExternalReference()));
     entity.setPublishedOn(domain.getPublishedOn());
     entity.setSubmissionDeadline(domain.getSubmissionDeadline());
     entity.setDecisionOn(domain.getDecisionOn());
-    entity.setNotes(blankToNull(domain.getNotes()));
+    entity.setNotes(Strings.blankToNull(domain.getNotes()));
     entity.setContractId(domain.getContractId());
     entity.setSubmittedAt(domain.getSubmittedAt());
     entity.setClosedAt(domain.getClosedAt());
@@ -61,13 +62,5 @@ final class OpportunityPersistenceMapper {
     } catch (IllegalArgumentException ex) {
       return OpportunityStatus.UNDEFINED;
     }
-  }
-
-  private static String blankToNull(String value) {
-    if (value == null) {
-      return null;
-    }
-    String t = value.strip();
-    return t.isEmpty() ? null : t;
   }
 }

@@ -1,6 +1,8 @@
 package io.github.alexistrejo11.pimienta.module.files.integration;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -112,7 +114,8 @@ class FileIntegrationTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.category").value("TEMPLATE"))
             .andExpect(jsonPath("$.originalName").value(filename))
-            .andExpect(jsonPath("$.s3Key").exists())
+            .andExpect(jsonPath("$.s3Key", endsWith(".txt")))
+            .andExpect(jsonPath("$.s3Key", not(containsString(suffix))))
             .andReturn();
 
     String assetId = JsonPath.read(uploaded.getResponse().getContentAsString(), "$.id");
